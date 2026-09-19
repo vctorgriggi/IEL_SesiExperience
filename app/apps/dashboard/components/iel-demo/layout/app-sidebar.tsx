@@ -25,7 +25,7 @@ import {
   ChartColumn,
   ChevronsUpDown,
   HelpCircle,
-  Inbox,
+  Home,
   ListOrdered,
   MessageSquare,
   Plug,
@@ -135,7 +135,7 @@ function ItemDaBarra({
           <SidebarMenuBadge
             className={cn(
               'tabular-nums',
-              item.label === 'Hoje' && BADGE_DE_ESTADO.atencao
+              item.label === 'Início' && BADGE_DE_ESTADO.atencao
             )}
           >
             {item.badge}
@@ -238,8 +238,8 @@ export function AppSidebar() {
           itens: [
             item(
               iel.index,
-              'Hoje',
-              Inbox,
+              'Início',
+              Home,
               pathname === iel.index,
               pendencias > 0 ? pendencias : null
             ),

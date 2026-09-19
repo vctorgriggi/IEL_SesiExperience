@@ -30,7 +30,7 @@ import {
  */
 function caminhoDaRota(pathname: string): PageHeaderCrumb[] {
   const iel = routes.dashboard.iel;
-  if (pathname === iel.index) return [{ label: 'Hoje' }];
+  if (pathname === iel.index) return [{ label: 'Início' }];
   if (pathname.startsWith(iel.jobs.index)) return [{ label: 'Vagas' }];
   if (pathname.startsWith(iel.companies.index)) return [{ label: 'Empresas' }];
   if (pathname.startsWith(iel.talents.index)) return [{ label: 'Pessoas' }];
@@ -41,7 +41,7 @@ function caminhoDaRota(pathname: string): PageHeaderCrumb[] {
   if (pathname.startsWith(iel.dataSources)) return [{ label: 'Integrações' }];
   if (pathname.startsWith(iel.candidates)) return [{ label: 'Candidatos' }];
   if (pathname.startsWith(iel.bi)) return [{ label: 'BI' }];
-  return [{ label: 'Hoje' }];
+  return [{ label: 'Início' }];
 }
 
 /** Cabeçalho de 48px: gatilho da barra, caminho e as ações da tela. */
