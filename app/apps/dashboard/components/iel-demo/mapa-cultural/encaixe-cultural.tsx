@@ -5,8 +5,7 @@ import {
   classificarCultura,
   FAIXA_DE_ENCAIXE_LABEL,
   FAIXA_DE_ENCAIXE_NOTA,
-  TIPO_DE_CULTURA_LABEL,
-  type FaixaDeEncaixe
+  TIPO_DE_CULTURA_LABEL
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -24,22 +23,21 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 
-import { Chip, InfoHint, Panel, PanelHeader } from '../shared/ui';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+
+import { FaixaBadge } from './faixa-badge';
 import {
   COR_DA_EMPRESA,
   COR_DO_TALENTO,
   PlanoCultural
 } from './plano-cultural';
-
-const TOM_POR_FAIXA: Record<
-  FaixaDeEncaixe,
-  'positivo' | 'info' | 'atencao' | 'conflito'
-> = {
-  'muito-proximo': 'positivo',
-  proximo: 'info',
-  'alguma-distancia': 'atencao',
-  distante: 'conflito'
-};
 
 export function EncaixeCultural({
   job,
@@ -56,18 +54,23 @@ export function EncaixeCultural({
 
   if (!leitura) {
     return (
-      <Panel padding="lg">
-        <PanelHeader
-          eyebrow="Mapa de Cultura"
-          title="Sem base para posicionar os dois lados"
-          hint="O mapa só desenha quem respondeu. Um lado sem resposta não vai para o centro do plano: ele fica de fora, e a tela diz que falta responder."
-        />
-        <p className="mt-3 text-sm text-muted-foreground">
-          Falta o questionário de ambiente de trabalho de um dos dois lados.
-          Enquanto ele não for respondido, a leitura por eixo acima continua
-          valendo e o mapa fica sem posição.
-        </p>
-      </Panel>
+      <Card>
+        <CardHeader>
+          <CardTitle>Sem base para posicionar os dois lados</CardTitle>
+          <CardDescription>
+            O mapa só desenha quem respondeu. Um lado sem resposta não vai para
+            o centro do plano: ele fica de fora, e a tela diz que falta
+            responder.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Falta o questionário de ambiente de trabalho de um dos dois lados.
+            Enquanto ele não for respondido, a leitura por eixo acima continua
+            valendo e o mapa fica sem posição.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -98,25 +101,20 @@ export function EncaixeCultural({
   const aAlinhar = leitura.axes.filter((eixo) => !eixo.convergente);
 
   return (
-    <Panel padding="lg">
-      <PanelHeader
-        eyebrow="Mapa de Cultura"
-        title="Ambiente de trabalho, lado a lado"
-        hint="Posiciona os dois lados a partir das respostas já dadas nos cinco eixos. Descreve ambiente de trabalho, não personalidade, e não produz nota: a proximidade vira faixa e leitura em texto."
-        meta={
-          <>
-            {plural(leitura.axes.length, 'eixo comparado', 'eixos comparados')}{' '}
-            de {CULTURE_QUESTIONS.length}.
-          </>
-        }
-        actions={
-          <Chip tone={TOM_POR_FAIXA[leitura.fit.faixa]}>
-            {FAIXA_DE_ENCAIXE_LABEL[leitura.fit.faixa]}
-          </Chip>
-        }
-      />
+    <Card>
+      <CardHeader>
+        <CardTitle>Ambiente de trabalho, lado a lado</CardTitle>
+        <CardDescription>
+          {plural(leitura.axes.length, 'eixo comparado', 'eixos comparados')} de{' '}
+          {CULTURE_QUESTIONS.length}. Posiciona os dois lados a partir das
+          respostas já dadas. Descreve ambiente de trabalho, não personalidade.
+        </CardDescription>
+        <CardAction>
+          <FaixaBadge faixa={leitura.fit.faixa} />
+        </CardAction>
+      </CardHeader>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <CardContent className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-border/80 bg-card p-3 shadow-xs">
             <PlanoCultural points={pontos} />
@@ -275,12 +273,17 @@ export function EncaixeCultural({
             </div>
           ) : null}
 
-          <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground pt-1">
-            O mapa apoia a decisão humana e não descarta ninguém.
-            <InfoHint label="A posição sai das respostas dos dois lados por regra fixa e pública. Nenhum candidato é eliminado pelo mapa, e a leitura por eixo continua sendo a base da conversa." />
+          {/*
+            Dito por escrito, e não escondido atrás de um ícone: é a garantia
+            que sustenta a tela inteira.
+          */}
+          <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
+            O mapa apoia a decisão humana e não descarta ninguém. A posição sai
+            das respostas dos dois lados por regra fixa e pública, e a leitura
+            por eixo continua sendo a base da conversa.
           </p>
         </div>
-      </div>
-    </Panel>
+      </CardContent>
+    </Card>
   );
 }

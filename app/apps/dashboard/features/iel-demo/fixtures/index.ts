@@ -1,5 +1,9 @@
 import type { DemoState, HistoryEvent, Persona } from '../types';
-import { DEMO_ANALYSIS, DEMO_APPLICATIONS } from './applications';
+import {
+  DEMO_ANALYSIS,
+  DEMO_APPLICATIONS,
+  DEMO_FIT_RESPONSES
+} from './applications';
 import { DEMO_CLARIFICATIONS } from './clarifications';
 import {
   DEMO_COMPANIES,
@@ -8,13 +12,14 @@ import {
   DEMO_TEAMS
 } from './companies';
 import { DEMO_CULTURE_ANSWERS } from './culture';
+import { DEMO_CULTURE_INVITES } from './culture-invites';
 import { DEMO_EVIDENCES } from './evidences';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 import { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 3;
+export const DEMO_SCHEMA_VERSION = 5;
 
 const GENERATED = getGeneratedBase();
 
@@ -141,6 +146,13 @@ export function buildInitialDemoState(): DemoState {
       ...clone(DEMO_CULTURE_ANSWERS),
       ...clone(GENERATED.cultureAnswers)
     ],
+    cultureInvites: clone(DEMO_CULTURE_INVITES),
+    importedTalents: [],
+    spreadsheetImports: [],
+    fitResponses: [
+      ...clone(DEMO_FIT_RESPONSES),
+      ...clone(GENERATED.fitResponses)
+    ],
     axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
@@ -163,7 +175,11 @@ export {
   findClarificationTemplate
 } from './clarifications';
 export type { ClarificationTemplate } from './clarifications';
-export { DEMO_APPLICATIONS, DEMO_ANALYSIS } from './applications';
+export {
+  DEMO_APPLICATIONS,
+  DEMO_ANALYSIS,
+  DEMO_FIT_RESPONSES
+} from './applications';
 export { DEMO_CLARIFICATIONS } from './clarifications';
 export {
   DEMO_COMPANIES,
@@ -173,6 +189,8 @@ export {
 } from './companies';
 export { DEMO_CULTURE_ANSWERS } from './culture';
 export { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
+export { DEMO_CULTURE_INVITES } from './culture-invites';
+export { loadExampleSpreadsheet } from './planilha-exemplo';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';
 export { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';

@@ -16,6 +16,7 @@
  * analista ver por que deu 41% e não 72%. O corte marca, não elimina.
  */
 
+import { ADHERENCE_THRESHOLD } from './adherence';
 import { getCultureOptionLabel, type CultureOptionId } from './culture';
 import { getFitAxis, type FitAxisId } from './fit-axes';
 
@@ -289,125 +290,24 @@ export function compararRespostas(
 }
 
 /**
- * Corte de compatibilidade, do cliente e não descoberto por modelo
- * (00:20:19). Marca "abaixo do corte" na tela; nunca elimina candidatura —
- * o enunciado veda corte automático, e quem decide continua sendo o analista.
- */
-export const CORTE_DE_ADERENCIA = 0.35;
-
-/**
- * A maior distância possível dentro de um eixo, usada como denominador da
- * aderência daquele eixo.
- *
- * Sem isso, eixos de amplitude diferente pesariam diferente sem ninguém ter
- * decidido isso: `autonomia` varia 2 unidades em y, `aprendizado` varia 1,75
- * em x. Normalizar por eixo faz "escolheu o oposto" valer 0% em todos.
- */
-function amplitudeDoEixo(axisId: FitAxisId): number {
-  const alternativas = Object.values(
-    CONTRIBUICAO_POR_ALTERNATIVA[axisId] ?? {}
-  );
-  let maior = 0;
-
-  for (const a of alternativas) {
-    for (const b of alternativas) {
-      maior = Math.max(maior, Math.hypot(a.x - b.x, a.y - b.y));
-    }
-  }
-
-  return maior;
-}
-
-export type AderenciaDeEixo = {
-  axisId: FitAxisId;
-  axisLabel: string;
-  /** 0 a 1. Quanto a alternativa da pessoa se aproxima da alternativa da empresa. */
-  aderencia: number;
-};
-
-/**
  * Menos eixos que isto e o percentual não sustenta uma posição no ranking.
  *
- * Um eixo em comum vira 0% ou 100% e nada entre os dois: o número existe, mas
+ * Um eixo em comum vira 0 ou 100 e nada entre os dois: o número existe, mas
  * não distingue ninguém. Quem fica abaixo do piso continua na lista, no mapa e
  * clicável — apenas sem posição. Não ranquear não é descartar, e é o corte
  * automático que o enunciado veda que estaria em jogo se sumissem da tela.
  */
 export const MINIMO_DE_EIXOS_PARA_RANQUEAR = 2;
 
-export type Aderencia = {
-  /** 0 a 1, média das aderências por eixo. */
-  total: number;
-  porEixo: AderenciaDeEixo[];
-  /** O denominador que a tela precisa mostrar. */
-  eixosComparados: number;
-  compativel: boolean;
-  /** Há eixos comuns suficientes para o número valer como posição. */
-  baseSuficiente: boolean;
-};
-
 /**
- * Aderência entre os dois lados, eixo a eixo e no total.
+ * O mapa não tem motor de aderência próprio.
  *
- * Eixo a eixo, e não pela distância entre os dois pontos do plano: a distância
- * já mistura os cinco eixos num número só, e aí ninguém consegue responder por
- * que deu 41%. Aqui cada eixo tem o seu percentual, e o total é a média simples
- * deles — dá para refazer a conta à mão.
- *
- * Eixo que só um lado respondeu fica fora, como em todo o resto do módulo.
- * Devolve `null` quando não sobrou eixo comparável: 0% diria "discordam", e o
- * que aconteceu foi não ter base para comparar.
+ * Ele teve, por um tempo, e era um segundo cálculo sobre os mesmos dados —
+ * o que fazia a mesma pessoa aparecer com dois percentuais diferentes em duas
+ * telas. Quem calcula é `analysis/adherence.ts`, que pondera por eixo e trata
+ * ausência como ausência; o mapa só projeta e lê. Ver
+ * `getTalentCompanyAdherence` em `state/selectors.ts`.
  */
-export function calcularAderencia(
-  respostasDoTalento: RespostaDeEixo[],
-  respostasDaEmpresa: RespostaDeEixo[],
-  corte: number = CORTE_DE_ADERENCIA
-): Aderencia | null {
-  const porEixo: AderenciaDeEixo[] = [];
-
-  for (const doTalento of respostasDoTalento) {
-    const daEmpresa = respostasDaEmpresa.find(
-      (resposta) => resposta.axisId === doTalento.axisId
-    );
-    if (!daEmpresa) continue;
-
-    const alternativaDoTalento =
-      CONTRIBUICAO_POR_ALTERNATIVA[doTalento.axisId]?.[doTalento.optionId];
-    const alternativaDaEmpresa =
-      CONTRIBUICAO_POR_ALTERNATIVA[daEmpresa.axisId]?.[daEmpresa.optionId];
-    if (!alternativaDoTalento || !alternativaDaEmpresa) continue;
-
-    const amplitude = amplitudeDoEixo(doTalento.axisId);
-    const distancia = Math.hypot(
-      alternativaDoTalento.x - alternativaDaEmpresa.x,
-      alternativaDoTalento.y - alternativaDaEmpresa.y
-    );
-
-    porEixo.push({
-      axisId: doTalento.axisId,
-      axisLabel: getFitAxis(doTalento.axisId).label,
-      aderencia: amplitude === 0 ? 1 : 1 - distancia / amplitude
-    });
-  }
-
-  if (porEixo.length === 0) return null;
-
-  const total =
-    porEixo.reduce((soma, eixo) => soma + eixo.aderencia, 0) / porEixo.length;
-
-  return {
-    total,
-    porEixo,
-    eixosComparados: porEixo.length,
-    compativel: total >= corte,
-    baseSuficiente: porEixo.length >= MINIMO_DE_EIXOS_PARA_RANQUEAR
-  };
-}
-
-/** O percentual como a tela escreve: inteiro, com o sinal. */
-export function formatarAderencia(aderencia: number): string {
-  return `${Math.round(aderencia * 100)}%`;
-}
 
 /**
  * A faixa nomeada que acompanha o percentual.
@@ -417,19 +317,39 @@ export function formatarAderencia(aderencia: number): string {
  * denominadores diferentes, e a lista exibia "44% · Muito próximo" ao lado de
  * "44% · Alguma distância".
  *
- * O piso da faixa mais baixa é o corte do cliente: abaixo dele a leitura é
- * "distante", que é a mesma coisa que "abaixo do corte" dita em palavras.
+ * O piso da faixa mais baixa é o corte do cliente, importado de
+ * `adherence.ts`: abaixo dele a leitura é "distante", que é a mesma coisa que
+ * "abaixo do corte" dita em palavras. A escala é a de lá — pontos de 0 a 100,
+ * não fração.
  */
 export const FAIXAS_DE_ADERENCIA: {
   faixa: FaixaDeEncaixe;
   aPartirDe: number;
 }[] = [
-  { faixa: 'muito-proximo', aPartirDe: 0.85 },
-  { faixa: 'proximo', aPartirDe: 0.65 },
-  { faixa: 'alguma-distancia', aPartirDe: CORTE_DE_ADERENCIA },
+  { faixa: 'muito-proximo', aPartirDe: 85 },
+  { faixa: 'proximo', aPartirDe: 65 },
+  { faixa: 'alguma-distancia', aPartirDe: ADHERENCE_THRESHOLD },
   { faixa: 'distante', aPartirDe: Number.NEGATIVE_INFINITY }
 ];
 
+/**
+ * Há eixos comuns suficientes para o número valer como posição no ranking.
+ *
+ * Mora aqui, e não em `adherence.ts`, porque é regra do mapa: as outras telas
+ * mostram a aderência de uma candidatura por vez, onde cobertura baixa é
+ * informação; só o ranking precisa decidir quem disputa posição.
+ */
+export function temBaseParaRanquear(aderencia: {
+  total: number | null;
+  coverage: { answeredAxes: number };
+}): boolean {
+  return (
+    aderencia.total !== null &&
+    aderencia.coverage.answeredAxes >= MINIMO_DE_EIXOS_PARA_RANQUEAR
+  );
+}
+
+/** `total` em pontos percentuais, como `AdherenceResult.total`. */
 export function faixaDeAderencia(total: number): FaixaDeEncaixe {
   return (
     FAIXAS_DE_ADERENCIA.find((entrada) => total >= entrada.aPartirDe)?.faixa ??

@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { type AdherenceResult } from '@/features/iel-demo/analysis/adherence';
 import {
   calcularEncaixeCultural,
+  temBaseParaRanquear,
   TIPO_DE_CULTURA_DESCRICAO,
   TIPO_DE_CULTURA_LABEL,
-  type Aderencia,
   type ClassificacaoCultural
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { ALL_COMPANIES } from '@/features/iel-demo/fixtures';
@@ -21,8 +22,17 @@ import {
 
 import { routes } from '@workspace/routes';
 import { Alert, cn, FilterNativeSelect } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
 
-import { Chip, IelPageHeader, Panel, PanelHeader } from '../shared/ui';
+import { usePageHeader } from '../layout/page-header-context';
 import { ListaEntidadesMapa } from './lista-entidades-mapa';
 import {
   COR_DA_EMPRESA,
@@ -74,6 +84,44 @@ export function PanoramaCultural() {
   const [selecionado, setSelecionado] = useState<string | null>(null);
 
   const iel = routes.dashboard.iel;
+
+  /*
+   * O alternador de modo vive no cabeçalho da casca, como nas demais telas:
+   * a tela publica o que é seu e a casca desenha a trilha e as ações.
+   */
+  const alternadorDeModo = (
+    <div className="flex items-center rounded-lg border border-border bg-muted/40 p-1">
+      <button
+        className={cn(
+          'rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
+          modoVisualizacao === 'empresa-talentos'
+            ? 'bg-card text-foreground shadow-xs'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        onClick={() => setModoVisualizacao('empresa-talentos')}
+        type="button"
+      >
+        Empresa &amp; Talentos
+      </button>
+      <button
+        className={cn(
+          'rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
+          modoVisualizacao === 'panorama-geral'
+            ? 'bg-card text-foreground shadow-xs'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        onClick={() => setModoVisualizacao('panorama-geral')}
+        type="button"
+      >
+        Panorama da Base
+      </button>
+    </div>
+  );
+
+  usePageHeader({
+    breadcrumb: [{ label: 'Mapa de cultura' }],
+    actions: alternadorDeModo
+  });
   const vagas = useMemo(() => getVisibleJobs(state), [state]);
 
   const vagasDaEmpresa = useMemo(() => {
@@ -113,7 +161,7 @@ export function PanoramaCultural() {
    * briefing veda e que a reunião manteve fora.
    */
   const aderenciaPorTalento = useMemo(() => {
-    const mapa = new Map<string, Aderencia>();
+    const mapa = new Map<string, AdherenceResult>();
     if (!pontoEmpresaReferencia) return mapa;
 
     for (const ponto of todosPontos) {
@@ -154,16 +202,16 @@ export function PanoramaCultural() {
 
       // Sem base suficiente desce para o fim, seja qual for o percentual: 100%
       // sobre um eixo não disputa posição com 70% sobre cinco.
-      const baseA = aderenciaA?.baseSuficiente ?? false;
-      const baseB = aderenciaB?.baseSuficiente ?? false;
+      const baseA = aderenciaA ? temBaseParaRanquear(aderenciaA) : false;
+      const baseB = aderenciaB ? temBaseParaRanquear(aderenciaB) : false;
       if (baseA !== baseB) return baseA ? -1 : 1;
 
       const totalA = aderenciaA?.total ?? -1;
       const totalB = aderenciaB?.total ?? -1;
       if (totalA !== totalB) return totalB - totalA;
 
-      const eixosA = aderenciaA?.eixosComparados ?? 0;
-      const eixosB = aderenciaB?.eixosComparados ?? 0;
+      const eixosA = aderenciaA?.coverage.answeredAxes ?? 0;
+      const eixosB = aderenciaB?.coverage.answeredAxes ?? 0;
       if (eixosA !== eixosB) return eixosB - eixosA;
 
       return a.name.localeCompare(b.name, 'pt-BR');
@@ -280,45 +328,29 @@ export function PanoramaCultural() {
 
   return (
     <div className="space-y-6">
-      <IelPageHeader
-        actions={
-          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-1">
-            <button
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
-                modoVisualizacao === 'empresa-talentos'
-                  ? 'bg-card text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => setModoVisualizacao('empresa-talentos')}
-              type="button"
-            >
-              Empresa &amp; Talentos
-            </button>
-            <button
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
-                modoVisualizacao === 'panorama-geral'
-                  ? 'bg-card text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => setModoVisualizacao('panorama-geral')}
-              type="button"
-            >
-              Panorama da Base
-            </button>
-          </div>
-        }
-        description="Mapeamento de ambiente de trabalho com base nos eixos respondidos. O mapa aproxima perfis semelhantes e orienta conexões em escala sem descartar ninguém."
-        eyebrow="Central IEL · Análise Cultural"
-        title="Mapa de Cultura"
-      />
+      <p className="text-sm text-muted-foreground">
+        Mapeamento de ambiente de trabalho com base nos eixos respondidos. O
+        mapa aproxima perfis semelhantes e orienta conexões em escala sem
+        descartar ninguém.
+      </p>
 
       {/* Painel Central do Mapa */}
-      <Panel padding="lg">
-        <PanelHeader
-          actions={
-            modoVisualizacao === 'panorama-geral' ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {modoVisualizacao === 'empresa-talentos'
+              ? `Encaixe com ${pontoEmpresaReferencia?.name ?? 'Empresa'}`
+              : 'Distribuição dos Perfis'}
+          </CardTitle>
+          <CardDescription>
+            Exibindo{' '}
+            <strong className="text-foreground">{pontosExibidos.length}</strong>{' '}
+            registros. A proximidade entre o ponto da empresa e o do talento
+            define a faixa de aderência. O mapa orienta a conversa e não
+            descarta ninguém.
+          </CardDescription>
+          <CardAction>
+            {modoVisualizacao === 'panorama-geral' ? (
               <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
                 {FILTROS_TIPO.map((opcao) => {
                   const count =
@@ -348,270 +380,255 @@ export function PanoramaCultural() {
                   );
                 })}
               </div>
-            ) : null
-          }
-          eyebrow={
-            modoVisualizacao === 'empresa-talentos'
-              ? 'Posicionamento e Encaixe Relativo'
-              : 'Visualização da Base'
-          }
-          hint="A proximidade entre o ponto da empresa e o ponto do talento define a faixa de encaixe cultural. O mapa orienta a conversa e não descarta ninguém."
-          meta={
-            <>
-              Exibindo{' '}
-              <strong className="text-foreground">
-                {pontosExibidos.length}
-              </strong>{' '}
-              registros.
-            </>
-          }
-          title={
-            modoVisualizacao === 'empresa-talentos'
-              ? `Encaixe com ${pontoEmpresaReferencia?.name ?? 'Empresa'}`
-              : 'Distribuição dos Perfis'
-          }
-        />
-
-        {/* Barra de Filtros Contextuais (Modo Empresa & Talentos) */}
-        {modoVisualizacao === 'empresa-talentos' ? (
-          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-muted/20 p-3">
-            <div className="min-w-[200px] flex-1">
-              <label
-                className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                htmlFor="seletor-empresa"
-              >
-                Empresa de Referência
-              </label>
-              <FilterNativeSelect
-                aria-label="Selecionar empresa"
-                id="seletor-empresa"
-                onChange={(e) => {
-                  setEmpresaIdSelecionada(e.target.value);
-                  setVagaIdSelecionada('todas');
-                }}
-                value={empresaIdSelecionada}
-              >
-                {ALL_COMPANIES.map((comp) => (
-                  <option
-                    key={comp.id}
-                    value={comp.id}
-                  >
-                    {comp.name} ({comp.sector})
-                  </option>
-                ))}
-              </FilterNativeSelect>
-            </div>
-
-            {/*
-              A vaga só delimita quem conta como inscrito, então só aparece
-              junto de "Só Inscritos". Em "Toda a Base" ela ficava visível e
-              editável sem mudar nada na tela.
-            */}
-            {filtroEscopoTalentos === 'candidatos-vaga' ? (
-              <div className="min-w-[180px] flex-1">
+            ) : null}
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {/* Barra de Filtros Contextuais (Modo Empresa & Talentos) */}
+          {modoVisualizacao === 'empresa-talentos' ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-muted/20 p-3">
+              <div className="min-w-[200px] flex-1">
                 <label
                   className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  htmlFor="seletor-vaga"
+                  htmlFor="seletor-empresa"
                 >
-                  Vaga da Empresa
+                  Empresa de Referência
                 </label>
                 <FilterNativeSelect
-                  aria-label="Selecionar vaga"
-                  id="seletor-vaga"
-                  onChange={(e) => setVagaIdSelecionada(e.target.value)}
-                  value={vagaIdSelecionada}
+                  aria-label="Selecionar empresa"
+                  id="seletor-empresa"
+                  onChange={(e) => {
+                    setEmpresaIdSelecionada(e.target.value);
+                    setVagaIdSelecionada('todas');
+                  }}
+                  value={empresaIdSelecionada}
                 >
-                  <option value="todas">
-                    Todas as vagas ({vagasDaEmpresa.length})
-                  </option>
-                  {vagasDaEmpresa.map((vaga) => (
+                  {ALL_COMPANIES.map((comp) => (
                     <option
-                      key={vaga.id}
-                      value={vaga.id}
+                      key={comp.id}
+                      value={comp.id}
                     >
-                      {vaga.title}
+                      {comp.name} ({comp.sector})
                     </option>
                   ))}
                 </FilterNativeSelect>
               </div>
-            ) : null}
 
-            <div className="flex self-end">
-              <div className="flex items-center rounded-lg border border-border bg-card p-1">
-                <button
-                  className={cn(
-                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
-                    filtroEscopoTalentos === 'todos-talentos'
-                      ? 'bg-muted text-foreground shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                  onClick={() => setFiltroEscopoTalentos('todos-talentos')}
-                  type="button"
-                >
-                  Toda a Base
-                </button>
-                <button
-                  className={cn(
-                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
-                    filtroEscopoTalentos === 'candidatos-vaga'
-                      ? 'bg-muted text-foreground shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                  onClick={() => setFiltroEscopoTalentos('candidatos-vaga')}
-                  type="button"
-                >
-                  Só Inscritos
-                </button>
+              {/*
+              A vaga só delimita quem conta como inscrito, então só aparece
+              junto de "Só Inscritos". Em "Toda a Base" ela ficava visível e
+              editável sem mudar nada na tela.
+            */}
+              {filtroEscopoTalentos === 'candidatos-vaga' ? (
+                <div className="min-w-[180px] flex-1">
+                  <label
+                    className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    htmlFor="seletor-vaga"
+                  >
+                    Vaga da Empresa
+                  </label>
+                  <FilterNativeSelect
+                    aria-label="Selecionar vaga"
+                    id="seletor-vaga"
+                    onChange={(e) => setVagaIdSelecionada(e.target.value)}
+                    value={vagaIdSelecionada}
+                  >
+                    <option value="todas">
+                      Todas as vagas ({vagasDaEmpresa.length})
+                    </option>
+                    {vagasDaEmpresa.map((vaga) => (
+                      <option
+                        key={vaga.id}
+                        value={vaga.id}
+                      >
+                        {vaga.title}
+                      </option>
+                    ))}
+                  </FilterNativeSelect>
+                </div>
+              ) : null}
+
+              <div className="flex self-end">
+                <div className="flex items-center rounded-lg border border-border bg-card p-1">
+                  <button
+                    className={cn(
+                      'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                      filtroEscopoTalentos === 'todos-talentos'
+                        ? 'bg-muted text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    onClick={() => setFiltroEscopoTalentos('todos-talentos')}
+                    type="button"
+                  >
+                    Toda a Base
+                  </button>
+                  <button
+                    className={cn(
+                      'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                      filtroEscopoTalentos === 'candidatos-vaga'
+                        ? 'bg-muted text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    onClick={() => setFiltroEscopoTalentos('candidatos-vaga')}
+                    type="button"
+                  >
+                    Só Inscritos
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {/* Grade: Canvas do Mapa + Lista Lateral */}
-        <div className="mt-5 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <div className="flex flex-col justify-between space-y-3">
-            <PlanoCultural
-              aderenciaPorTalento={aderenciaPorTalento}
-              focusIds={idsEmFoco}
-              highlightQuadrant={quadranteAtivo}
-              onSelect={(id) =>
-                setSelecionado((atual) => (atual === id ? null : id))
-              }
-              points={pontosExibidos}
-              referenceId={
-                modoVisualizacao === 'empresa-talentos'
-                  ? empresaIdSelecionada
-                  : null
-              }
-              selectedId={selecionado}
-              showProximityRings={modoVisualizacao === 'empresa-talentos'}
-            />
+          {/* Grade: Canvas do Mapa + Lista Lateral */}
+          <div className="mt-5 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <div className="flex flex-col justify-between space-y-3">
+              <PlanoCultural
+                aderenciaPorTalento={aderenciaPorTalento}
+                focusIds={idsEmFoco}
+                highlightQuadrant={quadranteAtivo}
+                onSelect={(id) =>
+                  setSelecionado((atual) => (atual === id ? null : id))
+                }
+                points={pontosExibidos}
+                referenceId={
+                  modoVisualizacao === 'empresa-talentos'
+                    ? empresaIdSelecionada
+                    : null
+                }
+                selectedId={selecionado}
+                showProximityRings={modoVisualizacao === 'empresa-talentos'}
+              />
 
-            {/*
+              {/*
               A legenda fica sempre visível: com duas séries, a identidade não
               pode depender de alguém acertar a cor de cabeça. A forma repete o
               que a cor diz — bolinha para pessoa, quadrado para empresa.
             */}
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="size-2.5 rounded-full"
-                  style={{ backgroundColor: COR_DO_TALENTO }}
-                />
-                Talento
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="size-2.5 rounded-[2px]"
-                  style={{ backgroundColor: COR_DA_EMPRESA }}
-                />
-                Empresa
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="size-2.5 rounded-full border-[1.5px]"
-                  style={{ borderColor: COR_DA_EMPRESA }}
-                />
-                Voz da equipe (divergência)
-              </span>
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-full"
+                    style={{ backgroundColor: COR_DO_TALENTO }}
+                  />
+                  Talento
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-[2px]"
+                    style={{ backgroundColor: COR_DA_EMPRESA }}
+                  />
+                  Empresa
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-full border-[1.5px]"
+                    style={{ borderColor: COR_DA_EMPRESA }}
+                  />
+                  Voz da equipe (divergência)
+                </span>
+              </div>
             </div>
-          </div>
 
-          <ListaEntidadesMapa
-            aderenciaPorTalento={aderenciaPorTalento}
-            busca={busca}
-            empresaReferencia={
-              modoVisualizacao === 'empresa-talentos'
-                ? pontoEmpresaReferencia
-                : null
-            }
-            onBuscaChange={setBusca}
-            onLimparQuadrante={() => setQuadranteAtivo(null)}
-            onSelect={setSelecionado}
-            pontos={pontosExibidos}
-            quadranteAtivo={quadranteAtivo}
-            selecionadoId={selecionado}
-            todosPontos={todosPontos}
-            /*
+            <ListaEntidadesMapa
+              aderenciaPorTalento={aderenciaPorTalento}
+              busca={busca}
+              empresaReferencia={
+                modoVisualizacao === 'empresa-talentos'
+                  ? pontoEmpresaReferencia
+                  : null
+              }
+              onBuscaChange={setBusca}
+              onLimparQuadrante={() => setQuadranteAtivo(null)}
+              onSelect={setSelecionado}
+              pontos={pontosExibidos}
+              quadranteAtivo={quadranteAtivo}
+              selecionadoId={selecionado}
+              todosPontos={todosPontos}
+              /*
               Só há contexto de vaga quando a vaga está escolhida à vista. Com o
               seletor escondido, o link do perfil apontaria para uma vaga que a
               tela não mostra em lugar nenhum.
             */
-            vagaContextoId={
-              filtroEscopoTalentos === 'candidatos-vaga' &&
-              vagaIdSelecionada !== 'todas'
-                ? vagaIdSelecionada
-                : null
-            }
-          />
-        </div>
-      </Panel>
+              vagaContextoId={
+                filtroEscopoTalentos === 'candidatos-vaga' &&
+                vagaIdSelecionada !== 'todas'
+                  ? vagaIdSelecionada
+                  : null
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Regiões Culturais com Barras de Distribuição */}
-      <Panel padding="lg">
-        <PanelHeader
-          eyebrow="Regiões do mapa"
-          hint="Os quatro quadrantes descrevem o ambiente de trabalho relatado nos eixos. Clique em qualquer região para filtrar o mapa acima."
-          title="O que cada região descreve"
-        />
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {distribuicaoQuadrantes.map((entrada) => {
-            const isSelected = quadranteAtivo === entrada.tipo;
-            return (
-              <button
-                className={cn(
-                  'flex flex-col justify-between rounded-xl border p-3.5 text-left transition-all',
-                  isSelected
-                    ? 'border-primary bg-primary/10 ring-1 ring-primary/40 shadow-xs'
-                    : 'border-border/80 bg-card hover:border-primary/40 hover:bg-muted/20'
-                )}
-                key={entrada.tipo}
-                onClick={() =>
-                  setQuadranteAtivo((atual) =>
-                    atual === entrada.tipo ? null : entrada.tipo
-                  )
-                }
-                type="button"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-foreground">
-                      {TIPO_DE_CULTURA_LABEL[entrada.tipo]}
-                    </span>
-                    <Chip tone={isSelected ? 'info' : 'neutro'}>
-                      {entrada.total}
-                    </Chip>
+      <Card>
+        <CardHeader>
+          <CardTitle>O que cada região descreve</CardTitle>
+          <CardDescription>
+            Os quatro quadrantes descrevem o ambiente de trabalho relatado nos
+            eixos. Clique em qualquer região para filtrar o mapa acima.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {distribuicaoQuadrantes.map((entrada) => {
+              const isSelected = quadranteAtivo === entrada.tipo;
+              return (
+                <button
+                  className={cn(
+                    'flex flex-col justify-between rounded-xl border p-3.5 text-left transition-all',
+                    isSelected
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/40 shadow-xs'
+                      : 'border-border/80 bg-card hover:border-primary/40 hover:bg-muted/20'
+                  )}
+                  key={entrada.tipo}
+                  onClick={() =>
+                    setQuadranteAtivo((atual) =>
+                      atual === entrada.tipo ? null : entrada.tipo
+                    )
+                  }
+                  type="button"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-foreground">
+                        {TIPO_DE_CULTURA_LABEL[entrada.tipo]}
+                      </span>
+                      <Badge variant={isSelected ? 'default' : 'outline'}>
+                        {entrada.total}
+                      </Badge>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                      {TIPO_DE_CULTURA_DESCRICAO[entrada.tipo]}
+                    </p>
                   </div>
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
-                    {TIPO_DE_CULTURA_DESCRICAO[entrada.tipo]}
-                  </p>
-                </div>
 
-                <div className="mt-3 pt-2 border-t border-border/40">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-                    <span>Proporção na base</span>
-                    <span className="font-semibold text-foreground">
-                      {entrada.porcentagem}%
-                    </span>
+                  <div className="mt-3 pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                      <span>Proporção na base</span>
+                      <span className="font-semibold text-foreground">
+                        {entrada.porcentagem}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all duration-300',
+                          isSelected ? 'bg-primary' : 'bg-primary/50'
+                        )}
+                        style={{ width: `${entrada.porcentagem}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={cn(
-                        'h-full rounded-full transition-all duration-300',
-                        isSelected ? 'bg-primary' : 'bg-primary/50'
-                      )}
-                      style={{ width: `${entrada.porcentagem}%` }}
-                    />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </Panel>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

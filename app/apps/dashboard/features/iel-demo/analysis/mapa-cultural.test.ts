@@ -1,24 +1,61 @@
 import { describe, expect, it } from 'vitest';
 
-import { CULTURE_QUESTIONS } from '../analysis/culture';
 import {
-  calcularAderencia,
+  ADHERENCE_THRESHOLD,
+  computeAdherence,
+  type CandidateAxisValues,
+  type CompanyAxisMeans
+} from '../analysis/adherence';
+import { CULTURE_QUESTIONS, getCultureOptionValue } from '../analysis/culture';
+import {
   calcularEncaixeCultural,
   calcularPosicaoCultural,
   classificarCultura,
   compararRespostas,
   CONTRIBUICAO_POR_ALTERNATIVA,
-  CORTE_DE_ADERENCIA,
   FAIXA_DE_ENCAIXE_RECOMENDACAO,
   faixaDeAderencia,
-  formatarAderencia,
   MINIMO_DE_EIXOS_PARA_RANQUEAR,
   resumirDivergencia,
+  temBaseParaRanquear,
   TIPO_DE_CULTURA_TENDENCIA,
   type PosicaoCultural,
   type RespostaDeEixo
 } from '../analysis/mapa-cultural';
-import { DEMO_CULTURE_ANSWERS } from '../fixtures/culture';
+
+/**
+ * Aderência entre dois conjuntos de respostas pelo motor de `adherence.ts`.
+ *
+ * O mapa não calcula mais aderência própria, então os testes que precisam de
+ * um percentual passam pelo mesmo caminho que a tela.
+ */
+function resultadoEntre(
+  doTalento: RespostaDeEixo[],
+  daEmpresa: RespostaDeEixo[]
+) {
+  const perfil: CompanyAxisMeans = {};
+  for (const resposta of daEmpresa) {
+    perfil[resposta.axisId] = getCultureOptionValue(
+      resposta.axisId,
+      resposta.optionId
+    );
+  }
+
+  const valores: CandidateAxisValues = {};
+  for (const resposta of doTalento) {
+    const valor = getCultureOptionValue(resposta.axisId, resposta.optionId);
+    if (valor !== null) valores[resposta.axisId] = valor;
+  }
+
+  return computeAdherence(perfil, valores, {});
+}
+
+function aderenciaEntre(
+  doTalento: RespostaDeEixo[],
+  daEmpresa: RespostaDeEixo[]
+): number {
+  return resultadoEntre(doTalento, daEmpresa).total ?? 0;
+}
 
 function posicao(x: number, y: number): PosicaoCultural {
   return { x, y, eixosRespondidos: [] };
@@ -180,9 +217,7 @@ describe('mapa cultural — resumo de divergência', () => {
       calcularPosicaoCultural(respostasDoTalento)!,
       calcularPosicaoCultural(respostasDaEmpresa)!,
       compararRespostas(respostasDoTalento, respostasDaEmpresa),
-      faixaDeAderencia(
-        calcularAderencia(respostasDoTalento, respostasDaEmpresa)!.total
-      )
+      faixaDeAderencia(aderenciaEntre(respostasDoTalento, respostasDaEmpresa))
     );
   }
 
@@ -216,9 +251,7 @@ describe('mapa cultural — resumo de divergência', () => {
       iguais,
       iguais,
       compararRespostas(respostasDaEmpresa, respostasDaEmpresa),
-      faixaDeAderencia(
-        calcularAderencia(respostasDaEmpresa, respostasDaEmpresa)!.total
-      )
+      faixaDeAderencia(aderenciaEntre(respostasDaEmpresa, respostasDaEmpresa))
     );
 
     expect(resumo.mesmaRegiao).toBe(true);
@@ -235,97 +268,15 @@ describe('mapa cultural — resumo de divergência', () => {
   });
 });
 
-describe('mapa cultural — aderência em percentual', () => {
-  it('dá 100% quando os dois lados escolhem a mesma alternativa', () => {
-    const respostas: RespostaDeEixo[] = [
-      { axisId: 'autonomia', optionId: 'rotina-definida' },
-      { axisId: 'ritmo-turno', optionId: 'fixo' }
-    ];
-
-    const aderencia = calcularAderencia(respostas, respostas)!;
-
-    expect(aderencia.total).toBeCloseTo(1);
-    expect(aderencia.eixosComparados).toBe(2);
-    expect(aderencia.compativel).toBe(true);
-  });
-
-  it('dá 0% no eixo quando escolhem os dois extremos', () => {
-    const aderencia = calcularAderencia(
-      [{ axisId: 'autonomia', optionId: 'autonomia-ampla' }],
-      [{ axisId: 'autonomia', optionId: 'rotina-definida' }]
-    )!;
-
-    expect(aderencia.porEixo[0]!.aderencia).toBeCloseTo(0);
-    expect(aderencia.total).toBeCloseTo(0);
-    expect(aderencia.compativel).toBe(false);
-  });
-
-  it('o total é a média simples dos eixos, refazível à mão', () => {
-    const aderencia = calcularAderencia(
-      [
-        { axisId: 'autonomia', optionId: 'rotina-definida' },
-        { axisId: 'ritmo-turno', optionId: 'fixo' }
-      ],
-      [
-        { axisId: 'autonomia', optionId: 'rotina-definida' },
-        { axisId: 'ritmo-turno', optionId: 'variacao-frequente' }
-      ]
-    )!;
-
-    const media =
-      (aderencia.porEixo[0]!.aderencia + aderencia.porEixo[1]!.aderencia) / 2;
-    expect(aderencia.total).toBeCloseTo(media);
-  });
-
-  it('ignora eixo que só um lado respondeu e conta o denominador', () => {
-    const aderencia = calcularAderencia(
-      [
-        { axisId: 'autonomia', optionId: 'parcial' },
-        { axisId: 'aprendizado', optionId: 'ja-domina' }
-      ],
-      [{ axisId: 'autonomia', optionId: 'parcial' }]
-    )!;
-
-    expect(aderencia.eixosComparados).toBe(1);
-    expect(aderencia.porEixo.map((e) => e.axisId)).toEqual(['autonomia']);
-  });
-
-  it('devolve null sem eixo comparável, em vez de 0%', () => {
-    expect(
-      calcularAderencia(
-        [{ axisId: 'autonomia', optionId: 'parcial' }],
-        [{ axisId: 'ritmo-turno', optionId: 'fixo' }]
-      )
-    ).toBeNull();
-  });
-
-  it('usa o corte de 35% do cliente e aceita outro valor', () => {
-    expect(CORTE_DE_ADERENCIA).toBe(0.35);
-
-    const abaixo = calcularAderencia(
-      [{ axisId: 'autonomia', optionId: 'autonomia-ampla' }],
-      [{ axisId: 'autonomia', optionId: 'rotina-definida' }],
-      0
-    )!;
-
-    expect(abaixo.compativel).toBe(true);
-  });
-
-  it('formata o percentual como inteiro', () => {
-    expect(formatarAderencia(0.414)).toBe('41%');
-    expect(formatarAderencia(1)).toBe('100%');
-  });
-});
-
 describe('mapa cultural — faixa lida do percentual', () => {
   it('nomeia cada faixa nas bordas exatas', () => {
-    expect(faixaDeAderencia(1)).toBe('muito-proximo');
-    expect(faixaDeAderencia(0.85)).toBe('muito-proximo');
-    expect(faixaDeAderencia(0.8499)).toBe('proximo');
-    expect(faixaDeAderencia(0.65)).toBe('proximo');
-    expect(faixaDeAderencia(0.6499)).toBe('alguma-distancia');
-    expect(faixaDeAderencia(0.35)).toBe('alguma-distancia');
-    expect(faixaDeAderencia(0.3499)).toBe('distante');
+    expect(faixaDeAderencia(100)).toBe('muito-proximo');
+    expect(faixaDeAderencia(85)).toBe('muito-proximo');
+    expect(faixaDeAderencia(84.99)).toBe('proximo');
+    expect(faixaDeAderencia(65)).toBe('proximo');
+    expect(faixaDeAderencia(64.99)).toBe('alguma-distancia');
+    expect(faixaDeAderencia(35)).toBe('alguma-distancia');
+    expect(faixaDeAderencia(34.99)).toBe('distante');
     expect(faixaDeAderencia(0)).toBe('distante');
   });
 
@@ -351,70 +302,39 @@ describe('mapa cultural — faixa lida do percentual', () => {
     ];
 
     const faixas = paresComMesmaAderencia.map(([talento, empresa]) =>
-      faixaDeAderencia(calcularAderencia(talento, empresa)!.total)
+      faixaDeAderencia(aderenciaEntre(talento, empresa))
     );
 
     expect(new Set(faixas).size).toBe(1);
   });
 
   it('abaixo do corte do cliente é sempre a faixa mais distante', () => {
-    const abaixo = CORTE_DE_ADERENCIA - 0.01;
-    expect(faixaDeAderencia(abaixo)).toBe('distante');
-    expect(faixaDeAderencia(CORTE_DE_ADERENCIA)).not.toBe('distante');
+    expect(faixaDeAderencia(ADHERENCE_THRESHOLD - 0.01)).toBe('distante');
+    expect(faixaDeAderencia(ADHERENCE_THRESHOLD)).not.toBe('distante');
   });
 });
 
 describe('mapa cultural — piso de eixos para ranquear', () => {
-  it('marca base insuficiente com menos eixos que o mínimo', () => {
-    const umEixo = calcularAderencia(
+  it('recusa posição com menos eixos em comum que o mínimo', () => {
+    const umEixo = resultadoEntre(
       [{ axisId: 'autonomia', optionId: 'parcial' }],
       [{ axisId: 'autonomia', optionId: 'parcial' }]
-    )!;
+    );
 
-    expect(umEixo.eixosComparados).toBe(1);
-    expect(umEixo.baseSuficiente).toBe(false);
+    expect(umEixo.coverage.answeredAxes).toBe(1);
+    expect(temBaseParaRanquear(umEixo)).toBe(false);
     // O número continua existindo: o que falta é posição, não aderência.
-    expect(umEixo.total).toBeCloseTo(1);
+    expect(umEixo.total).toBe(100);
   });
 
-  it('marca base suficiente a partir do mínimo', () => {
+  it('concede posição a partir do mínimo', () => {
     const respostas: RespostaDeEixo[] = [
       { axisId: 'autonomia', optionId: 'parcial' },
       { axisId: 'ritmo-turno', optionId: 'fixo' }
     ];
-    const doisEixos = calcularAderencia(respostas, respostas)!;
+    const doisEixos = resultadoEntre(respostas, respostas);
 
-    expect(doisEixos.eixosComparados).toBe(MINIMO_DE_EIXOS_PARA_RANQUEAR);
-    expect(doisEixos.baseSuficiente).toBe(true);
-  });
-});
-
-describe('fixtures — cobertura de cultura da empresa padrão', () => {
-  /*
-   * A Cerrado é a empresa que a tela abre por padrão. Se ela voltar a responder
-   * menos eixos, a aderência de todo candidato encolhe junto e a cena do pitch
-   * abre na pior cobertura da base.
-   *
-   * A única lacuna é `ritmo-turno`, e ela é deliberada: é o eixo em que a
-   * proposta da análise espera confirmação humana. Preenchê-lo faria a
-   * cobertura subir e apagaria a demonstração da supervisão.
-   */
-  const eixosDeclaradosPelaCerrado = new Set(
-    DEMO_CULTURE_ANSWERS.filter(
-      (resposta) =>
-        resposta.companyId === 'EMP-01' && resposta.respondent === 'gestao'
-    ).map((resposta) => resposta.axisId)
-  );
-
-  it('a empresa padrão responde todos os eixos menos o da proposta assistida', () => {
-    expect(eixosDeclaradosPelaCerrado.size).toBe(CULTURE_QUESTIONS.length - 1);
-  });
-
-  it('a lacuna é o eixo do cenário de confirmação humana', () => {
-    const semResposta = CULTURE_QUESTIONS.map((q) => q.axisId).filter(
-      (axisId) => !eixosDeclaradosPelaCerrado.has(axisId)
-    );
-
-    expect(semResposta).toEqual(['ritmo-turno']);
+    expect(doisEixos.coverage.answeredAxes).toBe(MINIMO_DE_EIXOS_PARA_RANQUEAR);
+    expect(temBaseParaRanquear(doisEixos)).toBe(true);
   });
 });

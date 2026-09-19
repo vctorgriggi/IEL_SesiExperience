@@ -1,27 +1,29 @@
 import type { PropsWithChildren } from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Red_Hat_Display } from 'next/font/google';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
 import { IelDemoProvider } from '@/features/iel-demo/state/demo-provider';
 
 import './iel-theme.css';
 
 /**
- * Tipografia da Central: Inter em tudo. O dashboard sobrescreve o tema com
- * Nunito; o design system declara Inter, e é o que a categoria de produto
- * usa. A hierarquia vem de peso e espaçamento, não de troca de família.
+ * Tipografia do manual de marca (docs/marca): Red Hat Display, 500 para
+ * interface e 700 para títulos. O dashboard sobrescreve o tema com Nunito;
+ * aqui a fonte entra pela variável que o tema escopado consome.
  */
-const interSans = Inter({
+const redHatDisplay = Red_Hat_Display({
   subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
   variable: '--iel-font-sans',
   display: 'swap'
 });
 
 export const metadata: Metadata = {
-  title: 'Central de Seleção IEL — demonstração',
+  title: 'Mind RH — Central de Seleção IEL',
   description:
     'Protótipo navegável: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada. Base fictícia.',
-  robots: { index: false, follow: false }
+  robots: { index: false, follow: false },
+  icons: { icon: '/marca/simbolo.png' }
 };
 
 /**
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
  */
 export default function IelDemoLayout({ children }: PropsWithChildren) {
   return (
-    <div className={interSans.variable}>
+    <div className={redHatDisplay.variable}>
       <IelDemoProvider>
         <IelShell>{children}</IelShell>
       </IelDemoProvider>

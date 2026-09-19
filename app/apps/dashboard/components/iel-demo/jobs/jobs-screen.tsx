@@ -2,361 +2,174 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { DEMO_COMPANIES } from '@/features/iel-demo/fixtures';
-import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getJobSummary,
+  getReferralListSelection,
   getVisibleJobs,
   JOB_STAGE_LABEL,
-  type JobSummary
+  REFERRAL_LIMIT
 } from '@/features/iel-demo/state/selectors';
-import { Search01Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState
-} from '@tanstack/react-table';
+import { Search } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import { Input } from '@workspace/ui/shadcn/input';
+import { Label } from '@workspace/ui/shadcn/label';
 import {
-  Button,
-  FilterNativeSelect,
-  Input,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow
-} from '@workspace/ui';
+} from '@workspace/ui/shadcn/table';
 
-import { Chip, formatDate, IelPageHeader, Panel } from '../shared/ui';
+import { usePageHeader } from '../layout/page-header-context';
 
-const columnHelper = createColumnHelper<JobSummary>();
-
+/**
+ * Uma linha por vaga.
+ *
+ * A lista não classifica nem pontua vaga nenhuma: ela responde onde o
+ * trabalho está parado. Candidaturas diz o tamanho da fila, Marcados diz o
+ * quanto da remessa já foi escolhido e Etapa diz se a vaga ainda aceita
+ * gente. O resto — ranking, corte, esclarecimentos — mora dentro da vaga.
+ */
 export function JobsScreen() {
-  const { state, dispatch, persona } = useIelDemo();
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'applications', desc: true }
-  ]);
+  const { state, persona } = useIelDemo();
+  const [busca, setBusca] = useState('');
   const iel = routes.dashboard.iel;
-  const { jobsSearch, jobsCompanyId, jobsStage } = state.ui;
 
-  const rows = useMemo(() => {
-    const term = jobsSearch.trim().toLowerCase();
+  usePageHeader({ breadcrumb: [{ label: 'Vagas' }] });
+
+  const visiveis = getVisibleJobs(state);
+
+  const linhas = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
     return getVisibleJobs(state)
-      .map((job) => getJobSummary(state, job))
-      .filter((summary) => {
-        if (
-          jobsCompanyId !== 'todas' &&
-          summary.job.companyId !== jobsCompanyId
-        ) {
-          return false;
-        }
-        if (jobsStage !== 'todas' && summary.job.stage !== jobsStage)
-          return false;
-        if (!term) return true;
+      .map((job) => ({
+        ...getJobSummary(state, job),
+        marcados: getReferralListSelection(state, job.id).length
+      }))
+      .filter((linha) => {
+        if (!termo) return true;
         return (
-          summary.job.title.toLowerCase().includes(term) ||
-          (summary.company?.name.toLowerCase().includes(term) ?? false)
+          linha.job.title.toLowerCase().includes(termo) ||
+          (linha.company?.name.toLowerCase().includes(termo) ?? false)
         );
       });
-  }, [state, jobsSearch, jobsCompanyId, jobsStage]);
-
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor((row) => row.job.title, {
-        id: 'title',
-        header: 'Vaga',
-        cell: (info) => (
-          <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">
-              {info.getValue()}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {info.row.original.job.externalRef.system} ·{' '}
-              {info.row.original.job.externalRef.id}
-            </p>
-          </div>
-        )
-      }),
-      columnHelper.accessor((row) => row.company?.name ?? '', {
-        id: 'company',
-        header: 'Empresa',
-        cell: (info) => (
-          <span className="text-sm text-foreground">{info.getValue()}</span>
-        )
-      }),
-      columnHelper.accessor((row) => row.job.location, {
-        id: 'location',
-        header: 'Localidade',
-        cell: (info) => (
-          <span className="text-sm text-muted-foreground">
-            {info.getValue()}
-          </span>
-        )
-      }),
-      columnHelper.accessor((row) => row.applicationsCount, {
-        id: 'applications',
-        header: 'Candidaturas',
-        cell: (info) => (
-          <span className="text-sm text-foreground">{info.getValue()}</span>
-        )
-      }),
-      columnHelper.accessor((row) => row.job.stage, {
-        id: 'stage',
-        header: 'Etapa operacional',
-        cell: (info) => <Chip>{JOB_STAGE_LABEL[info.getValue()]}</Chip>
-      }),
-      columnHelper.accessor(
-        (row) => row.openClarificationsCount + row.answeredClarificationsCount,
-        {
-          id: 'pending',
-          header: 'Pendências',
-          cell: (info) => {
-            const summary = info.row.original;
-            if (info.getValue() === 0) {
-              return (
-                <span className="text-xs text-muted-foreground">
-                  Nenhuma em aberto
-                </span>
-              );
-            }
-            return (
-              <div className="flex flex-wrap gap-1">
-                {summary.openClarificationsCount > 0 ? (
-                  <Chip tone="atencao">
-                    {summary.openClarificationsCount} sem resposta
-                  </Chip>
-                ) : null}
-                {summary.answeredClarificationsCount > 0 ? (
-                  <Chip tone="info">
-                    {plural(
-                      summary.answeredClarificationsCount,
-                      'respondida',
-                      'respondidas'
-                    )}
-                  </Chip>
-                ) : null}
-              </div>
-            );
-          }
-        }
-      ),
-      columnHelper.accessor((row) => row.job.updatedAt, {
-        id: 'updatedAt',
-        header: 'Atualização da origem',
-        cell: (info) => (
-          <span className="text-xs text-muted-foreground">
-            {formatDate(info.getValue())}
-          </span>
-        )
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: '',
-        cell: (info) => (
-          <Link href={iel.jobs.byId(info.row.original.job.id).index}>
-            <Button size="sm">Abrir seleção</Button>
-          </Link>
-        )
-      })
-    ],
-    [iel]
-  );
-
-  const table = useReactTable({
-    data: rows,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel()
-  });
-
-  const totalVisible = getVisibleJobs(state).length;
+  }, [state, busca]);
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={
-          persona.kind === 'gestor'
-            ? `${persona.label} · apenas as vagas da própria empresa`
-            : 'Processos das empresas atendidas'
-        }
-        title="Vagas"
-      />
-
-      <Panel
-        padding="sm"
-        className="flex flex-col gap-3"
-      >
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_12rem]">
-          <Input
-            label="Buscar por vaga ou empresa"
-            placeholder="Ex.: logística, Cerrado"
-            value={jobsSearch}
-            leftIcon={
-              <HugeiconsIcon
-                icon={Search01Icon}
-                size={16}
-              />
-            }
-            onChange={(event) =>
-              dispatch({
-                type: 'set-ui',
-                ui: { jobsSearch: event.target.value }
-              })
-            }
-          />
-          <div className="space-y-2">
-            <label
-              htmlFor="jobs-company"
-              className="block text-sm font-medium leading-none text-foreground"
-            >
-              Empresa
-            </label>
-            <FilterNativeSelect
-              id="jobs-company"
-              value={jobsCompanyId}
-              onValueChange={(value) =>
-                dispatch({ type: 'set-ui', ui: { jobsCompanyId: value } })
-              }
-            >
-              <option value="todas">Todas</option>
-              {DEMO_COMPANIES.map((company) => (
-                <option
-                  key={company.id}
-                  value={company.id}
-                >
-                  {company.name}
-                </option>
-              ))}
-            </FilterNativeSelect>
-          </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="jobs-stage"
-              className="block text-sm font-medium leading-none text-foreground"
-            >
-              Status da vaga
-            </label>
-            <FilterNativeSelect
-              id="jobs-stage"
-              value={jobsStage}
-              onValueChange={(value) =>
-                dispatch({
-                  type: 'set-ui',
-                  ui: { jobsStage: value as typeof jobsStage }
-                })
-              }
-            >
-              <option value="todas">Todos</option>
-              <option value="aberta">Aberta</option>
-              <option value="em-selecao">Em seleção</option>
-              <option value="encerrada">Encerrada</option>
-            </FilterNativeSelect>
-          </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">Vagas</h1>
+          <p className="text-sm text-muted-foreground">
+            {linhas.length} de {visiveis.length}{' '}
+            {visiveis.length === 1 ? 'vaga' : 'vagas'}
+            {persona.kind === 'gestor'
+              ? ' · apenas as vagas da própria empresa'
+              : ' · processos das empresas atendidas'}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Mostrando {rows.length} de {totalVisible} vagas visíveis para esta
-          persona.
-        </p>
-      </Panel>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Label
+            htmlFor="buscar-vaga"
+            className="sr-only"
+          >
+            Buscar vaga
+          </Label>
+          <Input
+            id="buscar-vaga"
+            type="search"
+            placeholder="Vaga ou empresa…"
+            value={busca}
+            onChange={(evento) => setBusca(evento.target.value)}
+            className="h-8 w-[240px] pl-8 text-[13px]"
+          />
+        </div>
+      </div>
 
-      <Panel padding="none">
-        {rows.length === 0 ? (
-          <div className="space-y-3 px-6 py-12 text-center">
-            <h3 className="iel-display text-base text-foreground">
-              Nenhuma vaga encontrada com esses filtros
-            </h3>
-            <p className="mx-auto max-w-md text-sm text-muted-foreground">
-              A busca e os filtros afetam as linhas e os contadores. Limpe os
-              filtros para ver as vagas da base demo.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                dispatch({
-                  type: 'set-ui',
-                  ui: {
-                    jobsSearch: '',
-                    jobsCompanyId: 'todas',
-                    jobsStage: 'todas'
-                  }
-                })
-              }
-            >
-              Limpar filtros
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        scope="col"
-                      >
-                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                          <button
-                            type="button"
-                            onClick={header.column.getToggleSortingHandler()}
-                            className="inline-flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            <span aria-hidden="true">
-                              {header.column.getIsSorted() === 'asc'
-                                ? '↑'
-                                : header.column.getIsSorted() === 'desc'
-                                  ? '↓'
-                                  : '↕'}
-                            </span>
-                          </button>
-                        ) : (
-                          flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )
-                        )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className="py-3"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </Panel>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted">
+            <TableRow>
+              <TableHead>Vaga</TableHead>
+              <TableHead className="w-[200px]">Empresa</TableHead>
+              <TableHead className="w-[140px] text-right">
+                Candidaturas
+              </TableHead>
+              <TableHead className="w-[120px] text-right">Marcados</TableHead>
+              <TableHead className="w-[140px]">Etapa</TableHead>
+              <TableHead className="w-[140px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {linhas.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Nenhuma vaga com esse nome.
+                </TableCell>
+              </TableRow>
+            ) : (
+              linhas.map((linha) => (
+                <TableRow key={linha.job.id}>
+                  <TableCell className="whitespace-normal">
+                    <Link
+                      href={iel.jobs.byId(linha.job.id).index}
+                      className="font-medium underline-offset-4 hover:underline"
+                    >
+                      {linha.job.title}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {linha.job.location} · {linha.job.externalRef.system}{' '}
+                      {linha.job.externalRef.id}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {linha.company?.name ?? '—'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {linha.applicationsCount}
+                  </TableCell>
+                  {/*
+                    Marcados é sempre sobre o limite da remessa: "2" sozinho
+                    não diz se falta alguém, "2/5" diz.
+                  */}
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {linha.marcados}/{REFERRAL_LIMIT}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="text-muted-foreground"
+                    >
+                      {JOB_STAGE_LABEL[linha.job.stage]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      asChild
+                    >
+                      <Link href={iel.jobs.byId(linha.job.id).index}>
+                        Abrir vaga
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

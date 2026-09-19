@@ -1,360 +1,252 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { compareSelection } from '@/features/iel-demo/analysis/assistant';
 import {
   CRITERION_STATE_META,
-  DIMENSION_META,
-  getCoverage,
   getCriterionAnalysis
 } from '@/features/iel-demo/analysis/criterion-states';
+import { FIT_AXES } from '@/features/iel-demo/analysis/fit-axes';
+import { COPY } from '@/features/iel-demo/copy';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  getApplication,
   getComparisonSelection,
+  getFitReading,
   getJob,
+  getJobRanking,
   getReferralListSelection,
-  getTalent
+  REFERRAL_LIMIT
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import type {
-  Application,
-  Dimension,
-  JobCriterion
-} from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
+import { Alert, toast } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
 import {
-  Alert,
-  Button,
-  cn,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-  toast
-} from '@workspace/ui';
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
-import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
-import { CriterionStateHeadline } from '../shared/criterion-state-badge';
-import { EvidencePanel } from '../shared/evidence-panel';
-import {
-  Chip,
-  CoverageMeter,
-  IelPageHeader,
-  Panel,
-  PanelHeader
-} from '../shared/ui';
+import { usePageHeader } from '../layout/page-header-context';
+import { CandidateStateBadge } from './candidate-state-badge';
 
+/**
+ * Duas a quatro pessoas, lado a lado, na mesma vaga.
+ *
+ * A comparação é por coluna porque a pergunta é por linha: em que ponto elas
+ * diferem? Uma lista por pessoa obrigaria a guardar o valor de uma para
+ * comparar com o da outra; a tabela põe as duas no mesmo olhar.
+ */
 export function ComparisonScreen({ jobId }: { jobId: string }) {
   const { state, dispatch } = useIelDemo();
-  const [activeCell, setActiveCell] = useState<{
-    applicationId: string;
-    criterionId: string;
-  } | null>(null);
-  const [clarificationTarget, setClarificationTarget] = useState<{
-    applicationId: string;
-    criterion: JobCriterion;
-  } | null>(null);
-
   const iel = routes.dashboard.iel;
   const job = getJob(jobId);
+
+  usePageHeader({
+    breadcrumb: [
+      { label: 'Vagas', href: iel.jobs.index },
+      {
+        label: job?.title ?? 'Vaga',
+        href: job ? iel.jobs.byId(job.id).index : undefined
+      },
+      { label: 'Comparar' }
+    ]
+  });
 
   if (!job) {
     return <Alert variant="destructive">Vaga não encontrada.</Alert>;
   }
 
-  const selected = getComparisonSelection(state, job.id);
+  const selecionadas = getComparisonSelection(state, job.id);
   const referralList = getReferralListSelection(state, job.id);
-  const applications = selected
-    .map((applicationId) => getApplication(state, applicationId))
-    .filter((application): application is Application => Boolean(application));
+  const entradas = getJobRanking(state, job.id).filter((entry) =>
+    selecionadas.includes(entry.application.id)
+  );
 
-  const synthesis = compareSelection(state, job, selected);
-  const activeApplication = activeCell
-    ? getApplication(state, activeCell.applicationId)
-    : null;
-  const activeCriterion = activeCell
-    ? (job.criteria.find(
-        (criterion) => criterion.id === activeCell.criterionId
-      ) ?? null)
-    : null;
+  if (entradas.length < 2) {
+    return (
+      <Alert variant="default">
+        Marque de duas a quatro pessoas na lista da vaga para compará-las.{' '}
+        <Link
+          className="underline"
+          href={iel.jobs.byId(job.id).index}
+        >
+          Voltar para a vaga
+        </Link>
+        .
+      </Alert>
+    );
+  }
+
+  const marcar = (applicationId: string, nome: string) => {
+    if (referralList.includes(applicationId)) {
+      dispatch({
+        type: 'remove-from-referral-list',
+        jobId: job.id,
+        applicationId,
+        at: nowIso()
+      });
+      return;
+    }
+    if (referralList.length >= REFERRAL_LIMIT) {
+      toast.error(COPY.referral.limit);
+      return;
+    }
+    dispatch({
+      type: 'add-to-referral-list',
+      jobId: job.id,
+      applicationId,
+      at: nowIso()
+    });
+    toast.success(`${nome} entrou na lista desta vaga.`);
+  };
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={`Comparação no contexto de ${job.title}`}
-        title="Comparação entre candidatos"
-        description="Os mesmos critérios da vaga. Cada célula abre a evidência que sustenta o estado."
-        actions={
-          <Link href={iel.jobs.byId(job.id).index}>
-            <Button variant="outline">Voltar para a mesa de seleção</Button>
-          </Link>
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Comparar {entradas.length} pessoas
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {job.title} · a mesma leitura, linha a linha
+        </p>
+      </div>
 
-      {applications.length < 2 ? (
-        <Alert variant="warning">
-          Selecione de dois a três candidatos na matriz da vaga para comparar.{' '}
-          <Link
-            className="underline"
-            href={iel.jobs.byId(job.id).index}
-          >
-            Abrir a matriz
-          </Link>
-          .
-        </Alert>
-      ) : (
-        <>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-            <Panel padding="none">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead
-                        scope="col"
-                        className="sticky left-0 z-10 min-w-56 bg-card"
-                      >
-                        Critério da vaga
-                      </TableHead>
-                      {applications.map((application) => {
-                        const talent = getTalent(application.talentId);
-                        return (
-                          <TableHead
-                            key={application.id}
-                            scope="col"
-                            className="min-w-64"
-                          >
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-foreground">
-                                {talent?.name}
-                              </p>
-                              <p className="text-xs font-normal text-muted-foreground">
-                                {talent?.headline}
-                              </p>
-                              <CoverageMeter
-                                coverage={getCoverage(
-                                  job,
-                                  state.analysis,
-                                  application.id
-                                )}
-                              />
-                            </div>
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(
-                      [
-                        'tecnica',
-                        'profissional',
-                        'organizacional'
-                      ] as Dimension[]
-                    ).flatMap((dimension) => {
-                      const criteria = job.criteria.filter(
-                        (criterion) => criterion.dimension === dimension
-                      );
-                      if (criteria.length === 0) return [];
-                      return [
-                        <TableRow
-                          key={`dim-${dimension}`}
-                          className="bg-muted/60"
-                        >
-                          <TableCell
-                            colSpan={applications.length + 1}
-                            className="py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                          >
-                            {DIMENSION_META[dimension].label}
-                          </TableCell>
-                        </TableRow>,
-                        ...criteria.map((criterion) => (
-                          <TableRow key={criterion.id}>
-                            <TableCell className="sticky left-0 z-10 bg-card align-top">
-                              <p className="text-sm font-medium text-foreground">
-                                {criterion.label}
-                                {criterion.required ? (
-                                  <span
-                                    title="Requisito obrigatório"
-                                    className="ml-1 font-semibold"
-                                  >
-                                    *
-                                  </span>
-                                ) : null}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {criterion.question}
-                              </p>
-                            </TableCell>
-                            {applications.map((application) => {
-                              const analysis = getCriterionAnalysis(
-                                state.analysis,
-                                application.id,
-                                criterion.id
-                              );
-                              const isActive =
-                                activeCell?.applicationId === application.id &&
-                                activeCell?.criterionId === criterion.id;
-                              return (
-                                <TableCell
-                                  key={`${application.id}-${criterion.id}`}
-                                  className="align-top"
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setActiveCell({
-                                        applicationId: application.id,
-                                        criterionId: criterion.id
-                                      })
-                                    }
-                                    className={cn(
-                                      'w-full space-y-1 rounded-[var(--control-radius)] p-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-                                      isActive && 'ring-2 ring-ring/50'
-                                    )}
-                                  >
-                                    <CriterionStateHeadline
-                                      state={analysis.state}
-                                    />
-                                    <span className="block text-xs text-muted-foreground">
-                                      {analysis.note}
-                                    </span>
-                                    <span className="block text-[11px] text-muted-foreground underline decoration-dotted">
-                                      Ver evidência
-                                    </span>
-                                  </button>
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
-                        ))
-                      ];
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </Panel>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted">
+            <TableRow>
+              <TableHead className="w-[240px]">Leitura</TableHead>
+              {entradas.map((entry) => (
+                <TableHead key={entry.application.id}>
+                  {entry.talent?.name ?? 'Pessoa fora da base'}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-medium">{COPY.fit.label}</TableCell>
+              {entradas.map((entry) => (
+                <TableCell
+                  key={entry.application.id}
+                  className="text-base font-semibold tabular-nums"
+                >
+                  {entry.adherence.total === null
+                    ? '—'
+                    : `${Math.round(entry.adherence.total)}%`}
+                </TableCell>
+              ))}
+            </TableRow>
 
-            {activeApplication && activeCriterion ? (
-              <div className="xl:w-[26rem]">
-                <EvidencePanel
-                  job={job}
-                  application={activeApplication}
-                  criterion={activeCriterion}
-                  onClose={() => setActiveCell(null)}
-                  onRequestClarification={() =>
-                    setClarificationTarget({
-                      applicationId: activeApplication.id,
-                      criterion: activeCriterion
-                    })
-                  }
-                />
-              </div>
-            ) : null}
-          </div>
+            <TableRow>
+              <TableCell className="font-medium">
+                {COPY.technical.label}
+              </TableCell>
+              {entradas.map((entry) => (
+                <TableCell
+                  key={entry.application.id}
+                  className="tabular-nums"
+                >
+                  {entry.technicalMatch === null
+                    ? '—'
+                    : `${entry.technicalMatch}%`}
+                </TableCell>
+              ))}
+            </TableRow>
 
-          <Panel className="flex flex-col gap-3">
-            <PanelHeader
-              eyebrow="Leitura assistida"
-              title={synthesis.title}
-            />
-            {synthesis.paragraphs.map((paragraph, index) => (
-              <p
-                key={index}
-                className="text-sm text-foreground"
-              >
-                {paragraph}
-              </p>
+            <TableRow>
+              <TableCell className="font-medium">Estado</TableCell>
+              {entradas.map((entry) => (
+                <TableCell key={entry.application.id}>
+                  <CandidateStateBadge entry={entry} />
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {FIT_AXES.map((axis) => (
+              <TableRow key={axis.id}>
+                <TableCell className="whitespace-normal text-muted-foreground">
+                  {axis.label}
+                </TableCell>
+                {entradas.map((entry) => {
+                  const leitura = entry.talent
+                    ? getFitReading(state, job, entry.talent.id).find(
+                        (item) => item.axis.id === axis.id
+                      )
+                    : undefined;
+                  return (
+                    <TableCell
+                      key={entry.application.id}
+                      className="whitespace-normal"
+                    >
+                      <span className="text-sm">
+                        {leitura?.preference?.value ?? '—'}
+                      </span>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
             ))}
-            <p className="text-[11px] text-muted-foreground">
-              {synthesis.disclaimer}
-            </p>
-          </Panel>
 
-          <Panel className="flex flex-col gap-3">
-            <PanelHeader
-              eyebrow="Próximo passo"
-              title="Ações a partir da comparação"
-            />
-            <div className="flex flex-wrap gap-2">
-              {applications.map((application) => {
-                const talent = getTalent(application.talentId);
-                const inList = referralList.includes(application.id);
-                return (
-                  <div
-                    key={application.id}
-                    className="flex flex-wrap items-center gap-2 rounded-[var(--control-radius)] border border-border p-2"
-                  >
-                    <span className="text-sm text-foreground">
-                      {talent?.name}
-                    </span>
-                    <Chip>{inList ? 'Na lista' : 'Fora da lista'}</Chip>
-                    <Button
-                      size="sm"
-                      variant={inList ? 'ghost' : 'outline'}
-                      disabled={inList}
-                      onClick={() => {
-                        dispatch({
-                          type: 'add-to-referral-list',
-                          jobId: job.id,
-                          applicationId: application.id,
-                          at: nowIso()
-                        });
-                        toast.success(
-                          `${talent?.name} entrou na lista de encaminhamento.`
-                        );
-                      }}
-                    >
-                      Adicionar à lista
-                    </Button>
-                    <Link
-                      href={iel.talents
-                        .byId(application.talentId)
-                        .inJob(job.id)}
-                    >
-                      <Button
-                        size="sm"
-                        variant="ghost"
+            {job.criteria.map((criterion) => (
+              <TableRow key={criterion.id}>
+                <TableCell className="whitespace-normal text-muted-foreground">
+                  {criterion.label}
+                  {criterion.required ? ' *' : ''}
+                </TableCell>
+                {entradas.map((entry) => {
+                  const analise = getCriterionAnalysis(
+                    state.analysis,
+                    entry.application.id,
+                    criterion.id
+                  );
+                  return (
+                    <TableCell key={entry.application.id}>
+                      <Badge
+                        variant="outline"
+                        className="px-1.5 text-muted-foreground"
                       >
-                        Abrir perfil
-                      </Button>
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Nenhuma ação aqui contrata ou descarta alguém: a comparação apoia
-              a decisão e registra o caminho.
-            </p>
-          </Panel>
+                        {CRITERION_STATE_META[analise.state].label}
+                      </Badge>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
 
-          <Panel padding="sm">
-            <p className="text-xs text-muted-foreground">
-              Estados usados nesta comparação:{' '}
-              {Object.values(CRITERION_STATE_META)
-                .map((meta) => `${meta.marker} ${meta.label}`)
-                .join(' · ')}
-              .
-            </p>
-          </Panel>
-        </>
-      )}
-
-      {clarificationTarget ? (
-        <CreateClarificationDialog
-          job={job}
-          criterion={clarificationTarget.criterion}
-          application={getApplication(state, clarificationTarget.applicationId)}
-          visible
-          onHide={() => setClarificationTarget(null)}
-        />
-      ) : null}
+            <TableRow>
+              <TableCell className="font-medium">Decisão</TableCell>
+              {entradas.map((entry) => (
+                <TableCell key={entry.application.id}>
+                  <Button
+                    size="sm"
+                    variant={
+                      referralList.includes(entry.application.id)
+                        ? 'outline'
+                        : 'default'
+                    }
+                    onClick={() =>
+                      marcar(
+                        entry.application.id,
+                        entry.talent?.name ?? 'Candidatura'
+                      )
+                    }
+                  >
+                    {referralList.includes(entry.application.id)
+                      ? 'Tirar da remessa'
+                      : 'Marcar para envio'}
+                  </Button>
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

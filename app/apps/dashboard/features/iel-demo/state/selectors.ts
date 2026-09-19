@@ -1,4 +1,11 @@
 import {
+  ADHERENCE_THRESHOLD,
+  computeAdherence,
+  type AdherenceResult,
+  type CandidateAxisValues,
+  type CompanyAxisMeans
+} from '../analysis/adherence';
+import {
   CRITERION_STATE_META,
   getCoverage,
   getCriterionAnalysis,
@@ -7,25 +14,36 @@ import {
 import {
   CULTURE_QUESTIONS,
   getCultureOptionLabel,
+  getCultureOptionValue,
   MIN_TEAM_RESPONSES,
   type CultureOptionId,
   type CultureQuestion,
   type CultureRespondent
 } from '../analysis/culture';
+import {
+  getSuggestedSampleSize,
+  type CultureInviteRole
+} from '../analysis/culture-invites';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
-  calcularAderencia,
   calcularEncaixeCultural,
   calcularPosicaoCultural,
   classificarCultura,
   compararRespostas,
-  type Aderencia,
   type ClassificacaoCultural,
   type EncaixeCultural,
   type LeituraDeEixo,
   type PosicaoCultural,
   type RespostaDeEixo
 } from '../analysis/mapa-cultural';
+import {
+  buildReportToken,
+  findMostDivergentAxis,
+  formatExperienceSpan,
+  initialsOf,
+  readAxisMatch,
+  type ReportAxisMatch
+} from '../analysis/referral-report';
 import {
   ALL_COMPANIES,
   ALL_JOBS,
@@ -41,10 +59,12 @@ import type {
   Application,
   AxisWeight,
   AxisWeightSuggestion,
+  CandidateFitResponse,
   Clarification,
   Company,
   CriterionRef,
   CriterionState,
+  CultureRespondentInvite,
   CultureSuggestion,
   DataSourceId,
   DemoState,
@@ -52,15 +72,19 @@ import type {
   Evidence,
   ExternalAssessment,
   ExternalStage,
+  FitStatus,
   Job,
   JobCriterion,
   Persona,
   Referral,
+  SpreadsheetImportRecord,
   Talent,
   TalentPreference,
   Team,
   TeamCondition
 } from '../types';
+
+export { getSuggestedSampleSize };
 
 export const EXTERNAL_STAGE_LABEL: Record<ExternalStage, string> = {
   inscrito: 'Inscrito',
@@ -112,8 +136,19 @@ export function getJob(jobId: string): Job | null {
   return ALL_JOBS.find((job) => job.id === jobId) ?? null;
 }
 
-export function getTalent(talentId: string): Talent | null {
-  return ALL_TALENTS.find((talent) => talent.id === talentId) ?? null;
+/**
+ * O talento, no catálogo ou entre os que chegaram por importação (M6).
+ *
+ * `state` é opcional para não quebrar as chamadas que só precisam do catálogo
+ * estático. Sem ele, quem entrou pela planilha não é encontrado — por isso
+ * toda leitura que possa alcançar uma candidatura importada passa o estado.
+ */
+export function getTalent(talentId: string, state?: DemoState): Talent | null {
+  return (
+    ALL_TALENTS.find((talent) => talent.id === talentId) ??
+    state?.importedTalents?.find((talent) => talent.id === talentId) ??
+    null
+  );
 }
 
 export function getTeam(state: DemoState, teamId: string): Team | null {
@@ -596,6 +631,9 @@ export function getEvidencesForApplication(
 
 export type CandidateFilter =
   | 'todas'
+  | 'compativel'
+  | 'abaixo-do-corte'
+  | 'fit-pendente'
   | 'lacuna-obrigatoria'
   | 'divergencia'
   | 'a-esclarecer'
@@ -603,6 +641,9 @@ export type CandidateFilter =
 
 export const CANDIDATE_FILTER_LABEL: Record<CandidateFilter, string> = {
   todas: 'Todas as candidaturas',
+  compativel: `Aderência de ${ADHERENCE_THRESHOLD}% ou mais`,
+  'abaixo-do-corte': `Aderência abaixo de ${ADHERENCE_THRESHOLD}%`,
+  'fit-pendente': 'Sem resposta ao questionário de fit',
   'lacuna-obrigatoria': 'Requisito obrigatório sem informação',
   divergencia: 'Com divergência identificada',
   'a-esclarecer': 'Com ponto a esclarecer',
@@ -624,6 +665,28 @@ export function filterApplicationsByAnalysis(
   filter: CandidateFilter
 ): Application[] {
   if (filter === 'todas') return applications;
+
+  // Os três filtros de aderência não dependem da análise por critério: são o
+  // corte de 35% do cliente (R3) aplicado sobre o percentual. Ficam antes
+  // porque a conta é de outra natureza — não olha os critérios da vaga.
+  if (
+    filter === 'compativel' ||
+    filter === 'abaixo-do-corte' ||
+    filter === 'fit-pendente'
+  ) {
+    return applications.filter((application) => {
+      if (filter === 'fit-pendente') {
+        return getFitResponse(state, application.id) === null;
+      }
+      const total = getAdherence(state, application.id)?.total ?? null;
+      // Sem total não há corte: quem não respondeu não é "abaixo do corte",
+      // é sem medida, e cai no filtro próprio.
+      if (total === null) return false;
+      return filter === 'compativel'
+        ? total >= ADHERENCE_THRESHOLD
+        : total < ADHERENCE_THRESHOLD;
+    });
+  }
 
   return applications.filter((application) => {
     const states = job.criteria.map((criterion) => ({
@@ -664,6 +727,9 @@ export function getCandidateFilterCounts(
 ): Record<CandidateFilter, number> {
   const filters: CandidateFilter[] = [
     'todas',
+    'compativel',
+    'abaixo-do-corte',
+    'fit-pendente',
     'lacuna-obrigatoria',
     'divergencia',
     'a-esclarecer',
@@ -980,7 +1046,7 @@ export function getFitReading(
   talentId: string
 ): FitReadingEntry[] {
   const team = getTeam(state, job.teamId);
-  const talent = getTalent(talentId);
+  const talent = getTalent(talentId, state);
 
   return FIT_AXES.map((axis) => {
     const weight = getAxisWeight(job, axis.id, state);
@@ -1368,10 +1434,10 @@ export type CultureFitReading = {
   /** Encaixe com o ambiente que a equipe descreve, quando ele difere. */
   teamFit: EncaixeCultural | null;
   /**
-   * Aderência em percentual, com o corte do cliente. `null` quando nenhum eixo
-   * foi respondido pelos dois lados — não há base para um número.
+   * Aderência em percentual pelo motor de `adherence.ts`. `total` vem `null`
+   * quando nenhum eixo foi respondido pelos dois lados.
    */
-  aderencia: Aderencia | null;
+  aderencia: AdherenceResult;
   axes: LeituraDeEixo[];
   divergentAxes: number;
 };
@@ -1401,14 +1467,25 @@ export function getCultureFit(
     teamFit: teamPosition
       ? calcularEncaixeCultural(talentPosition, teamPosition)
       : null,
-    aderencia: calcularAderencia(talentAnswers, companyAnswers.declared),
+    aderencia: getTalentCompanyAdherence(state, talentId, companyId),
     axes: compararRespostas(talentAnswers, companyAnswers.declared),
     divergentAxes: companyAnswers.divergentAxes
   };
 }
 
+/**
+ * Um envio do perfil, como o candidato pode vê-lo.
+ *
+ * Sem `companyName`, e não por esquecimento: R5 (00:22:21, 00:38:43) diz que
+ * o nome da empresa não aparece para o candidato antes da entrevista. Antes
+ * este tipo carregava o nome e a devolutiva o exibia — era o item 8.1 da
+ * lista de onde o protótipo contrariava o cliente. O que fica é o que a regra
+ * permite: atividade, localidade, segmento e turno, vindos de
+ * `getCandidateJobView`.
+ */
 export type SharedWithCompany = {
-  companyName: string;
+  /** A vaga como o candidato pode vê-la. Nunca o nome da empresa. */
+  jobView: CandidateJobView | null;
   jobTitle: string;
   sharedAt: string | null;
   /** Quantos registros foram compartilhados naquele encaminhamento. */
@@ -1463,7 +1540,7 @@ export function getTalentTransparency(
       if (!applicationIds.has(item.applicationId)) continue;
       const job = getJob(referral.jobId);
       sharedWith.push({
-        companyName: getCompany(referral.companyId)?.name ?? referral.companyId,
+        jobView: getCandidateJobView(state, item.applicationId),
         jobTitle: job?.title ?? referral.jobId,
         sharedAt: referral.createdAt,
         recordCount: item.sharedEvidenceIds.length
@@ -1475,10 +1552,685 @@ export function getTalentTransparency(
     records: evidences.filter(
       (evidence) => evidence.visibility === 'compartilhavel'
     ),
-    preferences: getTalent(talentId)?.preferences ?? [],
+    preferences: getTalent(talentId, state)?.preferences ?? [],
     sharedWith,
     internalCount: evidences.filter(
       (evidence) => evidence.visibility === 'interno'
     ).length
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Perfil cultural da empresa como média (M1, R2)
+ * ------------------------------------------------------------------ */
+
+export type CultureDispersion = 'convergente' | 'divergente';
+
+export type CompanyCultureAxisProfile = {
+  axisId: FitAxisId;
+  /** Média ponderada por `count` de todos os papéis. `null` sem resposta. */
+  mean: number | null;
+  /** Quantas pessoas responderam este eixo, somados os papéis. */
+  respondents: number;
+  /** Média de cada papel, para a tela mostrar de onde vem a média geral. */
+  byRole: { gestao?: number; rh?: number; equipe?: number };
+  /** Diagnóstico gestão × equipe. `null` quando não há como comparar. */
+  dispersion: CultureDispersion | null;
+  /** O perfil fecha neste eixo? Falso não é zero: é perfil em aberto. */
+  ready: boolean;
+};
+
+/**
+ * O perfil cultural da empresa, eixo a eixo, como o cliente opera.
+ *
+ * "O fit cultural é a média do que a empresa entende" (00:41:44). O briefing
+ * dizia o contrário — que a média entre quem manda e quem executa apaga o
+ * viés que interessa ver — e nisso o briefing perdeu, mas só em parte: a
+ * média virou o perfil, e a dispersão continua calculada ao lado. Uma coisa
+ * não apaga a outra. A média é o que o motor de aderência compara; a
+ * dispersão é o que o analista leva para a conversa com a empresa.
+ *
+ * A média é ponderada por `count` e junta gestão, RH e equipe no mesmo bolo,
+ * porque é assim que "o que a empresa entende" se forma: cinco pessoas da
+ * equipe pesam cinco vezes mais que a gestora sozinha. Nenhuma resposta
+ * individual é identificável — a equipe entra agregada desde a fixture.
+ *
+ * `ready` é falso enquanto a consulta à equipe não alcança
+ * `MIN_TEAM_RESPONSES`. O documento de produto é explícito: abaixo do mínimo
+ * de respondentes o perfil não fecha e a tela diz isso, em vez de tratar duas
+ * pessoas como "a empresa". Um eixo não pronto não entra no cálculo da
+ * aderência.
+ */
+export function getCompanyCultureProfile(
+  state: DemoState,
+  companyId: string
+): CompanyCultureAxisProfile[] {
+  const answers = state.cultureAnswers.filter(
+    (answer) => answer.companyId === companyId
+  );
+  const reading = getCultureReading(state, companyId);
+
+  return FIT_AXES.map((axis) => {
+    const axisAnswers = answers.filter((answer) => answer.axisId === axis.id);
+
+    let weightedSum = 0;
+    let respondents = 0;
+    const roleTotals: Record<CultureRespondent, { sum: number; n: number }> = {
+      gestao: { sum: 0, n: 0 },
+      rh: { sum: 0, n: 0 },
+      equipe: { sum: 0, n: 0 }
+    };
+
+    for (const answer of axisAnswers) {
+      const value = getCultureOptionValue(axis.id, answer.optionId);
+      // Resposta a uma alternativa que não existe mais no questionário não
+      // entra na média: seria número sem significado no eixo atual.
+      if (value === null) continue;
+      weightedSum += value * answer.count;
+      respondents += answer.count;
+      roleTotals[answer.respondent].sum += value * answer.count;
+      roleTotals[answer.respondent].n += answer.count;
+    }
+
+    const byRole: CompanyCultureAxisProfile['byRole'] = {};
+    for (const role of ['gestao', 'rh', 'equipe'] as CultureRespondent[]) {
+      const entry = roleTotals[role];
+      if (entry.n > 0) byRole[role] = entry.sum / entry.n;
+    }
+
+    const axisReading = reading.find(
+      (entry) => entry.question.axisId === axis.id
+    );
+    const dispersion: CultureDispersion | null =
+      axisReading?.state === 'divergente'
+        ? 'divergente'
+        : axisReading?.state === 'convergente'
+          ? 'convergente'
+          : null;
+
+    return {
+      axisId: axis.id,
+      mean: respondents > 0 ? weightedSum / respondents : null,
+      respondents,
+      byRole,
+      dispersion,
+      ready: roleTotals.equipe.n >= MIN_TEAM_RESPONSES
+    };
+  });
+}
+
+/** Médias por eixo já filtradas pelo que fechou: o que a aderência consome. */
+function toAdherenceProfile(
+  profile: CompanyCultureAxisProfile[]
+): CompanyAxisMeans {
+  const means: CompanyAxisMeans = {};
+  for (const axis of profile) {
+    means[axis.axisId] = axis.ready ? axis.mean : null;
+  }
+  return means;
+}
+
+/* ------------------------------------------------------------------ *
+ * Questionário do candidato (M3, R4, R5)
+ * ------------------------------------------------------------------ */
+
+export type CandidateJobView = {
+  /** A atividade da vaga — o que a pessoa vai fazer. */
+  activity: string;
+  location: string;
+  sector: string;
+  shift: string;
+};
+
+/**
+ * Tudo o que o candidato pode ver sobre a vaga.
+ *
+ * R5, dito duas vezes na reunião (00:22:21, 00:38:43): o nome da empresa não
+ * aparece para o candidato antes da entrevista; ele vê atividade, localidade e
+ * segmento. O turno entra porque é a informação que ele precisa para decidir
+ * se se candidata, e não identifica ninguém.
+ *
+ * Este seletor é a única porta: qualquer superfície do candidato monta o que
+ * mostra a partir daqui. Um `companyName` que escapasse por outro caminho
+ * violaria a regra em silêncio, e é por isso que o retorno é um tipo fechado
+ * de quatro campos, e não a vaga inteira.
+ */
+export function getCandidateJobView(
+  state: DemoState,
+  applicationId: string
+): CandidateJobView | null {
+  const application = getApplication(state, applicationId);
+  if (!application) return null;
+
+  const job = getJob(application.jobId);
+  if (!job) return null;
+
+  const company = getCompany(job.companyId);
+
+  return {
+    activity: job.title,
+    location: job.location,
+    sector: company?.sector ?? 'Segmento não informado',
+    shift: job.workShift
+  };
+}
+
+/** A resposta de fit desta candidatura, se houver. */
+export function getFitResponse(
+  state: DemoState,
+  applicationId: string
+): CandidateFitResponse | null {
+  return (
+    state.fitResponses?.find(
+      (response) => response.applicationId === applicationId
+    ) ?? null
+  );
+}
+
+/**
+ * Prazo do candidato para responder o fit, em dias (R7, 00:45:28).
+ *
+ * "1 a 2 dias para o candidato; quem não responde sai do processo." Fica no
+ * limite superior: cortar antes de 2 dias seria mais severo do que o cliente
+ * descreveu.
+ */
+export const CANDIDATE_FIT_DEADLINE_DAYS = 2;
+
+function daysBetween(fromIso: string, toIso: string): number {
+  const from = Date.parse(`${fromIso.slice(0, 10)}T00:00:00.000Z`);
+  const to = Date.parse(`${toIso.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(from) || Number.isNaN(to)) return 0;
+  return Math.floor((to - from) / 86_400_000);
+}
+
+/**
+ * Situação da resposta desta candidatura.
+ *
+ * Derivada, nunca gravada, e sempre contra a data de referência da base — a
+ * demonstração precisa ser idêntica hoje e amanhã, então nada de relógio.
+ * Quem não respondeu dentro do prazo aparece como `expirado` em vez de sumir:
+ * R7 diz que essa pessoa sai do processo, e sair do processo é uma decisão
+ * do analista, não um desaparecimento silencioso da lista.
+ */
+export function getFitStatus(
+  state: DemoState,
+  application: Application
+): FitStatus {
+  if (getFitResponse(state, application.id)) return 'respondido';
+  return daysBetween(application.appliedAt, DEMO_REFERENCE_DATE) >
+    CANDIDATE_FIT_DEADLINE_DAYS
+    ? 'expirado'
+    : 'pendente';
+}
+
+export const FIT_STATUS_LABEL: Record<FitStatus, string> = {
+  respondido: 'Questionário respondido',
+  pendente: 'Questionário pendente',
+  expirado: 'Prazo do questionário vencido'
+};
+
+/* ------------------------------------------------------------------ *
+ * Aderência (M4, R3)
+ * ------------------------------------------------------------------ */
+
+/**
+ * A aderência desta candidatura, montada a partir do estado.
+ *
+ * Junta os três insumos que a conta precisa: a média da empresa da vaga (só
+ * dos eixos cujo perfil fechou), a resposta do candidato àquela candidatura e
+ * os pesos que a empresa declarou para a vaga. `computeAdherence` faz a
+ * conta; aqui só se resolve de onde vem cada lado.
+ *
+ * Devolve `null` apenas quando a candidatura ou a vaga não existem. Faltando
+ * um dos lados, o resultado vem com `total: null` — que é informação, e
+ * diferente de "não sei do que você está falando".
+ */
+/**
+ * Aderência entre uma pessoa e uma empresa, fora de qualquer candidatura.
+ *
+ * `getAdherence` responde "esta pessoa, nesta vaga" e precisa da candidatura
+ * para achar a resposta do questionário e os pesos daquela vaga. O Mapa de
+ * Cultura faz outra pergunta — "esta pessoa, nesta empresa" — e precisa
+ * responder para a base inteira, inclusive quem nunca se candidatou ali.
+ *
+ * O motor é o mesmo de propósito: um segundo cálculo faria a mesma pessoa
+ * aparecer com dois percentuais diferentes em duas telas. O que muda é de onde
+ * vem o lado do candidato (as preferências declaradas, não o questionário da
+ * candidatura) e os pesos, que sem vaga ficam todos iguais — não há vaga para
+ * declarar prioridade.
+ */
+export function getTalentCompanyAdherence(
+  state: DemoState,
+  talentId: string,
+  companyId: string
+): AdherenceResult {
+  const valores: CandidateAxisValues = {};
+  for (const resposta of getTalentCultureAnswers(talentId)) {
+    const valor = getCultureOptionValue(resposta.axisId, resposta.optionId);
+    if (valor !== null) valores[resposta.axisId] = valor;
+  }
+
+  return computeAdherence(
+    toAdherenceProfile(getCompanyCultureProfile(state, companyId)),
+    valores,
+    {}
+  );
+}
+
+export function getAdherence(
+  state: DemoState,
+  applicationId: string
+): AdherenceResult | null {
+  const application = getApplication(state, applicationId);
+  if (!application) return null;
+
+  const job = getJob(application.jobId);
+  if (!job) return null;
+
+  const profile = getCompanyCultureProfile(state, job.companyId);
+  const response = getFitResponse(state, applicationId);
+
+  return computeAdherence(
+    toAdherenceProfile(profile),
+    response?.answers ?? null,
+    getAxisWeights(state, job)
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Ranking por vaga e limite de encaminhamento (M5, R6)
+ * ------------------------------------------------------------------ */
+
+export type JobRankingEntry = {
+  application: Application;
+  talent: Talent | null;
+  technicalMatch: number | null;
+  adherence: AdherenceResult;
+  /** Posição na vaga, a partir de 1. */
+  rank: number;
+  belowThreshold: boolean;
+  fitStatus: FitStatus;
+};
+
+/**
+ * O ranking da vaga: técnico e aderência lado a lado (M5).
+ *
+ * É a cena do pitch — "o analista abre uma vaga e enxerga o ranking com fit" —
+ * e substitui o Excel que juntava três relatórios à mão. Duas escolhas
+ * merecem registro.
+ *
+ * **Ordena por aderência, não por uma nota combinada.** Somar técnico e
+ * aderência numa medida só exigiria decidir quanto cada um vale, e ninguém
+ * decidiu isso; pior, esconderia o caso que o cliente descreveu como dor
+ * (R10): técnico baixo por filtro mal configurado e aderência alta. As duas
+ * colunas ficam visíveis e o analista cruza.
+ *
+ * **Quem não respondeu vai para o fim, nunca para o zero.** Sem resposta não
+ * há medida; ordenar ausência como se fosse aderência mínima seria punir pelo
+ * silêncio. O desempate é o match técnico, que é a outra informação de fato
+ * disponível.
+ */
+export function getJobRanking(
+  state: DemoState,
+  jobId: string
+): JobRankingEntry[] {
+  const job = getJob(jobId);
+  if (!job) return [];
+
+  return getApplicationsByJob(state, jobId)
+    .map((application) => {
+      const adherence = getAdherence(state, application.id);
+      return {
+        application,
+        talent: getTalent(application.talentId, state),
+        technicalMatch: application.technicalMatch ?? null,
+        adherence: adherence ?? {
+          byAxis: [],
+          total: null,
+          threshold: ADHERENCE_THRESHOLD,
+          compatible: null,
+          coverage: { answeredAxes: 0, totalAxes: FIT_AXES.length }
+        },
+        fitStatus: getFitStatus(state, application)
+      };
+    })
+    .sort((a, b) => {
+      const left = a.adherence.total;
+      const right = b.adherence.total;
+      if (left !== right) {
+        if (left === null) return 1;
+        if (right === null) return -1;
+        return right - left;
+      }
+      return (b.technicalMatch ?? -1) - (a.technicalMatch ?? -1);
+    })
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+      belowThreshold: entry.adherence.compatible === false
+    }));
+}
+
+/**
+ * Quantos currículos vão por vaga (R6, 00:33:30).
+ *
+ * "Máximo de 5 currículos por vaga. Sem banco de vagas." É limite do processo
+ * do IEL com a indústria, não configuração de tela: a empresa recebe uma
+ * remessa curta que consegue ler, e uma nova remessa só depois da devolutiva
+ * (R9). Por isso o limite vive no reducer, que recusa o sexto e registra a
+ * recusa, e não numa validação de formulário que outro caminho contornaria.
+ */
+export const REFERRAL_LIMIT = 5;
+
+/**
+ * Candidatos que o filtro técnico descartaria e a aderência resgata (S2).
+ *
+ * O cliente descreveu a dor com todas as letras (R10): o filtro técnico do
+ * Empregare configurado errado expurga candidato aderente. Esta lista é
+ * pequena de propósito — ela não reabre a vaga inteira, só mostra quem ficou
+ * abaixo do corte técnico e, ainda assim, respondeu e ficou acima do corte de
+ * aderência. A decisão de reabrir continua sendo do analista.
+ */
+export const RESCUE_TECHNICAL_CEILING = 50;
+
+export function getRescueCandidates(
+  state: DemoState,
+  jobId: string
+): JobRankingEntry[] {
+  return getJobRanking(state, jobId).filter(
+    (entry) =>
+      entry.technicalMatch !== null &&
+      entry.technicalMatch < RESCUE_TECHNICAL_CEILING &&
+      entry.adherence.total !== null &&
+      entry.adherence.total >= ADHERENCE_THRESHOLD
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Amostra de colaboradores da empresa (M2, R2)
+ * ------------------------------------------------------------------ */
+
+/** Convites daquela empresa, na ordem em que foram enviados. */
+export function getCultureInvites(
+  state: DemoState,
+  companyId: string
+): CultureRespondentInvite[] {
+  return (state.cultureInvites ?? []).filter(
+    (invite) => invite.companyId === companyId
+  );
+}
+
+export type CultureInviteStatus = 'aberto' | 'respondido' | 'expirado';
+
+export type CultureSampleRoleProgress = {
+  answered: number;
+  total: number;
+};
+
+export type CultureSampleProgress = {
+  answered: number;
+  total: number;
+  /** Prazo que a tela mostra: o do convite em aberto que vence por último. */
+  deadline: string | null;
+  /** Dias até o prazo, contra a data de referência. Negativo quando venceu. */
+  daysLeft: number | null;
+  overdue: boolean;
+  byRole: Record<CultureInviteRole, CultureSampleRoleProgress>;
+  requiredForProfile: typeof MIN_TEAM_RESPONSES;
+  /** A consulta já sustenta o perfil da empresa? */
+  ready: boolean;
+};
+
+function readInviteStatus(
+  invite: CultureRespondentInvite,
+  referenceDate: string
+): CultureInviteStatus {
+  if (invite.answeredAt) return 'respondido';
+  return referenceDate > invite.expiresAt ? 'expirado' : 'aberto';
+}
+
+/**
+ * "N de M responderam", com prazo e leitura por papel (M2).
+ *
+ * O prazo exibido é o do convite **em aberto** que vence por último, e não o
+ * maior prazo de todos: a consulta pode sair em levas — três pessoas
+ * acrescentadas depois têm prazo próprio —, e mostrar o prazo de quem já
+ * respondeu faria a tela cobrar um vencimento que não cobra mais ninguém.
+ * Sem nenhum convite em aberto, o prazo é o último que existiu, só para a
+ * tela ter data; `overdue` já é falso porque não há o que esperar.
+ *
+ * `ready` olha para as respostas de **equipe**, não para o total: é o piso de
+ * `MIN_TEAM_RESPONSES` que impede tratar duas pessoas como "a equipe", e é
+ * ele que `getCompanyCultureProfile` usa para fechar ou não o perfil.
+ */
+export function getCultureSampleProgress(
+  state: DemoState,
+  companyId: string
+): CultureSampleProgress {
+  const invites = getCultureInvites(state, companyId);
+
+  const byRole: Record<CultureInviteRole, CultureSampleRoleProgress> = {
+    gestao: { answered: 0, total: 0 },
+    rh: { answered: 0, total: 0 },
+    equipe: { answered: 0, total: 0 }
+  };
+
+  let answered = 0;
+  let latestOpenDeadline: string | null = null;
+  let latestDeadline: string | null = null;
+
+  for (const invite of invites) {
+    byRole[invite.role].total += 1;
+    if (invite.answeredAt) {
+      byRole[invite.role].answered += 1;
+      answered += 1;
+    } else if (!latestOpenDeadline || invite.expiresAt > latestOpenDeadline) {
+      latestOpenDeadline = invite.expiresAt;
+    }
+    if (!latestDeadline || invite.expiresAt > latestDeadline) {
+      latestDeadline = invite.expiresAt;
+    }
+  }
+
+  const deadline = latestOpenDeadline ?? latestDeadline;
+
+  return {
+    answered,
+    total: invites.length,
+    deadline,
+    daysLeft: deadline ? daysBetween(DEMO_REFERENCE_DATE, deadline) : null,
+    overdue:
+      latestOpenDeadline !== null && DEMO_REFERENCE_DATE > latestOpenDeadline,
+    byRole,
+    requiredForProfile: MIN_TEAM_RESPONSES,
+    ready: byRole.equipe.answered >= MIN_TEAM_RESPONSES
+  };
+}
+
+/**
+ * O convite como a tela do colaborador pode vê-lo (PRODUTO.md §5).
+ *
+ * É deliberadamente magro. Quem abre o link responde sobre o próprio ambiente
+ * de trabalho: não precisa — e não pode — ver quem mais foi convidado, quem já
+ * respondeu ou o que responderam. Nem o e-mail para o qual o convite foi
+ * enviado volta daqui; o token não o carrega, e devolvê-lo transformaria um
+ * link vazado em vazamento de dado pessoal.
+ *
+ * O primeiro nome fica porque a tela precisa cumprimentar quem chegou e
+ * confirmar que o link é mesmo dela; o nome completo não acrescenta nada a
+ * isso.
+ */
+export type CultureInviteView = {
+  inviteId: string;
+  firstName: string;
+  companyName: string;
+  expiresAt: string;
+  daysLeft: number;
+  status: CultureInviteStatus;
+};
+
+export function getInviteByToken(
+  state: DemoState,
+  token: string
+): CultureInviteView | null {
+  const invite = (state.cultureInvites ?? []).find(
+    (entry) => entry.token === token
+  );
+  if (!invite) return null;
+
+  return {
+    inviteId: invite.id,
+    firstName: invite.name.split(' ')[0] ?? invite.name,
+    companyName: getCompany(invite.companyId)?.name ?? invite.companyId,
+    expiresAt: invite.expiresAt,
+    daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
+    status: readInviteStatus(invite, DEMO_REFERENCE_DATE)
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Importação de planilha (M6)
+ * ------------------------------------------------------------------ */
+
+/** Importações já aplicadas naquela vaga, da mais recente para a mais antiga. */
+export function getImportHistory(
+  state: DemoState,
+  jobId: string
+): SpreadsheetImportRecord[] {
+  return (state.spreadsheetImports ?? [])
+    .filter((record) => record.jobId === jobId)
+    .slice()
+    .reverse();
+}
+
+/* ------------------------------------------------------------------ *
+ * Relatório da empresa por link (S3)
+ * ------------------------------------------------------------------ */
+
+/** Uma pessoa enviada, como a empresa pode vê-la. */
+export type ReferralReportPerson = {
+  /** Posição na remessa, a partir de 1. Ordena por quanto combina. */
+  position: number;
+  name: string;
+  initials: string;
+  headline: string;
+  city: string;
+  /** "3 anos de experiência", ou `null` quando o currículo não permite dizer. */
+  experienceSpan: string | null;
+  /** Resumo congelado no momento do envio, nunca o que foi escrito depois. */
+  summary: string;
+  attentionPoints: string[];
+  suggestedQuestions: string[];
+  /** Percentual total de aderência. `null` sem base dos dois lados. */
+  adherenceTotal: number | null;
+  byAxis: { axisId: FitAxisId; match: ReportAxisMatch }[];
+  technicalMatch: number | null;
+};
+
+export type ReferralReport = {
+  company: Company;
+  job: Job;
+  sentAt: string | null;
+  sentBy: string;
+  people: ReferralReportPerson[];
+  sampleProgress: CultureSampleProgress;
+  /** Quantos candidatos daquela vaga responderam o questionário de fit. */
+  evaluatedCount: number;
+  mostDivergentAxis: FitAxisId | null;
+};
+
+/** Quem assina o envio na página da empresa. */
+const REPORT_SENDER = 'Analista IEL';
+
+/** O endereço do relatório daquela vaga, para copiar e enviar à empresa. */
+export function getReportTokenForJob(jobId: string): string {
+  return buildReportToken(jobId);
+}
+
+/**
+ * O relatório de uma vaga, resolvido pelo token do link (S3).
+ *
+ * Monta o recorte **mínimo** que a empresa pode ver: as pessoas registradas
+ * naquele encaminhamento, a aderência delas por ponto em faixa, o agregado da
+ * consulta à equipe e nada mais. Outros candidatos da vaga não entram, resposta
+ * individual de colaborador não entra e a alternativa que o candidato marcou
+ * não entra (PRODUTO.md §5.1).
+ *
+ * Devolve `null` quando o token não corresponde a nenhuma vaga com
+ * encaminhamento registrado — inclusive quando a vaga existe mas nada foi
+ * enviado ainda: sem envio não há o que a empresa possa abrir.
+ */
+export function getReferralReport(
+  state: DemoState,
+  token: string
+): ReferralReport | null {
+  const job = ALL_JOBS.find((entry) => buildReportToken(entry.id) === token);
+  if (!job) return null;
+
+  const company = getCompany(job.companyId);
+  if (!company) return null;
+
+  const referral = state.referrals.find(
+    (entry) => entry.jobId === job.id && entry.state === 'registrado'
+  );
+  if (!referral) return null;
+
+  const people = referral.items
+    .map((item) => {
+      const application = getApplication(state, item.applicationId);
+      const talent = application
+        ? getTalent(application.talentId, state)
+        : null;
+      if (!application || !talent) return null;
+
+      const adherence = getAdherence(state, application.id);
+
+      return {
+        name: talent.name,
+        initials: initialsOf(talent.name),
+        headline: talent.headline,
+        city: talent.city,
+        experienceSpan: formatExperienceSpan(
+          talent.experiences.map((experience) => experience.period)
+        ),
+        summary: item.summary,
+        attentionPoints: item.attentionPoints,
+        suggestedQuestions: item.suggestedQuestions,
+        adherenceTotal: adherence?.total ?? null,
+        byAxis: (adherence?.byAxis ?? []).map((entry) => ({
+          axisId: entry.axisId,
+          match: readAxisMatch(entry.adherence)
+        })),
+        technicalMatch: application.technicalMatch ?? null
+      };
+    })
+    .filter((person): person is Omit<ReferralReportPerson, 'position'> =>
+      Boolean(person)
+    )
+    // A ordem é a do quanto combina, como a página promete no texto de
+    // abertura. Quem não tem medida vai para o fim, nunca para o zero.
+    .sort((left, right) => {
+      if (left.adherenceTotal === right.adherenceTotal) {
+        return (right.technicalMatch ?? -1) - (left.technicalMatch ?? -1);
+      }
+      if (left.adherenceTotal === null) return 1;
+      if (right.adherenceTotal === null) return -1;
+      return right.adherenceTotal - left.adherenceTotal;
+    })
+    .map((person, index) => ({ ...person, position: index + 1 }));
+
+  const evaluatedCount = getApplicationsByJob(state, job.id).filter(
+    (application) => getFitStatus(state, application) === 'respondido'
+  ).length;
+
+  return {
+    company,
+    job,
+    sentAt: referral.createdAt,
+    sentBy: REPORT_SENDER,
+    people,
+    sampleProgress: getCultureSampleProgress(state, company.id),
+    evaluatedCount,
+    mostDivergentAxis: findMostDivergentAxis(people)
   };
 }

@@ -1,242 +1,215 @@
-# Central de Seleção IEL — protótipo
+# Mind RH — Central de Seleção do IEL
 
-> Uma central para o IEL reunir os dados de talentos, vagas e empresas, entender compatibilidades e conduzir uma seleção fundamentada.
+> Fit cultural na triagem do Centro de Empregos da Indústria, sem custo por candidato: a empresa vira um perfil respondido pela própria equipe, o candidato responde ao se candidatar, e a analista do IEL vê requisitos e fit lado a lado para escolher os 5 currículos.
 
-Protótipo navegável construído para o hackathon do desafio **"Conectar talentos e empresas de forma que dê certo para os dois lados"** (IEL). Vive dentro do starter kit Arki, em `app/apps/dashboard`, sob a rota `/iel`. É uma implementação funcional de interface — não uma landing page, não um deck de slides, não um recorte de imagens de tela.
+Protótipo navegável construído no hackathon do **Desafio IEL** (19–20/09/2026) pela equipe **Madvic**. Vive dentro do starter kit Arki, em `app/apps/dashboard`, sob a rota `/iel`. É uma implementação funcional de interface, com base fictícia determinística — não um deck, não um recorte de telas.
 
 ## Sumário
 
-- [O problema](#o-problema)
-- [Como o protótipo responde a cada critério de resolução](#como-o-protótipo-responde-a-cada-critério-de-resolução)
-- [A tese do produto: fit sem nota, sem teste psicométrico](#a-tese-do-produto-fit-sem-nota-sem-teste-psicométrico)
-- [Como funciona: as telas e o fluxo](#como-funciona-as-telas-e-o-fluxo)
-- [Decisões de design responsáveis](#decisões-de-design-responsáveis)
-- [Roteiro de demonstração](#roteiro-de-demonstração)
-- [Base de dados fictícia](#base-de-dados-fictícia)
+- [O problema, nas palavras do cliente](#o-problema-nas-palavras-do-cliente)
+- [O que o Mind RH faz](#o-que-o-mind-rh-faz)
+- [Três papéis, três produtos](#três-papéis-três-produtos)
+- [As telas](#as-telas)
+- [O motor de aderência](#o-motor-de-aderência)
+- [Regras de negócio do cliente que o protótipo cumpre](#regras-de-negócio-do-cliente-que-o-protótipo-cumpre)
+- [Privacidade por padrão](#privacidade-por-padrão)
 - [Integração de IA](#integração-de-ia)
+- [Entrada de dados: Empregare](#entrada-de-dados-empregare)
+- [Design e marca](#design-e-marca)
 - [Arquitetura técnica](#arquitetura-técnica)
 - [Como rodar](#como-rodar)
 - [Testes](#testes)
+- [Roteiro de demonstração](#roteiro-de-demonstração)
+- [Base de dados fictícia](#base-de-dados-fictícia)
 - [Fora do MVP e por quê](#fora-do-mvp-e-por-quê)
-- [Referência de mercado](#referência-de-mercado)
 - [Limitações honestas](#limitações-honestas)
+- [Documentação](#documentação)
 
-## O problema
+## O problema, nas palavras do cliente
 
-Nas palavras do próprio desafio (`docs/enunciado/01-desafio-e-contexto.md`): o IEL já dispõe de informações sobre talentos, vagas e empresas, mas elas não estão integradas numa jornada única. O Empregare divulga oportunidades e faz o matching técnico inicial; a avaliação de **fit cultural** roda numa plataforma externa contratada à parte, aplicada só depois da triagem técnica, "em razão dos custos envolvidos e da necessidade de etapas adicionais". O resultado: informação fragmentada entre ferramentas, esforço manual para juntar tudo, e uma análise de aderência que existe, funciona, mas não escala.
+O Centro de Empregos da Indústria (IEL-MT) trabalha **25 mil vagas por ano**, atrai candidatos e encaminha até 5 currículos por vaga para a indústria escolher. O turnover é alto — "tem indústria que abre 30 vagas, no próximo mês abre 30 vagas; frigorífico abre 700 e no próximo mês 500" — e o IEL sabe por quê: "a gente contrata pelo currículo, tecnicamente, mas demite por comportamento. É 100%."
 
-`docs/enunciado/07-ja-sabemos-que.md` é explícito sobre isso: o fit cultural "apresentou resultados positivos", mas tem quatro limitações nomeadas — custo alto, tempo elevado, dificuldade de aplicação em escala e o fato de viver "numa plataforma externa e separada dos demais processos". O desafio não pede para descartar a abordagem; pede para "ampliar essa abordagem, reduzir suas limitações e integrá-la a uma jornada centralizada".
+O que existe não serve: o fit da plataforma de vagas custa **R$ 100 por candidato**; a Mindsight, que "super funciona", foi abandonada por custo. O processo atual junta três relatórios num Excel montado à mão. A equipe do IEL pediu algo **integrado ao Empregare** (a base de currículos continua lá), com **custo marginal zero**, e que **não crie nenhuma etapa nova para a empresa** — "se colocar mais uma etapa, eles não fazem".
 
-## Como o protótipo responde a cada critério de resolução
+Fonte: transcrição da reunião de 19/09 e documentos de entendimento em [`docs/cliente/`](docs/cliente/00-indice.md).
 
-`docs/enunciado/06-problema-considerado-resolvido.md` lista seis critérios. Cada um tem um recorte concreto no protótipo:
+## O que o Mind RH faz
 
-| Critério do enunciado | Onde aparece no protótipo |
-| --- | --- |
-| **Qualidade das conexões** — considerar informações além dos requisitos técnicos | Cada candidatura é lida em três dimensões (técnica, profissional, organizacional), nunca só currículo × requisito. Ver a matriz de candidatos na mesa de seleção (`/iel/vagas/[jobId]`). |
-| **Integração das informações** — organizar dados de talentos, vagas e empresas de forma estruturada | Toda evidência carrega origem, natureza e data (`features/iel-demo/types.ts`, tipo `Evidence`); o perfil consolidado e a mesa de seleção mostram quantos registros e de quantas fontes cada análise reúne (seletores `getSourceBreakdown`, `getEvidencesForJob`, `getEvidencesForApplication` em `state/selectors.ts`). |
-| **Eficiência do processo** — reduzir esforço manual e dependência de múltiplas ferramentas | A tela **Fontes de dados** (`/iel/fontes-de-dados`) simula o recebimento de atualizações de sistemas hoje separados (Empregare, avaliação externa, contexto da empresa, registro IEL) num único lugar, sem duplicar candidato ou candidatura no reprocessamento. |
-| **Capacidade de escala** — ampliar o volume avaliável | A vaga do roteiro (`VAG-01`) tem 90 candidaturas geradas; a mesa de seleção pagina a matriz e oferece um filtro de triagem por lacuna ("Requisito obrigatório sem informação", "Divergência", "Cobertura completa") para tornar 90 linhas navegáveis sem abrir perfil por perfil. |
-| **Apoio à tomada de decisão** — informação qualificada para RH, gestores, empresas e talentos | Área de análise assistida por vaga ("Resumir esta seleção", "Comparar os selecionados", "Mostrar o que falta esclarecer"), painel de evidências por critério, e a visão do gestor (`/iel/encaminhamentos/[referralId]`, persona "Visualizar como") para registrar interesse em entrevista. |
-| **Transparência dos critérios** — nada de mecanismo opaco quando há recomendação | Nenhum critério tem estado sem explicação: cada estado (alinhamento, a esclarecer, divergência, sem informação, não se aplica) tem ícone, rótulo e nota, nunca só cor (`analysis/criterion-states.ts`). Não existe nota global nem ranking em nenhuma tela. |
-| **Aprendizado contínuo** — usar resultados de processos para melhorar as próximas conexões | O perfil do talento mostra a trajetória da pessoa entre candidaturas de vagas diferentes, com o resultado de cada processo, e sinaliza quando o mesmo registro (ex.: uma experiência do currículo) já sustentou critérios em mais de uma vaga (`getReuseAcrossApplications`/trilha de trajetória em `state/selectors.ts`, tela `/iel/talentos/[talentId]`). |
+1. **A empresa vira um perfil.** A analista cadastra uma amostra de colaboradores (nome e e-mail corporativo, ~20% da área da vaga e áreas conexas). Cada um recebe um link sem login e responde, em 5 minutos no celular, cinco perguntas sobre **como se trabalha ali de verdade** — apoio no início, quem organiza o trabalho, como chegam as tarefas, horário, o que se aprende. O perfil da empresa é a **média** dessas respostas, com mínimo de 3 respostas da equipe por ponto e prazo de 3 dias.
+2. **O candidato responde na candidatura.** Ao se candidatar à vaga daquela empresa, recebe um link e responde as mesmas cinco perguntas, em linguagem simples, sem login, sem ver o nome da empresa.
+3. **A analista decide numa tela só.** A vaga mostra os candidatos com **requisitos da vaga** (o match técnico que vem do Empregare) e **quanto combinam com a empresa** (aderência por ponto e total), corte de **35%**, resgate de quem o filtro técnico descartou mas combina, e marcação de até 5 currículos para envio.
+4. **A empresa recebe os 5 currículos** numa página de leitura por link, com o percentual e os cinco pontos de cada pessoa, para escolher quem entrevistar. Nada de painel, nada de login.
 
-### Estados de compatibilidade, não notas
+## Três papéis, três produtos
 
-Cada critério de uma candidatura assume um de cinco estados — nunca uma cor isolada, sempre com ícone e texto (`analysis/criterion-states.ts`):
+Só a analista tem app. Empresa e candidato recebem links: uma tarefa por link, no celular, sem login, sem menu.
 
-- **Alinhamento identificado** — existe informação que sustenta a relação.
-- **Ponto a esclarecer** — a interpretação ou condição precisa ser confirmada.
-- **Divergência identificada** — há informações explícitas em conflito.
-- **Sem informação** — não há base suficiente para analisar.
-- **Não se aplica** — critério fora do escopo daquela vaga.
+| Papel | Entrada | O que vê | O que não vê |
+| --- | --- | --- | --- |
+| **Analista do IEL** | app, desktop | tudo; é quem responde pelo dado | respostas individuais dos colaboradores da empresa (só a média) |
+| **Empresa** (RH, gestão, colaboradores) | dois links, sem login | o colaborador: 5 perguntas sobre a própria empresa; o RH: os 5 currículos enviados com % e pontos | outras empresas, candidatos não enviados, respostas individuais |
+| **Candidato** | link na candidatura, celular | 5 perguntas, confirmação, "o que está registrado sobre você" | o nome da empresa, o próprio %, o ranking, outros candidatos |
 
-Uma divergência negociável e um requisito obrigatório não atendido têm consequências diferentes na interface, mas nenhum dos dois elimina a candidatura automaticamente — ambos abrem uma decisão para o analista registrar.
+## As telas
 
-## Papéis e personas da demonstração
+Analista (`/iel`, com sidebar):
 
-Não há autenticação real dentro do protótipo. Uma barra discreta fora da navegação normal, rotulada **"Visualizar como — demonstração"**, alterna entre personas para mostrar os limites de acesso que o produto pretende ter em produção:
+| Rota | Tela | Pergunta que responde |
+| --- | --- | --- |
+| `/iel` | Hoje | O que precisa de mim hoje? |
+| `/iel/vagas/[jobId]` | Vaga | Quem eu envio para esta vaga? — section cards, tabela de candidatos (Sugeridos · Todos · Resgate · Sem resposta), abas Como a empresa trabalha · Perguntas · Enviados · Requisitos · Histórico |
+| (Drawer sobre a vaga) e `/iel/talentos/[talentId]?vaga=` | Pessoa | Esta pessoa combina com esta empresa? — % com marca do 35%, os 5 pontos com empresa ■ e pessoa ● |
+| `/iel/empresas/[companyId]` | Empresa | Como se trabalha nesta empresa? — respostas N de M, os 5 pontos com gestão/equipe/média, colaboradores convidados, cobrar quem falta |
+| `/iel/vagas/[jobId]/importar` | Importar planilha | Entrou tudo certo? — três passos: enviar, conferir, pronto |
+| `/iel/vagas/[jobId]/comparar`, `/iel/talentos`, `/iel/empresas`, `/iel/pendencias`, `/iel/encaminhamentos`, `/iel/fontes-de-dados` | listas e apoio | |
 
-| Persona | O que vê e faz na demonstração |
-| --- | --- |
-| Analista IEL | Vagas e candidaturas das empresas atendidas na base demo; todas as fontes autorizadas; comparação; pendências; preparação e registro de encaminhamento. |
-| Gestora/gestor de uma empresa (ex.: Cerrado Distribuição, Horizonte Alimentos) | Apenas a própria empresa e os perfis compartilhados em encaminhamentos; responde pendências da equipe; indica interesse em entrevistar. |
-| Candidato | Sua solicitação e resposta de esclarecimento, e o que existe sobre si (origem, data, destinos de encaminhamento); nenhuma informação sobre outros candidatos ou avaliações internas. |
+Por link (casca mínima, sem sidebar):
 
-Trocar para a persona de uma empresa nunca expõe a base completa do IEL nem dados de outra empresa — é uma restrição de dado dentro do estado local, não uma prova de segurança de produção, e o rótulo da barra diz isso explicitamente.
+| Rota | Quem | O quê |
+| --- | --- | --- |
+| `/iel/candidatura/[applicationId]/fit` | candidato | aceite → 5 perguntas → pronto → o que está registrado sobre você |
+| `/iel/consulta/[token]` | colaborador da empresa | aceite → 5 perguntas → resposta registrada (token opaco, 3 dias, uso único) |
+| `/iel/relatorio/[token]` | RH da empresa | os 5 currículos enviados, com % e os 5 pontos por pessoa |
 
-## A tese do produto: fit sem nota, sem teste psicométrico
+## O motor de aderência
 
-O enunciado dedica uma página inteira ao fit cultural e conclui que ele funciona, mas não escala porque depende de aplicação individualizada, cara e demorada numa ferramenta separada. A tese deste protótipo é que **nada disso é inerente ao fit em si — é inerente a como ele é coletado hoje**.
+Cada ponto do dia a dia tem três opções ordenadas (1, 2, 3). A empresa tem, por ponto, a **média** das respostas da amostra; o candidato, a opção que marcou. A aderência no ponto é
 
-Em vez de aplicar um novo instrumento psicométrico, o protótipo descreve os dois lados da relação nos mesmos termos, a partir do que já foi informado:
+```
+aderência = 100 × (1 − |média da empresa − resposta do candidato| / 2)
+```
 
-- A **empresa** (gestão, RH e a própria equipe) responde, eixo a eixo, como o trabalho de fato acontece: apoio nas primeiras atividades, autonomia na execução, comunicação de prioridades, previsibilidade de turno, aprendizado (`analysis/fit-axes.ts`).
-- A **pessoa** registra, nos mesmos cinco eixos, o que prefere ou espera (`preferences` no tipo `Talent`).
-- A leitura de fit compara os dois lados eixo a eixo — nunca produz uma nota única, nunca soma nem tira média entre eles.
+e o total é a média ponderada dos pontos que têm os dois lados (pesos por vaga: alto 3, médio 2, baixo 1). **Ponto sem resposta de um dos lados não conta contra ninguém** — o denominador ("medido em 2 de 5 pontos") fica visível ao lado do número. O corte é **35%**, o número que o IEL usa; abaixo dele a pessoa aparece como "abaixo do mínimo", nunca some da lista. Código em `features/iel-demo/analysis/adherence.ts`, com testes.
 
-**Por que sem nota global.** O enunciado pede transparência de critérios e veda "mecanismos opacos ou de difícil interpretação" quando há recomendação; também exige que a decisão continue humana. O briefing reforça o argumento: cobertura de dados ("6 de 8 critérios têm informação suficiente") não é probabilidade de sucesso nem qualidade da pessoa — é só uma medida de quanto já se sabe. Uma nota única obrigaria a inventar pesos entre dimensões que o enunciado nunca definiu, e esconderia divergências que o analista precisa ver para decidir. Por isso a matriz por dimensão substitui o placar: mais explicável, e não fabrica precisão que a base não tem.
+**Por que não é teste psicométrico.** As cinco perguntas descrevem condições de trabalho observáveis, não traços de personalidade nem saúde. O produto compara o que a empresa diz de si com o que a pessoa diz de si, nos mesmos termos. A decisão continua da analista: nenhuma tela escolhe sozinha, e o resumo assistido cita os registros que usou.
 
-## Como funciona: as telas e o fluxo
+## Regras de negócio do cliente que o protótipo cumpre
 
-Onze telas, roteadas sob `/iel`, na ordem em que o analista costuma percorrê-las:
+Extraídas dos documentos de 19/09 ([`docs/cliente/00-indice.md`](docs/cliente/00-indice.md), com timestamp na transcrição):
 
-1. **Visão geral** (`/iel`) — indicadores calculados (vagas abertas, candidaturas em análise, pendências, encaminhamentos aguardando retorno), vagas que precisam de ação e cobertura de informação por dimensão.
-2. **Vagas** (`/iel/vagas`) — lista com busca, filtro e a ação central "Abrir seleção".
-3. **Mesa de seleção da vaga** (`/iel/vagas/[jobId]`) — a tela principal. Matriz de candidatos com estado por dimensão, **triagem por lacuna em escala** (o filtro que separa as 90 candidaturas de VAG-01 por requisito obrigatório não sustentado, divergência ou cobertura completa), seleção para comparação (até três) e área de análise assistida contextual à seleção atual.
-4. **Perfil consolidado do talento** (`/iel/talentos/[talentId]`) — experiências, expectativas, avaliação externa (quando existe, com escala e método preservados), **traçado de fit eixo a eixo com o que a empresa declarou e o que a pessoa declarou**, e a **trajetória da pessoa entre processos** diferentes, incluindo registros reaproveitados entre vagas.
-5. **Comparação entre candidatos** (`/iel/vagas/[jobId]/comparar`) — dois ou três lado a lado, critério por critério, com evidência por célula.
-6. **Contexto da empresa e da equipe** (`/iel/empresas/[companyId]`) — descrição institucional separada das condições confirmadas pela equipe; é aqui que o **traçado cultural com múltiplos respondentes** (gestão, RH, equipe) e a **detecção de divergência** entre eles ficam visíveis, eixo a eixo.
-7. **Pendências e esclarecimentos** (`/iel/pendencias`) — solicitações agrupáveis por destinatário/vaga; a IA propõe o texto da pergunta, o analista revisa antes de enviar.
-8. **Experiência do destinatário** (`/iel/pendencias/[clarificationId]/responder` e a visão do gestor em `/iel/encaminhamentos`) — telas curtas de resposta, para gestor e para candidato, sem virar entrevista completa.
-9. **Preparação e registro de encaminhamento** (`/iel/vagas/[jobId]/encaminhamento`) — lista de candidatos para uma vaga, resumo revisável, exclusão padrão de notas internas.
-10. **Visão da empresa/gestor** (`/iel/encaminhamentos/[referralId]`) — o gestor vê o que foi compartilhado e registra "Quero entrevistar", "Solicitar esclarecimento" ou "Não avançar".
-11. **Fontes de dados** (`/iel/fontes-de-dados`) — status de cada fonte simulada, simulação de recebimento de atualização, sem duplicar registros no reprocessamento.
+| # | Regra | Onde |
+| --- | --- | --- |
+| R1 | Fit é sobre a cultura da empresa, não sobre a vaga | perfil por empresa; a vaga só dá os pesos |
+| R2 | Perfil é a média de uma amostra de colaboradores; RH sozinho não responde pela empresa | `MIN_TEAM_RESPONSES = 3`, amostra sugerida de 20% |
+| R3 | Aderência mínima de 35% | `ADHERENCE_THRESHOLD` |
+| R4 | O candidato responde ao se candidatar | link por candidatura |
+| R5 | O nome da empresa não aparece para o candidato | `getCandidateJobView`: atividade, cidade, setor, turno |
+| R6 | Máximo de 5 currículos por vaga | `REFERRAL_LIMIT` |
+| R7 | Custo marginal zero | motor, ranking e questionários sem IA paga |
+| R8 | Empregare continua sendo a base | importação de planilha; contrato para API/webhook |
+| R9 | Nenhuma etapa nova para a empresa sem a analista por perto | sem painel; dois links |
+| R10 | Candidato operacional, celular, sem login | telas por link, uma pergunta por tela, alvos de 48px |
+| R11 | Prazos: 3 dias para a amostra, 2 para o candidato | convites e status de resposta |
+| R12 | LGPD: aceite no questionário; só nome e e-mail corporativo | texto de aceite versionado nos dois questionários |
 
-Fio condutor comum a várias telas: a **devolutiva ao candidato**. No perfil visto pela persona do próprio candidato, a pessoa vê o que existe sobre ela — origem e data de cada registro, o que declarou sobre como prefere trabalhar, e quais empresas receberam seu perfil — antes mesmo de ver a pergunta de esclarecimento. Nenhuma análise de critério, nota de analista ou comparação aparece nessa visão.
+## Privacidade por padrão
 
-## Decisões de design responsáveis
+[`docs/PRODUTO.md`](docs/PRODUTO.md) §5 é a referência (escrita com a skill `privacy-by-design-lgpd`, texto literal da LGPD). Em resumo, o que está implementado:
 
-Mapeamento direto às restrições (`docs/enunciado/09-restricoes.md`) e exigências (`docs/enunciado/12-exigencias-tecnicas-normativas-regulatorias.md`):
+- **Minimização**: o colaborador entra com nome, e-mail corporativo, área e papel; o token do link não contém nada disso. O candidato não vê a empresa; a empresa não vê candidatos que não recebeu.
+- **Agregação**: respostas de colaboradores só existem para a tela como média por ponto; a analista vê "7 de 10 responderam", nunca quem respondeu o quê.
+- **Transparência**: o candidato tem, no mesmo link, "O que está registrado sobre você" — origem e data de cada registro e para quem o perfil foi enviado.
+- **Aceite**: os dois questionários abrem com o aceite em linguagem simples (finalidade, o que se coleta, quem vê, prazo, direitos), versionado (`CANDIDATE_CONSENT_VERSION`, `CULTURE_CONSENT_VERSION`).
+- **Decisão humana**: nenhuma sugestão da análise vira dado sem confirmação; nenhum candidato é eliminado automaticamente.
 
-| Exigência | Como o protótipo atende |
-| --- | --- |
-| LGPD — transparência e controle de acesso | Devolutiva ao candidato com origem e data de cada registro; persona "Visualizar como — demonstração" restringe o que cada papel vê (analista, gestor de uma empresa, candidato), sem misturar dados de outra empresa. |
-| Proteção de dados sensíveis / vedação a dados de saúde | Os eixos de fit (`analysis/fit-axes.ts`) descrevem condições de trabalho observáveis — apoio, autonomia, comunicação, turno, aprendizado — nunca traços de personalidade ou saúde mental. Nenhum campo de diagnóstico, CID ou prontuário existe na base. |
-| Redução de vieses | O traçado cultural da empresa exige respostas de gestão, RH e equipe; a equipe responde de forma anônima e agregada, com um **piso de 3 respostas** (`MIN_TEAM_RESPONSES` em `analysis/culture.ts`) antes de compor a leitura, e as respostas nunca são calculadas em média entre papéis diferentes — média entre quem gere a área e quem trabalha nela apagaria exatamente o viés que o critério pede para expor. |
-| Supervisão humana / decisão não automatizada | Uma proposta de eixo cultural nunca vira resposta sozinha: fica marcada como pendente até alguém confirmar; um requisito obrigatório não atendido é sinalizado, não elimina a candidatura automaticamente; não existe botão "escolher automaticamente" ou "contratar o melhor" em nenhuma tela. |
-| Uso responsável de IA / transparência de critérios | Toda resposta da análise assistida cita os registros usados (`AssistantResponse.citations`); o texto avisa que é "montado a partir dos registros selecionados nesta base de demonstração" e que "nenhuma informação foi inventada" (`analysis/fit-axes.ts`, `analysis/assistant.ts`). |
-| Dados fictícios / sem acesso irrestrito | Toda a base (`fixtures/`) é sintética, com datas fixas e contatos em `example.com`; nenhum CPF ou dado clínico existe no domínio. |
-
-## Roteiro de demonstração
-
-O protótipo tem os dois roteiros embutidos na própria interface, acessíveis pela barra de demonstração ("Ver roteiro"):
-
-**Curto (3 minutos), 7 passos** — mesmo caminho do roteiro completo, sem pular validação de estado:
-
-1. Abrir a mesa de seleção de VAG-01 (90 candidaturas).
-2. Filtrar por "Requisito obrigatório sem informação" — a triagem que substitui abrir perfil por perfil.
-3. Selecionar Ana e Bruno e abrir a comparação.
-4. Clicar numa conclusão e mostrar a evidência com a fonte.
-5. Esclarecer o apoio inicial com o gestor e incorporar a resposta.
-6. Abrir Ana na vaga 2 (`VAG-02`): mesmo perfil, contexto da empresa diferente, leitura diferente.
-7. Registrar o encaminhamento e ver a trajetória dela entre os dois processos.
-
-**Completo, 7 passos:**
-
-1. Visão geral (`/iel`) → vaga Assistente de Logística.
-2. Mesa de seleção de VAG-01 → abrir Ana Ribeiro e clicar numa conclusão para ver a evidência.
-3. Selecionar Ana e Bruno na matriz e abrir a comparação (`/iel/vagas/VAG-01/comparar`).
-4. Criar a pergunta ao gestor sobre apoio inicial, abrir a experiência do destinatário em Pendências e incorporar a resposta.
-5. Abrir a vaga 2 (`VAG-02`) e ver Ana com contexto organizacional diferente; esclarecer a disponibilidade pendente.
-6. Adicionar Ana à lista da vaga 2 e registrar em preparação do encaminhamento.
-7. Trocar a persona para "Gestor — Horizonte Alimentos", registrar "Quero entrevistar" e voltar como analista para ver o histórico.
-
-## Base de dados fictícia
-
-Dois níveis, deliberadamente separados:
-
-- **Núcleo curado** — 3 empresas, 3 vagas, 8 talentos, 10 candidaturas. É por onde o roteiro de demonstração passa; cada registro foi escrito à mão para sustentar um ponto específico (a divergência de apoio inicial na Cerrado Distribuição, a reutilização de uma experiência entre duas vagas, etc.).
-- **Volume gerado** — 15 empresas, 39 vagas, 268 talentos, 635 candidaturas (`fixtures/generated.ts`), das quais 90 caem sobre a vaga do roteiro (`VAG-01`). Determinístico: semente fixa (`SEED = 20260914`), gerador `mulberry32` sem `Math.random()` nem `Date.now()`, datas derivadas da data de referência da base. IDs gerados levam o prefixo `GEN-`, então nunca colidem com o núcleo curado nem o alteram.
-
-**Por que os dois níveis.** Com 8 talentos e 4 candidaturas numa vaga, o analista não precisa de ferramenta nenhuma — lê os quatro currículos. O enunciado cobra explicitamente escala ("ampliar o volume de talentos e oportunidades que podem ser avaliados", "evitando dependência de processos individualizados"). O volume gerado é o que torna a triagem por lacuna e a paginação da matriz necessárias em vez de decorativas; o núcleo curado é o que garante que a demonstração seja sempre a mesma história, roteirizável e reprodutível.
+O que ainda depende de servidor e fica documentado como limite: validade e uso único dos links do candidato (hoje só o do colaborador tem), e o token da candidatura na URL.
 
 ## Integração de IA
 
-Hoje, a análise assistida é **determinística e curada**: monta texto a partir dos registros efetivamente selecionados na tela (nunca do estado inteiro da demonstração), sem consultar nenhum modelo de linguagem. O disclaimer aparece em toda resposta: "nenhum modelo de linguagem foi consultado e nenhuma informação foi inventada" (`analysis/fit-axes.ts`, `analysis/assistant.ts`). Isso cumpre a exigência do briefing de **não exigir chave de API** para a experiência principal — qualquer pessoa roda a demo sem configurar nada.
+A análise assistida roda por padrão em modo **determinístico e curado**: monta texto a partir dos registros efetivamente selecionados na tela (nunca do estado inteiro), sem consultar modelo de linguagem. Isso cumpre a exigência de custo marginal zero e de não exigir chave de API para a experiência principal.
 
-Uma camada de provider está em preparação em `app/apps/dashboard/features/iel-demo/ai/`, hoje com dois arquivos:
+A camada de provider vive em `app/apps/dashboard/features/iel-demo/ai/`:
 
-- `types.ts` — contrato Zod entre a UI e qualquer provider (`AssistantRequest`/`AssistantResponse`), incluindo o schema de saída esperado de um modelo real (`modelAssistantOutputSchema`, restrito a texto e citações — sem nota, sem ranking) e o enum de providers (`deterministic`, `anthropic`).
-- `provider.ts` — a interface `AssistantProvider` (`run(request) → Promise<AssistantResponse>`) que qualquer implementação, determinística ou real, precisa cumprir.
+- `types.ts` — contrato Zod entre a UI e qualquer provider (`AssistantRequest`/`AssistantResponse`), com o schema de saída aceito de um modelo real restrito a texto e citações — sem nota, sem ranking.
+- `provider.ts` — a interface `AssistantProvider`.
+- `deterministic-provider.ts` — o provider padrão, sem rede.
+- `anthropic-provider.ts` — adapter para a API da Anthropic (`@anthropic-ai/sdk`, `claude-sonnet-5`), que valida a resposta contra o mesmo schema.
+- `build-request.ts` — monta o pedido só com os registros selecionados (minimização).
+- `index.ts` — `getAssistantProvider()`, que escolhe pelo ambiente e nunca falha por falta de configuração.
 
-Ainda não há adapter para um modelo real nem rota de API que o exponha (`/api/iel/assistant` existe como constante em `@workspace/routes`, mas o *route handler* correspondente não foi implementado). A intenção documentada no contrato é que trocar de provider — por trás de variáveis de ambiente como `IEL_AI_PROVIDER` e `ANTHROPIC_API_KEY` — nunca exija mudar a UI, porque ela só conhece `run(request)`. Isso ainda não está implementado; o que existe hoje é o contrato que torna essa troca possível depois.
+A rota `POST /api/iel/assistant` expõe o provider escolhido. Para ligar o modelo real: `IEL_AI_PROVIDER=anthropic` e `ANTHROPIC_API_KEY`. A IA fica **fora do caminho crítico**.
+
+## Entrada de dados: Empregare
+
+Hoje a entrada é a planilha que o IEL já exporta (vaga + candidatos + match técnico), importada em três passos com conferência antes de gravar e reimportação idempotente (`analysis/spreadsheet-import.ts`, planilha de exemplo em `fixtures/planilha-exemplo.csv`). A Empregare anuncia API pública e webhooks, mas ninguém confirmou o que ela expõe nem se o plano do IEL inclui; por isso a API é a fase 3 do roadmap. O contrato de evento futuro (`candidatura.criada`, `match.calculado`) está documentado no topo do mesmo arquivo com o **mesmo shape** da linha importada — trocar planilha por webhook não muda o reducer.
+
+## Design e marca
+
+A interface segue a **filosofia shadcn**: componentes de fábrica, sem estilo próprio por cima; estrutura por borda e espaço, não por cor; corpo em 14px; detalhe em Drawer, dados em tabela, números em section cards. As referências são os blocks oficiais `dashboard-01` e `sidebar-07`, lidos no código-fonte do registry. Os princípios de conteúdo (uma pergunta por tela, um número, uma ação, glossário sem jargão) e a diretriz visual estão em [`docs/DESIGN.md`](docs/DESIGN.md).
+
+A marca é a do produto **Mind RH**, da Madvic (manual em [`docs/marca/`](docs/marca/)): azul-noite `#12182B`, marfim `#F4F1EA`, areia `#E9E5DB`, ardósia `#5B6072` e laranja `#FF5A36` só como ponto de atenção — mapeados nos tokens do shadcn, não em classes novas. Fonte Red Hat Display. O IEL continua sendo quem fala com o candidato ("Centro de Empregos"); a marca do produto aparece na sidebar e nas telas por link.
 
 ## Arquitetura técnica
 
-- **Monorepo** Bun + Turborepo, com o protótipo inteiro dentro de `apps/dashboard` (nenhum app ou pacote novo foi criado para o IEL).
-- **Next.js 15** (App Router), rota isolada em `app/(iel)/iel`, com layout próprio que não usa autenticação nem toca as rotas protegidas do produto.
-- **Estado client-side**: reducer (`state/reducer.ts`, 845 linhas) + `localStorage`, com persistência por delta — só o que diverge da base inicial é gravado — e throttle de 400ms na escrita, já que o campo de busca dispara a cada tecla e a base gerada tem ~2,2 MB (`state/storage.ts`).
-- **Fixtures tipadas** (`features/iel-demo/fixtures/`, `types.ts`) descrevem todo o domínio: empresas, vagas, talentos, candidaturas, evidências, fontes de dados, eixos de fit.
-- **Seletores puros** (`state/selectors.ts`, 1117 linhas) — a única forma como as telas leem dados; nenhuma tela acessa as fixtures diretamente.
-- **Tailwind 4** com tokens de tema escopados em `[data-iel-theme]` (`app/(iel)/iel/iel-theme.css`), para não vazar paleta institucional (azul + ocre) no resto do produto autenticado, que usa a paleta padrão do Arki.
-
-Estrutura de pastas do protótipo:
+- **Monorepo** Bun + Turborepo (starter kit Arki). O protótipo inteiro vive em `apps/dashboard`; os componentes shadcn entraram em `packages/ui/src/components/shadcn/*` (`@workspace/ui/shadcn/<nome>`), sem tocar o kit próprio nem o tema âmbar do resto do produto.
+- **Next.js 15** (App Router), rota isolada em `app/(iel)/iel`, tema escopado em `[data-iel-theme]`, sem autenticação.
+- **Estado client-side**: reducer + `localStorage` com persistência por delta e throttle; um relógio único da demonstração (`nowIso()` ancorado em `DEMO_REFERENCE_DATE`) para prazos da base fictícia não vencerem sozinhos.
+- **Seletores puros** (`state/selectors.ts`) são a única forma como as telas leem dados.
+- **Domínio** em `features/iel-demo/`: `types.ts`, `fixtures/` (núcleo curado + gerador determinístico), `analysis/` (aderência, cultura, convites, importação, relatório, assistente), `ai/`, `copy.ts` (glossário em código).
 
 ```
 app/apps/dashboard/
-├── app/(iel)/iel/              # rotas: layout, 11 telas, tema escopado
-├── components/iel-demo/        # componentes de UI por área (jobs, selection,
-│                                #   talents, companies, clarifications,
-│                                #   referrals, manager, sources, overview, layout)
-└── features/iel-demo/
-    ├── types.ts                 # domínio inteiro do protótipo
-    ├── format.ts
-    ├── fixtures/                 # base curada + gerador determinístico
-    ├── state/                    # reducer, seletores, persistência, provider React
-    ├── analysis/                 # estados de critério, eixos de fit, cultura, assistente
-    └── ai/                       # contrato de provider (em preparação)
+├── app/(iel)/iel/              # rotas, layout, tema escopado (Mind RH)
+├── components/iel-demo/        # layout (sidebar, header, diálogos), overview,
+│                                #   selection, talents, companies, candidate,
+│                                #   import, referrals, clarifications, sources
+├── features/iel-demo/          # types, fixtures, analysis, state, ai, copy
+└── public/marca/               # símbolo e wordmark
+app/packages/ui/src/components/shadcn/   # componentes shadcn (new-york)
 ```
 
 ## Como rodar
 
-Sem Postgres: o protótipo é inteiramente client-side (estado em `localStorage`, sem chamada a banco ou API externa), então a rota `/iel` funciona com o dashboard subindo sem nenhum banco configurado.
+Sem Postgres: o protótipo é inteiramente client-side.
 
 ```bash
 bun install
-bun run quickstart        # copia .env.example → .env, gera AUTH_SECRET, valida ambiente
+bun run quickstart
 bun --filter @workspace/dashboard dev
 ```
 
-Abrir [http://localhost:3000/iel](http://localhost:3000/iel).
-
-Comandos adicionais úteis durante o desenvolvimento (rodados na raiz do repo, salvo indicação contrária):
-
-| Comando | O que faz |
-| --- | --- |
-| `bun run typecheck` | Typecheck do monorepo inteiro |
-| `bun run lint` | Lint do monorepo |
-| `bun run format` | Verifica formatação (Prettier) |
-| `bun --filter @workspace/dashboard dev` | Sobe só o dashboard, onde o protótipo vive |
-| `bun --filter @workspace/dashboard test` | Suíte de testes unitários do dashboard (inclui o IEL) |
-| `bun --filter @workspace/dashboard test:e2e` | Suíte Playwright do dashboard |
-
-Nenhum desses comandos usa `bun --cwd`, sintaxe removida no Bun 1.4; o padrão do repo é `bun --filter <workspace> <script>`.
+Abrir [http://localhost:3000/iel](http://localhost:3000/iel). Comandos: `bun run typecheck`, `bun run lint`, `bun run format`, `bun --filter @workspace/dashboard test`. O repo usa `bun --filter <workspace> <script>` (o Bun 1.4 removeu `--cwd`).
 
 ## Testes
 
-**Unitários** (Vitest). Rodando `bun --filter @workspace/dashboard test` no momento da escrita deste README, a suíte completa do dashboard (que inclui os testes do protótipo IEL e os do restante do starter kit) passa com:
+Unitários (Vitest): `bun --filter @workspace/dashboard test` — **28 arquivos, 231 testes** no momento deste README. Cobrem o motor de aderência (fórmula, pesos, denominador, corte), o ranking, o parser e o plano de importação (separadores, BOM, %, idempotência), os convites (token, expiração, uso único, reenvio, amostra), o relatório para a empresa (faixas, token opaco), o glossário, a persistência e a base determinística (núcleo curado intacto sob o volume gerado).
 
-```
-Test Files  18 passed (18)
-     Tests  134 passed (134)
-```
+E2E (Playwright, `e2e/iel-demo/`): existem oito cenários de jornada; no hackathon o foco foi visual e eles não foram mantidos em dia com a última rodada de telas. Não fazem parte do critério de pronto desta entrega.
 
-Os testes específicos do IEL estão em `features/iel-demo/state/selectors.test.ts` (23 testes), `features/iel-demo/analysis/assistant.test.ts` (8 testes) e `features/iel-demo/state/demo-journey.test.ts` (34 testes) — este último cobre o contrato de que o núcleo curado sobrevive ao volume gerado, IDs não colidem, e a base é construída de forma idêntica em duas chamadas.
+## Roteiro de demonstração
 
-**E2E** (Playwright), dentro de `app/apps/dashboard`:
+Embutido na interface (sidebar → "Roteiro da demo"), em duas versões: **completo, 8 passos** e **curto, 4 paradas**. O caminho curto:
 
-```bash
-PLAYWRIGHT_BASE_URL=http://localhost:3000 bunx playwright test e2e/iel-demo --project=chromium
-```
+1. **Importar** a planilha de exemplo na vaga Assistente de Logística (`/iel/vagas/VAG-01/importar`) — entram 8 pessoas, uma tem o match atualizado, uma é ignorada.
+2. **Vaga**: os section cards, a tabela com Sugeridos e Resgate, abrir Helena no Drawer, marcar 5 e enviar.
+3. **Responder como colaborador** pelo link (`/iel/consulta/418c781c386bb301`): o contador da empresa passa de 7 para 8 de 10.
+4. **Ver o relatório que a empresa recebe** (`/iel/relatorio/<token da vaga>`), depois de registrar o envio.
 
-`e2e/iel-demo/iel-demo-journey.spec.ts` cobre cinco jornadas: a jornada completa do roteiro de demonstração, o limite de três candidatos na comparação com preservação da seleção, filtros de vaga afetando linhas e contadores, recebimento repetido de evento sem duplicar registros, e o fluxo de esclarecimento em largura de celular com navegação por teclado. Um teste de teclado é conhecido por falhar sob WebKit (confirmado como pré-existente à mudança que o expôs); o CI roda apenas Chromium.
+O roteiro completo passa ainda pela pessoa na página cheia, pela empresa (cobrar quem falta, confirmar sugestões), pelo candidato no celular (`/iel/candidatura/CAND-05/fit`) e pela persona do gestor.
+
+## Base de dados fictícia
+
+- **Núcleo curado** — 3 empresas, 3 vagas, 8 talentos, 10 candidaturas, convites e respostas de cultura coerentes entre si (Cerrado Distribuição com 7 de 10 respostas e prazo vencendo; Oficina Pantanal com 3 de 8 e prazo vencido).
+- **Volume gerado** — 15 empresas, 39 vagas, 268 talentos, 635 candidaturas (`fixtures/generated.ts`), 90 sobre a vaga do roteiro. Determinístico (`SEED = 20260914`, `mulberry32`, datas derivadas de `DEMO_REFERENCE_DATE`), IDs com prefixo `GEN-`.
+
+Sem volume, a triagem não precisa de ferramenta; com ele, tabela, filtros e resgate deixam de ser decorativos. Toda a base é sintética, com contatos em `example.com`.
 
 ## Fora do MVP e por quê
 
-- **Acompanhamento pós-contratação** — o briefing exclui explicitamente essa etapa do escopo; a trajetória da pessoa entre processos para no resultado do encaminhamento (interesse em entrevista, empresa não avançou), nunca além disso.
-- **Conectores reais** (Empregare, Gupy, avaliação externa) — o hackathon não exige integração técnica real; as quatro fontes são simuladas, com identificadores coerentes e sem credenciais inventadas.
-- **Chatbot aberto para o candidato** — o briefing rejeita explicitamente "chat IA" como seção dominante ou tela inicial; a análise assistida é uma área contextual dentro da vaga, nunca uma conversa livre.
-- **Testes psicológicos próprios** — o produto não aplica nenhuma avaliação nova; lê o que a empresa e a pessoa já declararam, nos mesmos eixos.
-
-## Referência de mercado
-
-A categoria de ferramentas de fit cultural — avaliação de aderência por instrumento psicométrico, aplicada em plataforma separada e com pontuação de compatibilidade — é o cenário que o próprio enunciado descreve como caro, lento e pouco escalável (`docs/enunciado/07-ja-sabemos-que.md`). Este protótipo se posiciona como alternativa a esse modelo: em vez de aplicar um novo instrumento a cada processo, lê o que os dois lados já registraram, nos mesmos eixos, dentro da mesma jornada. Nenhum fornecedor específico dessa categoria é citado ou usado como referência de dado real neste projeto.
+Segue o MoSCoW do cliente ([`docs/cliente/01-prioridade-funcionalidades-moscow.md`](docs/cliente/01-prioridade-funcionalidades-moscow.md)): API da Empregare (C1), assistente conversacional para o candidato (C2), devolutiva de um clique do RH (C3), validade do perfil cultural (C4), painel gerencial (C6). Won't: substituir o Empregare, prova de conhecimento, perfil comportamental completo, entrevista por IA, login para a empresa.
 
 ## Limitações honestas
 
-- A análise assistida é hoje texto montado por regras determinísticas sobre a base fictícia, não um modelo de linguagem real; a camada de provider para um modelo real existe apenas como contrato (`features/iel-demo/ai/`), sem adapter implementado.
-- Não há rota de API (`/api/iel/assistant`) implementada — apenas a constante de rota reservada em `@workspace/routes`.
-- O seletor de persona ("Visualizar como — demonstração") separa dados por papel dentro do protótipo, mas não é autenticação nem controle de acesso de produção; o próprio produto o rotula assim.
-- A base é inteiramente sintética; nenhuma cobertura real de campo, esquema de banco do IEL ou fornecedor de avaliação externa foi usado — o enunciado veda isso explicitamente durante o hackathon.
-- Persistência é local ao navegador (`localStorage`); não há armazenamento compartilhado entre sessões ou dispositivos.
+- Estado local no navegador; não há servidor. Por isso o link do candidato leva o id da candidatura na URL e não expira — token opaco e uso único, como no link do colaborador, dependem de backend.
+- O resumo assistido é texto por regra fixa por padrão; o adapter Anthropic existe e é opcional.
+- A persona "Ver como" separa dados por papel dentro do estado local; não é autenticação.
+- A escala ordinal de três pontos produz empates no ranking (vários 86%); é o esperado com cinco perguntas curtas, e a ordem secundária é pelos requisitos.
+- Os testes e2e ficaram para trás na última rodada visual.
+
+## Documentação
+
+- [`docs/PRODUTO.md`](docs/PRODUTO.md) — referência do produto: fontes, princípios, regras R1–R12, privacidade por padrão, contradições e plano.
+- [`docs/DESIGN.md`](docs/DESIGN.md) — princípios de interface, glossário e diretriz visual (shadcn + marca).
+- [`docs/cliente/`](docs/cliente/00-indice.md) — MoSCoW, entendimento do desafio e transcrição da reunião de 19/09.
+- [`docs/marca/`](docs/marca/) — manual de marca Madvic / Mind RH e logos.
+- [`app/docs/`](app/docs/) — padrões de código e de git do repositório.

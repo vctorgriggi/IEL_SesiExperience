@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  ADHERENCE_THRESHOLD,
+  formatAdherence
+} from '@/features/iel-demo/analysis/adherence';
 import { CULTURE_QUESTIONS } from '@/features/iel-demo/analysis/culture';
 import {
-  CORTE_DE_ADERENCIA,
-  FAIXA_DE_ENCAIXE_LABEL,
   faixaDeAderencia,
-  formatarAderencia,
   resumirDivergencia,
   TIPO_DE_CULTURA_DESCRICAO,
-  TIPO_DE_CULTURA_LABEL,
-  type FaixaDeEncaixe
+  TIPO_DE_CULTURA_LABEL
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -28,19 +28,10 @@ import { HugeiconsIcon } from '@hugeicons/react';
 
 import { routes } from '@workspace/routes';
 import { Button } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
 
-import { Chip } from '../shared/ui';
+import { FaixaBadge } from './faixa-badge';
 import { COR_DA_EMPRESA, COR_DO_TALENTO } from './plano-cultural';
-
-const TOM_POR_FAIXA: Record<
-  FaixaDeEncaixe,
-  'positivo' | 'info' | 'atencao' | 'conflito'
-> = {
-  'muito-proximo': 'positivo',
-  proximo: 'info',
-  'alguma-distancia': 'atencao',
-  distante: 'conflito'
-};
 
 export interface DetalhePontoCulturalProps {
   ponto: CultureMapPoint;
@@ -70,7 +61,7 @@ export function DetalhePontoCultural({
 
   /** Lida a partir do próprio percentual, para os dois nunca se contradizerem. */
   const faixa = leitura?.aderencia
-    ? faixaDeAderencia(leitura.aderencia.total)
+    ? faixaDeAderencia(leitura.aderencia.total ?? 0)
     : null;
 
   const resumo =
@@ -85,9 +76,9 @@ export function DetalhePontoCultural({
 
   /** Para mostrar, ao lado de cada eixo, quanto ele puxou o total. */
   const aderenciaPorEixo = new Map(
-    (leitura?.aderencia?.porEixo ?? []).map((eixo) => [
+    (leitura?.aderencia?.byAxis ?? []).map((eixo) => [
       eixo.axisId,
-      eixo.aderencia
+      eixo.adherence
     ])
   );
 
@@ -130,14 +121,10 @@ export function DetalhePontoCultural({
             <h3 className="truncate text-base font-semibold text-foreground">
               {ponto.name}
             </h3>
-            <Chip tone={isTalento ? 'info' : 'neutro'}>
+            <Badge variant={isTalento ? 'secondary' : 'outline'}>
               {isTalento ? 'Talento' : 'Empresa'}
-            </Chip>
-            {faixa ? (
-              <Chip tone={TOM_POR_FAIXA[faixa]}>
-                {FAIXA_DE_ENCAIXE_LABEL[faixa]}
-              </Chip>
-            ) : null}
+            </Badge>
+            {faixa ? <FaixaBadge faixa={faixa} /> : null}
           </div>
 
           {ponto.detail ? (
@@ -164,16 +151,19 @@ export function DetalhePontoCultural({
               {leitura?.aderencia ? (
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-semibold tabular-nums text-foreground">
-                    {formatarAderencia(leitura.aderencia.total)}
+                    {formatAdherence(leitura.aderencia.total)}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    sobre {leitura.aderencia.eixosComparados} de{' '}
+                    sobre {leitura.aderencia.coverage.answeredAxes} de{' '}
                     {CULTURE_QUESTIONS.length} eixos
                   </span>
-                  {!leitura.aderencia.compativel ? (
-                    <Chip tone="atencao">
-                      Abaixo do corte de {formatarAderencia(CORTE_DE_ADERENCIA)}
-                    </Chip>
+                  {!leitura.aderencia.compatible ? (
+                    <Badge
+                      className="border-[hsl(var(--brand-accent))]/40 bg-[hsl(var(--brand-accent))]/10 text-[hsl(var(--brand-accent))]"
+                      variant="outline"
+                    >
+                      Abaixo do corte de {formatAdherence(ADHERENCE_THRESHOLD)}
+                    </Badge>
                   ) : null}
                 </div>
               ) : null}
@@ -224,7 +214,7 @@ export function DetalhePontoCultural({
                           </span>
                           {aderenciaPorEixo.has(eixo.axisId) ? (
                             <span className="shrink-0 tabular-nums text-muted-foreground">
-                              {formatarAderencia(
+                              {formatAdherence(
                                 aderenciaPorEixo.get(eixo.axisId)!
                               )}
                             </span>

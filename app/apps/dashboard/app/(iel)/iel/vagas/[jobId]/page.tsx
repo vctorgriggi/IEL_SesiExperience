@@ -1,10 +1,10 @@
-import { SelectionDesk } from '@/components/iel-demo/selection/selection-desk';
+import { JobScreen } from '@/components/iel-demo/selection/job-screen';
 
 type PageProps = {
   params: Promise<{ jobId: string }>;
 };
 
-export default async function IelSelectionDeskPage({ params }: PageProps) {
+export default async function IelJobPage({ params }: PageProps) {
   const { jobId } = await params;
-  return <SelectionDesk jobId={jobId} />;
+  return <JobScreen jobId={jobId} />;
 }

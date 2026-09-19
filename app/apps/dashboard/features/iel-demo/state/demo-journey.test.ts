@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { ADHERENCE_THRESHOLD, computeAdherence } from '../analysis/adherence';
+import {
+  assertCandidateQuestionnaireMirrorsCompany,
+  CANDIDATE_CONSENT_VERSION
+} from '../analysis/candidate-questionnaire';
 import {
   getCoverage,
   getCriterionAnalysis
@@ -17,23 +22,30 @@ import {
 import type { DemoState, Job } from '../types';
 import { applySyncEventPayload, demoReducer, type DemoAction } from './reducer';
 import {
+  getAdherence,
   getApplication,
   getAxisWeight,
   getAxisWeights,
+  getCandidateJobView,
   getClarification,
+  getCompanyCultureProfile,
   getCultureAttentionPoints,
   getCultureReading,
   getFitGaps,
   getFitReading,
+  getFitResponse,
   getJob,
+  getJobRanking,
   getOpenClarifications,
   getOverviewMetrics,
   getPendingAxisWeightSuggestion,
+  getRescueCandidates,
   getReusedEvidences,
   getTalentJourney,
   getTalentTransparency,
   getVisibleTalentIds,
   getWeightLearning,
+  REFERRAL_LIMIT,
   WEIGHT_LEARNING_MIN_OCCURRENCES
 } from './selectors';
 
@@ -898,8 +910,13 @@ describe('devolutiva ao candidato', () => {
 
     const shared = getTalentTransparency(state, 'ANA').sharedWith;
     expect(shared).toHaveLength(1);
-    expect(shared[0]?.companyName).toBe('Horizonte Alimentos');
     expect(shared[0]?.recordCount).toBe(2);
+
+    // R5 (00:22:21, 00:38:43): o nome da empresa não aparece para o candidato
+    // antes da entrevista. Ele vê atividade, localidade e segmento.
+    expect(JSON.stringify(shared)).not.toContain('Horizonte Alimentos');
+    expect(shared[0]?.jobView?.sector).toBe('Indústria de alimentos');
+    expect(shared[0]?.jobView?.location).toBeTruthy();
   });
 
   it('não vaza dados de outra pessoa', () => {
@@ -1195,5 +1212,367 @@ describe('aprendizado dos processos sobre o peso dos eixos', () => {
     });
 
     expect(getWeightLearning(state, 'VAG-01')).toEqual([]);
+  });
+});
+
+describe('perfil cultural da empresa como média', () => {
+  it('calcula a média ponderada por respondente, não por papel', () => {
+    const state = buildInitialDemoState();
+    const profile = getCompanyCultureProfile(state, 'EMP-01');
+    const apoio = profile.find((entry) => entry.axisId === 'apoio-inicial')!;
+
+    // Cerrado, apoio inicial: gestão respondeu "troca informal" (2, 1 pessoa)
+    // e a equipe respondeu "por conta" (1, 5 pessoas) e "troca informal"
+    // (2, 2 pessoas). A média é do que a empresa entende (00:41:44), então as
+    // 8 respostas entram com o mesmo peso individual: (2 + 5 + 4) / 8.
+    expect(apoio.respondents).toBe(8);
+    expect(apoio.mean).toBeCloseTo(11 / 8, 10);
+    expect(apoio.byRole.gestao).toBe(2);
+    expect(apoio.byRole.equipe).toBeCloseTo(9 / 7, 10);
+
+    // A média é o perfil; a dispersão continua sendo o diagnóstico. Uma não
+    // apaga a outra — foi essa a correção da reunião sobre o briefing.
+    expect(apoio.dispersion).toBe('divergente');
+    expect(apoio.ready).toBe(true);
+  });
+
+  it('não fecha o perfil onde a consulta à equipe não tem base', () => {
+    const state = buildInitialDemoState();
+    const profile = getCompanyCultureProfile(state, 'EMP-03');
+    const autonomia = profile.find((entry) => entry.axisId === 'autonomia')!;
+
+    // Oficina Pantanal: duas respostas da equipe. Duas pessoas não são "a
+    // equipe", e o documento de produto manda o perfil não fechar e a tela
+    // dizer isso, em vez de tratar duas como o conjunto.
+    expect(autonomia.respondents).toBe(3);
+    expect(autonomia.mean).not.toBeNull();
+    expect(autonomia.ready).toBe(false);
+
+    // Eixo sem resposta nenhuma não tem média para mostrar.
+    const aprendizado = profile.find(
+      (entry) => entry.axisId === 'aprendizado'
+    )!;
+    expect(aprendizado.mean).toBeNull();
+    expect(aprendizado.respondents).toBe(0);
+  });
+});
+
+describe('motor de aderência', () => {
+  it('mede a distância entre os dois lados na escala ordinal', () => {
+    // Extremos opostos na escala 1..3: distância máxima, aderência zero.
+    const oposto = computeAdherence(
+      { 'apoio-inicial': 1 },
+      { 'apoio-inicial': 3 },
+      { 'apoio-inicial': 'alto' }
+    );
+    expect(oposto.byAxis[0]?.adherence).toBe(0);
+    expect(oposto.total).toBe(0);
+
+    // Mesma resposta dos dois lados: 100. Não é "vai dar certo", é "o que a
+    // empresa pratica é o que a pessoa procura naquele eixo".
+    const igual = computeAdherence(
+      { 'apoio-inicial': 2 },
+      { 'apoio-inicial': 2 },
+      { 'apoio-inicial': 'alto' }
+    );
+    expect(igual.byAxis[0]?.adherence).toBe(100);
+    expect(igual.total).toBe(100);
+  });
+
+  it('pondera o total pelo peso que a empresa declarou', () => {
+    // Conta refeita à mão, que é o critério de aceitação: com peso alto = 3 e
+    // baixo = 1, um eixo em 100 (alto) e outro em 0 (baixo) dão
+    // (100×3 + 0×1) / (3 + 1) = 75.
+    const result = computeAdherence(
+      { 'apoio-inicial': 2, aprendizado: 1 },
+      { 'apoio-inicial': 2, aprendizado: 3 },
+      { 'apoio-inicial': 'alto', aprendizado: 'baixo' }
+    );
+
+    expect(result.total).toBe(75);
+    expect(result.coverage).toEqual({ answeredAxes: 2, totalAxes: 5 });
+  });
+
+  it('não inventa número onde falta um dos lados', () => {
+    // Empresa sem perfil fechado: não há do que medir distância.
+    const semEmpresa = computeAdherence({}, { 'apoio-inicial': 3 }, {});
+    expect(semEmpresa.byAxis[0]?.adherence).toBeNull();
+    expect(semEmpresa.total).toBeNull();
+    expect(semEmpresa.compatible).toBeNull();
+
+    // Candidato que não respondeu também não tem medida. `null` e não zero:
+    // zero é uma medida, ausência é outra coisa, e confundir as duas
+    // transformaria silêncio em demérito.
+    const semCandidato = computeAdherence({ 'apoio-inicial': 2 }, null, {});
+    expect(semCandidato.byAxis[0]?.adherence).toBeNull();
+    expect(semCandidato.total).toBeNull();
+    expect(semCandidato.compatible).toBeNull();
+    expect(semCandidato.coverage.answeredAxes).toBe(0);
+  });
+
+  it('aplica o corte de 35% do cliente exatamente na borda', () => {
+    // R3 (00:20:19): "no mínimo 35%". Mínimo inclui o 35.
+    const noCorte = computeAdherence(
+      { 'apoio-inicial': 1 + 2 * (1 - ADHERENCE_THRESHOLD / 100) },
+      { 'apoio-inicial': 1 },
+      {}
+    );
+    expect(noCorte.total).toBeCloseTo(ADHERENCE_THRESHOLD, 10);
+    expect(noCorte.compatible).toBe(true);
+
+    const abaixo = computeAdherence(
+      { 'apoio-inicial': 1 + 2 * (1 - 34.99 / 100) },
+      { 'apoio-inicial': 1 },
+      {}
+    );
+    expect(abaixo.total).toBeCloseTo(34.99, 10);
+    expect(abaixo.compatible).toBe(false);
+  });
+
+  it('monta a aderência da candidatura a partir do estado', () => {
+    const state = buildInitialDemoState();
+    const ana = getAdherence(state, 'CAND-01')!;
+
+    // Cerrado só fechou dois eixos; o denominador precisa ficar visível.
+    expect(ana.coverage).toEqual({ answeredAxes: 2, totalAxes: 5 });
+
+    // Ana espera acompanhamento (3) numa empresa que mal tem apoio (1,375):
+    // 100 × (1 − 1,625/2) = 18,75. É o eixo em que a leitura por estado já
+    // apontava divergência — o número explica a mesma coisa, com escala.
+    const apoio = ana.byAxis.find((entry) => entry.axisId === 'apoio-inicial')!;
+    expect(apoio.candidateValue).toBe(3);
+    expect(apoio.adherence).toBeCloseTo(18.75, 10);
+    expect(apoio.weight).toBe('alto');
+
+    // Total ponderado: apoio (18,75 × 3) e comunicação (93,75 × 2) sobre 5.
+    expect(ana.total).toBeCloseTo(48.75, 10);
+    expect(ana.compatible).toBe(true);
+  });
+
+  it('não calcula aderência onde o perfil da empresa não fechou', () => {
+    const state = buildInitialDemoState();
+    // Oficina Pantanal tem duas respostas da equipe num eixo só.
+    const carla = getAdherence(state, 'CAND-08')!;
+
+    expect(carla.total).toBeNull();
+    expect(carla.compatible).toBeNull();
+    expect(carla.coverage.answeredAxes).toBe(0);
+  });
+});
+
+describe('questionário de fit do candidato', () => {
+  it('usa a mesma escala dos dois lados', () => {
+    // Um eixo acrescentado só de um lado, ou uma alternativa com valor
+    // diferente entre empresa e candidato, daria um percentual que parece
+    // certo e não é. Como isso não aparece em tela nenhuma, a garantia é esta.
+    expect(assertCandidateQuestionnaireMirrorsCompany()).toEqual([]);
+  });
+
+  it('grava resposta e aceite juntos, com histórico', () => {
+    let state = buildInitialDemoState();
+    expect(getFitResponse(state, 'CAND-10')).toBeNull();
+
+    state = demoReducer(state, {
+      type: 'answer-fit-questionnaire',
+      applicationId: 'CAND-10',
+      answers: {
+        'apoio-inicial': 2,
+        autonomia: 2,
+        'comunicacao-prioridades': 2,
+        'ritmo-turno': 2,
+        aprendizado: 2
+      },
+      consentVersion: CANDIDATE_CONSENT_VERSION,
+      at: AT
+    });
+
+    const response = getFitResponse(state, 'CAND-10')!;
+    expect(response.answers['apoio-inicial']).toBe(2);
+    // A base legal é o consentimento (LGPD, art. 7º, I). Sem versão e hora
+    // do aceite não há como demonstrar a que a pessoa consentiu.
+    expect(response.consent.version).toBe(CANDIDATE_CONSENT_VERSION);
+    expect(response.consent.acceptedAt).toBe(AT);
+    expect(state.history[0]?.action).toBe('Questionário de fit respondido');
+  });
+
+  it('substitui a resposta anterior em vez de acumular duas', () => {
+    let state = buildInitialDemoState();
+    const before = state.fitResponses?.length ?? 0;
+
+    const answer = (value: 1 | 2 | 3) =>
+      demoReducer(state, {
+        type: 'answer-fit-questionnaire',
+        applicationId: 'CAND-01',
+        answers: {
+          'apoio-inicial': value,
+          autonomia: value,
+          'comunicacao-prioridades': value,
+          'ritmo-turno': value,
+          aprendizado: value
+        },
+        consentVersion: CANDIDATE_CONSENT_VERSION,
+        at: AT
+      });
+
+    state = answer(1);
+    state = answer(3);
+
+    expect(state.fitResponses).toHaveLength(before);
+    expect(getFitResponse(state, 'CAND-01')?.answers.autonomia).toBe(3);
+    // A troca fica registrada: a aderência muda com ela, e o analista precisa
+    // poder explicar por que o percentual de ontem não é o de hoje.
+    expect(state.history[0]?.action).toBe(
+      'Questionário de fit respondido novamente'
+    );
+  });
+
+  it('nunca entrega o nome da empresa ao candidato', () => {
+    const state = buildInitialDemoState();
+    const view = getCandidateJobView(state, 'CAND-01')!;
+
+    // R5 (00:22:21, 00:38:43): atividade, localidade e segmento — nunca o
+    // nome. Este teste falha no instante em que o nome voltar por qualquer
+    // caminho, porque compara com o serializado inteiro.
+    expect(view.sector).toBe('Distribuição e logística');
+    expect(view.activity).toBe('Assistente de Logística');
+    expect(JSON.stringify(view)).not.toContain('Cerrado');
+
+    // A resposta gravada também não carrega empresa: ela é da candidatura.
+    expect(JSON.stringify(getFitResponse(state, 'CAND-01'))).not.toContain(
+      'EMP-'
+    );
+  });
+});
+
+describe('ranking por vaga', () => {
+  it('ordena por aderência e joga quem não tem medida para o fim', () => {
+    const state = buildInitialDemoState();
+    const ranking = getJobRanking(state, 'VAG-01');
+
+    const totals = ranking.map((entry) => entry.adherence.total);
+    const medidos = totals.filter((total): total is number => total !== null);
+
+    // Desc entre os medidos, e nenhum `null` antes de um número: sem resposta
+    // não há medida, e ordenar ausência como se fosse aderência mínima seria
+    // punir pelo silêncio.
+    expect([...medidos].sort((a, b) => b - a)).toEqual(medidos);
+    expect(totals.indexOf(null)).toBe(medidos.length);
+
+    expect(ranking[0]?.rank).toBe(1);
+    expect(ranking.every((entry) => entry.technicalMatch !== null)).toBe(true);
+  });
+
+  it('põe quem respondeu acima de quem não respondeu', () => {
+    const state = buildInitialDemoState();
+    const ranking = getJobRanking(state, 'VAG-03');
+
+    const carla = ranking.findIndex(
+      (entry) => entry.application.id === 'CAND-08'
+    );
+    const hugo = ranking.findIndex(
+      (entry) => entry.application.id === 'CAND-10'
+    );
+
+    expect(ranking[carla]?.fitStatus).toBe('respondido');
+    expect(ranking[hugo]?.fitStatus).toBe('expirado');
+  });
+
+  it('marca quem ficou abaixo do corte sem escondê-lo da lista', () => {
+    let state = buildInitialDemoState();
+    state = demoReducer(state, {
+      type: 'answer-fit-questionnaire',
+      applicationId: 'CAND-01',
+      answers: {
+        'apoio-inicial': 3,
+        autonomia: 3,
+        'comunicacao-prioridades': 1,
+        'ritmo-turno': 3,
+        aprendizado: 3
+      },
+      consentVersion: CANDIDATE_CONSENT_VERSION,
+      at: AT
+    });
+
+    const ana = getJobRanking(state, 'VAG-01').find(
+      (entry) => entry.application.id === 'CAND-01'
+    )!;
+
+    // 35% é corte de atenção para o analista decidir, não gatilho automático:
+    // quem fica abaixo continua na lista, marcado.
+    expect(ana.adherence.total).toBeLessThan(ADHERENCE_THRESHOLD);
+    expect(ana.belowThreshold).toBe(true);
+  });
+
+  it('resgata quem o filtro técnico descartaria e a cultura sustenta', () => {
+    const state = buildInitialDemoState();
+    const rescue = getRescueCandidates(state, 'VAG-02');
+
+    // R10: o filtro técnico configurado errado expurga candidato aderente.
+    // Fábio tem 45 de técnico e responde exatamente o que a Horizonte pratica.
+    expect(rescue.map((entry) => entry.application.id)).toContain('CAND-07');
+    expect(
+      rescue.every(
+        (entry) =>
+          (entry.technicalMatch ?? 0) < 50 &&
+          (entry.adherence.total ?? 0) >= ADHERENCE_THRESHOLD
+      )
+    ).toBe(true);
+  });
+});
+
+describe('limite de currículos por vaga', () => {
+  it('recusa o sexto currículo e registra a recusa no histórico', () => {
+    let state = buildInitialDemoState();
+    const candidatos = getJobRanking(state, 'VAG-01')
+      .slice(0, REFERRAL_LIMIT + 1)
+      .map((entry) => entry.application.id);
+
+    expect(candidatos).toHaveLength(6);
+
+    for (const applicationId of candidatos) {
+      state = demoReducer(state, {
+        type: 'add-to-referral-list',
+        jobId: 'VAG-01',
+        applicationId,
+        at: AT
+      });
+    }
+
+    // R6 (00:33:30): máximo de 5 currículos por vaga. A sexta não entra, e a
+    // recusa aparece — senão o analista tentaria de novo achando que o clique
+    // falhou, em vez de trocar alguém da lista.
+    expect(state.referralList['VAG-01']).toHaveLength(REFERRAL_LIMIT);
+    expect(state.referralList['VAG-01']).not.toContain(candidatos[5]);
+    expect(state.history[0]?.action).toBe('Limite de 5 currículos por vaga');
+  });
+
+  it('não registra encaminhamento acima do limite', () => {
+    let state = buildInitialDemoState();
+    const items = getJobRanking(state, 'VAG-01')
+      .slice(0, REFERRAL_LIMIT + 1)
+      .map((entry) => ({
+        applicationId: entry.application.id,
+        justification: 'Seleção da demonstração.',
+        sharedEvidenceIds: [],
+        summary: entry.talent?.name ?? entry.application.id,
+        attentionPoints: [],
+        suggestedQuestions: []
+      }));
+
+    state = demoReducer(state, {
+      type: 'register-referral',
+      at: AT,
+      input: {
+        jobId: 'VAG-01',
+        companyId: 'EMP-01',
+        message: 'Remessa acima do limite.',
+        items
+      }
+    });
+
+    // O limite vale para a remessa, não só para a lista: registrar é o caminho
+    // que de fato entrega currículos à empresa.
+    expect(state.referrals).toHaveLength(0);
+    expect(state.history[0]?.action).toBe('Limite de 5 currículos por vaga');
   });
 });

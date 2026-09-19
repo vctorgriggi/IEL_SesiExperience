@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import {
+  formatAdherence,
+  type AdherenceResult
+} from '@/features/iel-demo/analysis/adherence';
+import {
   FAIXA_DE_ENCAIXE_LABEL,
   faixaDeAderencia,
   FAIXAS_DE_ENCAIXE,
-  formatarAderencia,
   LIMITE_SEM_PREDOMINANCIA,
   TIPO_DE_CULTURA_LABEL,
-  type Aderencia,
   type ClassificacaoCultural
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { plural } from '@/features/iel-demo/format';
@@ -23,24 +25,25 @@ import {
 import { cn } from '@workspace/ui';
 
 /**
- * Azul e âmbar — quente contra frio, o par de maior separação do tema.
+ * Azul-marinho para a multidão, coral da marca para a empresa.
  *
- * Duas trocas levaram até aqui. O par original (`--chart-1` e `--chart-2`,
- * azul e violeta) media ΔE 0,3 em deuteranopia: a olho nu parecem distintos,
- * para quem tem daltonismo verde-vermelho são a mesma cor. O teal de
- * `--chart-3` resolveu isso, mas ainda deixava 8,4 em tritanopia.
+ * Três trocas levaram até aqui, e as duas primeiras caducaram quando o tema
+ * mudou. O par original (`--chart-1` e `--chart-2`) media ΔE 0,3 em
+ * deuteranopia: a olho nu parecem distintos, para quem tem daltonismo
+ * verde-vermelho são a mesma cor. O âmbar que veio depois virou tinta de
+ * superfície no tema Mind RH — `--chart-4` é a cor da borda, e o quadrado da
+ * empresa sumia no fundo claro.
  *
- * O âmbar de `--chart-4` separa em 42,7 na visão normal e não cai abaixo de
- * 31 em nenhum tipo de daltonismo.
+ * O par atual separa em ΔE 53,1 na visão normal e não cai abaixo de 40 em
+ * nenhum tipo de daltonismo. Não é coincidência: `--chart-3` é o coral da
+ * marca, reservado no tema para "a marca do 35%, ponto de atenção" — e a
+ * empresa de referência é justamente o ponto contra o qual tudo é medido.
  *
- * Ele fica perto de `--warning` (ΔE 9,2), usado nos chips da lista ao lado —
- * mas o mesmo vale para toda cor categórica deste tema: o teal encosta em
- * `--success` (8,2) e o rosa em `--destructive` (10,2). Como não há escapatória
- * pela cor, quem desambigua é a forma: círculo para pessoa, quadrado para
- * empresa, mais a legenda fixa. Nenhuma leitura do mapa depende só da cor.
+ * A forma reforça: círculo para pessoa, quadrado para empresa. Nenhuma leitura
+ * do mapa depende só da cor.
  */
 export const COR_DO_TALENTO = 'hsl(var(--chart-1))';
-export const COR_DA_EMPRESA = 'hsl(var(--chart-4))';
+export const COR_DA_EMPRESA = 'hsl(var(--chart-3))';
 
 /** Limite da faixa "muito próximo", na mesma escala do plano. */
 const RAIO_MUITO_PROXIMO =
@@ -73,7 +76,7 @@ export interface PlanoCulturalProps {
    */
   focusIds?: Set<string> | null;
   /** Aderência por talento, para o balão repetir o número que a lista mostra. */
-  aderenciaPorTalento?: Map<string, Aderencia>;
+  aderenciaPorTalento?: Map<string, AdherenceResult>;
   onSelect?: (id: string) => void;
   className?: string;
 }
@@ -191,10 +194,10 @@ export function PlanoCultural({
         {aderencia ? (
           <p className="mt-1 flex items-baseline justify-between gap-2 border-t border-border/60 pt-1 text-[10px] font-semibold text-foreground">
             <span>
-              {FAIXA_DE_ENCAIXE_LABEL[faixaDeAderencia(aderencia.total)]}
+              {FAIXA_DE_ENCAIXE_LABEL[faixaDeAderencia(aderencia.total ?? 0)]}
             </span>
             <span className="tabular-nums">
-              {formatarAderencia(aderencia.total)}{' '}
+              {formatAdherence(aderencia.total)}{' '}
               <span className="font-normal text-muted-foreground">
                 aderência
               </span>

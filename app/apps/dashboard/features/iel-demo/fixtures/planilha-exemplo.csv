@@ -1,0 +1,13 @@
+﻿nome;email;telefone;cidade;vaga;match_tecnico;situacao
+Ana Ribeiro;ana.ribeiro@example.com;(62) 99100-0001;Goiânia, GO;Assistente de Logística;82%;Em análise
+Bruno Costa;bruno.costa@example.com;(62) 99100-0002;Goiânia, GO;Assistente de Logística;80;Em análise
+Elisa Martins;elisa.martins@example.com;(62) 99100-0003;Anápolis, GO;Assistente de Logística;74%;Em análise
+Fábio Lima;fabio.lima@example.com;(62) 99100-0004;Goiânia, GO;Assistente de Logística;53;Em análise
+Iara Souza;iara.souza@example.com;(62) 99100-0005;Goiânia, GO;Assistente de Logística;68%;Em análise
+João Peixoto;joao.peixoto@example.com;(62) 99100-0006;Aparecida de Goiânia, GO;Assistente de Logística;59;Em análise
+Larissa Prado;larissa.prado@example.com;(62) 99100-0007;Goiânia, GO;Assistente de Logística;47%;Descartado pelo filtro
+Marcos Vieira;marcos.vieira@example.com;(62) 99100-0008;Goiânia, GO;Assistente de Logística;91;Em análise
+Natália Cruz;natalia.cruz@example.com;(62) 99100-0009;Trindade, GO;Assistente de Logística;38%;Descartado pelo filtro
+Otávio Ramos;otavio.ramos@example.com;(62) 99100-0010;Goiânia, GO;Assistente de Logística;55;Em análise
+Priscila Antunes;priscila.antunes@example.com;(62) 99100-0011;"Senador Canedo, GO";Assistente de Logística;73%;Em análise
+Rodrigo Bastos;rodrigo.bastos@example.com;(62) 99100-0012;Goiânia, GO;Assistente de Logística;62;Em análise

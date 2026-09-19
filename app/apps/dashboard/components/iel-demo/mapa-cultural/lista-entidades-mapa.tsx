@@ -1,15 +1,16 @@
 'use client';
 
+import {
+  ADHERENCE_THRESHOLD,
+  formatAdherence,
+  type AdherenceResult
+} from '@/features/iel-demo/analysis/adherence';
 import { CULTURE_QUESTIONS } from '@/features/iel-demo/analysis/culture';
 import {
-  CORTE_DE_ADERENCIA,
-  FAIXA_DE_ENCAIXE_LABEL,
   faixaDeAderencia,
-  formatarAderencia,
   MINIMO_DE_EIXOS_PARA_RANQUEAR,
-  TIPO_DE_CULTURA_LABEL,
-  type Aderencia,
-  type FaixaDeEncaixe
+  temBaseParaRanquear,
+  TIPO_DE_CULTURA_LABEL
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { plural } from '@/features/iel-demo/format';
 import type { CultureMapPoint } from '@/features/iel-demo/state/selectors';
@@ -22,20 +23,11 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 
 import { cn, Input } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
 
-import { Chip } from '../shared/ui';
 import { DetalhePontoCultural } from './detalhe-ponto-cultural';
+import { FaixaBadge } from './faixa-badge';
 import { COR_DA_EMPRESA, COR_DO_TALENTO } from './plano-cultural';
-
-const TOM_POR_FAIXA: Record<
-  FaixaDeEncaixe,
-  'positivo' | 'info' | 'atencao' | 'conflito'
-> = {
-  'muito-proximo': 'positivo',
-  proximo: 'info',
-  'alguma-distancia': 'atencao',
-  distante: 'conflito'
-};
 
 export interface ListaEntidadesMapaProps {
   pontos: CultureMapPoint[];
@@ -47,7 +39,7 @@ export interface ListaEntidadesMapaProps {
    * Empresa & Talentos: sem uma empresa contra a qual medir, não há posição a
    * atribuir e a lista volta a ser só uma lista.
    */
-  aderenciaPorTalento?: Map<string, Aderencia>;
+  aderenciaPorTalento?: Map<string, AdherenceResult>;
   vagaContextoId?: string | null;
   busca: string;
   quadranteAtivo: string | null;
@@ -141,13 +133,13 @@ export function ListaEntidadesMapa({
              * sair do índice do array: a empresa de referência abre a lista sem
              * número, e quem está abaixo do piso vem depois, também sem número.
              */
-            const posicao = aderencia?.baseSuficiente
-              ? pontos
-                  .slice(0, indice)
-                  .filter(
-                    (anterior) =>
-                      aderenciaPorTalento?.get(anterior.id)?.baseSuficiente
-                  ).length + 1
+            const posicao = (aderencia ? temBaseParaRanquear(aderencia) : false)
+              ? pontos.slice(0, indice).filter((anterior) =>
+                  (() => {
+                    const a = aderenciaPorTalento?.get(anterior.id);
+                    return a ? temBaseParaRanquear(a) : false;
+                  })()
+                ).length + 1
               : null;
 
             /* Primeira linha sem base suficiente: ganha o separador acima. */
@@ -157,8 +149,8 @@ export function ListaEntidadesMapa({
               : undefined;
             const abreGrupoSemBase =
               Boolean(aderencia) &&
-              !aderencia?.baseSuficiente &&
-              (!aderenciaAnterior || aderenciaAnterior.baseSuficiente);
+              !(aderencia ? temBaseParaRanquear(aderencia) : false) &&
+              (!aderenciaAnterior || temBaseParaRanquear(aderenciaAnterior));
 
             return (
               <li key={`${ponto.kind}-${ponto.id}`}>
@@ -235,29 +227,21 @@ export function ListaEntidadesMapa({
                         <span
                           className={cn(
                             'text-sm font-semibold tabular-nums',
-                            aderencia.baseSuficiente
+                            temBaseParaRanquear(aderencia)
                               ? 'text-foreground'
                               : 'text-muted-foreground'
                           )}
                         >
-                          {formatarAderencia(aderencia.total)}
+                          {formatAdherence(aderencia.total)}
                         </span>
                         {/*
                           A faixa lê o próprio percentual ao lado dela — e só
                           aparece quando o percentual se sustenta.
                         */}
-                        {aderencia.baseSuficiente ? (
-                          <Chip
-                            tone={
-                              TOM_POR_FAIXA[faixaDeAderencia(aderencia.total)]
-                            }
-                          >
-                            {
-                              FAIXA_DE_ENCAIXE_LABEL[
-                                faixaDeAderencia(aderencia.total)
-                              ]
-                            }
-                          </Chip>
+                        {temBaseParaRanquear(aderencia) ? (
+                          <FaixaBadge
+                            faixa={faixaDeAderencia(aderencia.total ?? 0)}
+                          />
                         ) : null}
                       </div>
                       {/*
@@ -266,28 +250,28 @@ export function ListaEntidadesMapa({
                         nunca depende só da cor.
                       */}
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {!aderencia.baseSuficiente ? (
+                        {!temBaseParaRanquear(aderencia) ? (
                           <>
-                            só {aderencia.eixosComparados} de{' '}
+                            só {aderencia.coverage.answeredAxes} de{' '}
                             {CULTURE_QUESTIONS.length} eixos em comum
                           </>
-                        ) : aderencia.compativel ? (
+                        ) : aderencia.compatible ? (
                           <>
-                            aderência · {aderencia.eixosComparados} de{' '}
+                            aderência · {aderencia.coverage.answeredAxes} de{' '}
                             {CULTURE_QUESTIONS.length} eixos
                           </>
                         ) : (
                           <span className="font-medium text-warning">
                             abaixo do corte de{' '}
-                            {formatarAderencia(CORTE_DE_ADERENCIA)}
+                            {formatAdherence(ADHERENCE_THRESHOLD)}
                           </span>
                         )}
                       </p>
                     </div>
                   ) : (
-                    <Chip tone={isTalento ? 'info' : 'neutro'}>
+                    <Badge variant={isTalento ? 'secondary' : 'outline'}>
                       {isTalento ? 'Talento' : 'Empresa'}
-                    </Chip>
+                    </Badge>
                   )}
                 </button>
               </li>

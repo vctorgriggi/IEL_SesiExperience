@@ -4,13 +4,12 @@ import {
 } from '@/features/iel-demo/analysis/criterion-states';
 import type { CriterionState } from '@/features/iel-demo/types';
 import {
-  AlertCircleIcon,
-  CheckmarkCircle02Icon,
-  HelpCircleIcon,
-  InformationCircleIcon,
-  MinusSignIcon
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
+  CircleAlert,
+  CircleCheck,
+  CircleHelp,
+  Info,
+  Minus
+} from 'lucide-react';
 
 import { cn } from '@workspace/ui';
 
@@ -19,7 +18,7 @@ type Tone = CriterionStateMeta['tone'];
 /** Só a cor do texto: para títulos de estado, sem o peso de uma pill. */
 export const criterionStateTextClass: Record<Tone, string> = {
   positivo: 'text-success',
-  atencao: 'text-warning',
+  atencao: 'text-[hsl(var(--brand-accent))]',
   conflito: 'text-destructive',
   neutro: 'text-muted-foreground',
   desativado: 'text-muted-foreground'
@@ -31,18 +30,18 @@ export const criterionStateTextClass: Record<Tone, string> = {
  */
 const toneDotClass: Record<Tone, string> = {
   positivo: 'bg-success',
-  atencao: 'bg-warning',
+  atencao: 'bg-[hsl(var(--brand-accent))]',
   conflito: 'bg-destructive',
   neutro: 'border border-muted-foreground/50 bg-transparent',
   desativado: 'border border-dashed border-muted-foreground/40 bg-transparent'
 };
 
-const toneIcon: Record<Tone, typeof HelpCircleIcon> = {
-  positivo: CheckmarkCircle02Icon,
-  atencao: HelpCircleIcon,
-  conflito: AlertCircleIcon,
-  neutro: MinusSignIcon,
-  desativado: InformationCircleIcon
+const toneIcon: Record<Tone, typeof CircleHelp> = {
+  positivo: CircleCheck,
+  atencao: CircleHelp,
+  conflito: CircleAlert,
+  neutro: Minus,
+  desativado: Info
 };
 
 /** Estado como título: ícone + rótulo coloridos, sem fundo. */
@@ -54,6 +53,7 @@ export function CriterionStateHeadline({
   className?: string;
 }) {
   const meta = CRITERION_STATE_META[state];
+  const Icon = toneIcon[meta.tone];
 
   return (
     <span
@@ -64,11 +64,9 @@ export function CriterionStateHeadline({
       )}
       title={meta.description}
     >
-      <HugeiconsIcon
-        icon={toneIcon[meta.tone]}
-        size={14}
+      <Icon
         aria-hidden="true"
-        className="shrink-0"
+        className="size-3.5 shrink-0"
       />
       {meta.label}
     </span>
