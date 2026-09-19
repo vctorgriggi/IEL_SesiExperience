@@ -77,13 +77,13 @@ export function StatCard({
   href?: ReactNode;
 }) {
   return (
-    <div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3">
+    <div className="iel-panel px-4 py-3.5">
       <div className="flex items-center gap-2 text-muted-foreground">
         {icon}
-        <span className="text-xs font-medium">{label}</span>
+        <span className="text-xs font-medium leading-snug">{label}</span>
         {hint ? <InfoHint label={hint} /> : null}
       </div>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+      <p className="iel-figure mt-1.5 text-[1.75rem] leading-none text-foreground">
         {value}
       </p>
       {href}
@@ -153,15 +153,11 @@ export function IelPageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="space-y-3 border-b border-border pb-4">
+    <header className="space-y-3 border-b border-border pb-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-1">
-          {eyebrow ? (
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {eyebrow}
-            </p>
-          ) : null}
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
+          <h1 className="iel-display text-[1.75rem] leading-tight text-foreground">
             {title}
           </h1>
           {description ? (
@@ -408,4 +404,92 @@ export function SourceDot({
       )}
     />
   );
+}
+
+/**
+ * Superfície da Central.
+ *
+ * Substitui o `Card` genérico: borda fina, sem sombra, sem canto arredondado
+ * forte. A diferença entre blocos passa a vir do título e do espaço, não de
+ * profundidade simulada.
+ */
+export function Panel({
+  children,
+  className,
+  padding = 'md'
+}: {
+  children: ReactNode;
+  className?: string;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+}) {
+  return (
+    <section
+      className={cn(
+        'iel-panel',
+        padding === 'sm' && 'p-4',
+        padding === 'md' && 'p-5',
+        padding === 'lg' && 'p-6',
+        className
+      )}
+    >
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Cabeçalho de bloco: rótulo em versalete, título em serifa e a explicação
+ * atrás do ícone. Três níveis de voz onde antes havia um negrito só.
+ */
+export function PanelHeader({
+  eyebrow,
+  title,
+  hint,
+  meta,
+  actions,
+  className
+}: {
+  eyebrow?: string;
+  title: ReactNode;
+  hint?: string;
+  /** Linha curta de contagem ou contexto, abaixo do título. */
+  meta?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header
+      className={cn(
+        'flex flex-wrap items-start justify-between gap-x-4 gap-y-2',
+        className
+      )}
+    >
+      <div className="min-w-0">
+        {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
+        <h2 className="iel-display mt-0.5 flex items-center gap-1.5 text-lg text-foreground">
+          {title}
+          {hint ? <InfoHint label={hint} /> : null}
+        </h2>
+        {meta ? (
+          <p className="mt-1 text-sm text-muted-foreground">{meta}</p>
+        ) : null}
+      </div>
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {actions}
+        </div>
+      ) : null}
+    </header>
+  );
+}
+
+/** Número de destaque, em serifa com algarismos tabulares. */
+export function Figure({
+  value,
+  className
+}: {
+  value: ReactNode;
+  className?: string;
+}) {
+  return <span className={cn('iel-figure', className)}>{value}</span>;
 }

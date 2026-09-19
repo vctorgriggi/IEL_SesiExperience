@@ -112,3 +112,81 @@ body:has([data-iel-theme]),
   --chart-4: 36 88% 58%;
   --chart-5: 268 60% 68%;
 }
+
+/*
+ * Tipografia e superfícies da Central.
+ *
+ * O que fazia a tela parecer qualquer painel de SaaS não era falta de
+ * componente: era tudo ter o mesmo peso. Cada bloco era um cartão branco com
+ * borda, sombra e canto arredondado, e todo texto vinha da mesma fonte
+ * arredondada em dois tamanhos. Sem hierarquia de voz, nada parece importante
+ * — e o fit cultural, que é o centro do produto, ficava com o mesmo destaque
+ * de uma lista qualquer.
+ *
+ * Aqui a hierarquia volta por tipografia e por régua, não por caixa.
+ */
+
+body:has([data-iel-theme]) {
+  font-family:
+    var(--iel-font-sans),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-feature-settings: 'cv05' 1;
+}
+
+[data-iel-theme] {
+  --font-sans: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--iel-font-serif), ui-serif, Georgia, serif;
+
+  /* Cantos mais secos: o arredondado forte é o que mais datava a tela. */
+  --card-radius: 0.5rem;
+  --control-radius: 0.375rem;
+}
+
+/* Títulos e números de destaque falam com outra voz. */
+[data-iel-theme] .iel-display {
+  font-family: var(--iel-font-serif), ui-serif, Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Números grandes: serifa com algarismos tabulares para alinhar em coluna. */
+[data-iel-theme] .iel-figure {
+  font-family: var(--iel-font-serif), ui-serif, Georgia, serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/*
+ * Rótulo de seção: versalete espaçado. Substitui o título em negrito que
+ * competia com o conteúdo logo abaixo dele.
+ */
+[data-iel-theme] .iel-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/*
+ * Superfície da Central: borda fina, sem sombra. A sombra em todo bloco fazia
+ * a página parecer um monte de cartões soltos; a régua fina separa sem
+ * empilhar profundidade falsa.
+ */
+[data-iel-theme] .iel-panel {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--card-radius);
+}
+
+/* Fundo levemente texturizado, para o branco dos painéis ter sobre o que se apoiar. */
+body:has([data-iel-theme]) {
+  background-image: radial-gradient(
+    hsl(var(--foreground) / 0.035) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}

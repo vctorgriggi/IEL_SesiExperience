@@ -8,15 +8,18 @@ import {
   type CultureAxisReading,
   type FitReadingEntry
 } from '@/features/iel-demo/state/selectors';
-import type { Job } from '@/features/iel-demo/types';
+import type { CriterionState, Job } from '@/features/iel-demo/types';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui';
+import { cn } from '@workspace/ui';
 
+import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 import {
-  CriterionStateDot,
-  CriterionStateHeadline
-} from '../shared/criterion-state-badge';
-import { formatDate, InfoHint, SourceDot } from '../shared/ui';
+  formatDate,
+  InfoHint,
+  Panel,
+  PanelHeader,
+  SourceDot
+} from '../shared/ui';
 
 const CONDITION_STATUS_LABEL: Record<string, string> = {
   confirmado: 'confirmado pelo gestor',
@@ -25,51 +28,78 @@ const CONDITION_STATUS_LABEL: Record<string, string> = {
 };
 
 const MISSING_LABEL: Record<string, string> = {
-  empresa: 'A equipe ainda não informou esta condição.',
-  candidato: 'A pessoa ainda não declarou nada neste eixo.',
-  ambos: 'Nenhum dos dois lados informou este eixo.'
+  empresa: 'A equipe ainda não informou.',
+  candidato: 'A pessoa ainda não declarou.',
+  ambos: 'Nenhum dos dois lados informou.'
 };
 
-function Side({
-  role,
+/** Cor do eixo central, que carrega o estado do encontro entre os dois lados. */
+const SPINE_CLASS: Record<CriterionState, string> = {
+  alinhamento: 'bg-success',
+  'a-esclarecer': 'bg-warning',
+  divergencia: 'bg-destructive',
+  'sem-informacao': 'bg-border',
+  'nao-se-aplica': 'bg-border'
+};
+
+function SideText({
+  align,
   value,
   origin,
   sourceId,
   updatedAt,
-  note
+  missing
 }: {
-  role: string;
+  align: 'left' | 'right';
   value?: string;
   origin?: string;
   sourceId?: string;
   updatedAt?: string;
-  note?: string;
+  missing?: string;
 }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {role}
+  const alignment = align === 'right' ? 'text-right' : 'text-left';
+  const rowAlignment = align === 'right' ? 'justify-end' : 'justify-start';
+
+  if (!value) {
+    return (
+      <p
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-[var(--control-radius)] border border-dashed border-border px-2.5 py-1 text-xs leading-relaxed text-muted-foreground',
+          align === 'right' ? 'float-right' : ''
+        )}
+      >
+        {missing}
       </p>
-      {value ? (
-        <>
-          <p className="mt-0.5 text-xs leading-relaxed text-foreground/85">
-            {value}
-          </p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-            {sourceId ? <SourceDot sourceId={sourceId} /> : null}
-            {origin}
-            {updatedAt ? <span>· {formatDate(updatedAt)}</span> : null}
-          </p>
-        </>
-      ) : (
-        <p className="mt-0.5 text-xs italic leading-relaxed text-muted-foreground">
-          {note}
-        </p>
-      )}
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <p className={cn('text-sm leading-relaxed text-foreground', alignment)}>
+        {value}
+      </p>
+      <p
+        className={cn(
+          'mt-1.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground',
+          rowAlignment
+        )}
+      >
+        {sourceId ? <SourceDot sourceId={sourceId} /> : null}
+        {origin}
+        {updatedAt ? <span>· {formatDate(updatedAt)}</span> : null}
+      </p>
+    </>
   );
 }
 
+/**
+ * Um eixo: a equipe de um lado, a pessoa do outro, e no meio o estado do
+ * encontro entre os dois.
+ *
+ * A forma é a afirmação. Enquanto o fit era uma lista como qualquer outra,
+ * nada na tela dizia que ali havia duas partes se medindo — e é justamente
+ * isso que o desafio pede para tornar legível.
+ */
 function AxisRow({
   entry,
   culture
@@ -78,12 +108,11 @@ function AxisRow({
   culture: CultureAxisReading | undefined;
 }) {
   return (
-    <li className="py-3">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <CriterionStateDot state={entry.state} />
-        <h4 className="text-sm font-medium text-foreground">
+    <li className="py-6 first:pt-1 last:pb-1">
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h3 className="iel-display text-base text-foreground">
           {entry.axis.label}
-        </h4>
+        </h3>
         <InfoHint label={entry.axis.description} />
         <CriterionStateHeadline
           state={entry.state}
@@ -91,38 +120,60 @@ function AxisRow({
         />
       </div>
 
-      <div className="mt-2 grid gap-3 pl-4 sm:grid-cols-2">
-        <Side
-          role="A equipe informa"
-          value={entry.condition?.value}
-          origin={
-            entry.condition
-              ? CONDITION_STATUS_LABEL[entry.condition.status]
-              : undefined
-          }
-          updatedAt={entry.condition?.updatedAt}
-          note={
-            entry.missingSide === 'empresa' || entry.missingSide === 'ambos'
-              ? MISSING_LABEL.empresa
-              : undefined
-          }
-        />
-        <Side
-          role="A pessoa declara"
-          value={entry.preference?.value}
-          origin={entry.preference?.origin}
-          sourceId={entry.preference?.sourceId}
-          updatedAt={entry.preference?.updatedAt}
-          note={
-            entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
-              ? MISSING_LABEL.candidato
-              : undefined
-          }
-        />
+      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+        <div className="min-w-0 pr-5">
+          <p className="iel-eyebrow mb-1.5 text-right">A equipe informa</p>
+          <SideText
+            align="right"
+            value={entry.condition?.value}
+            origin={
+              entry.condition
+                ? CONDITION_STATUS_LABEL[entry.condition.status]
+                : undefined
+            }
+            updatedAt={entry.condition?.updatedAt}
+            missing={
+              entry.missingSide === 'empresa' || entry.missingSide === 'ambos'
+                ? MISSING_LABEL.empresa
+                : undefined
+            }
+          />
+        </div>
+
+        {/* Eixo central: a única coluna colorida da linha. */}
+        <div
+          aria-hidden="true"
+          className="relative flex w-0 flex-col items-center"
+        >
+          <span className="w-px flex-1 bg-border" />
+          <span
+            className={cn(
+              'my-1.5 size-2.5 shrink-0 rounded-full ring-4 ring-card',
+              SPINE_CLASS[entry.state]
+            )}
+          />
+          <span className="w-px flex-1 bg-border" />
+        </div>
+
+        <div className="min-w-0 pl-5">
+          <p className="iel-eyebrow mb-1.5">A pessoa declara</p>
+          <SideText
+            align="left"
+            value={entry.preference?.value}
+            origin={entry.preference?.origin}
+            sourceId={entry.preference?.sourceId}
+            updatedAt={entry.preference?.updatedAt}
+            missing={
+              entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
+                ? MISSING_LABEL.candidato
+                : undefined
+            }
+          />
+        </div>
       </div>
 
       {culture?.state === 'divergente' ? (
-        <p className="mt-2 ml-4 border-l-2 border-destructive/40 pl-3 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-3 border-l-2 border-destructive/40 pl-3 text-xs leading-relaxed text-muted-foreground">
           <span className="font-medium text-destructive">
             A empresa se descreve de outro jeito neste eixo.
           </span>{' '}
@@ -147,19 +198,12 @@ function AxisRow({
  * ampliá-lo e trazê-lo para dentro da jornada, no lugar de uma avaliação
  * externa cara que não escala. Aqui isso aparece sem aplicar avaliação nova:
  * os dois lados já informaram algo, nos mesmos eixos, e a tela mostra o
- * encontro entre eles — inclusive onde um dos lados está vazio, que é o que
- * uma coleta dirigida iria buscar.
- *
- * Os eixos descrevem condições de trabalho, não traços de personalidade. O
- * enunciado veda usar dados de saúde na seleção e manda tratar bem-estar pela
- * perspectiva do ambiente e das relações de trabalho.
+ * encontro entre eles — inclusive onde um dos lados está vazio.
  */
 export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
   const { state } = useIelDemo();
   const reading = getFitReading(state, job, talentId);
   const company = getCompany(job.companyId);
-  // O briefing separa a descrição institucional das condições da equipe e
-  // destaca justamente quando elas não coincidem.
   const culture = getCultureReading(state, job.companyId);
 
   const withBothSides = reading.filter(
@@ -171,33 +215,34 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
   ).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-1.5 text-base">
-          Aderência ao contexto — {company?.name}
-          <InfoHint label="Compara o que a equipe informou sobre como trabalha com o que a pessoa declarou esperar, nos mesmos eixos. Não aplica avaliação nova nem produz nota: descreve condições de trabalho, não traços de personalidade." />
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {withBothSides} de {reading.length} eixos com os dois lados informados
-          {missingTalentSide > 0
-            ? ` · falta o lado da pessoa em ${missingTalentSide}`
-            : ''}
-          .
-        </p>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <ul className="divide-y divide-border">
-          {reading.map((entry) => (
-            <AxisRow
-              key={entry.axis.id}
-              entry={entry}
-              culture={culture.find(
-                (item) => item.question.axisId === entry.axis.id
-              )}
-            />
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <Panel padding="lg">
+      <PanelHeader
+        eyebrow="Aderência ao contexto de trabalho"
+        title={company?.name ?? 'Empresa'}
+        hint="Compara o que a equipe informou sobre como trabalha com o que a pessoa declarou esperar, nos mesmos eixos. Não aplica avaliação nova nem produz nota: descreve condições de trabalho, não traços de personalidade."
+        meta={
+          <>
+            {withBothSides} de {reading.length} eixos com os dois lados
+            informados
+            {missingTalentSide > 0
+              ? ` · falta o lado da pessoa em ${missingTalentSide}`
+              : ''}
+            .
+          </>
+        }
+      />
+
+      <ul className="mt-5 divide-y divide-border">
+        {reading.map((entry) => (
+          <AxisRow
+            key={entry.axis.id}
+            entry={entry}
+            culture={culture.find(
+              (item) => item.question.axisId === entry.axis.id
+            )}
+          />
+        ))}
+      </ul>
+    </Panel>
   );
 }
