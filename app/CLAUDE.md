@@ -128,6 +128,8 @@ The root `docker-compose.yml` starts the local Postgres instance.
 - `README.md`
 - `PATTERNS.md`
 - `AGENTS.md`
+- `docs/boas-praticas-de-codigo.md`
+- `docs/padroes-de-git.md`
 - `docs/api-routes-nextjs.md`
 - `docs/testing.md`
 - `docs/deploy-checklist.md`
