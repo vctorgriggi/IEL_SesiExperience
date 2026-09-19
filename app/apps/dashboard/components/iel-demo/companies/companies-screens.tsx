@@ -1,7 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import {
+  ESTADO_ROTEIRO_LABEL,
+  getEmpresasKpis,
+  getPermanenciaPorCoorte,
+  getRetornoDasEmpresas,
+  getRoteirosDeLigacao,
+  PERIODO_LABEL,
+  type CoortePermanencia,
+  type EstadoRoteiro,
+  type Periodo,
+  type RetornoEmpresa
+} from '@/features/iel-demo/analysis/analytics';
 import { CULTURE_INVITE_DEADLINE_DAYS } from '@/features/iel-demo/analysis/culture-invites';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -22,6 +34,7 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -32,12 +45,13 @@ import {
 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
-import { toast } from '@workspace/ui';
+import { Textarea, toast } from '@workspace/ui';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
   Card,
   CardAction,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -57,6 +71,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle
 } from '@workspace/ui/shadcn/sheet';
@@ -76,6 +91,11 @@ import {
 } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { KpiCard } from '../metricas/kpi-card';
+import { MarcadorHistorico } from '../metricas/marcador-historico';
+import { PERIODO_PADRAO, SeletorPeriodo } from '../metricas/seletor-periodo';
+import { ValorOculto } from '../metricas/valor-oculto';
+import { formatarDataCurta, formatarDataHora } from '../shared/datas';
 import { CompanyCultureTable } from './culture-profile';
 import { CultureInviteForm, CultureSampleTable } from './culture-sample';
 
@@ -155,10 +175,12 @@ export function CompaniesScreen() {
   const [setor, setSetor] = useState(TODOS_OS_SETORES);
   const [pagina, setPagina] = useState(0);
   const [porPagina, setPorPagina] = useState(10);
+  const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
 
   usePageHeader({ breadcrumb: [{ label: 'Empresas' }] });
 
   const linhas = useMemo(() => getCompanyListRows(state), [state]);
+  const kpis = useMemo(() => getEmpresasKpis(state, periodo), [state, periodo]);
 
   const setores = useMemo(
     () =>
@@ -211,12 +233,43 @@ export function CompaniesScreen() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">Empresas</h1>
-        <p className="text-sm text-muted-foreground">
-          {linhas.length.toLocaleString('pt-BR')} empresas atendidas · quem tem
-          vaga aberta e quem ainda deve respostas.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">Empresas</h1>
+          <p className="text-sm text-muted-foreground">
+            {linhas.length.toLocaleString('pt-BR')} empresas atendidas · quem
+            tem vaga aberta e quem ainda deve respostas.
+          </p>
+        </div>
+        <SeletorPeriodo
+          value={periodo}
+          onChange={setPeriodo}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <KpiCard
+          kpi={kpis.empresasComVagaAtiva}
+          className="lg:col-span-2"
+        />
+        <KpiCard
+          kpi={kpis.perfilCompleto}
+          className="lg:col-span-2"
+        />
+        <KpiCard
+          kpi={kpis.tempoParaCompletarPerfil}
+          className="lg:col-span-2"
+        />
+        <KpiCard
+          kpi={{ ...kpis.roteirosUsados, rotulo: 'Roteiros usados' }}
+          className="lg:col-span-3"
+          valor={`${kpis.roteirosUsados.valor ?? 0} de ${kpis.roteirosGerados.valor ?? 0}`}
+          apoio={`Roteiros de ligação usados de ${plural(kpis.roteirosGerados.valor ?? 0, 'gerado', 'gerados')} no período.`}
+        />
+        <KpiCard
+          kpi={kpis.retornoSobreCurriculos}
+          className="sm:col-span-2 lg:col-span-3"
+        />
       </div>
 
       <div className="flex flex-col gap-4">
@@ -473,6 +526,11 @@ export function CompaniesScreen() {
           </div>
         </div>
       </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <RetornoDasEmpresasCard periodo={periodo} />
+        <PermanenciaCard />
+      </div>
     </div>
   );
 }
@@ -639,6 +697,9 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           {ehAnalista ? (
             <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
           ) : null}
+          {ehAnalista ? (
+            <TabsTrigger value="ligacao">Ligação</TabsTrigger>
+          ) : null}
           <TabsTrigger value="vagas">
             Vagas{' '}
             <Badge
@@ -660,6 +721,12 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
             className="flex flex-col gap-4"
           >
             <CultureSampleTable companyId={companyId} />
+          </TabsContent>
+        ) : null}
+
+        {ehAnalista ? (
+          <TabsContent value="ligacao">
+            <RoteiroDaLigacao companyId={companyId} />
           </TabsContent>
         ) : null}
 
@@ -742,5 +809,513 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         </Sheet>
       ) : null}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Indicadores da lista: retorno e permanência
+ * ------------------------------------------------------------------ */
+
+/** Tom de cada desfecho na barra empilhada: um azul-noite em três passos. */
+const TOM_DO_RETORNO: Record<RetornoEmpresa, string> = {
+  contratou: 'bg-primary',
+  'nao-contratou': 'bg-primary/45',
+  'sem-resposta': 'bg-muted-foreground/25'
+};
+
+/**
+ * "O que aconteceu com os currículos enviados?" — contratou, não contratou
+ * ou sem resposta, sobre as remessas do período, com o motivo do "não" e a
+ * quebra por setor. Setor com menos de 5 remessas mostra "—".
+ */
+function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
+  const retorno = useMemo(
+    () => getRetornoDasEmpresas(periodo, 'setor'),
+    [periodo]
+  );
+  const segundo = retorno.motivos[1];
+  // Setores pequenos não viram linha de "—": juntam-se numa frase só.
+  const setoresVisiveis = retorno.grupos.filter((grupo) => !grupo.oculto);
+  const setoresOcultos = retorno.grupos.length - setoresVisiveis.length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1 text-base font-medium">
+          Retorno das empresas <MarcadorHistorico />
+        </CardTitle>
+        <CardDescription>
+          {PERIODO_LABEL[periodo]} ·{' '}
+          {plural(retorno.n, 'remessa enviada', 'remessas enviadas')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {retorno.oculto ? (
+          <p className="text-sm text-muted-foreground">
+            Menos de 5 remessas no período: oculto para proteger quem respondeu.
+          </p>
+        ) : (
+          <>
+            <div
+              className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full"
+              role="img"
+              aria-label={retorno.itens
+                .map((item) => `${item.rotulo}: ${item.pct ?? 0}%`)
+                .join(', ')}
+            >
+              {retorno.itens.map((item) =>
+                item.pct ? (
+                  <div
+                    key={item.retorno}
+                    className={TOM_DO_RETORNO[item.retorno]}
+                    style={{ width: `${item.pct}%` }}
+                    title={`${item.rotulo}: ${item.pct}% (${item.n})`}
+                  />
+                ) : null
+              )}
+            </div>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {retorno.itens.map((item) => (
+                <li
+                  key={item.retorno}
+                  className="flex items-center gap-1.5"
+                >
+                  <span
+                    aria-hidden
+                    className={`size-2.5 rounded-full ${TOM_DO_RETORNO[item.retorno]}`}
+                  />
+                  {item.rotulo}
+                  <span className="font-medium tabular-nums">
+                    {item.pct ?? 0}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {retorno.motivoMaisCitado ? (
+              <p className="text-sm">
+                Motivo mais citado quando não contrata:{' '}
+                <span className="font-medium">
+                  {retorno.motivoMaisCitado.rotulo.toLowerCase()} (
+                  {retorno.motivoMaisCitado.pct}%)
+                </span>
+                {segundo && segundo.n > 0 && segundo.pct !== null ? (
+                  <>
+                    , seguido de{' '}
+                    {segundo.motivo === 'outro'
+                      ? 'outros motivos'
+                      : segundo.rotulo.toLowerCase()}{' '}
+                    ({segundo.pct}%)
+                  </>
+                ) : null}
+                .
+              </p>
+            ) : null}
+          </>
+        )}
+
+        {setoresVisiveis.length > 0 ? (
+          <div className="overflow-x-auto rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted">
+                <TableRow>
+                  <TableHead>Setor</TableHead>
+                  <TableHead className="text-right">Remessas</TableHead>
+                  <TableHead className="text-right">Contratou</TableHead>
+                  <TableHead className="text-right">Não contratou</TableHead>
+                  <TableHead className="text-right">Sem resposta</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {setoresVisiveis.map((grupo) => (
+                  <TableRow key={grupo.chave}>
+                    <TableCell>{grupo.rotulo}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {grupo.oculto ? <ValorOculto /> : grupo.n}
+                    </TableCell>
+                    {grupo.itens.map((item) => (
+                      <TableCell
+                        key={item.retorno}
+                        className="text-right tabular-nums"
+                      >
+                        {grupo.oculto || item.pct === null ? (
+                          <ValorOculto />
+                        ) : (
+                          `${item.pct}%`
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
+        {setoresOcultos > 0 ? (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <ValorOculto />
+            {plural(setoresOcultos, 'setor', 'setores')} com menos de 5 remessas
+            no período ficam de fora da tabela.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Coorte padrão: a mais recente com os 90 dias já apurados. */
+function coortePadrao(coortes: CoortePermanencia[]): string | undefined {
+  const apuradas = coortes.filter(
+    (c) => !c.oculto && c.contratados > 0 && c.ficaram90Pct !== null
+  );
+  return (apuradas.at(-1) ?? coortes.at(-1))?.mes;
+}
+
+/** Um dos três números da coorte. */
+function NumeroDaCoorte({
+  rotulo,
+  valor,
+  apoio
+}: {
+  rotulo: string;
+  valor: React.ReactNode;
+  apoio: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm text-muted-foreground">{rotulo}</span>
+      <span className="text-2xl font-semibold tabular-nums">{valor}</span>
+      <span className="text-xs text-muted-foreground">{apoio}</span>
+    </div>
+  );
+}
+
+/**
+ * "Quem foi contratado ficou?" — por coorte de contratação, aos 30 e aos 90
+ * dias. Coorte ainda correndo mostra "em apuração"; coorte com menos de 5
+ * contratados, "—".
+ */
+function PermanenciaCard() {
+  const coortes = useMemo(() => getPermanenciaPorCoorte(), []);
+  const [mes, setMes] = useState(() => coortePadrao(coortes));
+  const coorte = coortes.find((c) => c.mes === mes);
+
+  const taxa = (
+    pctFicou: number | null,
+    apurados: number
+  ): { valor: React.ReactNode; apoio: string } => {
+    if (!coorte) return { valor: '—', apoio: '' };
+    if (coorte.oculto)
+      return { valor: <ValorOculto />, apoio: 'recorte pequeno' };
+    if (pctFicou === null) {
+      return {
+        valor: '—',
+        apoio: `em apuração · ${apurados} de ${coorte.contratados} com desfecho`
+      };
+    }
+    return {
+      valor: `${pctFicou}%`,
+      apoio: `dos ${coorte.contratados} contratados`
+    };
+  };
+  const trinta = taxa(coorte?.ficaram30Pct ?? null, coorte?.apurados30 ?? 0);
+  const noventa = taxa(coorte?.ficaram90Pct ?? null, coorte?.apurados90 ?? 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1 text-base font-medium">
+          Permanência aos 30 e 90 dias <MarcadorHistorico />
+        </CardTitle>
+        <CardDescription>Por mês de contratação</CardDescription>
+        <CardAction>
+          <Select
+            value={mes}
+            onValueChange={setMes}
+          >
+            <SelectTrigger
+              size="sm"
+              className="w-[210px]"
+              aria-label="Mês de contratação"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {[...coortes].reverse().map((c) => (
+                <SelectItem
+                  key={c.mes}
+                  value={c.mes}
+                >
+                  Contratados em {c.rotulo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-3 gap-4">
+          <NumeroDaCoorte
+            rotulo="Contratados"
+            valor={
+              coorte ? (
+                coorte.oculto ? (
+                  <ValorOculto />
+                ) : (
+                  coorte.contratados
+                )
+              ) : (
+                '—'
+              )
+            }
+            apoio="que a empresa devolveu"
+          />
+          <NumeroDaCoorte
+            rotulo="Ficaram 30 dias"
+            valor={trinta.valor}
+            apoio={trinta.apoio}
+          />
+          <NumeroDaCoorte
+            rotulo="Ficaram 90 dias"
+            valor={noventa.valor}
+            apoio={noventa.apoio}
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="text-xs text-muted-foreground">
+        A empresa responde em um toque, aos 30 e aos 90 dias. É o dado que
+        realimenta o cálculo.
+      </CardFooter>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Roteiro da ligação (detalhe da empresa)
+ * ------------------------------------------------------------------ */
+
+/**
+ * As cinco perguntas da ligação com a empresa. Elas buscam o que o
+ * questionário não captura: o dia a dia como ele é, não como se declara.
+ */
+const PERGUNTAS_DA_LIGACAO = [
+  'Como é um dia comum nessa função, do começo ao fim do turno?',
+  'Quem saiu dessa função nos últimos meses saiu por qual motivo?',
+  'O que o líder da equipe mais valoriza em quem chega?',
+  'Quais combinados não estão escritos, mas todo mundo segue?',
+  'O que faria você considerar essa contratação um acerto em 90 dias?'
+] as const;
+
+type AnotacoesDaLigacao = { respostas: string[]; salvoEm: string };
+
+const chaveDaLigacao = (companyId: string) => `mind-rh:ligacao:${companyId}`;
+
+/**
+ * As anotações ficam no navegador de quem ligou, por empresa. É protótipo:
+ * não passam pelo estado da demonstração nem saem daqui. Armazenamento
+ * bloqueado (aba anônima, cota) não quebra a tela — só não guarda.
+ */
+function lerAnotacoes(companyId: string): AnotacoesDaLigacao | null {
+  try {
+    const bruto = window.localStorage.getItem(chaveDaLigacao(companyId));
+    if (!bruto) return null;
+    const lido = JSON.parse(bruto) as Partial<AnotacoesDaLigacao>;
+    if (!Array.isArray(lido.respostas) || typeof lido.salvoEm !== 'string') {
+      return null;
+    }
+    return {
+      respostas: PERGUNTAS_DA_LIGACAO.map((_, i) =>
+        typeof lido.respostas?.[i] === 'string' ? lido.respostas[i] : ''
+      ),
+      salvoEm: lido.salvoEm
+    };
+  } catch {
+    return null;
+  }
+}
+
+function gravarAnotacoes(
+  companyId: string,
+  anotacoes: AnotacoesDaLigacao
+): boolean {
+  try {
+    window.localStorage.setItem(
+      chaveDaLigacao(companyId),
+      JSON.stringify(anotacoes)
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const ETAPAS_DO_ROTEIRO: {
+  estado: Exclude<EstadoRoteiro, 'nao-gerado'>;
+  campo: 'geradoEm' | 'abertoEm' | 'usadoEm';
+}[] = [
+  { estado: 'gerado', campo: 'geradoEm' },
+  { estado: 'aberto', campo: 'abertoEm' },
+  { estado: 'usado', campo: 'usadoEm' }
+];
+
+function RoteiroDaLigacao({ companyId }: { companyId: string }) {
+  const { state } = useIelDemo();
+  const roteiro = useMemo(
+    () =>
+      getRoteirosDeLigacao(state).itens.find(
+        (item) => item.companyId === companyId
+      ),
+    [state, companyId]
+  );
+  const [aberto, setAberto] = useState(false);
+  const [salvas, setSalvas] = useState<AnotacoesDaLigacao | null>(null);
+  const [rascunho, setRascunho] = useState<string[]>(() =>
+    PERGUNTAS_DA_LIGACAO.map(() => '')
+  );
+
+  // localStorage só existe no navegador: lê depois de montar.
+  useEffect(() => {
+    setSalvas(lerAnotacoes(companyId));
+  }, [companyId]);
+
+  const abrir = () => {
+    setRascunho(salvas?.respostas ?? PERGUNTAS_DA_LIGACAO.map(() => ''));
+    setAberto(true);
+  };
+
+  const salvar = () => {
+    const anotacoes = { respostas: rascunho, salvoEm: nowIso() };
+    if (gravarAnotacoes(companyId, anotacoes)) {
+      setSalvas(anotacoes);
+      toast.success('Anotações da ligação guardadas neste navegador.');
+    } else {
+      toast.error('Não deu para guardar neste navegador.');
+    }
+    setAberto(false);
+  };
+
+  const respondidas = salvas
+    ? salvas.respostas.filter((r) => r.trim().length > 0).length
+    : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base font-medium">
+          Roteiro da ligação
+        </CardTitle>
+        <CardDescription>
+          {salvas
+            ? `${respondidas} de ${PERGUNTAS_DA_LIGACAO.length} perguntas anotadas · ${formatarDataHora(salvas.salvoEm)}`
+            : 'O que o questionário não captura, perguntado por telefone'}
+        </CardDescription>
+        <CardAction>
+          <Button
+            size="sm"
+            onClick={abrir}
+          >
+            Registrar o que ouvi
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {ETAPAS_DO_ROTEIRO.map(({ estado, campo }) => {
+            const data = roteiro?.[campo] ?? null;
+            return (
+              <Badge
+                key={estado}
+                variant="outline"
+                className="gap-1 font-normal text-muted-foreground"
+              >
+                {data ? (
+                  <Check className="size-3 text-foreground" />
+                ) : (
+                  <Clock className="size-3" />
+                )}
+                {ESTADO_ROTEIRO_LABEL[estado]}
+                {data ? ` · ${formatarDataCurta(data)}` : ''}
+              </Badge>
+            );
+          })}
+          {roteiro ? null : (
+            <span className="text-xs text-muted-foreground">
+              Sem vaga ativa: o roteiro nasce com a vaga.
+            </span>
+          )}
+        </div>
+
+        <ol className="flex flex-col gap-3">
+          {PERGUNTAS_DA_LIGACAO.map((pergunta, indice) => (
+            <li
+              key={pergunta}
+              className="grid grid-cols-[1.5rem_1fr] gap-2 text-sm"
+            >
+              <span className="text-muted-foreground tabular-nums">
+                {indice + 1}.
+              </span>
+              <span className="flex flex-col gap-1">
+                {pergunta}
+                {salvas?.respostas[indice]?.trim() ? (
+                  <span className="line-clamp-2 text-muted-foreground">
+                    {salvas.respostas[indice]}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+      <CardFooter className="text-xs text-muted-foreground">
+        A ligação põe lado a lado o que a equipe declarou no questionário e o
+        que se vive no dia a dia.
+      </CardFooter>
+
+      <Sheet
+        open={aberto}
+        onOpenChange={setAberto}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Registrar o que ouvi</SheetTitle>
+            <SheetDescription>
+              Anote com as palavras de quem falou. Fica guardado neste
+              navegador, só para o IEL.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-4 px-4">
+            {PERGUNTAS_DA_LIGACAO.map((pergunta, indice) => (
+              <div
+                key={pergunta}
+                className="flex flex-col gap-2"
+              >
+                <Label htmlFor={`ligacao-${indice}`}>
+                  {indice + 1}. {pergunta}
+                </Label>
+                <Textarea
+                  id={`ligacao-${indice}`}
+                  rows={3}
+                  value={rascunho[indice] ?? ''}
+                  onChange={(event) => {
+                    const valor = event.target.value;
+                    setRascunho((atual) =>
+                      atual.map((r, i) => (i === indice ? valor : r))
+                    );
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <SheetFooter>
+            <Button onClick={salvar}>Guardar anotações</Button>
+            <Button
+              variant="outline"
+              onClick={() => setAberto(false)}
+            >
+              Cancelar
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </Card>
   );
 }

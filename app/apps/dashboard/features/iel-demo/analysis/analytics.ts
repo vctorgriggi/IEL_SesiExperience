@@ -44,7 +44,7 @@ import {
   type RetornoEmpresa
 } from '../fixtures/outcomes';
 import {
-  getCompanyCultureProfile,
+  getCultureSampleProgress,
   getVisibleCompanies
 } from '../state/selectors';
 import type { DemoState, Job } from '../types';
@@ -406,7 +406,9 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
       id: 'vagas-ativas',
       rotulo: 'Vagas ativas',
       valor: ativas.length,
-      variacao: novas,
+      // Se todas as vagas ativas começaram dentro da janela, "+24 no período"
+      // só repete o total: sem comparação é mais honesto.
+      variacao: novas < ativas.length ? novas : null,
       unidade: 'abs',
       fonte: 'vivo',
       n: ativas.length,
@@ -549,8 +551,18 @@ function empresasComVagaAtiva(state: DemoState) {
   return getVisibleCompanies(state).filter((c) => comVaga.has(c.id));
 }
 
+/**
+ * A consulta à equipe fechou: a amostra atingiu o mínimo de respostas da
+ * equipe (`getCultureSampleProgress(...).ready`).
+ *
+ * A régua anterior — os 5 pontos fechados um a um — dava 0% em toda a base
+ * de demonstração, porque cada ponto só fecha com 3 respostas da equipe
+ * naquele ponto, e isso depende de quais perguntas cada colaborador
+ * respondeu. Para o painel, a pergunta útil é "a empresa já respondeu?", e
+ * os pontos em aberto continuam visíveis na tela da empresa.
+ */
 function perfilCompleto(state: DemoState, companyId: string): boolean {
-  return getCompanyCultureProfile(state, companyId).every((axis) => axis.ready);
+  return getCultureSampleProgress(state, companyId).ready;
 }
 
 /**
@@ -571,14 +583,14 @@ export function getDuasPontas(state: DemoState): DuasPontas {
   return {
     empresasPerfilCompleto: kpi({
       id: 'empresas-perfil-completo',
-      rotulo: 'Empresas com perfil completo',
+      rotulo: 'Empresas com a consulta fechada',
       valor: pct(completas, empresas.length),
       variacao: null,
       unidade: 'p.p.',
       fonte: 'vivo',
       n: empresas.length,
       descricao:
-        'Empresas com vaga ativa cujo perfil fecha nos 5 pontos do dia a dia (mínimo de respostas da equipe em cada um).'
+        'Empresas com vaga ativa em que a equipe já respondeu o mínimo da consulta. Os pontos ainda em aberto aparecem na tela de cada empresa.'
     }),
     candidatosConcluiram: kpi({
       id: 'candidatos-concluiram',
@@ -747,14 +759,14 @@ export function getEmpresasKpis(
     }),
     perfilCompleto: kpi({
       id: 'perfil-completo',
-      rotulo: 'Com perfil completo',
+      rotulo: 'Consulta à equipe fechada',
       valor: pct(completas, empresas.length),
       variacao: null,
       unidade: 'p.p.',
       fonte: 'vivo',
       n: empresas.length,
       descricao:
-        'Empresas com vaga ativa cujo perfil fecha nos 5 pontos do dia a dia.'
+        'Empresas com vaga ativa em que a equipe já respondeu o mínimo da consulta. Os pontos ainda em aberto aparecem na tela de cada empresa.'
     }),
     tempoParaCompletarPerfil: kpi({
       id: 'tempo-perfil',
