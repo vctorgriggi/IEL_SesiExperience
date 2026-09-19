@@ -1,0 +1,46 @@
+# Encaminhamentos
+
+**Rota:** `/iel/encaminhamentos`
+**Componente:** `ReferralsScreen`, em
+`apps/dashboard/components/iel-demo/referrals/referrals-screens.tsx`
+**Persona:** Analista IEL e gestor (cada um vê o seu recorte)
+**Última atualização:** 2026-09-19
+
+## O que a tela faz
+
+Lista os encaminhamentos registrados. Cada registro guarda um retrato das informações no momento em
+que foi feito — é o que permite explicar depois o que a empresa recebeu, mesmo que o perfil tenha
+mudado desde então.
+
+## O que aparece
+
+- **Cabeçalho**: "Cada registro guarda um retrato das informações no momento do encaminhamento."
+- **Lista de encaminhamentos** com empresa, vaga, data, quantidade de perfis e situação.
+- **Estado vazio** próprio quando não há registro.
+
+## De onde vêm os dados hoje
+
+`getRegisteredReferrals` e `getReferralsByCompany` sobre `state.referrals`.
+
+## Ações do usuário
+
+- Abrir o detalhe de um encaminhamento.
+
+## Backend futuro
+
+- Encaminhamento vira entidade persistida com versão imutável do que foi compartilhado.
+- Entra prazo de retenção e expiração de acesso da empresa ao material compartilhado.
+
+## Regras e limites
+
+- O recorte por empresa é obrigatório: o gestor vê apenas os encaminhamentos feitos para a empresa
+  dele.
+
+## Ligações
+
+Vem de: [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md).
+Entra em: [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md).
+
+## Histórico
+
+- 2026-09-19 — criada.

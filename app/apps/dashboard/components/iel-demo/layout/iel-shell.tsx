@@ -13,6 +13,7 @@ import {
 import {
   Briefcase01Icon,
   Building01Icon,
+  ChartScatterIcon,
   Database01Icon,
   Home01Icon,
   Message01Icon,
@@ -69,6 +70,11 @@ function useNavItems(): NavItem[] {
     { href: iel.jobs.index, label: 'Vagas', icon: Briefcase01Icon },
     { href: iel.talents.index, label: 'Talentos', icon: UserGroupIcon },
     { href: iel.companies.index, label: 'Empresas', icon: Building01Icon },
+    {
+      href: iel.cultureMap,
+      label: 'Mapa de Cultura',
+      icon: ChartScatterIcon
+    },
     {
       href: iel.clarifications.index,
       label: 'Pendências',

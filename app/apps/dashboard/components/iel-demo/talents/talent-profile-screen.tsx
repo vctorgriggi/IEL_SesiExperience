@@ -29,6 +29,7 @@ import { routes } from '@workspace/routes';
 import { Alert, Button, Textarea, toast } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
+import { EncaixeCultural } from '../mapa-cultural/encaixe-cultural';
 import {
   CriterionStateDot,
   CriterionStateHeadline
@@ -316,10 +317,17 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
           )}
 
           {job && contextApplication ? (
-            <FitReading
-              job={job}
-              talentId={talent.id}
-            />
+            <>
+              <FitReading
+                job={job}
+                talentId={talent.id}
+              />
+              <EncaixeCultural
+                job={job}
+                talentId={talent.id}
+                talentName={talent.name}
+              />
+            </>
           ) : null}
 
           <Panel>

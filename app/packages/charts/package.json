@@ -6,7 +6,8 @@
   "exports": {
     "./line-chart": "./src/line-chart.tsx",
     "./donut-chart": "./src/donut-chart.tsx",
-    "./radar-chart": "./src/radar-chart.tsx"
+    "./radar-chart": "./src/radar-chart.tsx",
+    "./quadrant-chart": "./src/quadrant-chart.tsx"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -23,6 +24,7 @@
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "@workspace/eslint-config": "workspace:*",
+    "@workspace/prettier-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "react": "19.0.0",
     "react-dom": "19.0.0"
@@ -30,5 +32,6 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
-  }
+  },
+  "prettier": "@workspace/prettier-config"
 }

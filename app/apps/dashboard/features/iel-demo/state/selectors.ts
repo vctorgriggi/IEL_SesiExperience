@@ -14,8 +14,22 @@ import {
 } from '../analysis/culture';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
+  calcularAderencia,
+  calcularEncaixeCultural,
+  calcularPosicaoCultural,
+  classificarCultura,
+  compararRespostas,
+  type Aderencia,
+  type ClassificacaoCultural,
+  type EncaixeCultural,
+  type LeituraDeEixo,
+  type PosicaoCultural,
+  type RespostaDeEixo
+} from '../analysis/mapa-cultural';
+import {
   ALL_COMPANIES,
   ALL_JOBS,
+  ALL_TALENT_CULTURE_ANSWERS,
   ALL_TALENTS,
   DEMO_ASSESSMENTS,
   DEMO_CATALOG,
@@ -1190,6 +1204,207 @@ export function getCultureAttentionPoints(
       entry.state === 'apenas-gestao' ||
       entry.state === 'consulta-insuficiente'
   );
+}
+
+export type CultureMapKind = 'talento' | 'empresa';
+
+export type CultureMapFilter = 'todos' | 'talentos' | 'empresas';
+
+export type CultureMapPoint = {
+  id: string;
+  name: string;
+  detail: string;
+  kind: CultureMapKind;
+  position: PosicaoCultural;
+  culture: ClassificacaoCultural;
+  /**
+   * Como a equipe descreve o mesmo ambiente, quando difere do que a empresa
+   * declara. O mapa desenha os dois: escolher um lado apagaria justamente a
+   * diferença que a pessoa vai encontrar no primeiro mês.
+   */
+  teamPosition: PosicaoCultural | null;
+  divergentAxes: number;
+};
+
+export function getTalentCultureAnswers(talentId: string): RespostaDeEixo[] {
+  return ALL_TALENT_CULTURE_ANSWERS.filter(
+    (answer) => answer.talentId === talentId
+  ).map((answer) => ({ axisId: answer.axisId, optionId: answer.optionId }));
+}
+
+export type CompanyCultureAnswers = {
+  /** O que gestão ou RH respondeu: a versão que a empresa declara. */
+  declared: RespostaDeEixo[];
+  /** O que a equipe respondeu, só onde a consulta alcançou base suficiente. */
+  team: RespostaDeEixo[];
+  divergentAxes: number;
+};
+
+export function getCompanyCultureAnswers(
+  state: DemoState,
+  companyId: string
+): CompanyCultureAnswers {
+  const declared: RespostaDeEixo[] = [];
+  const team: RespostaDeEixo[] = [];
+  let divergentAxes = 0;
+
+  for (const entry of getCultureReading(state, companyId)) {
+    const management = entry.voices.find(
+      (voice) => voice.respondent !== 'equipe'
+    );
+    const teamVoice = entry.voices.find(
+      (voice) => voice.respondent === 'equipe'
+    );
+
+    if (management) {
+      declared.push({
+        axisId: entry.question.axisId,
+        optionId: management.optionId
+      });
+    }
+
+    if (teamVoice && teamVoice.total >= MIN_TEAM_RESPONSES) {
+      team.push({
+        axisId: entry.question.axisId,
+        optionId: teamVoice.optionId
+      });
+      if (!management) {
+        declared.push({
+          axisId: entry.question.axisId,
+          optionId: teamVoice.optionId
+        });
+      }
+    }
+
+    if (entry.state === 'divergente') divergentAxes += 1;
+  }
+
+  return { declared, team, divergentAxes };
+}
+
+function buildCompanyPoint(
+  state: DemoState,
+  company: Company
+): CultureMapPoint | null {
+  const answers = getCompanyCultureAnswers(state, company.id);
+  const position = calcularPosicaoCultural(answers.declared);
+  if (!position) return null;
+
+  const teamPosition =
+    answers.divergentAxes > 0 ? calcularPosicaoCultural(answers.team) : null;
+
+  return {
+    id: company.id,
+    name: company.name,
+    detail: company.sector,
+    kind: 'empresa',
+    position,
+    culture: classificarCultura(position),
+    teamPosition,
+    divergentAxes: answers.divergentAxes
+  };
+}
+
+function buildTalentPoint(talent: Talent): CultureMapPoint | null {
+  const position = calcularPosicaoCultural(getTalentCultureAnswers(talent.id));
+  if (!position) return null;
+
+  return {
+    id: talent.id,
+    name: talent.name,
+    detail: talent.headline,
+    kind: 'talento',
+    position,
+    culture: classificarCultura(position),
+    teamPosition: null,
+    divergentAxes: 0
+  };
+}
+
+export function getCultureMapPoints(
+  state: DemoState,
+  filter: CultureMapFilter = 'todos'
+): CultureMapPoint[] {
+  const points: CultureMapPoint[] = [];
+
+  if (filter !== 'talentos') {
+    for (const company of ALL_COMPANIES) {
+      const point = buildCompanyPoint(state, company);
+      if (point) points.push(point);
+    }
+  }
+
+  if (filter !== 'empresas') {
+    for (const talent of ALL_TALENTS) {
+      const point = buildTalentPoint(talent);
+      if (point) points.push(point);
+    }
+  }
+
+  return points;
+}
+
+/** Talentos e empresas que ainda não respondem por nenhum eixo. */
+export function getCultureMapGaps(state: DemoState): {
+  talents: Talent[];
+  companies: Company[];
+} {
+  return {
+    talents: ALL_TALENTS.filter(
+      (talent) => getTalentCultureAnswers(talent.id).length === 0
+    ),
+    companies: ALL_COMPANIES.filter(
+      (company) =>
+        getCompanyCultureAnswers(state, company.id).declared.length === 0
+    )
+  };
+}
+
+export type CultureFitReading = {
+  talentPosition: PosicaoCultural;
+  companyPosition: PosicaoCultural;
+  teamPosition: PosicaoCultural | null;
+  fit: EncaixeCultural;
+  /** Encaixe com o ambiente que a equipe descreve, quando ele difere. */
+  teamFit: EncaixeCultural | null;
+  /**
+   * Aderência em percentual, com o corte do cliente. `null` quando nenhum eixo
+   * foi respondido pelos dois lados — não há base para um número.
+   */
+  aderencia: Aderencia | null;
+  axes: LeituraDeEixo[];
+  divergentAxes: number;
+};
+
+export function getCultureFit(
+  state: DemoState,
+  talentId: string,
+  companyId: string
+): CultureFitReading | null {
+  const talentAnswers = getTalentCultureAnswers(talentId);
+  const companyAnswers = getCompanyCultureAnswers(state, companyId);
+
+  const talentPosition = calcularPosicaoCultural(talentAnswers);
+  const companyPosition = calcularPosicaoCultural(companyAnswers.declared);
+  if (!talentPosition || !companyPosition) return null;
+
+  const teamPosition =
+    companyAnswers.divergentAxes > 0
+      ? calcularPosicaoCultural(companyAnswers.team)
+      : null;
+
+  return {
+    talentPosition,
+    companyPosition,
+    teamPosition,
+    fit: calcularEncaixeCultural(talentPosition, companyPosition),
+    teamFit: teamPosition
+      ? calcularEncaixeCultural(talentPosition, teamPosition)
+      : null,
+    aderencia: calcularAderencia(talentAnswers, companyAnswers.declared),
+    axes: compararRespostas(talentAnswers, companyAnswers.declared),
+    divergentAxes: companyAnswers.divergentAxes
+  };
 }
 
 export type SharedWithCompany = {

@@ -11,6 +11,7 @@ import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_EVIDENCES } from './evidences';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
+import { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
 export const DEMO_SCHEMA_VERSION = 3;
@@ -25,6 +26,11 @@ const GENERATED = getGeneratedBase();
 export const ALL_COMPANIES = [...DEMO_COMPANIES, ...GENERATED.companies];
 export const ALL_JOBS = [...DEMO_JOBS, ...GENERATED.jobs];
 export const ALL_TALENTS = [...DEMO_TALENTS, ...GENERATED.talents];
+
+export const ALL_TALENT_CULTURE_ANSWERS = [
+  ...DEMO_TALENT_CULTURE_ANSWERS,
+  ...GENERATED.talentCultureAnswers
+];
 
 /** Limite de candidatos numa comparação. */
 export const COMPARISON_LIMIT = 3;
@@ -131,7 +137,10 @@ export function buildInitialDemoState(): DemoState {
     analysis: { ...clone(DEMO_ANALYSIS), ...clone(GENERATED.analysis) },
     evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
     teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
-    cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
+    cultureAnswers: [
+      ...clone(DEMO_CULTURE_ANSWERS),
+      ...clone(GENERATED.cultureAnswers)
+    ],
     axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
@@ -163,6 +172,7 @@ export {
   DEMO_TEAMS
 } from './companies';
 export { DEMO_CULTURE_ANSWERS } from './culture';
+export { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';
 export { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
