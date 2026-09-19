@@ -43,7 +43,7 @@ function mediaDasMedidas(entradas: JobRankingEntry[]): number | null {
  * Análise de aderência:
  * - Seletor de vaga com campo de busca integrado.
  * - Indicadores-chave da vaga (candidatos, compatíveis, média, pendências).
- * - Leitura detalhada da pessoa selecionada (percentual, radar e os 5 pontos).
+ * - Leitura detalhada da pessoa selecionada (percentual, radar e os temas).
  * - Ranking completo das pessoas com campo de busca por nome e filtros rápidos.
  */
 export function TelaDeAderencia() {
@@ -227,7 +227,7 @@ export function TelaDeAderencia() {
  * Leitura da Pessoa em Destaque:
  * - O número total em destaque com a frase interpretativa.
  * - O polígono comparativo no radar (empresa × candidato).
- * - Os 5 pontos do dia a dia detalhados individualmente com seus pesos.
+ * - Os temas do dia a dia detalhados individualmente com seus pesos.
  */
 function LeituraDaPessoa({
   entrada,
@@ -318,7 +318,7 @@ function LeituraDaPessoa({
                   className="text-xs bg-background/60 font-normal"
                 >
                   {entrada.adherence.coverage.answeredAxes} de{' '}
-                  {entrada.adherence.coverage.totalAxes} pontos medidos
+                  {entrada.adherence.coverage.totalAxes} temas medidos
                 </Badge>
                 {entrada.technicalMatch !== null ? (
                   <Badge
@@ -348,7 +348,7 @@ function LeituraDaPessoa({
           <div className="flex flex-col gap-3 lg:col-span-7">
             <div className="flex flex-col gap-0.5">
               <h3 className="text-sm font-semibold tracking-tight text-foreground">
-                Os 5 pontos do dia a dia
+                {COPY.axes.label} no dia a dia
               </h3>
               <p className="text-xs text-muted-foreground">
                 Alinhamento entre as preferências declaradas pela pessoa e o

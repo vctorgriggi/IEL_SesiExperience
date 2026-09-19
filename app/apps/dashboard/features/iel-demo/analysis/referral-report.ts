@@ -59,7 +59,7 @@ export const REPORT_AXIS_MATCH_LABEL: Record<ReportAxisMatch, string> = {
   combina: 'combina',
   parecido: 'parecido',
   difere: 'difere',
-  'sem-resposta': 'sua equipe não respondeu este ponto'
+  'sem-resposta': 'sua equipe não respondeu este tema'
 };
 
 /**
