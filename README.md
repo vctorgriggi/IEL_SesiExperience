@@ -143,14 +143,25 @@ Dois níveis, deliberadamente separados:
 
 ## Integração de IA
 
-Hoje, a análise assistida é **determinística e curada**: monta texto a partir dos registros efetivamente selecionados na tela (nunca do estado inteiro da demonstração), sem consultar nenhum modelo de linguagem. O disclaimer aparece em toda resposta: "nenhum modelo de linguagem foi consultado e nenhuma informação foi inventada" (`analysis/fit-axes.ts`, `analysis/assistant.ts`). Isso cumpre a exigência do briefing de **não exigir chave de API** para a experiência principal — qualquer pessoa roda a demo sem configurar nada.
+A análise assistida roda por padrão em modo **determinístico e curado**: monta texto a partir dos registros efetivamente selecionados na tela (nunca do estado inteiro da demonstração), sem consultar nenhum modelo de linguagem. O disclaimer aparece em toda resposta: "nenhum modelo de linguagem foi consultado e nenhuma informação foi inventada". Isso cumpre a exigência de **custo marginal zero** e de **não exigir chave de API** para a experiência principal — qualquer pessoa roda a demo sem configurar nada.
 
-Uma camada de provider está em preparação em `app/apps/dashboard/features/iel-demo/ai/`, hoje com dois arquivos:
+A camada de provider vive em `app/apps/dashboard/features/iel-demo/ai/`:
 
-- `types.ts` — contrato Zod entre a UI e qualquer provider (`AssistantRequest`/`AssistantResponse`), incluindo o schema de saída esperado de um modelo real (`modelAssistantOutputSchema`, restrito a texto e citações — sem nota, sem ranking) e o enum de providers (`deterministic`, `anthropic`).
-- `provider.ts` — a interface `AssistantProvider` (`run(request) → Promise<AssistantResponse>`) que qualquer implementação, determinística ou real, precisa cumprir.
+- `types.ts` — contrato Zod entre a UI e qualquer provider (`AssistantRequest`/`AssistantResponse`), incluindo o schema de saída aceito de um modelo real (`modelAssistantOutputSchema`, restrito a texto e citações — sem nota, sem ranking) e o enum de providers (`deterministic`, `anthropic`).
+- `provider.ts` — a interface `AssistantProvider` (`run(request) → Promise<AssistantResponse>`).
+- `deterministic-provider.ts` — o provider padrão, sem rede.
+- `anthropic-provider.ts` — adapter para a API da Anthropic (`@anthropic-ai/sdk`, modelo `claude-sonnet-5`), que valida a resposta do modelo contra o mesmo schema e descarta qualquer coisa fora dele.
+- `build-request.ts` — monta o pedido só com os registros selecionados (minimização de dados: o modelo nunca recebe o estado inteiro).
+- `index.ts` — `getAssistantProvider()`, que escolhe o provider pelo ambiente e **nunca falha por falta de configuração**.
 
-Ainda não há adapter para um modelo real nem rota de API que o exponha (`/api/iel/assistant` existe como constante em `@workspace/routes`, mas o *route handler* correspondente não foi implementado). A intenção documentada no contrato é que trocar de provider — por trás de variáveis de ambiente como `IEL_AI_PROVIDER` e `ANTHROPIC_API_KEY` — nunca exija mudar a UI, porque ela só conhece `run(request)`. Isso ainda não está implementado; o que existe hoje é o contrato que torna essa troca possível depois.
+A rota `POST /api/iel/assistant` (`app/api/iel/assistant/route.ts`, constante em `@workspace/routes`) expõe o provider escolhido. Para ligar o modelo real:
+
+```bash
+IEL_AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Sem essas variáveis, a rota responde no modo determinístico. A UI só conhece `run(request)`, então trocar de provider nunca exige mudar tela. A IA fica **fora do caminho crítico**: o motor de aderência (35%), o ranking e o questionário rodam sem ela.
 
 ## Arquitetura técnica
 
@@ -175,7 +186,7 @@ app/apps/dashboard/
     ├── fixtures/                 # base curada + gerador determinístico
     ├── state/                    # reducer, seletores, persistência, provider React
     ├── analysis/                 # estados de critério, eixos de fit, cultura, assistente
-    └── ai/                       # contrato de provider (em preparação)
+    └── ai/                       # providers de análise (determinístico + Anthropic)
 ```
 
 ## Como rodar
