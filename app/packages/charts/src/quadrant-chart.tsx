@@ -320,16 +320,34 @@ const QuadrantChart = forwardRef<HTMLDivElement, QuadrantChartProps>(
       return (
         <g className="pointer-events-none">
           {connection ? (
-            <line
-              stroke={connection.color ?? 'currentColor'}
-              strokeDasharray="5 4"
-              strokeOpacity={0.8}
-              strokeWidth={1.5}
-              x1={ex(connection.from.x)}
-              x2={ex(connection.to.x)}
-              y1={ey(connection.from.y)}
-              y2={ey(connection.to.y)}
-            />
+            <>
+              <line
+                stroke={connection.color ?? 'currentColor'}
+                strokeDasharray="5 4"
+                strokeOpacity={0.8}
+                strokeWidth={1.5}
+                x1={ex(connection.from.x)}
+                x2={ex(connection.to.x)}
+                y1={ey(connection.from.y)}
+                y2={ey(connection.to.y)}
+              />
+              {/*
+                O rótulo vai na linha porque comprimento sugere quantidade, e
+                aqui não é: o plano tem duas dimensões e a medida tem mais.
+                Quem lê precisa ver o número, não deduzi-lo do tamanho.
+              */}
+              {connection.label ? (
+                <text
+                  className="fill-foreground text-[10px] font-semibold"
+                  dy={-5}
+                  textAnchor="middle"
+                  x={(ex(connection.from.x) + ex(connection.to.x)) / 2}
+                  y={(ey(connection.from.y) + ey(connection.to.y)) / 2}
+                >
+                  {connection.label}
+                </text>
+              ) : null}
+            </>
           ) : null}
 
           {points.map((ponto) =>

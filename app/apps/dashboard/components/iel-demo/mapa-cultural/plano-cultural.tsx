@@ -134,7 +134,13 @@ export function PlanoCultural({
             y: pontoReferencia.position.y
           },
           to: { x: pontoAlvo.position.x, y: pontoAlvo.position.y },
-          color: COR_DO_TALENTO
+          color: COR_DO_TALENTO,
+          label: (() => {
+            const a = aderenciaPorTalento?.get(pontoAlvo.id)?.total;
+            return a === null || a === undefined
+              ? null
+              : `${formatAdherence(a)} de aderência`;
+          })()
         }
       : null;
 

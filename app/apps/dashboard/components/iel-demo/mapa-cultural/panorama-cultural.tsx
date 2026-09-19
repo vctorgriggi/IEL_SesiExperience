@@ -345,9 +345,9 @@ export function PanoramaCultural() {
           <CardDescription>
             Exibindo{' '}
             <strong className="text-foreground">{pontosExibidos.length}</strong>{' '}
-            registros. A proximidade entre o ponto da empresa e o do talento
-            define a faixa de aderência. O mapa orienta a conversa e não
-            descarta ninguém.
+            registros. O plano mostra em que região cada lado descreve o próprio
+            ambiente; o percentual de aderência está na lista, ao lado de cada
+            nome. O mapa orienta a conversa e não descarta ninguém.
           </CardDescription>
           <CardAction>
             {modoVisualizacao === 'panorama-geral' ? (
