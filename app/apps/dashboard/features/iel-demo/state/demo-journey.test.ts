@@ -18,6 +18,8 @@ import { applySyncEventPayload, demoReducer, type DemoAction } from './reducer';
 import {
   getApplication,
   getClarification,
+  getFitGaps,
+  getFitReading,
   getJob,
   getOpenClarifications,
   getOverviewMetrics,
@@ -30,6 +32,34 @@ const AT = '2026-09-15T10:00:00.000Z';
 
 function run(state: DemoState, ...actions: DemoAction[]): DemoState {
   return actions.reduce(demoReducer, state);
+}
+
+function askManagerAboutSupport(state: DemoState): DemoState {
+  const template = findClarificationTemplate('VAG-01', 'CRI-106', 'gestor')!;
+  return demoReducer(state, {
+    type: 'create-clarification',
+    at: AT,
+    input: {
+      jobId: 'VAG-01',
+      applicationId: null,
+      criterionId: 'CRI-106',
+      recipient: {
+        kind: 'gestor',
+        name: 'Marina Duarte',
+        role: 'Gestora da equipe — Assistente de Logística',
+        email: 'marina.duarte@example.com',
+        companyId: 'EMP-01',
+        teamId: 'EQ-01',
+        talentId: null
+      },
+      question: template.suggestedQuestion,
+      sharedInfo: template.suggestedSharedInfo,
+      reason: template.reason,
+      preparedAnswer: template.preparedAnswer,
+      effects: template.teamEffects ?? [],
+      teamConditionUpdate: template.teamConditionUpdate ?? null
+    }
+  });
 }
 
 describe('base fictícia da Central IEL', () => {
@@ -163,34 +193,6 @@ describe('seleção para comparação', () => {
 });
 
 describe('jornada de esclarecimento (cena 4)', () => {
-  function askManagerAboutSupport(state: DemoState): DemoState {
-    const template = findClarificationTemplate('VAG-01', 'CRI-106', 'gestor')!;
-    return demoReducer(state, {
-      type: 'create-clarification',
-      at: AT,
-      input: {
-        jobId: 'VAG-01',
-        applicationId: null,
-        criterionId: 'CRI-106',
-        recipient: {
-          kind: 'gestor',
-          name: 'Marina Duarte',
-          role: 'Gestora da equipe — Assistente de Logística',
-          email: 'marina.duarte@example.com',
-          companyId: 'EMP-01',
-          teamId: 'EQ-01',
-          talentId: null
-        },
-        question: template.suggestedQuestion,
-        sharedInfo: template.suggestedSharedInfo,
-        reason: template.reason,
-        preparedAnswer: template.preparedAnswer,
-        effects: template.teamEffects ?? [],
-        teamConditionUpdate: template.teamConditionUpdate ?? null
-      }
-    });
-  }
-
   it('cria a pergunta, registra a resposta e atualiza só os critérios afetados', () => {
     let state = askManagerAboutSupport(buildInitialDemoState());
     const created = state.clarifications.at(-1)!;
@@ -677,5 +679,75 @@ describe('trajetória entre processos', () => {
   it('não inventa reaproveitamento para quem tem um processo só', () => {
     const state = buildInitialDemoState();
     expect(getReusedEvidences(state, 'BRUNO')).toHaveLength(0);
+  });
+});
+
+describe('aderência ao contexto, eixo a eixo', () => {
+  it('não inventa conflito quando um dos lados está vazio', () => {
+    const state = buildInitialDemoState();
+    const job = getJob('VAG-01')!;
+    const reading = getFitReading(state, job, 'ANA');
+
+    const apoio = reading.find((entry) => entry.axis.id === 'apoio-inicial')!;
+
+    // A empresa ainda não informou o apoio inicial. Ana declarou esperar
+    // orientação. Um lado vazio não diverge do outro: é lacuna.
+    expect(apoio.preference?.value).toContain('orientação');
+    expect(apoio.condition).toBeNull();
+    expect(apoio.missingSide).toBe('empresa');
+    expect(apoio.state).toBe('sem-informacao');
+  });
+
+  it('a resposta do gestor transforma a lacuna em divergência', () => {
+    let state = buildInitialDemoState();
+
+    // A pergunta ao gestor sobre apoio inicial é criada durante a jornada
+    // (cena 4), e a condição da equipe só fica informada quando a resposta é
+    // incorporada.
+    state = askManagerAboutSupport(state);
+    const created = state.clarifications.at(-1)!;
+
+    state = demoReducer(state, {
+      type: 'answer-clarification',
+      clarificationId: created.id,
+      answer: created.preparedAnswer ?? 'Resposta preparada do cenário.',
+      declined: false,
+      at: AT
+    });
+    state = demoReducer(state, {
+      type: 'incorporate-clarification',
+      clarificationId: created.id,
+      at: AT,
+      decisions: created.effects.map((effect) => ({
+        applicationId: effect.applicationId,
+        criterionId: effect.criterionId,
+        state: effect.suggestedState,
+        note: effect.note
+      }))
+    });
+
+    const apoio = getFitReading(state, getJob('VAG-01')!, 'ANA').find(
+      (entry) => entry.axis.id === 'apoio-inicial'
+    )!;
+
+    // Agora os dois lados informaram, e eles não coincidem. É a cena que o
+    // briefing descreve: o critério deixa de ser desconhecido e passa a
+    // mostrar uma diferença real, sem eliminar a candidatura.
+    expect(apoio.condition?.informed).toBe(true);
+    expect(apoio.missingSide).toBeNull();
+    expect(apoio.state).toBe('divergencia');
+  });
+
+  it('aponta os eixos em que falta o lado da pessoa', () => {
+    const state = buildInitialDemoState();
+    const gaps = getFitGaps(state, getJob('VAG-01')!, 'ANA');
+
+    // Ana não declarou nada sobre autonomia nem sobre comunicação de
+    // prioridades: é o que uma coleta dirigida iria buscar.
+    expect(gaps.map((entry) => entry.axis.id).sort()).toEqual([
+      'autonomia',
+      'comunicacao-prioridades'
+    ]);
+    expect(gaps.every((entry) => entry.preference === null)).toBe(true);
   });
 });

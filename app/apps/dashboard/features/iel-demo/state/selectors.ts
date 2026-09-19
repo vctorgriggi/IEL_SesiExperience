@@ -4,6 +4,7 @@ import {
   getCriterionAnalysis,
   type CoverageSummary
 } from '../analysis/criterion-states';
+import { FIT_AXES, type FitAxis } from '../analysis/fit-axes';
 import {
   ALL_COMPANIES,
   ALL_JOBS,
@@ -19,6 +20,7 @@ import type {
   Clarification,
   Company,
   CriterionRef,
+  CriterionState,
   DataSourceId,
   DemoState,
   Dimension,
@@ -30,7 +32,9 @@ import type {
   Persona,
   Referral,
   Talent,
-  Team
+  TalentPreference,
+  Team,
+  TeamCondition
 } from '../types';
 
 export const EXTERNAL_STAGE_LABEL: Record<ExternalStage, string> = {
@@ -770,4 +774,138 @@ export function getReusedEvidences(
       };
     })
     .filter((entry) => entry.jobs.length > 1);
+}
+
+export type FitReadingEntry = {
+  axis: FitAxis;
+  /** O que a equipe informou neste eixo, se informou. */
+  condition: TeamCondition | null;
+  /** O que a pessoa declarou neste eixo, se declarou. */
+  preference: TalentPreference | null;
+  /** Leitura do encontro entre os dois lados. */
+  state: CriterionState;
+  /** De qual lado falta informação, quando falta. */
+  missingSide: 'empresa' | 'candidato' | 'ambos' | null;
+};
+
+/**
+ * Aderência ao contexto de trabalho, eixo a eixo.
+ *
+ * O enunciado trata o fit como o cerne do desafio e aponta que hoje ele vive
+ * numa ferramenta externa, cara e difícil de escalar. A leitura aqui não
+ * aplica avaliação nova nem produz nota: ela põe lado a lado o que a equipe
+ * informou e o que a pessoa declarou, nos mesmos eixos, e nomeia o que o
+ * encontro dos dois revela — inclusive quando um dos lados está vazio.
+ *
+ * Estados possíveis, na mesma escala usada nos critérios da vaga:
+ *
+ * - alinhamento: os dois lados descrevem a mesma coisa.
+ * - divergência: os dois lados informaram, e o que informaram não coincide.
+ * - a esclarecer: há informação dos dois lados, mas a condição da empresa
+ *   ainda não foi confirmada por quem poderia confirmar.
+ * - sem informação: falta um dos lados, ou os dois.
+ */
+export function getFitReading(
+  state: DemoState,
+  job: Job,
+  talentId: string
+): FitReadingEntry[] {
+  const team = getTeam(state, job.teamId);
+  const talent = getTalent(talentId);
+
+  return FIT_AXES.map((axis) => {
+    const record =
+      team?.conditions.find((entry) => entry.axisId === axis.id) ?? null;
+    // Um registro que apenas marca a pergunta em aberto não é um lado
+    // informado: a empresa ainda não disse nada ali.
+    const condition = record?.informed === false ? null : record;
+    const preference =
+      talent?.preferences.find((entry) => entry.axisId === axis.id) ?? null;
+
+    if (!condition && !preference) {
+      return {
+        axis,
+        condition,
+        preference,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'ambos' as const
+      };
+    }
+
+    if (!preference) {
+      return {
+        axis,
+        condition,
+        preference,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'candidato' as const
+      };
+    }
+
+    if (!condition) {
+      return {
+        axis,
+        condition,
+        preference,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'empresa' as const
+      };
+    }
+
+    // Com os dois lados preenchidos, a leitura passa a depender do conteúdo.
+    // A base demo marca a divergência onde ela existe de fato; fora disso, uma
+    // condição ainda não confirmada pela empresa não sustenta conclusão.
+    const conflicting = CONFLICTING_PAIRS.some(
+      (pair) =>
+        pair.conditionId === condition.id && pair.preferenceId === preference.id
+    );
+
+    if (conflicting) {
+      return {
+        axis,
+        condition,
+        preference,
+        state: 'divergencia' as CriterionState,
+        missingSide: null
+      };
+    }
+
+    return {
+      axis,
+      condition,
+      preference,
+      state: (condition.status === 'confirmado'
+        ? 'alinhamento'
+        : 'a-esclarecer') as CriterionState,
+      missingSide: null
+    };
+  });
+}
+
+/**
+ * Pares em conflito explícito na base demo.
+ *
+ * Declarados, não inferidos: o briefing pede que uma divergência seja
+ * mostrada quando existe informação em conflito, e não deduzida por
+ * semelhança de texto.
+ */
+const CONFLICTING_PAIRS: { conditionId: string; preferenceId: string }[] = [
+  // A equipe da vaga 1 não tem acompanhamento no turno; Ana espera orientação.
+  // Só vale depois que o gestor responde: antes disso o lado da empresa está
+  // vazio, e a tela mostra a lacuna em vez de inventar um conflito.
+  { conditionId: 'COND-01', preferenceId: 'PREF-ANA-01' },
+  // A rotina da vaga 1 é executada sem supervisão; Fábio espera treinamento.
+  { conditionId: 'COND-04', preferenceId: 'PREF-FABIO-01' }
+];
+
+/** Eixos em que falta o lado da pessoa: o que uma coleta dirigida buscaria. */
+export function getFitGaps(
+  state: DemoState,
+  job: Job,
+  talentId: string
+): FitReadingEntry[] {
+  return getFitReading(state, job, talentId).filter(
+    (entry) =>
+      entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
+  );
 }

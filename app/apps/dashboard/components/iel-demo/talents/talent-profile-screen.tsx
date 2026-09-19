@@ -52,6 +52,7 @@ import {
   SourceBreakdownBar,
   SourceDot
 } from '../shared/ui';
+import { FitReading } from './fit-reading';
 import { TalentJourney } from './talent-journey';
 
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
@@ -321,6 +322,13 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
               ver a análise por critério.
             </Alert>
           )}
+
+          {job && contextApplication ? (
+            <FitReading
+              job={job}
+              talentId={talent.id}
+            />
+          ) : null}
 
           <Card>
             <CardHeader>

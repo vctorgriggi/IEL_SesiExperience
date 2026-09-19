@@ -487,6 +487,7 @@ function build(): GeneratedBase {
       ],
       declaredSkills: ['Rotina operacional', 'Organização de registros'],
       expectations: ['Estabilidade', 'Aprender a rotina da área'],
+      preferences: [],
       externalRefs: [
         {
           system: 'Empregare — demonstração',

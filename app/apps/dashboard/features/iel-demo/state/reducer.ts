@@ -434,6 +434,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
                           ...condition,
                           value: clarification.teamConditionUpdate.value,
                           status: 'confirmado' as const,
+                          informed: true,
                           origin: `Confirmado por ${clarification.recipient.name}`,
                           updatedAt: action.at.slice(0, 10)
                         }

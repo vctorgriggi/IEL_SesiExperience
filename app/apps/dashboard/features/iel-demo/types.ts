@@ -1,3 +1,5 @@
+import type { FitAxisId } from './analysis/fit-axes';
+
 /**
  * Domínio da Central de Seleção IEL (protótipo).
  *
@@ -104,9 +106,17 @@ export type TeamConditionStatus = 'confirmado' | 'da-descricao' | 'a-confirmar';
 
 export type TeamCondition = {
   id: string;
+  /** Eixo de aderência que esta condição descreve, quando há um. */
+  axisId?: FitAxisId;
   label: string;
   value: string;
   status: TeamConditionStatus;
+  /**
+   * Se a empresa chegou a informar algo neste eixo. Falso quando o registro
+   * existe apenas para marcar a pergunta em aberto — um lado vazio não pode
+   * divergir do outro.
+   */
+  informed?: boolean;
   origin: string;
   updatedAt: string;
 };
@@ -165,6 +175,24 @@ export type TalentExperience = {
   activities: string;
 };
 
+/**
+ * O que a pessoa declarou sobre como prefere trabalhar.
+ *
+ * Espelha `TeamCondition` de propósito: o fit só é legível quando os dois
+ * lados são descritos nos mesmos eixos, com a mesma procedência e o mesmo
+ * tratamento para o que ainda não se sabe. Antes este lado era uma lista de
+ * frases soltas, e a comparação só existia porque alguém a escrevera à mão.
+ */
+export type TalentPreference = {
+  id: string;
+  axisId: FitAxisId;
+  /** O que a pessoa declarou, nas palavras dela. */
+  value: string;
+  origin: string;
+  sourceId: DataSourceId;
+  updatedAt: string;
+};
+
 export type Talent = {
   id: string;
   name: string;
@@ -175,6 +203,8 @@ export type Talent = {
   experiences: TalentExperience[];
   declaredSkills: string[];
   expectations: string[];
+  /** Preferências declaradas, nos mesmos eixos das condições da equipe. */
+  preferences: TalentPreference[];
   externalRefs: ExternalRef[];
 };
 
