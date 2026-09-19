@@ -81,7 +81,7 @@ export function JobSectionCards({
   const selo = cn(SELO, BADGE_DE_ESTADO.neutro);
 
   return (
-    <div className="grid grid-cols-1 gap-4 @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 @xl/vaga:grid-cols-2 @4xl/vaga:grid-cols-4">
       {/* Cada cartão é número, selo e rodapé soltos; lido em sequência vira
           "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só
           (`leitura`), e o desenho fica para os olhos. */}

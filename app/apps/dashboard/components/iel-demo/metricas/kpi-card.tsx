@@ -32,7 +32,7 @@ export type CartaoDeIndicadorProps = Omit<
   rotulo: ReactNode;
   /** O número. Fica sempre na cor do texto: a cor mora no ícone e no selo. */
   valor: ReactNode;
-  /** Selo no canto direito do topo (variação ou etiqueta). */
+  /** Selo à direita do número (variação ou etiqueta). */
   selo?: ReactNode;
   /** Ícone de contexto, num quadradinho tingido no canto esquerdo do topo. */
   icone?: LucideIcon;
@@ -53,11 +53,14 @@ export type CartaoDeIndicadorProps = Omit<
 
 /**
  * O esqueleto de todo cartão de número do /iel: ícone tingido e rótulo no
- * topo, selo à direita, número grande, mini indicador opcional e rodapé.
+ * topo, número grande com o selo à direita, mini indicador opcional e rodapé.
  *
  * Fundo branco com borda: a cor vem do ícone e do selo, no máximo dois pontos
  * de cor por cartão. O topo tem altura mínima de duas linhas de rótulo, para
- * os números de uma mesma fileira ficarem na mesma altura.
+ * os números de uma mesma fileira ficarem na mesma altura; o apoio reserva
+ * duas linhas e o rodapé fica colado embaixo (`mt-auto`), para o rodapé de
+ * um cartão alinhar com o do vizinho mesmo quando um apoio quebra e o outro
+ * não. O cartão ocupa a altura toda da célula (`h-full`).
  */
 export function CartaoDeIndicador({
   rotulo,
@@ -76,7 +79,7 @@ export function CartaoDeIndicador({
 
   return (
     <Card
-      className={cn('@container/card gap-4 shadow-xs', className)}
+      className={cn('@container/card h-full gap-3 py-4 shadow-xs', className)}
       {...props}
     >
       {leitura ? <p className="sr-only">{leitura}</p> : null}
@@ -84,7 +87,7 @@ export function CartaoDeIndicador({
         aria-hidden={oculto}
         className="flex flex-col gap-2"
       >
-        <div className="flex min-h-10 w-full items-start gap-3">
+        <div className="flex min-h-10 w-full items-center gap-3">
           {Icone ? (
             <span
               aria-hidden="true"
@@ -96,35 +99,39 @@ export function CartaoDeIndicador({
               <Icone className="size-4" />
             </span>
           ) : null}
-          <CardDescription
-            className={cn(
-              'line-clamp-2 min-w-0 flex-1 leading-5',
-              Icone && 'pt-1.5'
-            )}
-          >
+          <CardDescription className="line-clamp-2 min-w-0 flex-1 leading-5">
             {rotulo}
           </CardDescription>
-          {selo ? (
-            <div className={cn('shrink-0', Icone && 'pt-1')}>{selo}</div>
-          ) : null}
         </div>
-        <CardTitle className="text-3xl font-semibold tabular-nums">
-          {valor}
-        </CardTitle>
+        {/*
+         * O selo mora na linha do número, logo depois dele: no topo ele
+         * disputava espaço com o rótulo, que a 1280px virava "Retorno das…".
+         */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <CardTitle className="min-w-0 text-3xl font-semibold tabular-nums">
+            {valor}
+          </CardTitle>
+          {selo ? <div className="shrink-0">{selo}</div> : null}
+        </div>
         {indicador}
       </CardHeader>
       {rodape || apoio ? (
         <CardFooter
           aria-hidden={oculto}
-          className="mt-auto flex-col items-start gap-1.5 pt-2 text-sm"
+          className="mt-auto flex-col items-start gap-1 pt-1 text-sm"
         >
           {rodape ? (
-            <span className="line-clamp-1 flex items-center gap-2 font-medium">
+            // O rodapé cresce para cima quando quebra: o apoio tem altura fixa
+            // de duas linhas e o bloco fica colado embaixo, então a última
+            // linha do rodapé alinha com a do vizinho.
+            <span className="flex max-w-full min-w-0 items-center gap-2 font-medium">
               {rodape}
             </span>
           ) : null}
           {apoio ? (
-            <span className="line-clamp-2 text-muted-foreground">{apoio}</span>
+            <span className="line-clamp-2 min-h-10 text-muted-foreground">
+              {apoio}
+            </span>
           ) : null}
         </CardFooter>
       ) : null}
@@ -161,9 +168,17 @@ export type KpiCardProps = {
   className?: string;
 };
 
-function direcao(kpi: Kpi): { texto: string; Icone: LucideIcon } {
+function direcao(kpi: Kpi): {
+  texto: string;
+  curto?: string;
+  Icone: LucideIcon;
+} {
   if (kpi.variacao === null) {
-    return { texto: 'Sem comparação no período', Icone: Minus };
+    return {
+      texto: 'Sem comparação no período',
+      curto: 'Sem comparação',
+      Icone: Minus
+    };
   }
   if (kpi.variacao > 0) {
     return { texto: 'Subiu no período', Icone: TrendingUp };
@@ -210,7 +225,7 @@ export function KpiCard({
   indicador,
   className
 }: KpiCardProps) {
-  const { texto, Icone } = direcao(kpi);
+  const { texto, curto, Icone } = direcao(kpi);
   const variacaoFalada = lerVariacao(kpi);
   const estado = corDaVariacao(kpi.variacao, quedaEBoa);
 
@@ -258,9 +273,24 @@ export function KpiCard({
       rodape={
         rodape ?? (
           <>
-            {/* Com o selo, a frase já foi lida por extenso logo acima. */}
-            <span aria-hidden={variacaoFalada ? 'true' : undefined}>
-              {texto}
+            {/*
+             * Com o selo, a frase já foi lida por extenso logo acima. Em
+             * cartão estreito (4 por linha a 1280px), "Sem comparação no
+             * período" quebrava em duas linhas e desalinhava o rodapé dos
+             * vizinhos: fica só "Sem comparação".
+             */}
+            <span
+              aria-hidden={variacaoFalada ? 'true' : undefined}
+              className="truncate"
+            >
+              {curto ? (
+                <>
+                  <span className="@max-3xs/card:hidden">{texto}</span>
+                  <span className="hidden @max-3xs/card:inline">{curto}</span>
+                </>
+              ) : (
+                texto
+              )}
             </span>{' '}
             <Icone
               aria-hidden="true"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -58,13 +58,13 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
+  SidebarSeparator
 } from '@workspace/ui/shadcn/sidebar';
 
 import { normalizarBusca } from '../jobs/busca';
@@ -86,14 +86,73 @@ type ItemPrincipal = {
   ativo: boolean;
 };
 
+type Secao = { titulo: string; itens: ItemPrincipal[] };
+
+/**
+ * Título de seção da barra: pequeno, discreto e igual em todas. Em tela baixa
+ * (800px), título e seção ficam mais justos para a barra caber sem rolagem.
+ */
+const ROTULO_DA_SECAO =
+  'text-xs font-medium text-muted-foreground [@media(max-height:860px)]:h-6';
+const SECAO = '[@media(max-height:860px)]:py-1';
+
+/** Linha fina entre as seções, só com a barra recolhida (sem os títulos). */
+function SeparadorRecolhido({ className }: { className?: string }) {
+  return (
+    <SidebarSeparator
+      className={cn('hidden group-data-[collapsible=icon]:block', className)}
+    />
+  );
+}
+
+/** Um destino da barra, com `aria-current` e o contador quando houver. */
+function ItemDaBarra({
+  item,
+  selo
+}: {
+  item: ItemPrincipal;
+  /** Substitui o contador: o status da sincronização em Integrações. */
+  selo?: ReactNode;
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        tooltip={item.label}
+        isActive={item.ativo}
+        // O kit marca o item ativo só com `data-active`; o leitor de tela
+        // precisa do `aria-current`.
+        aria-current={item.ativo ? 'page' : undefined}
+        className={ITEM_ATIVO}
+      >
+        <Link href={item.href}>
+          <item.icon />
+          <span>{item.label}</span>
+        </Link>
+      </SidebarMenuButton>
+      {selo ??
+        (item.badge ? (
+          <SidebarMenuBadge
+            className={cn(
+              'tabular-nums',
+              item.label === 'Hoje' && BADGE_DE_ESTADO.atencao
+            )}
+          >
+            {item.badge}
+          </SidebarMenuBadge>
+        ) : null)}
+    </SidebarMenuItem>
+  );
+}
+
 /**
  * Barra do analista, organizada por páginas.
  *
  * Ela já foi uma árvore Empresa → Vaga. Com mais de 2.500 empresas atendidas
  * e perto de 2.500 vagas por mês, a árvore não cabia e não se achava nada
- * nela. Ficaram quatro destinos fixos — Hoje, Vagas, Empresas, Pessoas —, as
- * cinco vagas em que a analista mexeu por último e a busca ⌘K para chegar em
- * qualquer uma das outras.
+ * nela. Ficaram destinos fixos em seções com título — Seleção, Pessoas,
+ * Análise —, as últimas vagas em que a analista mexeu, a seção Sistema no pé
+ * e a busca ⌘K para chegar em qualquer outra coisa.
  *
  * Papéis (prancha 2): só o analista tem app. Empresa e candidato recebem
  * link, e essas telas ficam fora desta casca.
@@ -144,72 +203,92 @@ export function AppSidebar() {
   const eGestor = persona.kind === 'gestor';
   const empresaDoGestor = persona.companyId;
 
-  const principais: ItemPrincipal[] = eGestor
+  const item = (
+    href: string,
+    label: string,
+    icon: LucideIcon,
+    ativo: boolean,
+    badge: number | null = null
+  ): ItemPrincipal => ({ href, label, icon, badge, ativo });
+
+  /*
+   * A barra em seções com título, no padrão do `sidebar-07`: o que é da
+   * seleção do dia, o que é da base de pessoas e o que é análise. Seção vazia
+   * (a do gestor, por exemplo) não aparece.
+   */
+  const secoes: Secao[] = eGestor
     ? [
         {
-          href: empresaDoGestor
-            ? iel.companies.byId(empresaDoGestor)
-            : iel.companies.index,
-          label: 'Minha empresa',
-          icon: Building2,
-          badge: null,
-          ativo: pathname.startsWith(iel.companies.index)
+          titulo: 'Seleção',
+          itens: [
+            item(
+              empresaDoGestor
+                ? iel.companies.byId(empresaDoGestor)
+                : iel.companies.index,
+              'Minha empresa',
+              Building2,
+              pathname.startsWith(iel.companies.index)
+            )
+          ]
         }
       ]
     : [
         {
-          href: iel.index,
-          label: 'Hoje',
-          icon: Inbox,
-          badge: pendencias > 0 ? pendencias : null,
-          ativo: pathname === iel.index
-        },
-        {
-          href: iel.jobs.index,
-          label: 'Vagas',
-          icon: Briefcase,
-          badge: emSelecao > 0 ? emSelecao : null,
-          ativo: pathname.startsWith(iel.jobs.index)
-        },
-        {
-          href: iel.companies.index,
-          label: 'Empresas',
-          icon: Building2,
-          badge: null,
-          ativo: pathname.startsWith(iel.companies.index)
-        },
-        {
-          href: iel.talents.index,
-          label: 'Pessoas',
-          icon: Users,
-          badge: null,
-          ativo: pathname.startsWith(iel.talents.index)
+          titulo: 'Seleção',
+          itens: [
+            item(
+              iel.index,
+              'Hoje',
+              Inbox,
+              pathname === iel.index,
+              pendencias > 0 ? pendencias : null
+            ),
+            item(
+              iel.jobs.index,
+              'Vagas',
+              Briefcase,
+              pathname.startsWith(iel.jobs.index),
+              emSelecao > 0 ? emSelecao : null
+            ),
+            item(
+              iel.companies.index,
+              'Empresas',
+              Building2,
+              pathname.startsWith(iel.companies.index)
+            )
+          ]
         },
         /*
-         * O mapa reúne a base de talentos do IEL, então fica fora do menu do
-         * gestor pela mesma razão que "Pessoas": seria porta para o recorte de
-         * outras empresas (PRODUTO.md §5).
+         * Pessoas, Candidatos e o mapa reúnem a base de talentos do IEL, então
+         * ficam fora do menu do gestor: seriam porta para o recorte de outras
+         * empresas (PRODUTO.md §5).
          */
         {
-          href: iel.cultureMap,
-          label: 'Mapa de cultura',
-          icon: ScatterChart,
-          badge: null,
-          ativo: pathname.startsWith(iel.cultureMap)
+          titulo: 'Pessoas',
+          itens: [
+            item(
+              iel.talents.index,
+              'Pessoas',
+              Users,
+              pathname.startsWith(iel.talents.index)
+            ),
+            item(
+              iel.candidates,
+              'Candidatos',
+              MessageSquare,
+              pathname.startsWith(iel.candidates)
+            ),
+            item(
+              iel.cultureMap,
+              'Mapa de cultura',
+              ScatterChart,
+              pathname.startsWith(iel.cultureMap)
+            )
+          ]
         },
         {
-          href: iel.candidates,
-          label: 'Candidatos',
-          icon: MessageSquare,
-          badge: null,
-          ativo: pathname.startsWith(iel.candidates)
-        },
-        {
-          href: iel.bi,
-          label: 'BI',
-          icon: ChartColumn,
-          badge: null,
-          ativo: pathname.startsWith(iel.bi)
+          titulo: 'Análise',
+          itens: [item(iel.bi, 'BI', ChartColumn, pathname.startsWith(iel.bi))]
         }
       ];
 
@@ -252,79 +331,83 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        {/*
+         * A busca é o atalho principal: com milhares de vagas, empresas e
+         * pessoas, chegar pelo nome é mais rápido que navegar. A importação
+         * deixou de ser ação da barra: o Empregare sincroniza sozinho todo
+         * dia às 06:00, e a planilha virou plano B (no menu da vaga e em
+         * Integrações).
+         */}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              variant="outline"
+              onClick={() => setBusca(true)}
+              aria-label="Buscar vaga, empresa ou pessoa"
+              aria-keyshortcuts="Meta+K Control+K"
+              aria-haspopup="dialog"
+              tooltip="Buscar (⌘K)"
+              className="text-muted-foreground"
+            >
+              <Search />
+              <span className="flex-1 truncate text-xs">
+                Vaga, empresa, pessoa…
+              </span>
+              <Kbd className="ml-auto group-data-[collapsible=icon]:hidden">
+                ⌘K
+              </Kbd>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent className="flex flex-col gap-2">
-            {/*
-             * A busca é o atalho principal: com milhares de vagas, empresas e
-             * pessoas, chegar pelo nome é mais rápido que navegar. A
-             * importação deixou de ser ação da barra: o Empregare sincroniza
-             * sozinho todo dia às 06:00, e a planilha virou plano B (no menu
-             * da vaga e em Integrações).
-             */}
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  variant="outline"
-                  onClick={() => setBusca(true)}
-                  aria-label="Buscar vaga, empresa ou pessoa"
-                  aria-keyshortcuts="Meta+K Control+K"
-                  aria-haspopup="dialog"
-                  tooltip="Buscar (⌘K)"
-                  className="text-muted-foreground"
-                >
-                  <Search />
-                  <span className="flex-1 truncate text-xs">
-                    Vaga, empresa, pessoa…
-                  </span>
-                  <Kbd className="ml-auto group-data-[collapsible=icon]:hidden">
-                    ⌘K
-                  </Kbd>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-
-            <SidebarMenu>
-              {principais.map((item) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.label}
-                    isActive={item.ativo}
-                    // O kit marca o item ativo só com `data-active`; o
-                    // leitor de tela precisa do `aria-current`.
-                    aria-current={item.ativo ? 'page' : undefined}
-                    className={ITEM_ATIVO}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {item.badge ? (
-                    <SidebarMenuBadge
-                      className={cn(
-                        'tabular-nums',
-                        item.label === 'Hoje' && BADGE_DE_ESTADO.atencao
-                      )}
-                    >
-                      {item.badge}
-                    </SidebarMenuBadge>
-                  ) : null}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/*
+       * Sem o `gap` do kit entre os grupos: o respiro vem do `p-2` de cada
+       * seção, igual entre todas. Recolhida, os títulos somem e um separador
+       * fino marca onde uma seção acaba.
+       */}
+      <SidebarContent className="gap-0">
+        {secoes.map((secao, indice) => (
+          <Fragment key={secao.titulo}>
+            {indice > 0 ? <SeparadorRecolhido /> : null}
+            <SidebarGroup className={SECAO}>
+              <SidebarGroupLabel className={ROTULO_DA_SECAO}>
+                {secao.titulo}
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {secao.itens.map((entrada) => (
+                  <ItemDaBarra
+                    key={entrada.label}
+                    item={entrada}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </Fragment>
+        ))}
 
         <NavRecentes vagas={vagas} />
 
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
+        {/* Sistema fica no pé da barra, logo acima de quem está usando. */}
+        <div className="mt-auto flex flex-col">
+          <SeparadorRecolhido />
+          <SidebarGroup className={SECAO}>
+            <SidebarGroupLabel className={ROTULO_DA_SECAO}>
+              Sistema
+            </SidebarGroupLabel>
             <SidebarMenu>
-              {eGestor ? null : <StatusDaSincronizacao />}
+              {/* Integrações é assunto do IEL: o gestor não vê. */}
+              {eGestor ? null : (
+                <ItemDaBarra
+                  item={item(
+                    iel.dataSources,
+                    'Integrações',
+                    Plug,
+                    pathname === iel.dataSources
+                  )}
+                  selo={<SeloDaSincronizacao />}
+                />
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => setComoFunciona(true)}
@@ -343,28 +426,9 @@ export function AppSidebar() {
                   <span>Roteiro da demo</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {/* Integrações é assunto do IEL: o gestor não vê. */}
-              {eGestor ? null : (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Integrações"
-                    isActive={pathname === iel.dataSources}
-                    aria-current={
-                      pathname === iel.dataSources ? 'page' : undefined
-                    }
-                    className={ITEM_ATIVO}
-                  >
-                    <Link href={iel.dataSources}>
-                      <Plug />
-                      <span>Integrações</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          </SidebarGroup>
+        </div>
       </SidebarContent>
 
       <SidebarFooter>
@@ -388,13 +452,13 @@ export function AppSidebar() {
 }
 
 /**
- * A linha discreta que diz que o dado chega sozinho: "Empregare ·
- * sincronizado hoje 06:00", com um ponto verde. Se a última execução deixou
- * aviso, o ponto fica laranja e o texto diz. Leva a Integrações. Recolhida, a
- * barra mostra só o ponto, e o texto vai para a dica.
+ * O selo que diz que o dado chega sozinho, no item Integrações: um ponto
+ * verde e a hora da última sincronização do Empregare ("● 06:00"). Se a
+ * última execução deixou aviso, o ponto fica laranja. A frase inteira vai
+ * para o leitor de tela e para a dica do mouse. Recolhida, a barra esconde o
+ * selo junto com os outros contadores.
  */
-function StatusDaSincronizacao() {
-  const iel = routes.dashboard.iel;
+function SeloDaSincronizacao() {
   const empregare = getStatusIntegracoes().find(
     (integracao) => integracao.id === 'empregare'
   );
@@ -402,44 +466,39 @@ function StatusDaSincronizacao() {
 
   const quando = empregare.detalhe.replace(/^Sincronizado · /, '');
   const atencao = empregare.estado === 'atencao';
+  const hora = quando.replace(/^hoje /, '');
   const texto = atencao
     ? `Empregare · sincronização de ${quando} com aviso`
-    : // Curto para caber numa linha: "hoje" fica implícito no horário.
-      `Empregare sincronizado · ${quando.replace(/^hoje /, '')}`;
+    : `Empregare sincronizado · ${hora}`;
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        tooltip={texto}
-        className="h-auto min-h-8 items-start py-1.5 text-xs text-muted-foreground"
-      >
-        <Link href={iel.dataSources}>
-          {/* O ponto ocupa o lugar do ícone: é ele que fica na barra recolhida. */}
-          <span
-            aria-hidden="true"
-            className="flex size-4 shrink-0 items-center justify-center"
-          >
-            <span
-              className={cn(
-                'size-2 rounded-full',
-                atencao
-                  ? PREENCHIMENTO_DE_ESTADO.atencao
-                  : PREENCHIMENTO_DE_ESTADO.combina
-              )}
-            />
-          </span>
-          {/* `div`, e não `span`: o kit trunca o último `span` do botão, e a
-              frase cabe inteira em duas linhas. */}
-          <div className="min-w-0 flex-1 leading-4">{texto}</div>
-        </Link>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+    <SidebarMenuBadge
+      title={texto}
+      className="gap-1.5 font-normal text-muted-foreground tabular-nums"
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          'size-2 shrink-0 rounded-full',
+          atencao
+            ? PREENCHIMENTO_DE_ESTADO.atencao
+            : PREENCHIMENTO_DE_ESTADO.combina
+        )}
+      />
+      <span aria-hidden="true">{hora}</span>
+      <span className="sr-only">{texto}</span>
+    </SidebarMenuBadge>
   );
 }
 
 /** Quantas vagas a barra sugere quando ainda não há recentes. */
 const SUGESTOES_NA_BARRA = 3;
+
+/**
+ * Quantas recentes a barra mostra. Com as seções e o pé, cinco não cabiam sem
+ * rolagem numa tela de 800px de altura; as outras continuam no ⌘K.
+ */
+const RECENTES_VISIVEIS = 3;
 
 /**
  * As últimas vagas abertas, ou, na primeira visita, as que têm mais gente
@@ -460,7 +519,7 @@ function NavRecentes({ vagas }: { vagas: Job[] }) {
     return recentes
       .map((id) => porId.get(id))
       .filter((job): job is Job => Boolean(job))
-      .slice(0, RECENTES_NA_BARRA);
+      .slice(0, RECENTES_VISIVEIS);
   }, [recentes, vagas]);
 
   const semRecentes = visiveis.length === 0;
@@ -480,8 +539,8 @@ function NavRecentes({ vagas }: { vagas: Job[] }) {
   if (lista.length === 0) return null;
 
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>
+    <SidebarGroup className={cn(SECAO, 'group-data-[collapsible=icon]:hidden')}>
+      <SidebarGroupLabel className={ROTULO_DA_SECAO}>
         {semRecentes ? 'Sugestões' : 'Recentes'}
       </SidebarGroupLabel>
       <SidebarMenu>

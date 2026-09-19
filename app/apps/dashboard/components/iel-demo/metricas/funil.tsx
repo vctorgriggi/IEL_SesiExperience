@@ -48,6 +48,10 @@ function etapaDaMaiorPerda(etapas: EtapaDeFunil[]): number {
  * As barras seguem a `ESCALA` verde-azulada, do claro ao escuro. A etapa
  * onde mais gente se perde ganha, em laranja, o rótulo "−35% aqui".
  *
+ * Dentro de um pai `flex flex-col` (o `CardContent` de um cartão esticado
+ * pelo vizinho), a lista ocupa a altura que sobrar e as etapas se distribuem
+ * nela, em vez de ficarem espremidas no topo com um vão embaixo.
+ *
  * ```tsx
  * <Funil etapas={getFunilDoPeriodo(state, periodo)} />
  * ```
@@ -72,7 +76,7 @@ export function Funil({
     // própria lista — rótulo, número e % de cada etapa, lidos em ordem.
     <ol
       aria-label={titulo}
-      className="flex flex-col gap-3.5"
+      className="@container/funil flex flex-1 flex-col justify-between gap-3.5"
     >
       {etapas.map((etapa, indice) => {
         const largura =
@@ -83,9 +87,11 @@ export function Funil({
         return (
           <li
             key={etapa.id}
-            className="grid grid-cols-[minmax(0,11rem)_1fr_6.5rem] items-center gap-3 text-sm"
+            className="grid grid-cols-[minmax(0,7.5rem)_1fr_6rem] items-center gap-3 text-sm @md/funil:grid-cols-[minmax(0,11rem)_1fr_6.5rem]"
           >
-            <span className="truncate">
+            {/* Em coluna estreita o rótulo quebra em duas linhas, e a barra
+                fica com o espaço. */}
+            <span className="leading-tight">
               {etapa.rotulo}
               <span className="sr-only">:</span>
             </span>

@@ -175,14 +175,20 @@ export function OverviewScreen() {
           >
             {saudacao(new Date().getHours())}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {dataPorExtenso(DEMO_REFERENCE_DATE)} ·{' '}
-            {plural(kpis.vagasAtivas.valor ?? 0, 'vaga ativa', 'vagas ativas')}{' '}
-            · {formatarNumero(candidatos)}{' '}
-            {candidatos === 1 ? 'pessoa na base' : 'pessoas na base'}
-          </p>
-          {empregare ? (
-            <div>
+          {/* Data e selo na mesma linha: o cabeçalho fica em duas linhas e a
+              primeira dobra ganha espaço para a fila. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="text-sm text-muted-foreground">
+              {dataPorExtenso(DEMO_REFERENCE_DATE)} ·{' '}
+              {plural(
+                kpis.vagasAtivas.valor ?? 0,
+                'vaga ativa',
+                'vagas ativas'
+              )}{' '}
+              · {formatarNumero(candidatos)}{' '}
+              {candidatos === 1 ? 'pessoa na base' : 'pessoas na base'}
+            </p>
+            {empregare ? (
               <Badge
                 variant="outline"
                 className="gap-1 font-normal text-muted-foreground"
@@ -193,8 +199,8 @@ export function OverviewScreen() {
                 />
                 {empregare.rotulo} {empregare.detalhe.toLowerCase()}
               </Badge>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
         <SeletorPeriodo
           value={periodo}
@@ -202,7 +208,7 @@ export function OverviewScreen() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           kpi={kpis.vagasAtivas}
           icone={Briefcase}
@@ -225,10 +231,16 @@ export function OverviewScreen() {
         />
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <Card>
+      {/*
+       * Fila larga (7/12) e, à direita, o funil e as duas pontas empilhados.
+       * As duas colunas terminam na mesma linha: a fila mostra itens bastantes
+       * para igualar a coluna da direita, e o funil (o cartão que pode
+       * crescer) ocupa o que sobrar, com as etapas distribuídas na altura.
+       */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-12">
+        <Card className="h-full lg:col-span-7">
           <CardHeader>
-            <CardTitle className="text-base font-medium">
+            <CardTitle className="text-base font-semibold">
               Precisa de você hoje
             </CardTitle>
             <CardDescription>
@@ -236,24 +248,22 @@ export function OverviewScreen() {
                 ? 'Nada em aberto.'
                 : `${plural(pendencias.length, 'pendência', 'pendências')}, na ordem em que compensa resolver`}
             </CardDescription>
-            {cabe ? null : (
+            {todas ? (
               <CardAction>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setTodas((atual) => !atual);
+                    setTodas(false);
                     paginacao.irPara(0);
                   }}
                 >
-                  {todas
-                    ? `Só os ${PENDENCIAS_VISIVEIS} mais urgentes`
-                    : `Ver todos (${pendencias.length})`}
+                  Só os {PENDENCIAS_VISIVEIS} mais urgentes
                 </Button>
               </CardAction>
-            )}
+            ) : null}
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-1 flex-col gap-4">
             {pendencias.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Quando chegar uma resposta ou uma vaga ficar parada, a linha
@@ -329,12 +339,31 @@ export function OverviewScreen() {
               />
             ) : null}
           </CardContent>
+          {/* "Ver todos" no pé da lista, colado embaixo: é onde o olho chega
+              depois da última linha. */}
+          {cabe || todas ? null : (
+            <CardFooter className="mt-auto justify-between gap-4 text-sm text-muted-foreground">
+              <span>
+                Os {PENDENCIAS_VISIVEIS} mais urgentes de {pendencias.length}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTodas(true);
+                  paginacao.irPara(0);
+                }}
+              >
+                Ver todos ({pendencias.length})
+              </Button>
+            </CardFooter>
+          )}
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <Card>
+        <div className="flex flex-col gap-4 lg:col-span-5">
+          <Card className="flex-1">
             <CardHeader>
-              <CardTitle className="flex items-center gap-1 text-base font-medium">
+              <CardTitle className="flex items-center gap-1 text-base font-semibold">
                 Funil do período <MarcadorHistorico />
               </CardTitle>
               <CardDescription>
@@ -352,7 +381,7 @@ export function OverviewScreen() {
                 </Button>
               </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-1 flex-col">
               <Funil
                 etapas={funil}
                 titulo={`Funil do período, ${PERIODO_LABEL[periodo]}`}
@@ -362,7 +391,7 @@ export function OverviewScreen() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base font-medium">
+              <CardTitle className="text-base font-semibold">
                 As duas pontas
               </CardTitle>
               <CardDescription>

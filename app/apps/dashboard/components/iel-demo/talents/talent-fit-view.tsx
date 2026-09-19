@@ -290,10 +290,15 @@ export function FitCards({
   const faltam = pontos - medidos;
 
   return (
-    <div className="grid gap-4 @md/fit:grid-cols-2">
-      <Card>
+    // Os dois cartões com a mesma altura e o mesmo desenho: rótulo com duas
+    // linhas reservadas (o da esquerda quebra por causa do selo), número,
+    // barra e a nota colada embaixo, alinhada com a do vizinho.
+    <div className="grid items-stretch gap-4 @md/fit:grid-cols-2">
+      <Card className="h-full">
         <CardHeader>
-          <CardDescription>{COPY.fit.label}</CardDescription>
+          <CardDescription className="min-h-10">
+            {COPY.fit.label}
+          </CardDescription>
           <CardTitle
             className={cn(
               'text-3xl font-semibold tracking-tight tabular-nums',
@@ -326,7 +331,7 @@ export function FitCards({
             </CardAction>
           )}
         </CardHeader>
-        <CardContent className="flex flex-col gap-1.5">
+        <CardContent className="flex flex-1 flex-col gap-1.5">
           {/* O número acima já diz o valor: a barra é só desenho. */}
           <div
             aria-hidden="true"
@@ -360,7 +365,7 @@ export function FitCards({
               mínimo {ADHERENCE_THRESHOLD}%
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-auto text-xs text-muted-foreground">
             {percentual === null
               ? COPY.fit.semResposta
               : `medido em ${medidos} de ${pontos} pontos${
@@ -372,9 +377,11 @@ export function FitCards({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-full">
         <CardHeader>
-          <CardDescription>{COPY.technical.label}</CardDescription>
+          <CardDescription className="min-h-10">
+            {COPY.technical.label}
+          </CardDescription>
           <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
             {technicalMatch === null ? (
               <>
@@ -389,7 +396,7 @@ export function FitCards({
             <Badge variant="outline">Empregare</Badge>
           </CardAction>
         </CardHeader>
-        <CardContent className="flex flex-col gap-1.5">
+        <CardContent className="flex flex-1 flex-col gap-1.5">
           <div
             aria-hidden="true"
             className={cn('h-2.5 overflow-hidden rounded-full', TRILHO.trilha)}
@@ -399,7 +406,7 @@ export function FitCards({
               style={{ width: `${technicalMatch ?? 0}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-auto text-xs text-muted-foreground">
             {rank === null
               ? 'sem posição nesta vaga'
               : `${rank}º de ${total} nesta vaga`}

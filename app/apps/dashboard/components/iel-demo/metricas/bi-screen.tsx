@@ -231,7 +231,9 @@ export function BiScreen() {
             periodo={periodo}
             setor={filtros?.setor ?? null}
           />
-          <div className="grid gap-4 lg:grid-cols-2">
+          {/* Mesma altura nos dois: o gráfico de barras cresce com o cartão
+              em vez de deixar um vão no alto. */}
+          <div className="grid items-stretch gap-4 lg:grid-cols-2">
             <AderenciaVsPermanencia
               faixas={faixas}
               periodo={periodo}
@@ -274,7 +276,7 @@ export function BiScreen() {
 /** Título de card com o marcador de histórico simulado. */
 function TituloHistorico({ children }: { children: string }) {
   return (
-    <CardTitle className="flex items-center gap-1">
+    <CardTitle className="flex items-center gap-1 text-base font-semibold">
       {children}
       <MarcadorHistorico />
     </CardTitle>
@@ -375,7 +377,7 @@ function Reabertura({
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid items-stretch gap-4 sm:grid-cols-3">
         <KpiCard
           kpi={kpiHistorico(
             'reabertura-antes',
@@ -689,8 +691,11 @@ function AderenciaVsPermanencia({
   periodo: Periodo;
   setor: string | null;
 }) {
+  // A barra mais alta ocupa quase a altura toda do gráfico; as outras ficam
+  // na proporção dela, com lugar para o número em cima.
+  const maior = Math.max(1, ...faixas.map((f) => f.permanencia90Pct ?? 0));
   return (
-    <Card className="shadow-xs">
+    <Card className="h-full shadow-xs">
       <CardHeader>
         <TituloHistorico>
           Combina na entrada × quem ficou 90 dias
@@ -702,7 +707,7 @@ function AderenciaVsPermanencia({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-end">
         <div
-          className="grid h-64 items-end gap-6 border-b border-border/60 px-4"
+          className="grid min-h-64 flex-1 items-end gap-6 border-b border-border/60 px-4"
           style={{ gridTemplateColumns: `repeat(${faixas.length}, 1fr)` }}
           role="img"
           aria-label={faixas
@@ -738,7 +743,9 @@ function AderenciaVsPermanencia({
                       'w-full max-w-20 rounded-t-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                       TOM_DA_FAIXA[faixa.faixa]
                     )}
-                    style={{ height: `${faixa.permanencia90Pct * 0.7}%` }}
+                    style={{
+                      height: `${(faixa.permanencia90Pct / maior) * 80}%`
+                    }}
                   />
                 </Dica>
               )}
@@ -762,7 +769,7 @@ function AderenciaVsPermanencia({
           ))}
         </div>
       </CardContent>
-      <CardFooter className="text-sm text-muted-foreground">
+      <CardFooter className="mt-auto text-sm text-muted-foreground">
         {leituraDasFaixas(faixas)}
       </CardFooter>
     </Card>
@@ -856,7 +863,7 @@ function PontoQueMaisPesa({
   const maiorPp = Math.max(1, ...pontos.map((p) => p.diferencaPp ?? 0));
 
   return (
-    <Card className="shadow-xs">
+    <Card className="h-full shadow-xs">
       <CardHeader>
         <TituloHistorico>O ponto que mais pesa, por setor</TituloHistorico>
         <CardDescription>
@@ -864,7 +871,7 @@ function PontoQueMaisPesa({
           {recorte(setor)}. Sempre 12 meses, qualquer que seja o período.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex flex-1 flex-col gap-3">
         {linhas.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {pontos.length === 0
@@ -872,7 +879,7 @@ function PontoQueMaisPesa({
               : 'Menos de 5 contratados apurados neste recorte: o ponto fica oculto para proteger quem foi contratado.'}
           </p>
         ) : (
-          <ul className="flex flex-col divide-y text-sm">
+          <ul className="flex flex-1 flex-col justify-between divide-y text-sm">
             {linhas.map((linha) => (
               <li
                 key={linha.setor}
@@ -886,7 +893,7 @@ function PontoQueMaisPesa({
             ))}
           </ul>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-muted-foreground">
             Use na ligação com a empresa: é a pergunta que mais separa quem
             fica.
