@@ -1,147 +1,146 @@
 /*
- * Paleta da Central IEL.
+ * Identidade visual da Central IEL.
  *
- * O tema padrão do Arki é monocromático âmbar: `--success`, `--warning` e
- * `--info` apontam todos para tons de `--chart-*` laranja. Isso funciona num
- * SaaS genérico, mas quebra esta aplicação, onde a leitura depende de
- * distinguir "alinhamento identificado" de "ponto a esclarecer" e de
- * "divergência identificada" num relance.
+ * Duas heranças precisavam sair do caminho.
  *
- * Aqui os tokens são redefinidos com um azul institucional (no espírito da
- * identidade do Sistema Indústria) como cor de marca e uma escala semântica
- * de verde/âmbar/vermelho/cinza para os estados. O escopo é o atributo
- * `data-iel-theme`, então nada disso vaza para as rotas autenticadas do
- * produto.
+ * A primeira é o tema do Arki, monocromático âmbar: `--success`, `--warning`
+ * e `--info` apontam todos para tons de `--chart-*` laranja. Num SaaS
+ * genérico isso passa; aqui quebra o produto, porque a leitura inteira
+ * depende de distinguir "alinhamento identificado" de "ponto a esclarecer" e
+ * de "divergência identificada" num relance.
+ *
+ * A segunda é o vocabulário de painel administrativo: fundo cinza-azulado,
+ * tudo em cartão branco com sombra, barra lateral escura. É o desenho padrão
+ * de qualquer ferramenta interna, e fazia uma central de análise de pessoas
+ * parecer um ERP.
+ *
+ * O que está aqui no lugar: um fundo de papel quente, tinta quase preta,
+ * azul institucional profundo como marca e um ocre industrial como segunda
+ * voz. Papel e tinta, não vidro e sombra — a tela é uma mesa de trabalho com
+ * documentos, que é a analogia que o próprio briefing usa.
  *
  * Os estados nunca dependem só de cor: cada um carrega ícone e rótulo
  * textual. A cor é reforço, não é o canal principal.
+ *
+ * Diálogos e toasts são renderizados em portais no fim do `body`, fora da
+ * árvore da página — por isso o escopo cobre também o `body` enquanto uma
+ * tela do IEL estiver montada.
  */
 
-/*
- * Diálogos e toasts são renderizados em portais no fim do `body`, fora da
- * árvore da página — então um escopo preso ao elemento não os alcança e eles
- * voltavam ao âmbar do tema padrão. Marcar o `body` enquanto uma tela do IEL
- * estiver montada cobre também os portais.
- */
 body:has([data-iel-theme]),
 [data-iel-theme] {
-  /* Marca institucional. */
-  --primary: 207 100% 24%;
-  --primary-foreground: 0 0% 100%;
-  --ring: 207 88% 38%;
+  /* --- Papel e tinta --------------------------------------------------- */
+  --background: 40 24% 96%;
+  --foreground: 28 12% 13%;
+  --card: 40 40% 99%;
+  --card-foreground: 28 12% 13%;
+  --popover: 40 40% 99%;
+  --popover-foreground: 28 12% 13%;
+  --muted: 38 18% 93%;
+  --muted-foreground: 30 7% 40%;
+  --secondary: 38 18% 92%;
+  --secondary-foreground: 28 12% 22%;
+  --border: 34 14% 86%;
+  --border-strong: 32 12% 72%;
+  --input: 34 14% 82%;
 
-  /* Superfícies levemente frias, para o azul não parecer deslocado. */
-  --background: 210 33% 98%;
-  --foreground: 213 30% 15%;
-  --card: 0 0% 100%;
-  --card-foreground: 213 30% 15%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 213 30% 15%;
-  --secondary: 210 25% 95%;
-  --secondary-foreground: 213 25% 27%;
-  --muted: 210 30% 96%;
-  --muted-foreground: 215 16% 42%;
-  --accent: 207 85% 95%;
-  --accent-foreground: 207 100% 24%;
-  --border: 214 22% 89%;
-  --border-strong: 214 20% 80%;
-  --input: 214 22% 86%;
+  /* --- Marca ----------------------------------------------------------- */
+  --primary: 213 62% 24%;
+  --primary-foreground: 40 40% 98%;
+  --accent: 213 40% 92%;
+  --accent-foreground: 213 62% 24%;
+  --ring: 213 55% 38%;
 
-  /* Escala semântica dos estados de critério. */
-  --success: 153 58% 30%;
-  --success-foreground: 0 0% 100%;
-  --warning: 34 94% 42%;
-  --warning-foreground: 0 0% 100%;
-  --destructive: 0 70% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --info: 205 85% 38%;
-  --info-foreground: 0 0% 100%;
+  /* --- Estados --------------------------------------------------------- */
+  --success: 152 42% 30%;
+  --success-foreground: 40 40% 98%;
+  --warning: 30 78% 38%;
+  --warning-foreground: 40 40% 98%;
+  --destructive: 6 62% 44%;
+  --destructive-foreground: 40 40% 98%;
+  --info: 213 55% 34%;
+  --info-foreground: 40 40% 98%;
 
-  /* Série categórica: matizes distintos, não degradês da mesma cor. */
-  --chart-1: 207 90% 32%;
-  --chart-2: 189 82% 32%;
-  --chart-3: 153 58% 34%;
-  --chart-4: 34 94% 46%;
-  --chart-5: 268 42% 50%;
+  /*
+   * Série categórica. O ocre é a segunda voz da identidade: puxa a indústria
+   * sem competir com os estados, que precisam do verde, do âmbar e do
+   * vermelho reservados para si.
+   */
+  --chart-1: 213 62% 30%;
+  --chart-2: 18 58% 44%;
+  --chart-3: 188 45% 30%;
+  --chart-4: 152 35% 34%;
+  --chart-5: 265 28% 44%;
 
-  --sidebar: 212 42% 16%;
-  --sidebar-foreground: 210 28% 88%;
-  --sidebar-primary: 207 88% 46%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 212 38% 24%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 212 34% 26%;
-  --sidebar-ring: 207 88% 46%;
+  /* --- Barra de navegação, em tinta ------------------------------------ */
+  --sidebar: 28 14% 12%;
+  --sidebar-foreground: 40 22% 90%;
+  --sidebar-primary: 213 58% 52%;
+  --sidebar-primary-foreground: 40 40% 98%;
+  --sidebar-accent: 28 12% 20%;
+  --sidebar-accent-foreground: 40 30% 96%;
+  --sidebar-border: 28 10% 24%;
+  --sidebar-ring: 213 58% 52%;
 
-  /* Cantos um pouco mais secos que o padrão do starter. */
-  --card-radius: 0.75rem;
-  --control-radius: 0.5rem;
+  /* Cantos secos: o arredondado forte era o que mais datava a tela. */
+  --card-radius: 0.375rem;
+  --control-radius: 0.25rem;
+  --radius-pill: 9999px;
 }
 
 .dark body:has([data-iel-theme]),
 [data-iel-theme].dark,
 .dark [data-iel-theme] {
-  --primary: 207 85% 55%;
-  --primary-foreground: 213 45% 11%;
-  --ring: 207 85% 55%;
+  --background: 28 12% 10%;
+  --foreground: 40 18% 92%;
+  --card: 28 11% 13%;
+  --card-foreground: 40 18% 92%;
+  --popover: 28 11% 13%;
+  --popover-foreground: 40 18% 92%;
+  --muted: 28 10% 17%;
+  --muted-foreground: 34 8% 64%;
+  --secondary: 28 10% 19%;
+  --secondary-foreground: 40 18% 92%;
+  --border: 28 9% 22%;
+  --border-strong: 28 8% 34%;
+  --input: 28 9% 24%;
 
-  --background: 213 35% 10%;
-  --foreground: 210 25% 93%;
-  --card: 213 32% 13%;
-  --card-foreground: 210 25% 93%;
-  --popover: 213 32% 13%;
-  --popover-foreground: 210 25% 93%;
-  --secondary: 213 26% 19%;
-  --secondary-foreground: 210 25% 93%;
-  --muted: 213 26% 17%;
-  --muted-foreground: 213 14% 66%;
+  --primary: 213 62% 62%;
+  --primary-foreground: 28 20% 10%;
   --accent: 213 30% 22%;
-  --accent-foreground: 207 85% 72%;
-  --border: 213 22% 24%;
-  --border-strong: 213 20% 34%;
-  --input: 213 22% 26%;
+  --accent-foreground: 213 70% 78%;
+  --ring: 213 62% 62%;
 
-  --success: 153 48% 46%;
-  --warning: 36 88% 56%;
-  --destructive: 0 70% 60%;
-  --info: 205 80% 58%;
+  --success: 152 40% 48%;
+  --warning: 34 78% 56%;
+  --destructive: 6 64% 60%;
+  --info: 213 60% 62%;
 
-  --chart-1: 207 85% 58%;
-  --chart-2: 189 72% 48%;
-  --chart-3: 153 48% 48%;
-  --chart-4: 36 88% 58%;
-  --chart-5: 268 60% 68%;
+  --chart-1: 213 62% 60%;
+  --chart-2: 18 62% 58%;
+  --chart-3: 188 45% 50%;
+  --chart-4: 152 38% 50%;
+  --chart-5: 265 38% 66%;
 }
 
 /*
- * Tipografia e superfícies da Central.
+ * Tipografia.
  *
- * O que fazia a tela parecer qualquer painel de SaaS não era falta de
- * componente: era tudo ter o mesmo peso. Cada bloco era um cartão branco com
- * borda, sombra e canto arredondado, e todo texto vinha da mesma fonte
- * arredondada em dois tamanhos. Sem hierarquia de voz, nada parece importante
- * — e o fit cultural, que é o centro do produto, ficava com o mesmo destaque
- * de uma lista qualquer.
- *
- * Aqui a hierarquia volta por tipografia e por régua, não por caixa.
+ * O dashboard sobrescreve o tema com Nunito, arredondada e genérica. O design
+ * system já declara Inter e Source Serif 4; a Central usa o que o tema pede.
  */
-
 body:has([data-iel-theme]) {
   font-family:
     var(--iel-font-sans),
     ui-sans-serif,
     system-ui,
     sans-serif;
-  font-feature-settings: 'cv05' 1;
+  background-color: hsl(var(--background));
 }
 
 [data-iel-theme] {
   --font-sans: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--iel-font-serif), ui-serif, Georgia, serif;
-
-  /* Cantos mais secos: o arredondado forte é o que mais datava a tela. */
-  --card-radius: 0.5rem;
-  --control-radius: 0.375rem;
 }
 
 /* Títulos e números de destaque falam com outra voz. */
@@ -151,7 +150,6 @@ body:has([data-iel-theme]) {
   letter-spacing: -0.015em;
 }
 
-/* Números grandes: serifa com algarismos tabulares para alinhar em coluna. */
 [data-iel-theme] .iel-figure {
   font-family: var(--iel-font-serif), ui-serif, Georgia, serif;
   font-variant-numeric: tabular-nums lining-nums;
@@ -159,34 +157,28 @@ body:has([data-iel-theme]) {
   letter-spacing: -0.02em;
 }
 
-/*
- * Rótulo de seção: versalete espaçado. Substitui o título em negrito que
- * competia com o conteúdo logo abaixo dele.
- */
+/* Rótulo de seção: versalete espaçado, no lugar de mais um negrito. */
 [data-iel-theme] .iel-eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
 }
 
 /*
- * Superfície da Central: borda fina, sem sombra. A sombra em todo bloco fazia
- * a página parecer um monte de cartões soltos; a régua fina separa sem
- * empilhar profundidade falsa.
+ * Superfície: folha sobre a mesa. Borda fina e um fio de sombra rente ao
+ * papel — o suficiente para separar, longe do cartão flutuante.
  */
 [data-iel-theme] .iel-panel {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--card-radius);
+  box-shadow: 0 1px 0 0 hsl(var(--foreground) / 0.04);
 }
 
-/* Fundo levemente texturizado, para o branco dos painéis ter sobre o que se apoiar. */
-body:has([data-iel-theme]) {
-  background-image: radial-gradient(
-    hsl(var(--foreground) / 0.035) 1px,
-    transparent 1px
-  );
-  background-size: 22px 22px;
+/* Faixa superior em tinta, usada pela navegação. */
+[data-iel-theme] .iel-ink {
+  background: hsl(var(--sidebar));
+  color: hsl(var(--sidebar-foreground));
 }
