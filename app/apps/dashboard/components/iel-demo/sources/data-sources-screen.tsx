@@ -11,7 +11,6 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 import {
   Alert,
   Button,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -21,7 +20,13 @@ import {
   toast
 } from '@workspace/ui';
 
-import { Chip, formatDateTime, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDateTime,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
 
 export function DataSourcesScreen() {
   const { state, dispatch } = useIelDemo();
@@ -51,7 +56,7 @@ export function DataSourcesScreen() {
         permissões próprias e ainda não está confirmado para o IEL.
       </Alert>
 
-      <Card padding="none">
+      <Panel padding="none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -140,16 +145,14 @@ export function DataSourcesScreen() {
             </TableBody>
           </Table>
         </div>
-      </Card>
+      </Panel>
 
-      <Card className="gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          Recebimento de atualização simulada
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Evento fixo. Receber o mesmo evento novamente não duplica candidatura
-          nem talento: a idempotência é verificada pelo identificador do evento.
-        </p>
+      <Panel className="flex flex-col gap-3">
+        <PanelHeader
+          eyebrow="Simulação"
+          title="Recebimento de atualização simulada"
+          hint="Evento fixo. Receber o mesmo evento novamente não duplica candidatura nem talento: a idempotência é verificada pelo identificador do evento."
+        />
         <ul className="space-y-3">
           {DEMO_SYNC_EVENTS.map((event) => {
             const alreadyApplied = state.appliedSyncEventIds.includes(event.id);
@@ -215,12 +218,13 @@ export function DataSourcesScreen() {
           })}
         </ul>
         {lastResult ? <Alert variant="info">{lastResult}</Alert> : null}
-      </Card>
+      </Panel>
 
-      <Card className="gap-2">
-        <h2 className="text-base font-semibold text-foreground">
-          O que é simulado nesta demonstração
-        </h2>
+      <Panel className="flex flex-col gap-2">
+        <PanelHeader
+          eyebrow="Limites da demonstração"
+          title="O que é simulado nesta demonstração"
+        />
         <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
           <li>
             Os quatro conjuntos de dados acima: nenhum sistema externo é
@@ -244,7 +248,7 @@ export function DataSourcesScreen() {
           candidaturas, {totals.clarifications} solicitações e{' '}
           {plural(totals.referrals, 'encaminhamento', 'encaminhamentos')}.
         </p>
-      </Card>
+      </Panel>
     </div>
   );
 }

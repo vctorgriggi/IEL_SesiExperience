@@ -64,7 +64,38 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Marina Duarte',
     contactEmail: 'marina.duarte@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-28'
+    updatedAt: '2026-08-28',
+    cultureSuggestions: [
+      {
+        axisId: 'apoio-inicial',
+        optionId: 'troca-informal',
+        excerpt: 'comunicação direta entre as equipes',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      },
+      {
+        axisId: 'autonomia',
+        optionId: 'autonomia-ampla',
+        excerpt:
+          'A rotina é executada sem supervisão direta durante a maior parte do turno.',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'comunicacao-prioridades',
+        optionId: 'por-escrito',
+        excerpt: 'Checklist impresso entregue no início do turno.',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'ritmo-turno',
+        optionId: 'fixo',
+        excerpt: 'Turno da tarde (13h às 22h)',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      }
+    ]
   },
   {
     id: 'EMP-02',
@@ -76,7 +107,24 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Rafael Nogueira',
     contactEmail: 'rafael.nogueira@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-30'
+    updatedAt: '2026-08-30',
+    cultureSuggestions: [
+      {
+        axisId: 'apoio-inicial',
+        optionId: 'acompanhamento-formal',
+        excerpt:
+          'Colega de referência acompanha a pessoa nas primeiras quatro semanas.',
+        sourceLabel: 'Contexto da equipe confirmado pelo gestor',
+        sourceId: 'FONTE-EMPRESA'
+      },
+      {
+        axisId: 'comunicacao-prioridades',
+        optionId: 'por-escrito',
+        excerpt: 'procedimentos escritos para movimentação de materiais',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      }
+    ]
   },
   {
     id: 'EMP-03',
@@ -88,7 +136,16 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Sônia Prado',
     contactEmail: 'sonia.prado@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-12'
+    updatedAt: '2026-08-12',
+    cultureSuggestions: [
+      {
+        axisId: 'autonomia',
+        optionId: 'autonomia-ampla',
+        excerpt: 'divisão informal de tarefas administrativas',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      }
+    ]
   }
 ];
 
@@ -104,14 +161,17 @@ export const DEMO_TEAMS: Team[] = [
     conditions: [
       {
         id: 'COND-01',
+        axisId: 'apoio-inicial',
         label: 'Apoio nas primeiras atividades',
         value: 'Ainda não informado pela empresa.',
         status: 'a-confirmar',
+        informed: false,
         origin: 'Contexto da empresa — demonstração',
         updatedAt: '2026-08-28'
       },
       {
         id: 'COND-02',
+        axisId: 'ritmo-turno',
         label: 'Sobreposição entre turnos',
         value:
           'Pouca sobreposição: o turno da tarde inicia quando a equipe da manhã está encerrando.',
@@ -121,6 +181,7 @@ export const DEMO_TEAMS: Team[] = [
       },
       {
         id: 'COND-03',
+        axisId: 'comunicacao-prioridades',
         label: 'Comunicação de prioridades',
         value: 'Checklist impresso entregue no início do turno.',
         status: 'da-descricao',
@@ -129,6 +190,7 @@ export const DEMO_TEAMS: Team[] = [
       },
       {
         id: 'COND-04',
+        axisId: 'autonomia',
         label: 'Autonomia esperada',
         value:
           'A rotina é executada sem supervisão direta durante a maior parte do turno.',
@@ -149,6 +211,7 @@ export const DEMO_TEAMS: Team[] = [
     conditions: [
       {
         id: 'COND-05',
+        axisId: 'apoio-inicial',
         label: 'Apoio nas primeiras atividades',
         value:
           'Colega de referência acompanha a pessoa nas primeiras quatro semanas.',
@@ -158,6 +221,7 @@ export const DEMO_TEAMS: Team[] = [
       },
       {
         id: 'COND-06',
+        axisId: 'comunicacao-prioridades',
         label: 'Revisão de prioridades',
         value: 'Reunião semanal de prioridades com o gestor da área.',
         status: 'confirmado',
@@ -166,6 +230,7 @@ export const DEMO_TEAMS: Team[] = [
       },
       {
         id: 'COND-07',
+        axisId: 'autonomia',
         label: 'Registro de movimentações',
         value: 'Planilha compartilhada somada ao sistema interno de estoque.',
         status: 'confirmado',
@@ -185,6 +250,7 @@ export const DEMO_TEAMS: Team[] = [
     conditions: [
       {
         id: 'COND-08',
+        axisId: 'autonomia',
         label: 'Atividades detalhadas',
         value:
           'Documentação parcial: as atividades aparecem apenas em linhas gerais.',
@@ -194,9 +260,11 @@ export const DEMO_TEAMS: Team[] = [
       },
       {
         id: 'COND-09',
+        axisId: 'apoio-inicial',
         label: 'Apoio nas primeiras atividades',
         value: 'Não informado pela empresa.',
         status: 'a-confirmar',
+        informed: false,
         origin: 'Contexto da empresa — demonstração',
         updatedAt: '2026-08-12'
       }

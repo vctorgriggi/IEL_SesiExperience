@@ -17,17 +17,17 @@ import {
 import type { JobCriterion } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@workspace/ui';
+import { Alert, Button } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
-import { Chip, formatDate, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDate,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
+import { CultureProfile } from './culture-profile';
 
 export function CompaniesScreen() {
   const { state } = useIelDemo();
@@ -53,14 +53,12 @@ export function CompaniesScreen() {
           );
 
           return (
-            <Card key={company.id}>
-              <CardHeader>
-                <CardTitle className="text-base">{company.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {company.sector} · {company.location}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4">
+            <Panel key={company.id}>
+              <PanelHeader
+                eyebrow={`${company.sector} · ${company.location}`}
+                title={company.name}
+              />
+              <div className="mt-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
                   {company.institutionalDescription}
                 </p>
@@ -83,18 +81,18 @@ export function CompaniesScreen() {
                     Abrir contexto da empresa
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           );
         })}
       </div>
 
-      <Card padding="sm">
+      <Panel padding="sm">
         <p className="text-xs text-muted-foreground">
           {DEMO_COMPANIES.length} empresas fictícias. Contatos usam o domínio
           example.com e nenhum dado pessoal real é armazenado.
         </p>
-      </Card>
+      </Panel>
     </div>
   );
 }
@@ -162,15 +160,16 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         </div>
       </IelPageHeader>
 
+      <CultureProfile companyId={company.id} />
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Equipes e condições</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Cada condição indica a origem e se foi confirmada pelo gestor.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+        <Panel>
+          <PanelHeader
+            eyebrow="Condições de trabalho"
+            title="Equipes e condições"
+            hint="Cada condição indica a origem e se foi confirmada pelo gestor."
+          />
+          <div className="mt-4 space-y-4">
             {teams.map((team) => (
               <div
                 key={team.id}
@@ -255,14 +254,15 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                 </ul>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Vagas associadas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
+        <Panel>
+          <PanelHeader
+            eyebrow="Processos abertos"
+            title="Vagas associadas"
+          />
+          <div className="mt-4 space-y-3">
             {jobs.map((job) => {
               const applications = getApplicationsByJob(state, job.id);
               const clarifications = getClarificationsByJob(
@@ -306,8 +306,8 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
 
       {clarificationTarget && clarificationTargetJob ? (

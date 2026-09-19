@@ -11,7 +11,6 @@ import {
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  EXTERNAL_STAGE_LABEL,
   getApplicationsByTalent,
   getAssessments,
   getCompany,
@@ -21,23 +20,13 @@ import {
   getJob,
   getReferralListSelection,
   getSourceBreakdown,
-  getTalent,
-  REFERRAL_STAGE_LABEL
+  getTalent
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Dimension, JobCriterion } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Textarea,
-  toast
-} from '@workspace/ui';
+import { Alert, Button, Textarea, toast } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import {
@@ -51,9 +40,13 @@ import {
   formatDate,
   IelPageHeader,
   InfoHint,
+  Panel,
+  PanelHeader,
   SourceBreakdownBar,
   SourceDot
 } from '../shared/ui';
+import { FitReading } from './fit-reading';
+import { TalentJourney } from './talent-journey';
 
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const { state, dispatch, persona } = useIelDemo();
@@ -184,14 +177,13 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0 space-y-4">
           {job && contextApplication ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-1.5 text-base">
-                  Análise por critério — {job.title}
-                  <InfoHint label="A leitura depende desta oportunidade: o mesmo perfil tem outra análise em outra vaga." />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="Compatibilidade"
+                title={`Análise por critério — ${job.title}`}
+                hint="A leitura depende desta oportunidade: o mesmo perfil tem outra análise em outra vaga."
+              />
+              <div className="mt-4 space-y-4">
                 <SourceBreakdownBar
                   breakdown={getSourceBreakdown(
                     getEvidencesForApplication(state, job, contextApplication)
@@ -313,8 +305,8 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                     </section>
                   );
                 })}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           ) : (
             <Alert variant="default">
               Este perfil está aberto sem contexto de vaga. A compatibilidade
@@ -323,13 +315,19 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
             </Alert>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Experiências declaradas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          {job && contextApplication ? (
+            <FitReading
+              job={job}
+              talentId={talent.id}
+            />
+          ) : null}
+
+          <Panel>
+            <PanelHeader
+              eyebrow="Percurso profissional"
+              title="Experiências declaradas"
+            />
+            <div className="mt-4 space-y-3">
               <ul className="space-y-3">
                 {talent.experiences.map((experience) => (
                   <li
@@ -378,17 +376,16 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-1.5 text-base">
-                Avaliações existentes
-                <InfoHint label="Resultados de origem, com escala, método e data preservados. Nenhuma avaliação nova é aplicada nesta demonstração." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="Fontes externas"
+              title="Avaliações existentes"
+              hint="Resultados de origem, com escala, método e data preservados. Nenhuma avaliação nova é aplicada nesta demonstração."
+            />
+            <div className="mt-4 space-y-3">
               {assessments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Avaliação não disponível — o que não equivale a nota zero.
@@ -419,92 +416,34 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Candidaturas deste perfil
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <ul className="space-y-2">
-                {applications.map((application) => {
-                  const applicationJob = getJob(application.jobId);
-                  const applicationCompany = applicationJob
-                    ? getCompany(applicationJob.companyId)
-                    : null;
-                  return (
-                    <li
-                      key={application.id}
-                      className="flex flex-col gap-2 rounded-[var(--control-radius)] border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {applicationJob?.title}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {applicationCompany?.name} · inscrição em{' '}
-                          {formatDate(application.appliedAt)} ·{' '}
-                          {application.externalRef.id}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          <Chip>
-                            {EXTERNAL_STAGE_LABEL[application.externalStage]}
-                          </Chip>
-                          <Chip tone="info">
-                            {REFERRAL_STAGE_LABEL[application.referralStage]}
-                          </Chip>
-                        </div>
-                      </div>
-                      <Link
-                        href={iel.talents
-                          .byId(talent.id)
-                          .inJob(application.jobId)}
-                      >
-                        <Button
-                          size="sm"
-                          variant="outline"
-                        >
-                          Ver análise nesta vaga
-                        </Button>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </CardContent>
-          </Card>
+          <TalentJourney talentId={talent.id} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Registros e origens ({sharedEvidences.length})
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Informações compartilháveis usadas na análise.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="Rastreabilidade"
+              title={`Registros e origens (${sharedEvidences.length})`}
+              hint="Informações compartilháveis usadas na análise."
+            />
+            <div className="mt-4 space-y-3">
               {sharedEvidences.map((evidence) => (
                 <EvidenceCard
                   key={evidence.id}
                   evidence={evidence}
                 />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Notas internas do IEL</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Separadas dos dados compartilháveis: não entram no
-                encaminhamento.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="Uso interno"
+              title="Notas internas do IEL"
+              hint="Separadas dos dados compartilháveis: não entram no encaminhamento."
+            />
+            <div className="mt-4 space-y-3">
               {internalNotes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Nenhuma nota interna registrada.
@@ -552,8 +491,8 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                   Registrar nota interna
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
         </div>
 
         {job && contextApplication && activeCriterion ? (

@@ -28,7 +28,6 @@ import { routes } from '@workspace/routes';
 import {
   Alert,
   Button,
-  Card,
   cn,
   Table,
   TableBody,
@@ -42,7 +41,13 @@ import {
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
-import { Chip, CoverageMeter, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  CoverageMeter,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
 
 export function ComparisonScreen({ jobId }: { jobId: string }) {
   const { state, dispatch } = useIelDemo();
@@ -105,7 +110,7 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
       ) : (
         <>
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-            <Card padding="none">
+            <Panel padding="none">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -233,7 +238,7 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
                   </TableBody>
                 </Table>
               </div>
-            </Card>
+            </Panel>
 
             {activeApplication && activeCriterion ? (
               <div className="xl:w-[26rem]">
@@ -253,10 +258,11 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
             ) : null}
           </div>
 
-          <Card className="gap-3">
-            <h2 className="text-base font-semibold text-foreground">
-              {synthesis.title}
-            </h2>
+          <Panel className="flex flex-col gap-3">
+            <PanelHeader
+              eyebrow="Leitura assistida"
+              title={synthesis.title}
+            />
             {synthesis.paragraphs.map((paragraph, index) => (
               <p
                 key={index}
@@ -268,12 +274,13 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
             <p className="text-[11px] text-muted-foreground">
               {synthesis.disclaimer}
             </p>
-          </Card>
+          </Panel>
 
-          <Card className="gap-3">
-            <h2 className="text-base font-semibold text-foreground">
-              Ações a partir da comparação
-            </h2>
+          <Panel className="flex flex-col gap-3">
+            <PanelHeader
+              eyebrow="Próximo passo"
+              title="Ações a partir da comparação"
+            />
             <div className="flex flex-wrap gap-2">
               {applications.map((application) => {
                 const talent = getTalent(application.talentId);
@@ -325,9 +332,9 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
               Nenhuma ação aqui contrata ou descarta alguém: a comparação apoia
               a decisão e registra o caminho.
             </p>
-          </Card>
+          </Panel>
 
-          <Card padding="sm">
+          <Panel padding="sm">
             <p className="text-xs text-muted-foreground">
               Estados usados nesta comparação:{' '}
               {Object.values(CRITERION_STATE_META)
@@ -335,7 +342,7 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
                 .join(' · ')}
               .
             </p>
-          </Card>
+          </Panel>
         </>
       )}
 

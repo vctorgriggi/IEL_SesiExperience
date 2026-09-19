@@ -13,9 +13,10 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, Card, Checkbox, Textarea, toast } from '@workspace/ui';
+import { Alert, Button, Checkbox, Textarea, toast } from '@workspace/ui';
 
-import { Chip, DemoDataBadge } from '../shared/ui';
+import { Chip, DemoDataBadge, Panel } from '../shared/ui';
+import { TalentTransparency } from './talent-transparency';
 
 /**
  * Experiência do destinatário (gestor ou candidato): contexto mínimo, pergunta,
@@ -65,7 +66,7 @@ export function RecipientExperienceScreen({
   if (submitted || alreadyAnswered) {
     return (
       <div className="mx-auto max-w-xl space-y-4">
-        <Card className="gap-3">
+        <Panel className="flex flex-col gap-3">
           <DemoDataBadge />
           <h1 className="text-lg font-semibold text-foreground">
             {clarification.state === 'incorporada'
@@ -91,14 +92,24 @@ export function RecipientExperienceScreen({
               </Link>
             ) : null}
           </div>
-        </Card>
+        </Panel>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <Card className="gap-3">
+      {/*
+        Antes de pedir que a pessoa responda, mostrar o que já está registrado
+        sobre ela. As exigências normativas do desafio pedem transparência e
+        controle de acesso, e uma pergunta feita sem esse contexto pede
+        confiança sem oferecer nada em troca.
+      */}
+      {!isManager && clarification.recipient.talentId ? (
+        <TalentTransparency talentId={clarification.recipient.talentId} />
+      ) : null}
+
+      <Panel className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <DemoDataBadge />
           <Chip tone="info">
@@ -219,7 +230,7 @@ export function RecipientExperienceScreen({
           Se você disser que não sabe, a informação continua marcada como
           indisponível: não existe penalidade automática nem resposta inventada.
         </p>
-      </Card>
+      </Panel>
     </div>
   );
 }

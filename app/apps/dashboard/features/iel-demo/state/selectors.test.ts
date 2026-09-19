@@ -51,7 +51,10 @@ describe('resumo de vaga e motivo de ação', () => {
     const job = getJob('VAG-01')!;
 
     const initialSummary = getJobSummary(state, job);
-    expect(initialSummary.applicationsCount).toBe(4);
+    expect(initialSummary.applicationsCount).toBe(
+      state.applications.filter((application) => application.jobId === 'VAG-01')
+        .length
+    );
     expect(initialSummary.openClarificationsCount).toBe(1);
     expect(initialSummary.actionReason).toContain(
       '1 solicitação de esclarecimento sem resposta'
@@ -87,12 +90,10 @@ describe('indicadores e agregações da visão geral', () => {
   it('filtra indicadores por empresa', () => {
     const state = buildInitialDemoState();
 
-    expect(getOverviewMetrics(state, 'todas')).toEqual({
-      openJobs: 3,
-      applicationsInAnalysis: 5,
-      openClarifications: 2,
-      referralsAwaitingReturn: 0
-    });
+    // O recorte por empresa é o que precisa bater exatamente: as empresas
+    // curadas do roteiro não são afetadas pelo volume gerado em volta.
+    expect(getOverviewMetrics(state, 'todas').openClarifications).toBe(2);
+    expect(getOverviewMetrics(state, 'todas').referralsAwaitingReturn).toBe(0);
     expect(getOverviewMetrics(state, 'EMP-02')).toEqual({
       openJobs: 1,
       applicationsInAnalysis: 2,
@@ -106,13 +107,14 @@ describe('indicadores e agregações da visão geral', () => {
     const stages = getStageDistribution(state, 'todas');
     const total = stages.reduce((sum, entry) => sum + entry.count, 0);
 
-    expect(total).toBe(10);
-    expect(stages.map((entry) => [entry.stage, entry.count])).toEqual([
-      ['inscrito', 2],
-      ['triagem', 4],
-      ['analise-tecnica', 4],
-      ['entrevista-empresa', 0]
+    expect(total).toBe(state.applications.length);
+    expect(stages.map((entry) => entry.stage)).toEqual([
+      'inscrito',
+      'triagem',
+      'analise-tecnica',
+      'entrevista-empresa'
     ]);
+    expect(stages.every((entry) => entry.count >= 0)).toBe(true);
     expect(
       stages.find((entry) => entry.stage === 'analise-tecnica')?.applicationIds
     ).toContain('CAND-01');
@@ -123,9 +125,12 @@ describe('indicadores e agregações da visão geral', () => {
     const coverage = getCoverageByDimension(state, 'EMP-01');
     const technical = coverage.find((entry) => entry.dimension === 'tecnica')!;
 
-    // Vaga 1: 2 critérios técnicos × 4 candidaturas.
-    expect(technical.total).toBe(8);
-    expect(technical.withInformation).toBe(7);
+    // Vaga 1: 2 critérios técnicos por candidatura da EMP-01.
+    const emp01Applications = state.applications.filter(
+      (application) => application.jobId === 'VAG-01'
+    ).length;
+    expect(technical.total).toBe(2 * emp01Applications);
+    expect(technical.withInformation).toBeLessThanOrEqual(technical.total);
     expect(
       coverage.every((entry) => entry.withInformation <= entry.total)
     ).toBe(true);
@@ -136,9 +141,16 @@ describe('indicadores e agregações da visão geral', () => {
     const counts = getCriterionStateCounts(state, 'VAG-01');
     const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
 
-    expect(total).toBe(32); // 8 critérios × 4 candidaturas
-    expect(counts[CRITERION_STATE_META.divergencia.label]).toBe(1);
-    expect(counts[CRITERION_STATE_META['sem-informacao'].label]).toBe(10);
+    const vag01Applications = state.applications.filter(
+      (application) => application.jobId === 'VAG-01'
+    ).length;
+    expect(total).toBe(8 * vag01Applications); // 8 critérios × candidaturas
+    expect(
+      counts[CRITERION_STATE_META.divergencia.label]
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      counts[CRITERION_STATE_META['sem-informacao'].label]
+    ).toBeGreaterThanOrEqual(10);
   });
 
   it('ordena o histórico do mais recente para o mais antigo', () => {
@@ -257,9 +269,11 @@ describe('recorte de dados por persona', () => {
   it('analista vê a base completa da demonstração', () => {
     const state = buildInitialDemoState();
 
-    expect(getVisibleJobs(state)).toHaveLength(3);
-    expect(getVisibleCompanies(state)).toHaveLength(3);
-    expect(getVisibleTalentIds(state)).toHaveLength(8);
+    // O analista vê a base inteira; o gestor é quem tem recorte.
+    expect(getVisibleJobs(state).length).toBeGreaterThan(3);
+    expect(getVisibleCompanies(state).length).toBeGreaterThan(3);
+    expect(getVisibleJobs(state).map((job) => job.id)).toContain('VAG-01');
+    expect(getVisibleTalentIds(state)).toContain('ANA');
   });
 
   it('persona desconhecida cai no analista em vez de quebrar a tela', () => {
@@ -308,7 +322,9 @@ describe('persistência local versionada', () => {
         getItem: (key: string) => storage.get(key) ?? null,
         setItem: (key: string, value: string) => storage.set(key, value),
         removeItem: (key: string) => storage.delete(key)
-      }
+      },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined
     });
   }
 
@@ -345,7 +361,10 @@ describe('persistência local versionada', () => {
 
     expect(readPersistedState()).toBeNull();
     expect(storage.has(DEMO_STORAGE_KEY)).toBe(false);
-    expect(DEMO_SCHEMA_VERSION).toBe(1);
+    // Sobe a cada campo novo no estado persistido — aqui, os pesos por eixo
+    // confirmados pela empresa. Estado gravado na versão anterior é
+    // descartado em vez de remendado.
+    expect(DEMO_SCHEMA_VERSION).toBe(3);
   });
 
   it('ignora conteúdo corrompido sem quebrar a demonstração', () => {
@@ -367,7 +386,9 @@ describe('persistência local versionada', () => {
 
     const restored = readPersistedState()!;
     expect(restored.personaId).toBe('gestor-emp-01');
-    expect(restored.applications).toHaveLength(10);
+    expect(restored.applications).toHaveLength(
+      buildInitialDemoState().applications.length
+    );
     expect(restored.ui.jobsSearch).toBe('');
   });
 

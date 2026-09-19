@@ -1,23 +1,37 @@
 import {
   CRITERION_STATE_META,
   getCoverage,
-  getCriterionAnalysis
+  getCriterionAnalysis,
+  type CoverageSummary
 } from '../analysis/criterion-states';
 import {
+  CULTURE_QUESTIONS,
+  getCultureOptionLabel,
+  MIN_TEAM_RESPONSES,
+  type CultureOptionId,
+  type CultureQuestion,
+  type CultureRespondent
+} from '../analysis/culture';
+import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
+import {
+  ALL_COMPANIES,
+  ALL_JOBS,
+  ALL_TALENTS,
   DEMO_ASSESSMENTS,
   DEMO_CATALOG,
-  DEMO_COMPANIES,
   DEMO_DATA_SOURCES,
-  DEMO_JOBS,
-  DEMO_PERSONAS,
-  DEMO_TALENTS
+  DEMO_PERSONAS
 } from '../fixtures';
 import { plural } from '../format';
 import type {
   Application,
+  AxisWeight,
+  AxisWeightSuggestion,
   Clarification,
   Company,
   CriterionRef,
+  CriterionState,
+  CultureSuggestion,
   DataSourceId,
   DemoState,
   Dimension,
@@ -29,7 +43,9 @@ import type {
   Persona,
   Referral,
   Talent,
-  Team
+  TalentPreference,
+  Team,
+  TeamCondition
 } from '../types';
 
 export const EXTERNAL_STAGE_LABEL: Record<ExternalStage, string> = {
@@ -75,15 +91,15 @@ export function getPersona(state: DemoState): Persona {
 }
 
 export function getCompany(companyId: string): Company | null {
-  return DEMO_COMPANIES.find((company) => company.id === companyId) ?? null;
+  return ALL_COMPANIES.find((company) => company.id === companyId) ?? null;
 }
 
 export function getJob(jobId: string): Job | null {
-  return DEMO_JOBS.find((job) => job.id === jobId) ?? null;
+  return ALL_JOBS.find((job) => job.id === jobId) ?? null;
 }
 
 export function getTalent(talentId: string): Talent | null {
-  return DEMO_TALENTS.find((talent) => talent.id === talentId) ?? null;
+  return ALL_TALENTS.find((talent) => talent.id === talentId) ?? null;
 }
 
 export function getTeam(state: DemoState, teamId: string): Team | null {
@@ -130,7 +146,7 @@ export function getApplicationsByTalent(
 }
 
 export function getJobsByCompany(companyId: string): Job[] {
-  return DEMO_JOBS.filter((job) => job.companyId === companyId);
+  return ALL_JOBS.filter((job) => job.companyId === companyId);
 }
 
 export function getCriterion(
@@ -312,7 +328,7 @@ export function getVisibleJobs(state: DemoState): Job[] {
   if (persona.kind === 'gestor' && persona.companyId) {
     return getJobsByCompany(persona.companyId);
   }
-  return DEMO_JOBS;
+  return ALL_JOBS;
 }
 
 export function getVisibleCompanies(state: DemoState): Company[] {
@@ -321,14 +337,14 @@ export function getVisibleCompanies(state: DemoState): Company[] {
     const company = getCompany(persona.companyId);
     return company ? [company] : [];
   }
-  return DEMO_COMPANIES;
+  return ALL_COMPANIES;
 }
 
 /** Talentos visíveis para a persona: gestor só vê quem foi compartilhado. */
 export function getVisibleTalentIds(state: DemoState): string[] {
   const persona = getPersona(state);
   if (persona.kind !== 'gestor' || !persona.companyId) {
-    return DEMO_TALENTS.map((talent) => talent.id);
+    return ALL_TALENTS.map((talent) => talent.id);
   }
 
   const referrals = getReferralsByCompany(state, persona.companyId);
@@ -562,4 +578,692 @@ export function getEvidencesForApplication(
   }
 
   return result;
+}
+
+export type CandidateFilter =
+  | 'todas'
+  | 'lacuna-obrigatoria'
+  | 'divergencia'
+  | 'a-esclarecer'
+  | 'cobertura-completa';
+
+export const CANDIDATE_FILTER_LABEL: Record<CandidateFilter, string> = {
+  todas: 'Todas as candidaturas',
+  'lacuna-obrigatoria': 'Requisito obrigatório sem informação',
+  divergencia: 'Com divergência identificada',
+  'a-esclarecer': 'Com ponto a esclarecer',
+  'cobertura-completa': 'Com dados em todos os critérios'
+};
+
+/**
+ * Triagem por estado da análise.
+ *
+ * É a operação que justifica a ferramenta quando a vaga tem dezenas de
+ * candidaturas: em vez de abrir uma a uma para descobrir onde falta
+ * informação, o analista pede a lista de quem tem lacuna em requisito
+ * obrigatório e age só sobre ela.
+ */
+export function filterApplicationsByAnalysis(
+  state: DemoState,
+  job: Job,
+  applications: Application[],
+  filter: CandidateFilter
+): Application[] {
+  if (filter === 'todas') return applications;
+
+  return applications.filter((application) => {
+    const states = job.criteria.map((criterion) => ({
+      criterion,
+      analysis: getCriterionAnalysis(
+        state.analysis,
+        application.id,
+        criterion.id
+      )
+    }));
+
+    switch (filter) {
+      case 'lacuna-obrigatoria':
+        return states.some(
+          (entry) =>
+            entry.criterion.required &&
+            entry.analysis.state === 'sem-informacao'
+        );
+      case 'divergencia':
+        return states.some((entry) => entry.analysis.state === 'divergencia');
+      case 'a-esclarecer':
+        return states.some((entry) => entry.analysis.state === 'a-esclarecer');
+      case 'cobertura-completa': {
+        const coverage = getCoverage(job, state.analysis, application.id);
+        return coverage.withInformation === coverage.total;
+      }
+      default:
+        return true;
+    }
+  });
+}
+
+/** Quantas candidaturas cairiam em cada filtro, para mostrar no seletor. */
+export function getCandidateFilterCounts(
+  state: DemoState,
+  job: Job,
+  applications: Application[]
+): Record<CandidateFilter, number> {
+  const filters: CandidateFilter[] = [
+    'todas',
+    'lacuna-obrigatoria',
+    'divergencia',
+    'a-esclarecer',
+    'cobertura-completa'
+  ];
+
+  const counts = {} as Record<CandidateFilter, number>;
+  for (const filter of filters) {
+    counts[filter] = filterApplicationsByAnalysis(
+      state,
+      job,
+      applications,
+      filter
+    ).length;
+  }
+  return counts;
+}
+
+export type JourneyOutcome =
+  | 'em-analise'
+  | 'encaminhada'
+  | 'quero-entrevistar'
+  | 'nao-avancou';
+
+export const JOURNEY_OUTCOME_LABEL: Record<JourneyOutcome, string> = {
+  'em-analise': 'Em análise no IEL',
+  encaminhada: 'Encaminhada, aguardando retorno',
+  'quero-entrevistar': 'Empresa quis entrevistar',
+  'nao-avancou': 'Empresa não avançou'
+};
+
+export type JourneyEntry = {
+  application: Application;
+  job: Job | null;
+  company: Company | null;
+  outcome: JourneyOutcome;
+  /** Justificativa operacional registrada pela empresa, quando houver. */
+  managerNote: string | null;
+  decidedAt: string | null;
+  coverage: CoverageSummary;
+  clarifications: Clarification[];
+};
+
+/**
+ * A trajetória de uma pessoa entre processos.
+ *
+ * O enunciado trata como efeito do problema a "dificuldade de transformar os
+ * resultados dos processos em aprendizado": cada seleção termina e o que se
+ * aprendeu com ela não alcança a próxima. Aqui as candidaturas da mesma pessoa
+ * aparecem em sequência, com o que cada uma produziu — o que a empresa
+ * respondeu e por quê.
+ *
+ * Isto é o percurso da pessoa entre oportunidades. Acompanhamento após a
+ * contratação está fora do escopo definido para este protótipo.
+ */
+export function getTalentJourney(
+  state: DemoState,
+  talentId: string
+): JourneyEntry[] {
+  const applications = getApplicationsByTalent(state, talentId);
+
+  return applications
+    .map((application) => {
+      const job = getJob(application.jobId);
+      const referralItem = state.referrals
+        .filter((referral) => referral.state === 'registrado')
+        .flatMap((referral) => referral.items)
+        .find((item) => item.applicationId === application.id);
+
+      let outcome: JourneyOutcome = 'em-analise';
+      if (referralItem?.managerDecision === 'quero-entrevistar') {
+        outcome = 'quero-entrevistar';
+      } else if (referralItem?.managerDecision === 'nao-avancar') {
+        outcome = 'nao-avancou';
+      } else if (referralItem) {
+        outcome = 'encaminhada';
+      }
+
+      return {
+        application,
+        job,
+        company: job ? getCompany(job.companyId) : null,
+        outcome,
+        managerNote: referralItem?.managerNote ?? null,
+        decidedAt: referralItem?.decidedAt ?? null,
+        coverage: job
+          ? getCoverage(job, state.analysis, application.id)
+          : { withInformation: 0, total: 0, missing: [] },
+        clarifications: getClarificationsByApplication(state, application.id)
+      };
+    })
+    .sort((a, b) =>
+      a.application.appliedAt < b.application.appliedAt ? 1 : -1
+    );
+}
+
+export type ReusedEvidence = {
+  evidence: Evidence;
+  /** Vagas da pessoa que este mesmo registro ajuda a analisar. */
+  jobs: Job[];
+};
+
+/**
+ * Registros que já serviram a mais de um processo da mesma pessoa.
+ *
+ * É a contrapartida concreta do "não pedir à pessoa que preencha tudo de
+ * novo": a informação foi coletada uma vez e sustentou análises em vagas
+ * diferentes, cada uma com o seu contexto.
+ */
+export function getReusedEvidences(
+  state: DemoState,
+  talentId: string
+): ReusedEvidence[] {
+  const applicationJobIds = new Set(
+    getApplicationsByTalent(state, talentId).map(
+      (application) => application.jobId
+    )
+  );
+
+  return state.evidences
+    .filter((evidence) => evidence.talentId === talentId)
+    .map((evidence) => {
+      const jobIds = new Set(
+        evidence.links
+          .map((link) => link.jobId)
+          .filter((jobId) => applicationJobIds.has(jobId))
+      );
+      return {
+        evidence,
+        jobs: [...jobIds]
+          .map((jobId) => getJob(jobId))
+          .filter((job): job is Job => job !== null)
+      };
+    })
+    .filter((entry) => entry.jobs.length > 1);
+}
+
+/**
+ * Peso de um eixo nesta vaga.
+ *
+ * A vaga é catálogo estático e o peso pode ser corrigido durante a
+ * demonstração, então há duas camadas: o que a empresa declarou na base e o
+ * que alguém confirmou ou corrigiu depois. O estado, quando informado, vence
+ * — é a decisão mais recente, e tem autor e hora no histórico.
+ *
+ * Ausente dos dois lados, vale `'medio'`: um eixo sem peso declarado não é um
+ * eixo sem importância, é um eixo sobre o qual a empresa ainda não se
+ * pronunciou. Tratá-lo como baixo silenciaria o que ninguém decidiu.
+ */
+export function getAxisWeight(
+  job: Job,
+  axisId: FitAxisId,
+  state?: DemoState
+): AxisWeight {
+  return (
+    state?.axisWeights?.[job.id]?.[axisId] ?? job.axisWeights[axisId] ?? 'medio'
+  );
+}
+
+export const AXIS_WEIGHT_LABEL: Record<AxisWeight, string> = {
+  alto: 'peso alto',
+  medio: 'peso médio',
+  baixo: 'peso baixo'
+};
+
+/** Os cinco pesos da vaga, já com as correções registradas na demonstração. */
+export function getAxisWeights(
+  state: DemoState,
+  job: Job
+): Record<FitAxisId, AxisWeight> {
+  const weights = {} as Record<FitAxisId, AxisWeight>;
+  for (const axis of FIT_AXES) {
+    weights[axis.id] = getAxisWeight(job, axis.id, state);
+  }
+  return weights;
+}
+
+/**
+ * Proposta de peso ainda pendente num eixo.
+ *
+ * Deixa de ser pendente no instante em que alguém confirma ou corrige — é o
+ * mesmo contrato do traçado cultural, e a razão dele: a proposta informa a
+ * decisão, nunca a substitui.
+ */
+export function getPendingAxisWeightSuggestion(
+  state: DemoState,
+  job: Job,
+  axisId: FitAxisId
+): AxisWeightSuggestion | null {
+  if (state.axisWeights?.[job.id]?.[axisId]) return null;
+  return (
+    job.axisWeightSuggestions.find(
+      (suggestion) => suggestion.axisId === axisId
+    ) ?? null
+  );
+}
+
+/**
+ * Quantos desfechos "não avançar" com divergência no mesmo eixo bastam para
+ * a central propor um ajuste de peso.
+ *
+ * Em operação o limiar seria maior: dois processos não fazem um padrão, e o
+ * enunciado pede que resultados virem aprendizado sem virar superstição. Na
+ * base curada há um único encaminhamento recusado por vez durante o roteiro,
+ * então o limiar fica em 1 para que a demonstração tenha o que mostrar. É um
+ * parâmetro, explicitamente, e não uma regra escondida no código.
+ */
+export const WEIGHT_LEARNING_MIN_OCCURRENCES = 1;
+
+export type WeightLearning = {
+  axisId: FitAxisId;
+  /** Encaminhamentos recusados que tinham divergência neste eixo. */
+  occurrences: number;
+  suggestedWeight: AxisWeight;
+  rationale: string;
+};
+
+/**
+ * O que os processos desta vaga sugerem sobre as prioridades dela.
+ *
+ * O enunciado pede usar "informações e resultados dos processos para
+ * identificar padrões". A referência de mercado ajusta os pesos sozinha; aqui
+ * não. Ajuste automático transforma um punhado de recusas em regra
+ * permanente, e ninguém consegue depois explicar por que o sistema passou a
+ * priorizar um eixo — que é exatamente a opacidade que o desafio manda
+ * evitar. Então a central identifica o padrão, diz em quantos casos ele
+ * aparece, e deixa a empresa decidir.
+ *
+ * A leitura de fit usada é a atual, não um retrato do momento da decisão: a
+ * base demo não versiona análises. Em produção o padrão se apoiaria no
+ * snapshot congelado no encaminhamento.
+ */
+export function getWeightLearning(
+  state: DemoState,
+  jobId: string
+): WeightLearning[] {
+  const job = getJob(jobId);
+  if (!job) return [];
+
+  const declined = state.referrals
+    .filter(
+      (referral) => referral.state === 'registrado' && referral.jobId === jobId
+    )
+    .flatMap((referral) => referral.items)
+    .filter((item) => item.managerDecision === 'nao-avancar');
+
+  if (declined.length === 0) return [];
+
+  const occurrences = new Map<FitAxisId, number>();
+  for (const item of declined) {
+    const application = state.applications.find(
+      (entry) => entry.id === item.applicationId
+    );
+    if (!application) continue;
+
+    for (const entry of getFitReading(state, job, application.talentId)) {
+      if (entry.state !== 'divergencia') continue;
+      occurrences.set(entry.axis.id, (occurrences.get(entry.axis.id) ?? 0) + 1);
+    }
+  }
+
+  return FIT_AXES.map((axis) => ({
+    axis,
+    count: occurrences.get(axis.id) ?? 0
+  }))
+    .filter(
+      (entry) =>
+        entry.count >= WEIGHT_LEARNING_MIN_OCCURRENCES &&
+        // Propor o que já vale seria ruído: o eixo já está priorizado.
+        getAxisWeight(job, entry.axis.id, state) !== 'alto'
+    )
+    .map((entry) => ({
+      axisId: entry.axis.id,
+      occurrences: entry.count,
+      suggestedWeight: 'alto' as AxisWeight,
+      rationale: `Em ${entry.count} ${entry.count === 1 ? 'encaminhamento que não avançou' : 'encaminhamentos que não avançaram'} nesta vaga, a leitura apontava divergência em ${entry.axis.label.toLowerCase()}. Elevar o peso faz esse eixo ser esclarecido antes do encaminhamento, não depois.`
+    }));
+}
+
+export type FitReadingEntry = {
+  axis: FitAxis;
+  /** O que a equipe informou neste eixo, se informou. */
+  condition: TeamCondition | null;
+  /** O que a pessoa declarou neste eixo, se declarou. */
+  preference: TalentPreference | null;
+  /** Peso que a empresa deu a este eixo nesta vaga. */
+  weight: AxisWeight;
+  /** Leitura do encontro entre os dois lados. */
+  state: CriterionState;
+  /** De qual lado falta informação, quando falta. */
+  missingSide: 'empresa' | 'candidato' | 'ambos' | null;
+};
+
+/**
+ * Aderência ao contexto de trabalho, eixo a eixo.
+ *
+ * O enunciado trata o fit como o cerne do desafio e aponta que hoje ele vive
+ * numa ferramenta externa, cara e difícil de escalar. A leitura aqui não
+ * aplica avaliação nova nem produz nota: ela põe lado a lado o que a equipe
+ * informou e o que a pessoa declarou, nos mesmos eixos, e nomeia o que o
+ * encontro dos dois revela — inclusive quando um dos lados está vazio.
+ *
+ * Estados possíveis, na mesma escala usada nos critérios da vaga:
+ *
+ * - alinhamento: os dois lados descrevem a mesma coisa.
+ * - divergência: os dois lados informaram, e o que informaram não coincide.
+ * - a esclarecer: há informação dos dois lados, mas a condição da empresa
+ *   ainda não foi confirmada por quem poderia confirmar.
+ * - sem informação: falta um dos lados, ou os dois.
+ */
+export function getFitReading(
+  state: DemoState,
+  job: Job,
+  talentId: string
+): FitReadingEntry[] {
+  const team = getTeam(state, job.teamId);
+  const talent = getTalent(talentId);
+
+  return FIT_AXES.map((axis) => {
+    const weight = getAxisWeight(job, axis.id, state);
+    const record =
+      team?.conditions.find((entry) => entry.axisId === axis.id) ?? null;
+    // Um registro que apenas marca a pergunta em aberto não é um lado
+    // informado: a empresa ainda não disse nada ali.
+    const condition = record?.informed === false ? null : record;
+    const preference =
+      talent?.preferences.find((entry) => entry.axisId === axis.id) ?? null;
+
+    if (!condition && !preference) {
+      return {
+        axis,
+        condition,
+        preference,
+        weight,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'ambos' as const
+      };
+    }
+
+    if (!preference) {
+      return {
+        axis,
+        condition,
+        preference,
+        weight,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'candidato' as const
+      };
+    }
+
+    if (!condition) {
+      return {
+        axis,
+        condition,
+        preference,
+        weight,
+        state: 'sem-informacao' as CriterionState,
+        missingSide: 'empresa' as const
+      };
+    }
+
+    // Com os dois lados preenchidos, a leitura passa a depender do conteúdo.
+    // A base demo marca a divergência onde ela existe de fato; fora disso, uma
+    // condição ainda não confirmada pela empresa não sustenta conclusão.
+    const conflicting = CONFLICTING_PAIRS.some(
+      (pair) =>
+        pair.conditionId === condition.id && pair.preferenceId === preference.id
+    );
+
+    if (conflicting) {
+      return {
+        axis,
+        condition,
+        preference,
+        weight,
+        state: 'divergencia' as CriterionState,
+        missingSide: null
+      };
+    }
+
+    return {
+      axis,
+      condition,
+      preference,
+      weight,
+      state: (condition.status === 'confirmado'
+        ? 'alinhamento'
+        : 'a-esclarecer') as CriterionState,
+      missingSide: null
+    };
+  });
+}
+
+/**
+ * Pares em conflito explícito na base demo.
+ *
+ * Declarados, não inferidos: o briefing pede que uma divergência seja
+ * mostrada quando existe informação em conflito, e não deduzida por
+ * semelhança de texto.
+ */
+const CONFLICTING_PAIRS: { conditionId: string; preferenceId: string }[] = [
+  // A equipe da vaga 1 não tem acompanhamento no turno; Ana espera orientação.
+  // Só vale depois que o gestor responde: antes disso o lado da empresa está
+  // vazio, e a tela mostra a lacuna em vez de inventar um conflito.
+  { conditionId: 'COND-01', preferenceId: 'PREF-ANA-01' },
+  // A rotina da vaga 1 é executada sem supervisão; Fábio espera treinamento.
+  { conditionId: 'COND-04', preferenceId: 'PREF-FABIO-01' }
+];
+
+/** Eixos em que falta o lado da pessoa: o que uma coleta dirigida buscaria. */
+export function getFitGaps(
+  state: DemoState,
+  job: Job,
+  talentId: string
+): FitReadingEntry[] {
+  return getFitReading(state, job, talentId).filter(
+    (entry) =>
+      entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
+  );
+}
+
+export type CultureAxisState =
+  | 'convergente'
+  | 'divergente'
+  | 'apenas-gestao'
+  | 'consulta-insuficiente'
+  | 'sem-resposta';
+
+export const CULTURE_AXIS_STATE_LABEL: Record<CultureAxisState, string> = {
+  convergente: 'Respostas convergem',
+  divergente: 'Gestão e equipe divergem',
+  'apenas-gestao': 'Só a gestão respondeu',
+  'consulta-insuficiente': 'Consulta à equipe sem base suficiente',
+  'sem-resposta': 'Ninguém respondeu ainda'
+};
+
+export type CultureVoice = {
+  respondent: CultureRespondent;
+  /** Alternativa mais respondida por este papel. */
+  optionId: CultureOptionId;
+  optionLabel: string;
+  /** Respostas nesta alternativa e total do papel. */
+  count: number;
+  total: number;
+};
+
+export type CultureAxisReading = {
+  question: CultureQuestion;
+  voices: CultureVoice[];
+  state: CultureAxisState;
+  /** Proposta da análise ainda não confirmada por ninguém. */
+  pendingSuggestion: CultureSuggestion | null;
+};
+
+/**
+ * Leitura do traçado cultural de uma empresa, eixo a eixo.
+ *
+ * Nunca reduz os papéis a um valor só. Se a gestão diz uma coisa e a equipe
+ * diz outra, as duas aparecem e o eixo é marcado como divergente — o enunciado
+ * pede redução de vieses, e média entre quem manda e quem executa apaga
+ * exatamente o viés que interessa ver.
+ */
+export function getCultureReading(
+  state: DemoState,
+  companyId: string
+): CultureAxisReading[] {
+  const company = getCompany(companyId);
+  const answers = state.cultureAnswers.filter(
+    (answer) => answer.companyId === companyId
+  );
+
+  return CULTURE_QUESTIONS.map((question) => {
+    const axisAnswers = answers.filter(
+      (answer) => answer.axisId === question.axisId
+    );
+
+    const voices: CultureVoice[] = [];
+    for (const respondent of [
+      'gestao',
+      'rh',
+      'equipe'
+    ] as CultureRespondent[]) {
+      const byRespondent = axisAnswers.filter(
+        (answer) => answer.respondent === respondent
+      );
+      if (byRespondent.length === 0) continue;
+
+      const total = byRespondent.reduce((sum, a) => sum + a.count, 0);
+      const top = [...byRespondent].sort((a, b) => b.count - a.count)[0]!;
+      voices.push({
+        respondent,
+        optionId: top.optionId,
+        optionLabel: getCultureOptionLabel(question.axisId, top.optionId),
+        count: top.count,
+        total
+      });
+    }
+
+    const pendingSuggestion =
+      company?.cultureSuggestions.find(
+        (suggestion) =>
+          suggestion.axisId === question.axisId &&
+          !axisAnswers.some((answer) => answer.respondent === 'gestao')
+      ) ?? null;
+
+    return {
+      question,
+      voices,
+      state: readCultureAxisState(voices),
+      pendingSuggestion
+    };
+  });
+}
+
+function readCultureAxisState(voices: CultureVoice[]): CultureAxisState {
+  if (voices.length === 0) return 'sem-resposta';
+
+  const team = voices.find((voice) => voice.respondent === 'equipe');
+  const management = voices.find((voice) => voice.respondent !== 'equipe');
+
+  if (!team) return management ? 'apenas-gestao' : 'sem-resposta';
+  if (team.total < MIN_TEAM_RESPONSES) return 'consulta-insuficiente';
+  if (!management) return 'convergente';
+
+  return voices.every((voice) => voice.optionId === voices[0]!.optionId)
+    ? 'convergente'
+    : 'divergente';
+}
+
+/** Eixos em que a leitura do traçado cultural não se sustenta sozinha. */
+export function getCultureAttentionPoints(
+  state: DemoState,
+  companyId: string
+): CultureAxisReading[] {
+  return getCultureReading(state, companyId).filter(
+    (entry) =>
+      entry.state === 'divergente' ||
+      entry.state === 'apenas-gestao' ||
+      entry.state === 'consulta-insuficiente'
+  );
+}
+
+export type SharedWithCompany = {
+  companyName: string;
+  jobTitle: string;
+  sharedAt: string | null;
+  /** Quantos registros foram compartilhados naquele encaminhamento. */
+  recordCount: number;
+};
+
+export type TalentTransparency = {
+  /** Registros compartilháveis a respeito da pessoa, com procedência. */
+  records: Evidence[];
+  /** O que ela declarou sobre como prefere trabalhar. */
+  preferences: TalentPreference[];
+  /** Empresas que receberam o perfil, e quando. */
+  sharedWith: SharedWithCompany[];
+  /** Registros marcados como internos, apenas contados. */
+  internalCount: number;
+};
+
+/**
+ * O que a pessoa pode ver sobre os próprios dados.
+ *
+ * As exigências normativas do desafio pedem LGPD com "transparência e
+ * controle de acesso": quem é analisado precisa alcançar o que foi registrado
+ * a respeito de si e para onde isso foi. A solução externa que o enunciado
+ * descreve devolve ao candidato um laudo de perfil; aqui a devolutiva é de
+ * outra natureza — ela mostra procedência e destino, que é o que permite
+ * contestar um registro errado.
+ *
+ * O recorte do candidato é estreito por desenho: o briefing determina que ele
+ * não veja avaliações internas nem nada sobre outras pessoas. Anotações
+ * internas do analista entram apenas como contagem, para que a existência
+ * delas seja transparente sem expor conteúdo de terceiros ou juízo em
+ * elaboração.
+ */
+export function getTalentTransparency(
+  state: DemoState,
+  talentId: string
+): TalentTransparency {
+  const evidences = state.evidences.filter(
+    (evidence) => evidence.talentId === talentId
+  );
+
+  const applicationIds = new Set(
+    getApplicationsByTalent(state, talentId).map(
+      (application) => application.id
+    )
+  );
+
+  const sharedWith: SharedWithCompany[] = [];
+  for (const referral of state.referrals) {
+    if (referral.state !== 'registrado') continue;
+    for (const item of referral.items) {
+      if (!applicationIds.has(item.applicationId)) continue;
+      const job = getJob(referral.jobId);
+      sharedWith.push({
+        companyName: getCompany(referral.companyId)?.name ?? referral.companyId,
+        jobTitle: job?.title ?? referral.jobId,
+        sharedAt: referral.createdAt,
+        recordCount: item.sharedEvidenceIds.length
+      });
+    }
+  }
+
+  return {
+    records: evidences.filter(
+      (evidence) => evidence.visibility === 'compartilhavel'
+    ),
+    preferences: getTalent(talentId)?.preferences ?? [],
+    sharedWith,
+    internalCount: evidences.filter(
+      (evidence) => evidence.visibility === 'interno'
+    ).length
+  };
 }

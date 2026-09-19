@@ -1,6 +1,9 @@
+import type { FitAxisId } from '../analysis/fit-axes';
+import { getFitAxis } from '../analysis/fit-axes';
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
 import { plural } from '../format';
 import type {
+  AxisWeight,
   Clarification,
   ClarificationEffect,
   CriterionState,
@@ -75,6 +78,31 @@ export type DemoAction =
     }
   | { type: 'send-clarification'; clarificationId: string; at: string }
   | { type: 'cancel-clarification'; clarificationId: string; at: string }
+  | {
+      /**
+       * A empresa confirma ou corrige o traçado proposto pela análise.
+       * Registra como resposta da gestão: a proposta sozinha nunca vira
+       * resposta, porque o enunciado exige supervisão humana.
+       */
+      type: 'answer-culture';
+      companyId: string;
+      axisId: FitAxisId;
+      optionId: string;
+      at: string;
+    }
+  | {
+      /**
+       * A empresa define o peso de um eixo nesta vaga — confirmando a
+       * proposta da análise, corrigindo-a, ou acatando um padrão observado
+       * nos processos. Em qualquer caso é uma decisão declarada por alguém,
+       * e por isso entra no histórico.
+       */
+      type: 'set-axis-weight';
+      jobId: string;
+      axisId: FitAxisId;
+      weight: AxisWeight;
+      at: string;
+    }
   | {
       type: 'answer-clarification';
       clarificationId: string;
@@ -309,6 +337,65 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       };
     }
 
+    case 'answer-culture': {
+      const answeredAt = action.at.slice(0, 10);
+      const others = state.cultureAnswers.filter(
+        (answer) =>
+          !(
+            answer.companyId === action.companyId &&
+            answer.axisId === action.axisId &&
+            answer.respondent === 'gestao'
+          )
+      );
+
+      return {
+        ...state,
+        cultureAnswers: [
+          ...others,
+          {
+            id: `CUL-GES-${action.companyId}-${action.axisId}`,
+            companyId: action.companyId,
+            axisId: action.axisId,
+            optionId: action.optionId,
+            respondent: 'gestao',
+            count: 1,
+            answeredAt
+          }
+        ],
+        history: [
+          {
+            id: `HIST-${state.history.length + 1}-culture`,
+            at: action.at,
+            actor: 'Gestão da empresa',
+            action: 'Traçado cultural respondido',
+            description: `A empresa confirmou o traçado no eixo ${action.axisId}. A leitura passa a comparar esta resposta com a da equipe.`,
+            entityRef: action.companyId
+          },
+          ...state.history
+        ]
+      };
+    }
+
+    case 'set-axis-weight': {
+      const current = state.axisWeights?.[action.jobId] ?? {};
+      if (current[action.axisId] === action.weight) return state;
+
+      return {
+        ...state,
+        axisWeights: {
+          ...state.axisWeights,
+          [action.jobId]: { ...current, [action.axisId]: action.weight }
+        },
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Empresa da vaga',
+          action: 'Peso do eixo definido pela empresa',
+          description: `O eixo "${getFitAxis(action.axisId).label}" passa a ter peso ${action.weight} na vaga ${action.jobId}. O peso ordena a leitura e a atenção; não produz nota.`,
+          entityRef: action.jobId
+        })
+      };
+    }
+
     case 'cancel-clarification': {
       const clarification = state.clarifications.find(
         (entry) => entry.id === action.clarificationId
@@ -434,6 +521,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
                           ...condition,
                           value: clarification.teamConditionUpdate.value,
                           status: 'confirmado' as const,
+                          informed: true,
                           origin: `Confirmado por ${clarification.recipient.name}`,
                           updatedAt: action.at.slice(0, 10)
                         }

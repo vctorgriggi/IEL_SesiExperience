@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DIMENSION_META } from '@/features/iel-demo/analysis/criterion-states';
-import { DEMO_COMPANIES } from '@/features/iel-demo/fixtures';
+import { ALL_COMPANIES } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -28,14 +28,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 
 import { routes } from '@workspace/routes';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  FilterNativeSelect
-} from '@workspace/ui';
+import { Button, FilterNativeSelect } from '@workspace/ui';
 
 import { ManagerOverview } from '../manager/manager-overview';
 import {
@@ -44,6 +37,8 @@ import {
   formatDateTime,
   IelPageHeader,
   InfoHint,
+  Panel,
+  PanelHeader,
   SourceBreakdownBar,
   StatCard
 } from '../shared/ui';
@@ -75,6 +70,11 @@ export function OverviewScreen() {
   const jobsNeedingAction = jobSummaries.filter(
     (summary) => summary.actionReason !== null
   );
+  // Com dezenas de vagas, listar todas transforma a visão geral num rolo. A
+  // tela mostra as primeiras e manda o resto para a lista de vagas, que tem
+  // busca e filtros.
+  const HIGHLIGHTED_JOBS = 5;
+  const highlightedJobs = jobsNeedingAction.slice(0, HIGHLIGHTED_JOBS);
 
   const stageApplications =
     openStage === null
@@ -87,7 +87,7 @@ export function OverviewScreen() {
       <IelPageHeader
         eyebrow="IEL · Centro de Empregabilidade"
         title="Visão geral"
-        description={`Base demo: ${DEMO_COMPANIES.length} empresas, ${getVisibleJobs(state).length} vagas, ${new Set(state.applications.map((application) => application.talentId)).size} talentos únicos e ${state.applications.length} candidaturas.`}
+        description={`Base demo: ${ALL_COMPANIES.length} empresas, ${getVisibleJobs(state).length} vagas, ${new Set(state.applications.map((application) => application.talentId)).size} talentos únicos e ${state.applications.length} candidaturas.`}
         actions={
           <>
             <label
@@ -105,7 +105,7 @@ export function OverviewScreen() {
               }
             >
               <option value="todas">Todas as empresas</option>
-              {DEMO_COMPANIES.map((company) => (
+              {ALL_COMPANIES.map((company) => (
                 <option
                   key={company.id}
                   value={company.id}
@@ -188,22 +188,24 @@ export function OverviewScreen() {
         />
       </section>
 
-      <Card padding="sm">
+      <Panel padding="sm">
         <SourceBreakdownBar
           breakdown={overviewSources}
           total={state.evidences.length}
         />
-      </Card>
+      </Panel>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-base">
-              Vagas que precisam de ação
-              <InfoHint label="O motivo vem do estado atual da análise de cada vaga, não de uma lista fixa." />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
+        <Panel
+          padding="lg"
+          className="xl:col-span-2"
+        >
+          <PanelHeader
+            eyebrow="Onde agir hoje"
+            title="Vagas que precisam de ação"
+            hint="O motivo vem do estado atual da análise de cada vaga, não de uma lista fixa."
+          />
+          <div className="mt-4 space-y-3">
             {jobsNeedingAction.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhuma vaga pendente com os filtros atuais. Ajuste o filtro de
@@ -211,7 +213,7 @@ export function OverviewScreen() {
               </p>
             ) : (
               <ul className="space-y-3">
-                {jobsNeedingAction.map((summary) => (
+                {highlightedJobs.map((summary) => (
                   <li
                     key={summary.job.id}
                     className="flex flex-col gap-2 rounded-[var(--control-radius)] border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -244,17 +246,27 @@ export function OverviewScreen() {
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-base">
-              Candidaturas por etapa
-              <InfoHint label="Etapa oficial recebida do sistema de recrutamento de origem. Clique numa barra para ver os registros." />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
+            {jobsNeedingAction.length > highlightedJobs.length ? (
+              <Link
+                href={iel.jobs.index}
+                className="inline-block pt-1 text-sm font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Ver as outras{' '}
+                {jobsNeedingAction.length - highlightedJobs.length} vagas com
+                pendência →
+              </Link>
+            ) : null}
+          </div>
+        </Panel>
+
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Distribuição"
+            title="Candidaturas por etapa"
+            hint="Etapa oficial recebida do sistema de recrutamento de origem. Clique numa barra para ver os registros."
+          />
+          <div className="mt-4 space-y-3">
             <BarList
               items={stages.map((entry) => ({
                 id: entry.stage,
@@ -291,19 +303,18 @@ export function OverviewScreen() {
                 })}
               </ul>
             ) : null}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-base">
-              Cobertura de informações
-              <InfoHint label="Quantos critérios têm dados suficientes nas candidaturas visíveis. Mede informação disponível, não chance de sucesso nem qualidade da pessoa." />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Informação disponível"
+            title="Cobertura por dimensão"
+            hint="Quantos critérios têm dados suficientes nas candidaturas visíveis. Mede informação disponível, não chance de sucesso nem qualidade da pessoa."
+          />
+          <div className="mt-4 space-y-3">
             {coverage.map((entry) => (
               <div
                 key={entry.dimension}
@@ -330,14 +341,15 @@ export function OverviewScreen() {
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Atividade recente</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Estado local"
+            title="Atividade recente"
+          />
+          <div className="mt-4">
             <ul className="space-y-3">
               {history.map((event) => (
                 <li
@@ -354,8 +366,8 @@ export function OverviewScreen() {
                 </li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
     </div>
   );

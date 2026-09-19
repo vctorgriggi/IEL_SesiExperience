@@ -11,10 +11,10 @@ import type {
   JobCriterion
 } from '@/features/iel-demo/types';
 
-import { Alert, Button, Card, cn } from '@workspace/ui';
+import { Alert, Button, cn } from '@workspace/ui';
 
 import { CriterionStateHeadline } from './criterion-state-badge';
-import { Chip, formatDate, SourceTag } from './ui';
+import { Chip, formatDate, Panel, SourceTag } from './ui';
 
 export const NATURE_LABEL: Record<EvidenceNature, string> = {
   'relato-do-candidato': 'Relato do candidato, sem verificação prática',
@@ -35,9 +35,9 @@ export function EvidenceCard({
   const talent = evidence.talentId ? getTalent(evidence.talentId) : null;
 
   return (
-    <Card
+    <Panel
       padding="sm"
-      className={cn('gap-2', className)}
+      className={cn('flex flex-col gap-2', className)}
     >
       <div className="flex flex-wrap items-center gap-2">
         <Chip tone={evidence.visibility === 'interno' ? 'atencao' : 'info'}>
@@ -70,7 +70,7 @@ export function EvidenceCard({
         <span className="font-medium text-foreground/80">Interpretação: </span>
         {evidence.interpretation}
       </p>
-    </Card>
+    </Panel>
   );
 }
 

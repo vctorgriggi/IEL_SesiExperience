@@ -15,9 +15,15 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Clarification } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, Card, FilterNativeSelect, toast } from '@workspace/ui';
+import { Alert, Button, FilterNativeSelect, toast } from '@workspace/ui';
 
-import { Chip, formatDateTime, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDateTime,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
 import { IncorporateClarificationDialog } from './incorporate-clarification-dialog';
 
 type GroupBy = 'destinatario' | 'vaga';
@@ -129,10 +135,11 @@ export function ClarificationsScreen() {
       />
 
       {visible.length === 0 ? (
-        <Card padding="lg">
-          <h3 className="text-base font-semibold text-foreground">
-            Nenhuma solicitação com esse filtro
-          </h3>
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Sem resultados"
+            title="Nenhuma solicitação com esse filtro"
+          />
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             {persona.kind === 'gestor'
               ? 'Quando o IEL enviar uma pergunta sobre a sua equipe, ela aparece aqui.'
@@ -149,7 +156,7 @@ export function ClarificationsScreen() {
               </Button>
             </div>
           ) : null}
-        </Card>
+        </Panel>
       ) : (
         <div className="space-y-6">
           {groups.map(([groupLabel, items]) => (
@@ -175,7 +182,7 @@ export function ClarificationsScreen() {
 
                   return (
                     <li key={clarification.id}>
-                      <Card className="gap-3">
+                      <Panel className="flex flex-col gap-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <Chip tone={stateTone(clarification)}>
                             {CLARIFICATION_STATE_LABEL[clarification.state]}
@@ -334,7 +341,7 @@ export function ClarificationsScreen() {
                             </Button>
                           ) : null}
                         </div>
-                      </Card>
+                      </Panel>
                     </li>
                   );
                 })}

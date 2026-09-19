@@ -27,7 +27,12 @@ export const env = createEnv({
     CLOUDINARY_API_SECRET: z.string().min(1).optional(),
     ALLOWED_ORIGINS: allowedOriginsSchema,
     SECURITY_X_FRAME_OPTIONS: z.enum(['deny', 'sameorigin']).optional(),
-    SECURITY_REFERRER_POLICY: z.string().min(1).optional()
+    SECURITY_REFERRER_POLICY: z.string().min(1).optional(),
+    // Ambas opcionais: a análise assistida da Central IEL (/iel) funciona sem
+    // elas, no modo determinístico. Só ativam o modelo real quando as duas
+    // estão presentes — veja features/iel-demo/ai/index.ts.
+    IEL_AI_PROVIDER: z.enum(['deterministic', 'anthropic']).optional(),
+    ANTHROPIC_API_KEY: z.string().min(1).optional()
   },
   client: {
     NEXT_PUBLIC_DASHBOARD_URL: z
@@ -50,7 +55,9 @@ export const env = createEnv({
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     SECURITY_X_FRAME_OPTIONS: process.env.SECURITY_X_FRAME_OPTIONS,
-    SECURITY_REFERRER_POLICY: process.env.SECURITY_REFERRER_POLICY
+    SECURITY_REFERRER_POLICY: process.env.SECURITY_REFERRER_POLICY,
+    IEL_AI_PROVIDER: process.env.IEL_AI_PROVIDER,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
   },
   emptyStringAsUndefined: true
 });

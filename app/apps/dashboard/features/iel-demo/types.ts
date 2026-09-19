@@ -1,3 +1,6 @@
+import type { CultureOptionId, CultureRespondent } from './analysis/culture';
+import type { FitAxisId } from './analysis/fit-axes';
+
 /**
  * Domínio da Central de Seleção IEL (protótipo).
  *
@@ -98,15 +101,61 @@ export type Company = {
   contactEmail: string;
   sourceId: DataSourceId;
   updatedAt: string;
+  /** O que a análise assistida propôs a partir dos textos da empresa. */
+  cultureSuggestions: CultureSuggestion[];
+};
+
+/**
+ * Proposta de traçado feita pela análise assistida a partir de texto que a
+ * empresa já produziu.
+ *
+ * Fica pendente até alguém da empresa confirmar ou corrigir: o enunciado
+ * exige supervisão humana e diz que recomendações apoiam, não substituem. O
+ * trecho de origem acompanha a proposta para que a confirmação seja
+ * informada, e não um clique no escuro.
+ */
+export type CultureSuggestion = {
+  axisId: FitAxisId;
+  optionId: CultureOptionId;
+  /** Trecho do texto existente que sustenta a proposta. */
+  excerpt: string;
+  /** De onde veio o trecho, nas palavras do produto. */
+  sourceLabel: string;
+  sourceId: DataSourceId;
+};
+
+/**
+ * Resposta registrada sobre a cultura da empresa.
+ *
+ * `count` existe porque a consulta à equipe entra agregada: dez pessoas
+ * respondendo a mesma alternativa viram um registro com count 10, sem
+ * identificar ninguém.
+ */
+export type CultureAnswer = {
+  id: string;
+  companyId: string;
+  axisId: FitAxisId;
+  optionId: CultureOptionId;
+  respondent: CultureRespondent;
+  count: number;
+  answeredAt: string;
 };
 
 export type TeamConditionStatus = 'confirmado' | 'da-descricao' | 'a-confirmar';
 
 export type TeamCondition = {
   id: string;
+  /** Eixo de aderência que esta condição descreve, quando há um. */
+  axisId?: FitAxisId;
   label: string;
   value: string;
   status: TeamConditionStatus;
+  /**
+   * Se a empresa chegou a informar algo neste eixo. Falso quando o registro
+   * existe apenas para marcar a pergunta em aberto — um lado vazio não pode
+   * divergir do outro.
+   */
+  informed?: boolean;
   origin: string;
   updatedAt: string;
 };
@@ -132,6 +181,39 @@ export type JobCriterion = {
   confirmedBy: string;
 };
 
+/**
+ * Peso que a empresa dá a um eixo de aderência nesta vaga.
+ *
+ * Existe porque o mesmo eixo não pesa igual em toda vaga: numa operação de
+ * turno sem sobreposição, o apoio inicial decide a rotina; numa vaga de
+ * escritório com colega ao lado, ele é secundário. Sem essa declaração, ou a
+ * leitura trata os cinco eixos como equivalentes — e some justamente o que
+ * a empresa considera crítico — ou alguém inventa uma ponderação escondida.
+ *
+ * O peso é declarado, não calculado, e pertence à empresa. Ele ordena a
+ * leitura e a atenção; nunca vira multiplicador de nota, porque nota global
+ * não existe neste produto.
+ */
+export type AxisWeight = 'alto' | 'medio' | 'baixo';
+
+/**
+ * Proposta de peso feita pela análise assistida a partir da descrição da vaga.
+ *
+ * Mesmo contrato de `CultureSuggestion`: a análise lê o texto que a empresa
+ * já escreveu, propõe, mostra o trecho que sustenta e fica pendente até
+ * alguém confirmar ou corrigir. O enunciado exige supervisão humana; uma
+ * proposta que se aplica sozinha seria o ajuste automático de pesos que
+ * decidimos não reproduzir.
+ */
+export type AxisWeightSuggestion = {
+  axisId: FitAxisId;
+  weight: AxisWeight;
+  /** Trecho do texto da vaga que sustenta a proposta. */
+  excerpt: string;
+  sourceLabel: string;
+  sourceId: DataSourceId;
+};
+
 export type JobStage = 'aberta' | 'em-selecao' | 'encerrada';
 
 export type ExternalRef = {
@@ -152,6 +234,10 @@ export type Job = {
   essentialRequirements: string[];
   organizationalContext: string;
   criteria: JobCriterion[];
+  /** Peso declarado pela empresa por eixo. Ausente vale como 'medio'. */
+  axisWeights: Partial<Record<FitAxisId, AxisWeight>>;
+  /** O que a análise assistida propôs a partir do texto da vaga. */
+  axisWeightSuggestions: AxisWeightSuggestion[];
   externalRef: ExternalRef;
   /** Última atualização simulada recebida da origem. */
   updatedAt: string;
@@ -165,6 +251,24 @@ export type TalentExperience = {
   activities: string;
 };
 
+/**
+ * O que a pessoa declarou sobre como prefere trabalhar.
+ *
+ * Espelha `TeamCondition` de propósito: o fit só é legível quando os dois
+ * lados são descritos nos mesmos eixos, com a mesma procedência e o mesmo
+ * tratamento para o que ainda não se sabe. Antes este lado era uma lista de
+ * frases soltas, e a comparação só existia porque alguém a escrevera à mão.
+ */
+export type TalentPreference = {
+  id: string;
+  axisId: FitAxisId;
+  /** O que a pessoa declarou, nas palavras dela. */
+  value: string;
+  origin: string;
+  sourceId: DataSourceId;
+  updatedAt: string;
+};
+
 export type Talent = {
   id: string;
   name: string;
@@ -175,6 +279,8 @@ export type Talent = {
   experiences: TalentExperience[];
   declaredSkills: string[];
   expectations: string[];
+  /** Preferências declaradas, nos mesmos eixos das condições da equipe. */
+  preferences: TalentPreference[];
   externalRefs: ExternalRef[];
 };
 
@@ -361,6 +467,19 @@ export type DemoState = {
   analysis: AnalysisByApplication;
   evidences: Evidence[];
   teams: Team[];
+  cultureAnswers: CultureAnswer[];
+  /**
+   * Pesos confirmados ou corrigidos pela empresa durante a demonstração,
+   * por vaga. Ficam no estado, e não na fixture, porque a vaga é catálogo
+   * estático: a confirmação é ação de alguém, tem autor e hora, e precisa
+   * sobreviver ao recarregamento junto do resto do progresso.
+   *
+   * Opcional porque há recortes parciais de `DemoState` montados para
+   * operações que não leem peso nenhum (o provedor determinístico do
+   * assistente, por exemplo). Ausente equivale a "ninguém corrigiu nada": a
+   * leitura cai no peso declarado na vaga.
+   */
+  axisWeights?: Record<string, Partial<Record<FitAxisId, AxisWeight>>>;
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

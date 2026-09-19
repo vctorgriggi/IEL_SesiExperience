@@ -6,9 +6,12 @@ import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  CANDIDATE_FILTER_LABEL,
   CLARIFICATION_STATE_LABEL,
+  filterApplicationsByAnalysis,
   getApplication,
   getApplicationsByJob,
+  getCandidateFilterCounts,
   getClarificationsByJob,
   getCompany,
   getComparisonSelection,
@@ -22,6 +25,7 @@ import {
   getTeam,
   JOB_STAGE_LABEL
 } from '@/features/iel-demo/state/selectors';
+import type { CandidateFilter } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { JobCriterion } from '@/features/iel-demo/types';
 
@@ -29,15 +33,14 @@ import { routes } from '@workspace/routes';
 import {
   Alert,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   cn,
+  FilterNativeSelect,
+  Input,
   toast
 } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
+import { AxisWeights } from '../companies/axis-weights';
 import { CriterionStateLegend } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
 import {
@@ -46,6 +49,8 @@ import {
   formatDateTime,
   IelPageHeader,
   InfoHint,
+  Panel,
+  PanelHeader,
   SourceBreakdownBar
 } from '../shared/ui';
 import { AssistantPanel } from './assistant-panel';
@@ -53,9 +58,16 @@ import { CandidatesMatrix } from './candidates-matrix';
 
 type Tab = 'candidatos' | 'contexto' | 'historico';
 
+/** Quantas linhas a matriz mostra por vez. */
+const PAGE_SIZE = 25;
+
 export function SelectionDesk({ jobId }: { jobId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const [tab, setTab] = useState<Tab>('candidatos');
+  const [candidateFilter, setCandidateFilter] =
+    useState<CandidateFilter>('todas');
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [activeCriterion, setActiveCriterion] = useState<{
     applicationId: string;
     criterionId: string;
@@ -122,6 +134,20 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
 
   const jobEvidences = getEvidencesForJob(state, job);
   const jobSourceBreakdown = getSourceBreakdown(jobEvidences);
+
+  const filterCounts = getCandidateFilterCounts(state, job, applications);
+  const searchTerm = candidateSearch.trim().toLowerCase();
+  const filteredApplications = filterApplicationsByAnalysis(
+    state,
+    job,
+    applications,
+    candidateFilter
+  ).filter((application) => {
+    if (!searchTerm) return true;
+    const talent = getTalent(application.talentId);
+    return (talent?.name ?? '').toLowerCase().includes(searchTerm);
+  });
+  const visibleApplications = filteredApplications.slice(0, visibleCount);
 
   const jobHistory = getRecentHistory(state, 40).filter(
     (event) =>
@@ -225,18 +251,64 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
       {tab === 'candidatos' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
-            <Card
+            <Panel
               padding="sm"
-              className="gap-3"
+              className="flex flex-col gap-3"
             >
               <SourceBreakdownBar
                 breakdown={jobSourceBreakdown}
                 total={jobEvidences.length}
               />
+              <div className="grid gap-3 border-t border-border pt-3 md:grid-cols-[minmax(0,1fr)_20rem]">
+                <Input
+                  label="Buscar candidato"
+                  placeholder="Nome da pessoa"
+                  value={candidateSearch}
+                  onChange={(event) => {
+                    setCandidateSearch(event.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                />
+                <div className="space-y-2">
+                  <label
+                    htmlFor="candidate-filter"
+                    className="block text-sm font-medium leading-none text-foreground"
+                  >
+                    Triagem por estado da análise
+                  </label>
+                  <FilterNativeSelect
+                    id="candidate-filter"
+                    value={candidateFilter}
+                    onValueChange={(value) => {
+                      setCandidateFilter(value as CandidateFilter);
+                      setVisibleCount(PAGE_SIZE);
+                    }}
+                  >
+                    {(
+                      Object.keys(CANDIDATE_FILTER_LABEL) as CandidateFilter[]
+                    ).map((value) => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {CANDIDATE_FILTER_LABEL[value]} ({filterCounts[value]})
+                      </option>
+                    ))}
+                  </FilterNativeSelect>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2 border-t border-border pt-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p>
-                  Selecione de 2 a {COMPARISON_LIMIT} candidatos para comparar.
-                  A seleção é temporária e não é a lista de encaminhamento.
+                  Mostrando{' '}
+                  <span className="font-medium text-foreground">
+                    {visibleApplications.length}
+                  </span>{' '}
+                  de {filteredApplications.length} candidaturas
+                  {filteredApplications.length !== applications.length
+                    ? ` (${applications.length} na vaga)`
+                    : ''}
+                  . Selecione de 2 a {COMPARISON_LIMIT} para comparar.
                 </p>
                 {comparison.length > 0 ? (
                   <Button
@@ -246,16 +318,16 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                       dispatch({ type: 'clear-comparison', jobId: job.id })
                     }
                   >
-                    Limpar seleção
+                    Limpar seleção ({comparison.length})
                   </Button>
                 ) : null}
               </div>
-            </Card>
+            </Panel>
 
-            <Card padding="none">
+            <Panel padding="none">
               <CandidatesMatrix
                 job={job}
-                applications={applications}
+                applications={visibleApplications}
                 selectedForComparison={comparison}
                 comparisonLimit={COMPARISON_LIMIT}
                 referralList={referralList}
@@ -296,7 +368,25 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                   );
                 }}
               />
-            </Card>
+              {visibleCount < filteredApplications.length ? (
+                <div className="border-t border-border p-3 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setVisibleCount((count) => count + PAGE_SIZE)
+                    }
+                  >
+                    Mostrar mais{' '}
+                    {Math.min(
+                      PAGE_SIZE,
+                      filteredApplications.length - visibleCount
+                    )}{' '}
+                    de {filteredApplications.length - visibleCount} restantes
+                  </Button>
+                </div>
+              ) : null}
+            </Panel>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
               <CriterionStateLegend />
@@ -340,17 +430,13 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
 
       {tab === 'contexto' ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Requisitos e critérios
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Cada critério informa a dimensão, a obrigatoriedade e quem
-                confirmou o requisito.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="Critérios da vaga"
+              title="Requisitos e critérios"
+              hint="Cada critério informa a dimensão, a obrigatoriedade e quem confirmou o requisito."
+            />
+            <div className="mt-4 space-y-3">
               <ul className="space-y-3">
                 {job.criteria.map((criterion) => (
                   <li
@@ -387,21 +473,17 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
           <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Contexto da empresa e da equipe
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  A descrição institucional é separada das condições concretas
-                  da equipe.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="Empresa e equipe"
+                title="Contexto da empresa e da equipe"
+                hint="A descrição institucional é separada das condições concretas da equipe."
+              />
+              <div className="mt-4 space-y-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Empresa
@@ -465,16 +547,15 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                     Abrir contexto completo da empresa
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Requisitos essenciais informados
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="Requisitos"
+                title="Requisitos essenciais informados"
+              />
+              <div className="mt-4">
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
                   {job.essentialRequirements.map((requirement) => (
                     <li key={requirement}>{requirement}</li>
@@ -483,22 +564,22 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                 <p className="mt-3 text-xs text-muted-foreground">
                   {job.organizationalContext}
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
+
+            <AxisWeights jobId={job.id} />
           </div>
         </div>
       ) : null}
 
       {tab === 'historico' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Histórico da vaga</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ações locais desta demonstração, com autor e momento. Conclusões
-              anteriores são preservadas no registro.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+        <Panel>
+          <PanelHeader
+            eyebrow="Registro"
+            title="Histórico da vaga"
+            hint="Ações locais desta demonstração, com autor e momento. Conclusões anteriores são preservadas no registro."
+          />
+          <div className="mt-4 space-y-4">
             <ul className="space-y-3">
               {jobHistory.map((event) => (
                 <li
@@ -554,8 +635,8 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                 </ul>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       ) : null}
 
       {clarificationTarget ? (

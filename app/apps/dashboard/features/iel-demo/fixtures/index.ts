@@ -7,11 +7,24 @@ import {
   DEMO_REFERENCE_DATE,
   DEMO_TEAMS
 } from './companies';
+import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_EVIDENCES } from './evidences';
+import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 1;
+export const DEMO_SCHEMA_VERSION = 3;
+
+const GENERATED = getGeneratedBase();
+
+/**
+ * Catálogos completos: a base curada do roteiro primeiro, o volume gerado em
+ * seguida. A ordem importa — as telas listam nessa sequência, então as vagas e
+ * pessoas da demonstração aparecem no topo sem depender de ordenação.
+ */
+export const ALL_COMPANIES = [...DEMO_COMPANIES, ...GENERATED.companies];
+export const ALL_JOBS = [...DEMO_JOBS, ...GENERATED.jobs];
+export const ALL_TALENTS = [...DEMO_TALENTS, ...GENERATED.talents];
 
 /** Limite de candidatos numa comparação. */
 export const COMPARISON_LIMIT = 3;
@@ -111,10 +124,15 @@ export function buildInitialDemoState(): DemoState {
     schemaVersion: DEMO_SCHEMA_VERSION,
     personaId: ANALYST_PERSONA_ID,
     dataSources: clone(DEMO_DATA_SOURCES),
-    applications: clone(DEMO_APPLICATIONS),
-    analysis: clone(DEMO_ANALYSIS),
-    evidences: clone(DEMO_EVIDENCES),
-    teams: clone(DEMO_TEAMS),
+    applications: [
+      ...clone(DEMO_APPLICATIONS),
+      ...clone(GENERATED.applications)
+    ],
+    analysis: { ...clone(DEMO_ANALYSIS), ...clone(GENERATED.analysis) },
+    evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
+    teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
+    cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
+    axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
     history: clone(INITIAL_HISTORY),
@@ -144,6 +162,7 @@ export {
   DEMO_REFERENCE_DATE,
   DEMO_TEAMS
 } from './companies';
+export { DEMO_CULTURE_ANSWERS } from './culture';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';
 export { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';

@@ -41,6 +41,32 @@ export const DEMO_TALENTS: Talent[] = [
       'Receber orientação nas primeiras semanas',
       'Trabalho fixo próximo de casa'
     ],
+    preferences: [
+      {
+        id: 'PREF-ANA-01',
+        axisId: 'apoio-inicial',
+        value: 'Espera orientação de alguém da equipe nas primeiras semanas.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-12'
+      },
+      {
+        id: 'PREF-ANA-02',
+        axisId: 'aprendizado',
+        value: 'Quer aprender a rotina de estoque.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-12'
+      },
+      {
+        id: 'PREF-ANA-03',
+        axisId: 'ritmo-turno',
+        value: 'Procura trabalho fixo, próximo de casa.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-08-02'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -81,6 +107,24 @@ export const DEMO_TALENTS: Talent[] = [
       'Preferência por autonomia na execução',
       'Turnos com horário previsível'
     ],
+    preferences: [
+      {
+        id: 'PREF-BRUNO-01',
+        axisId: 'autonomia',
+        value: 'Prefere organizar o próprio trabalho durante o turno.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-08-05'
+      },
+      {
+        id: 'PREF-BRUNO-02',
+        axisId: 'ritmo-turno',
+        value: 'Procura turnos com horário previsível.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-08-05'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -116,6 +160,16 @@ export const DEMO_TALENTS: Talent[] = [
       'Continuar em rotina administrativa',
       'Interesse em aprender controle de materiais'
     ],
+    preferences: [
+      {
+        id: 'PREF-CARLA-01',
+        axisId: 'aprendizado',
+        value: 'Tem interesse em aprender controle de materiais.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-07-28'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -149,6 +203,16 @@ export const DEMO_TALENTS: Talent[] = [
     ],
     declaredSkills: ['Conferência de volumes', 'Organização de docas'],
     expectations: ['Voltar para a área de expedição'],
+    preferences: [
+      {
+        id: 'PREF-DIEGO-01',
+        axisId: 'aprendizado',
+        value: 'Quer voltar para a área de expedição.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-07-15'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -181,6 +245,24 @@ export const DEMO_TALENTS: Talent[] = [
       'Conferência de notas'
     ],
     expectations: ['Seguir em estoque', 'Rotina com procedimentos definidos'],
+    preferences: [
+      {
+        id: 'PREF-ELISA-01',
+        axisId: 'comunicacao-prioridades',
+        value: 'Prefere rotina com procedimentos definidos por escrito.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-20'
+      },
+      {
+        id: 'PREF-ELISA-02',
+        axisId: 'aprendizado',
+        value: 'Quer seguir na área de estoque.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-08-01'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -209,6 +291,16 @@ export const DEMO_TALENTS: Talent[] = [
     ],
     declaredSkills: ['Atendimento ao cliente', 'Emissão de pedidos'],
     expectations: ['Busca primeira oportunidade em área administrativa'],
+    preferences: [
+      {
+        id: 'PREF-FABIO-01',
+        axisId: 'apoio-inicial',
+        value: 'Espera treinamento formal antes de assumir a rotina.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-18'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -244,6 +336,32 @@ export const DEMO_TALENTS: Talent[] = [
       'Rotina administrativa estável',
       'Interesse em aprender rotinas financeiras'
     ],
+    preferences: [
+      {
+        id: 'PREF-GABRIELA-01',
+        axisId: 'autonomia',
+        value: 'Prefere executar com autonomia após o período inicial.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-22'
+      },
+      {
+        id: 'PREF-GABRIELA-02',
+        axisId: 'comunicacao-prioridades',
+        value: 'Prefere receber prioridades por escrito.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: '2026-08-22'
+      },
+      {
+        id: 'PREF-GABRIELA-03',
+        axisId: 'ritmo-turno',
+        value: 'Disponibilidade em horário comercial.',
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: '2026-08-10'
+      }
+    ],
     externalRefs: [
       {
         system: 'Empregare — demonstração',
@@ -272,6 +390,7 @@ export const DEMO_TALENTS: Talent[] = [
     ],
     declaredSkills: ['Apoio a orçamentos', 'Conferência de cadastros'],
     expectations: [],
+    preferences: [],
     externalRefs: [
       {
         system: 'Empregare — demonstração',

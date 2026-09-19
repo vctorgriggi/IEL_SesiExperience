@@ -16,18 +16,9 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { routes } from '@workspace/routes';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Textarea,
-  toast
-} from '@workspace/ui';
+import { Alert, Button, Textarea, toast } from '@workspace/ui';
 
-import { Chip, IelPageHeader } from '../shared/ui';
+import { Chip, IelPageHeader, Panel, PanelHeader } from '../shared/ui';
 import { ReferralPreviewDialog } from './referral-preview-dialog';
 
 export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
@@ -74,10 +65,11 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
             </Link>
           }
         />
-        <Card padding="lg">
-          <h3 className="text-base font-semibold text-foreground">
-            A lista desta vaga está vazia
-          </h3>
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Lista vazia"
+            title="A lista desta vaga está vazia"
+          />
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             Adicione candidaturas pela matriz de seleção ou pelo perfil
             consolidado. A lista de encaminhamento é diferente da seleção
@@ -96,7 +88,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
               .
             </p>
           ) : null}
-        </Card>
+        </Panel>
         {registered && existingReferral ? (
           <Alert variant="success">
             Encaminhamento registrado. “Atualização externa não enviada —
@@ -162,22 +154,21 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
         </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Mensagem para a empresa</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Texto sugerido pela análise assistida, revisável antes do registro.
-          </p>
-        </CardHeader>
-        <CardContent className="pt-4">
+      <Panel>
+        <PanelHeader
+          eyebrow="Comunicação"
+          title="Mensagem para a empresa"
+          hint="Texto sugerido pela análise assistida, revisável antes do registro."
+        />
+        <div className="mt-4">
           <Textarea
             aria-label="Mensagem para a empresa"
             rows={3}
             value={effectiveMessage}
             onChange={(event) => setMessage(event.target.value)}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       <ul className="space-y-4">
         {draft.items.map((item) => {
@@ -192,7 +183,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
 
           return (
             <li key={item.applicationId}>
-              <Card className="gap-3">
+              <Panel className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-base font-semibold text-foreground">
@@ -295,13 +286,13 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
                     registro não aparecem retroativamente para a empresa.
                   </p>
                 </div>
-              </Card>
+              </Panel>
             </li>
           );
         })}
       </ul>
 
-      <Card className="gap-3">
+      <Panel className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
           Preparar a lista, encaminhar para análise e contratar são ações
           diferentes. Registrar o encaminhamento apenas compartilha as
@@ -353,7 +344,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
             <Button variant="outline">Ver encaminhamentos</Button>
           </Link>
         </div>
-      </Card>
+      </Panel>
 
       <ReferralPreviewDialog
         job={job}

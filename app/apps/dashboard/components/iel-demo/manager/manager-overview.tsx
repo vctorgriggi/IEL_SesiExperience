@@ -12,9 +12,15 @@ import {
 } from '@/features/iel-demo/state/selectors';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, Card, MetricCard } from '@workspace/ui';
+import { Alert, Button, MetricCard } from '@workspace/ui';
 
-import { Chip, formatDate, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDate,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
 
 /** Painel da empresa: só a própria empresa e o que o IEL compartilhou. */
 export function ManagerOverview() {
@@ -66,10 +72,11 @@ export function ManagerOverview() {
       </section>
 
       {questions.length > 0 ? (
-        <Card className="gap-3">
-          <h2 className="text-base font-semibold text-foreground">
-            Perguntas do IEL sobre a sua equipe
-          </h2>
+        <Panel className="flex flex-col gap-3">
+          <PanelHeader
+            eyebrow="Aguardando você"
+            title="Perguntas do IEL sobre a sua equipe"
+          />
           <ul className="space-y-2">
             {questions.map((clarification) => (
               <li
@@ -85,13 +92,14 @@ export function ManagerOverview() {
               </li>
             ))}
           </ul>
-        </Card>
+        </Panel>
       ) : null}
 
-      <Card className="gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          Perfis encaminhados pelo IEL
-        </h2>
+      <Panel className="flex flex-col gap-3">
+        <PanelHeader
+          eyebrow="Do IEL para você"
+          title="Perfis encaminhados pelo IEL"
+        />
         {sharedProfiles.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhum perfil compartilhado até agora. Quando o IEL registrar um
@@ -144,12 +152,13 @@ export function ManagerOverview() {
             )}
           </ul>
         )}
-      </Card>
+      </Panel>
 
-      <Card className="gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          Contexto registrado das suas equipes
-        </h2>
+      <Panel className="flex flex-col gap-3">
+        <PanelHeader
+          eyebrow="Condições de trabalho"
+          title="Contexto registrado das suas equipes"
+        />
         <ul className="space-y-2">
           {teams.map((team) => (
             <li
@@ -188,7 +197,7 @@ export function ManagerOverview() {
             Ver contexto completo
           </Button>
         </Link>
-      </Card>
+      </Panel>
     </div>
   );
 }
