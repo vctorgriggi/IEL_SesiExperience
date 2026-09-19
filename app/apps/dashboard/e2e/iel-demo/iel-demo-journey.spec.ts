@@ -362,4 +362,76 @@ test.describe('Central de Seleção IEL — demonstração', () => {
       page.getByRole('heading', { name: 'Resposta registrada' })
     ).toBeVisible();
   });
+  /**
+   * O questionário do candidato é a única tela em que uma pessoa de fora do
+   * IEL responde sobre si. Duas coisas precisam continuar verdadeiras nela: o
+   * aceite abre o questionário (M7, LGPD art. 7º, I) e o nome da empresa não
+   * aparece antes da entrevista (R5). A segunda é a que este teste guarda —
+   * um `company.name` que escapasse por qualquer caminho quebra aqui.
+   */
+  test('questionário de fit do candidato: aceite, cinco passos e sem nome de empresa', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/iel/candidatura/CAND-05/fit');
+
+    // A base já traz a resposta de Ana nesta candidatura: abre na confirmação.
+    await expect(
+      page.getByRole('heading', { name: 'Respostas registradas' })
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Responder novamente' }).click();
+
+    // Passo 0: sem aceite o questionário não abre.
+    await expect(
+      page.getByRole('heading', { name: 'Antes de começar' })
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Começar' })).toBeDisabled();
+    await page.locator('#fit-consent').check();
+    await page.getByRole('button', { name: 'Começar' }).click();
+
+    await expect(page.getByText('1 de 5')).toBeVisible();
+
+    // Nenhum nome de empresa da base fictícia aparece no conteúdo da tela.
+    const content = await page.getByRole('main').innerText();
+    for (const companyName of [
+      'Cerrado Distribuição',
+      'Horizonte Alimentos',
+      'Oficina Pantanal'
+    ]) {
+      expect(content).not.toContain(companyName);
+    }
+    // O que ele vê da vaga: atividade, localidade, segmento e turno.
+    expect(content).toContain('Assistente de Estoque');
+    expect(content).toContain('Indústria de alimentos');
+
+    // Sem rolagem horizontal na largura de celular.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    for (let step = 1; step <= 5; step += 1) {
+      await expect(page.getByText(`${step} de 5`)).toBeVisible();
+      await page.getByRole('radio').first().click();
+      await page
+        .getByRole('button', {
+          name: step === 5 ? 'Enviar respostas' : 'Próxima'
+        })
+        .click();
+    }
+
+    await expect(
+      page.getByRole('heading', { name: 'Respostas registradas' })
+    ).toBeVisible();
+    await expect(
+      page.getByText('Você não precisa fazer mais nada agora.')
+    ).toBeVisible();
+
+    await page
+      .getByRole('button', { name: 'Ver o que está registrado sobre você' })
+      .click();
+    await expect(
+      page.getByRole('heading', { name: 'O que está registrado sobre você' })
+    ).toBeVisible();
+  });
 });

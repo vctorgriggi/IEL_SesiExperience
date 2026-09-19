@@ -1,9 +1,15 @@
 'use client';
 
+import {
+  ADHERENCE_THRESHOLD,
+  formatAdherence,
+  type AdherenceAxisEntry
+} from '@/features/iel-demo/analysis/adherence';
 import { getCultureQuestion } from '@/features/iel-demo/analysis/culture';
 import { getFitInsights } from '@/features/iel-demo/analysis/fit-insights';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  getAdherence,
   getAxisWeights,
   getCompany,
   getCultureReading,
@@ -11,12 +17,19 @@ import {
   type CultureAxisReading,
   type FitReadingEntry
 } from '@/features/iel-demo/state/selectors';
-import type { Job } from '@/features/iel-demo/types';
+import type { Application, Job } from '@/features/iel-demo/types';
 
 import { AdherenceRing } from '../instruments/adherence-ring';
 import { FitAxisSlider } from '../instruments/fit-axis-slider';
 import { CriterionStateHeadline } from '../shared/criterion-state-badge';
-import { formatDate, Hero, InfoHint, Panel, SourceDot } from '../shared/ui';
+import {
+  Chip,
+  formatDate,
+  Hero,
+  InfoHint,
+  Panel,
+  SourceDot
+} from '../shared/ui';
 import { FitInsights } from './fit-insights';
 import { FitRadar } from './fit-radar';
 
@@ -26,68 +39,29 @@ const CONDITION_STATUS_LABEL: Record<string, string> = {
   'a-confirmar': 'a confirmar'
 };
 
+/** Como o corte de 35% se lê na tela, sem transformar ausência em reprovação. */
+type CompatibilityState = 'compativel' | 'abaixo' | 'sem-base';
+
+const COMPATIBILITY_LABEL: Record<CompatibilityState, string> = {
+  compativel: `Compatível (≥ ${ADHERENCE_THRESHOLD}%)`,
+  abaixo: 'Abaixo do corte',
+  'sem-base': 'Sem base'
+};
+
+const COMPATIBILITY_TONE: Record<
+  CompatibilityState,
+  'positivo' | 'atencao' | 'neutro'
+> = {
+  compativel: 'positivo',
+  abaixo: 'atencao',
+  'sem-base': 'neutro'
+};
+
 const MISSING_LABEL: Record<string, string> = {
   empresa: 'A equipe ainda não informou.',
   candidato: 'A pessoa ainda não declarou.',
   ambos: 'Nenhum dos dois lados informou.'
 };
-
-/**
- * Corte de triagem da vaga, em pontos percentuais.
- *
- * TODO(getAdherence): o corte é parâmetro da vaga e vai chegar junto do
- * percentual, pelo mesmo seletor. Até lá fica a constante do combinado (35)
- * num lugar só, para não se espalhar pela tela.
- */
-const ADHERENCE_THRESHOLD = 35;
-
-/**
- * Posição de cada lado no eixo, **provisória**.
- *
- * O motor de aderência vai devolver a posição ordinal real (1..3) que cada
- * lado ocupa no eixo — a mesma escala que `CULTURE_QUESTIONS` já usa para as
- * respostas da empresa. Enquanto ele não existe, a única informação
- * disponível aqui é o estado do encontro entre os dois lados, e este
- * mapeamento o projeta de volta em posições:
- *
- * - alinhamento → os dois no mesmo degrau (2);
- * - divergência → polos opostos (1 e 3), porque é a distância que a leitura
- *   afirma;
- * - a esclarecer → degraus adjacentes (2 e 3): há diferença, mas ela ainda
- *   não foi confirmada por quem poderia confirmar;
- * - lado faltando → `null` naquele lado, sempre. Nunca uma posição inventada,
- *   e nunca o degrau mínimo: ausência não é extremo.
- *
- * É uma projeção, não uma medida. Quando `getAdherence` chegar, esta função
- * sai inteira e as posições passam a vir do seletor.
- */
-function toAxisPositions(entry: FitReadingEntry): {
-  companyValue: number | null;
-  candidateValue: number | null;
-} {
-  const hasCompany =
-    entry.missingSide !== 'empresa' && entry.missingSide !== 'ambos';
-  const hasCandidate =
-    entry.missingSide !== 'candidato' && entry.missingSide !== 'ambos';
-
-  if (!hasCompany || !hasCandidate) {
-    return {
-      companyValue: hasCompany ? 2 : null,
-      candidateValue: hasCandidate ? 2 : null
-    };
-  }
-
-  switch (entry.state) {
-    case 'divergencia':
-      return { companyValue: 1, candidateValue: 3 };
-    case 'a-esclarecer':
-      return { companyValue: 2, candidateValue: 3 };
-    case 'alinhamento':
-      return { companyValue: 2, candidateValue: 2 };
-    default:
-      return { companyValue: null, candidateValue: null };
-  }
-}
 
 /**
  * Polos nomeados do eixo, tirados do próprio questionário da empresa: a
@@ -151,20 +125,21 @@ function SideDetail({
  */
 function AxisRow({
   entry,
-  culture
+  culture,
+  adherenceAxis
 }: {
   entry: FitReadingEntry;
   culture: CultureAxisReading | undefined;
+  /** O eixo como o motor de aderência o mediu, ou `undefined` sem medida. */
+  adherenceAxis: AdherenceAxisEntry | undefined;
 }) {
-  const positions = toAxisPositions(entry);
-
   return (
     <li className="px-5 py-1 first:pt-3 last:pb-4">
       <FitAxisSlider
         label={entry.axis.label}
         poles={toPoles(entry.axis.id)}
-        companyValue={positions.companyValue}
-        candidateValue={positions.candidateValue}
+        companyValue={adherenceAxis?.companyMean ?? null}
+        candidateValue={adherenceAxis?.candidateValue ?? null}
         min={1}
         max={3}
         weight={entry.weight}
@@ -239,20 +214,40 @@ function AxisRow({
  * vem depois, densa, e é onde a afirmação de cada eixo pode ser conferida
  * contra a origem do dado.
  */
-export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
+export function FitReading({
+  job,
+  talentId,
+  application
+}: {
+  job: Job;
+  talentId: string;
+  /** A candidatura que dá contexto: a aderência é medida por candidatura. */
+  application: Application;
+}) {
   const { state } = useIelDemo();
   const reading = getFitReading(state, job, talentId);
   const company = getCompany(job.companyId);
   const culture = getCultureReading(state, job.companyId);
   const insights = getFitInsights(reading, getAxisWeights(state, job));
+  const adherence = getAdherence(state, application.id);
+  const compatibility: CompatibilityState =
+    adherence?.compatible === true
+      ? 'compativel'
+      : adherence?.compatible === false
+        ? 'abaixo'
+        : 'sem-base';
 
-  const withBothSides = reading.filter(
-    (entry) => entry.missingSide === null
-  ).length;
-  const missingTalentSide = reading.filter(
-    (entry) =>
-      entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
-  ).length;
+  // As figuras do herói vêm da mesma conta que o anel: o questionário. A
+  // leitura textual (preferência × condição informada) fica nos trilhos, um
+  // a um — mostrar as duas contagens lado a lado confundia na apresentação.
+  const measuredAxes = adherence?.coverage.answeredAxes ?? 0;
+  const totalAxes = adherence?.coverage.totalAxes ?? 5;
+  const missingCompanyProfile =
+    adherence?.byAxis.filter((axis) => axis.companyMean === null).length ?? 0;
+  const missingCandidateAnswer =
+    adherence?.byAxis.filter(
+      (axis) => axis.companyMean !== null && axis.candidateValue === null
+    ).length ?? totalAxes;
 
   return (
     <div className="space-y-4">
@@ -263,29 +258,77 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
         description="Compara o que a equipe informou sobre como trabalha com o que a pessoa declarou esperar, nos mesmos eixos. Não aplica avaliação nova nem produz nota: descreve condições de trabalho, não traços de personalidade."
         figures={[
           {
-            label: 'Eixos com os dois lados',
-            value: `${withBothSides}/${reading.length}`
+            label: 'Eixos medidos',
+            value: `${measuredAxes}/${totalAxes}`,
+            hint: 'Eixos em que a empresa fechou perfil e a pessoa respondeu.'
           },
           {
-            label: 'Falta o lado da pessoa',
-            value: missingTalentSide,
-            tone: missingTalentSide > 0 ? 'atencao' : 'default',
+            label: 'Sem perfil da empresa',
+            value: missingCompanyProfile,
+            tone: missingCompanyProfile > 0 ? 'atencao' : 'default',
             hint:
-              missingTalentSide > 0
-                ? 'Uma coleta dirigida fecha a leitura destes eixos.'
+              missingCompanyProfile > 0
+                ? 'Menos de 3 respostas da equipe nestes eixos.'
+                : undefined
+          },
+          {
+            label: 'Sem resposta da pessoa',
+            value: missingCandidateAnswer,
+            tone: missingCandidateAnswer > 0 ? 'atencao' : 'default',
+            hint:
+              missingCandidateAnswer > 0
+                ? 'O questionário na candidatura fecha estes eixos.'
                 : undefined
           }
         ]}
         aside={
-          <div className="flex justify-center">
-            {/* TODO(getAdherence): o percentual e o corte da vaga vêm do
-                motor de aderência. Até lá o anel fica vazio de propósito —
-                desenhar 0% aqui seria transformar ausência em resultado. */}
+          <div className="flex flex-col items-center gap-3">
+            {/*
+              O anel recebe o percentual arredondado, como `formatAdherence`
+              o escreve: a conta tem casas decimais, a leitura não — uma casa
+              decimal aqui sugeriria precisão que a escala ordinal não tem.
+            */}
             <AdherenceRing
-              value={null}
+              value={
+                adherence?.total === null || adherence?.total === undefined
+                  ? null
+                  : Math.round(adherence.total)
+              }
               threshold={ADHERENCE_THRESHOLD}
               size="lg"
             />
+
+            {/*
+              O denominador junto do número. Um total de 80% sobre dois eixos
+              não é a mesma coisa que 80% sobre cinco, e quem lê a tela precisa
+              ver a diferença sem abrir a lista.
+            */}
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {formatAdherence(adherence?.total ?? null)}
+              </span>{' '}
+              sobre {adherence?.coverage.answeredAxes ?? 0} de{' '}
+              {adherence?.coverage.totalAxes ?? 5} eixos
+            </p>
+
+            <Chip tone={COMPATIBILITY_TONE[compatibility]}>
+              {COMPATIBILITY_LABEL[compatibility]}
+            </Chip>
+
+            {/*
+              As duas medidas ficam lado a lado e não se somam. Somá-las
+              exigiria decidir quanto cada uma vale, e ninguém decidiu isso.
+            */}
+            <p className="max-w-[20rem] text-center text-[11px] leading-relaxed text-muted-foreground">
+              Fit responde “estou disposto(a) a…”; o técnico vem do Empregare:{' '}
+              <span className="font-medium text-foreground">
+                {application.technicalMatch === null ||
+                application.technicalMatch === undefined
+                  ? 'sem dados'
+                  : `${application.technicalMatch}%`}
+              </span>
+              .
+            </p>
           </div>
         }
       >
@@ -316,13 +359,16 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
               culture={culture.find(
                 (item) => item.question.axisId === entry.axis.id
               )}
+              adherenceAxis={adherence?.byAxis.find(
+                (axis) => axis.axisId === entry.axis.id
+              )}
             />
           ))}
         </ul>
         <p className="border-t border-border px-5 py-3 text-[11px] leading-relaxed text-muted-foreground">
-          As posições no trilho são uma projeção provisória do estado de cada
-          eixo, não uma medida: o motor de aderência ainda não devolve a posição
-          ordinal real de cada lado.
+          A posição da equipe é a média do traçado da empresa neste eixo; a da
+          pessoa é a alternativa que ela escolheu no questionário de fit. Onde
+          falta um lado, aquele marcador não entra no trilho.
         </p>
       </Panel>
     </div>

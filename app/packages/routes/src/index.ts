@@ -115,6 +115,23 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (companyId: string) =>
           resolve(`/iel/empresas/${encodeSegment(companyId)}`)
       },
+      /**
+       * Superfície do candidato.
+       *
+       * O questionário de fit abre por candidatura, não por talento: o fit é
+       * respondido para aquela vaga daquela empresa, e a mesma pessoa pode
+       * responder diferente em dois processos. A rota não carrega vaga nem
+       * empresa no caminho — o que o candidato vê da vaga vem de
+       * `getCandidateJobView`, sem nome de empresa (R5).
+       */
+      applications: {
+        byId: (applicationId: string) => {
+          const applicationBase = `/iel/candidatura/${encodeSegment(applicationId)}`;
+          return {
+            fit: resolve(`${applicationBase}/fit`)
+          };
+        }
+      },
       clarifications: {
         index: resolve('/iel/pendencias'),
         respond: (clarificationId: string) =>

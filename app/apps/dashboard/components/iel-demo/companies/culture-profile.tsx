@@ -11,7 +11,9 @@ import {
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   CULTURE_AXIS_STATE_LABEL,
+  getCompanyCultureProfile,
   getCultureReading,
+  type CompanyCultureAxisProfile,
   type CultureAxisReading,
   type CultureAxisState
 } from '@/features/iel-demo/state/selectors';
@@ -131,6 +133,14 @@ function SuggestionBlock({
   );
 }
 
+/** A média como a tela escreve: uma casa decimal, vírgula. */
+function formatMean(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
+}
+
 /** Marcador de um papel no trilho do eixo. */
 const RESPONDENT_MARK: Record<CultureRespondent, string> = {
   gestao: 'rounded-[3px] bg-chart-2',
@@ -148,7 +158,14 @@ const RESPONDENT_MARK: Record<CultureRespondent, string> = {
  * ficaram fora da alternativa mais votada. Uma equipe rachada e uma equipe
  * unânime deixam de ter o mesmo desenho.
  */
-function AxisTrack({ entry }: { entry: CultureAxisReading }) {
+function AxisTrack({
+  entry,
+  profile
+}: {
+  entry: CultureAxisReading;
+  /** O eixo como média: o que o motor de aderência de fato compara. */
+  profile: CompanyCultureAxisProfile | undefined;
+}) {
   const low = entry.question.options.find(
     (option) => option.value === CULTURE_SCALE_MIN
   );
@@ -181,6 +198,20 @@ function AxisTrack({ entry }: { entry: CultureAxisReading }) {
               `${CULTURE_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
           )
           .join('. ')}.`;
+
+  /*
+    Média do eixo.
+
+    "O fit cultural é a média do que a empresa entende" (00:41:44) — e é essa
+    média, não a resposta da gestão, que o motor de aderência compara com a do
+    candidato. Desenhá-la aqui é o que torna o traçado conferível contra o
+    percentual da outra tela.
+
+    Quando o perfil não fecha (`ready` falso), não há losango: abaixo do
+    mínimo de respostas da equipe, uma média seria o retrato de duas pessoas
+    apresentado como "a empresa".
+  */
+  const meanValue = profile?.ready ? (profile.mean ?? null) : null;
 
   return (
     <div
@@ -268,6 +299,19 @@ function AxisTrack({ entry }: { entry: CultureAxisReading }) {
               </span>
             );
           })}
+
+          {meanValue !== null ? (
+            <span
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${percentOf(meanValue)}%` }}
+            >
+              <span
+                aria-hidden="true"
+                title={`Média da empresa neste eixo: ${formatMean(meanValue)}`}
+                className="block size-3 rotate-45 bg-foreground/75 ring-2 ring-card"
+              />
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -280,10 +324,12 @@ function AxisTrack({ entry }: { entry: CultureAxisReading }) {
 
 function AxisBlock({
   entry,
-  companyId
+  companyId,
+  profile
 }: {
   entry: CultureAxisReading;
   companyId: string;
+  profile: CompanyCultureAxisProfile | undefined;
 }) {
   return (
     <li className="py-4">
@@ -297,9 +343,25 @@ function AxisBlock({
         >
           {CULTURE_AXIS_STATE_LABEL[entry.state]}
         </Chip>
+        {profile?.ready === false ? (
+          <Chip tone="atencao">
+            perfil não fecha — menos de {MIN_TEAM_RESPONSES} respostas da equipe
+          </Chip>
+        ) : profile?.mean !== null && profile?.mean !== undefined ? (
+          <span className="flex items-baseline gap-1.5 text-xs text-muted-foreground">
+            <span
+              aria-hidden="true"
+              className="size-2 shrink-0 translate-y-px rotate-45 bg-foreground/75"
+            />
+            média: {formatMean(profile.mean)}
+          </span>
+        ) : null}
       </div>
 
-      <AxisTrack entry={entry} />
+      <AxisTrack
+        entry={entry}
+        profile={profile}
+      />
 
       {/* Os polos não cabem nas pontas em telas estreitas. */}
       <p className="mt-1.5 flex justify-between gap-3 text-[11px] leading-snug text-muted-foreground md:hidden">
@@ -378,6 +440,7 @@ function AxisBlock({
 export function CultureProfile({ companyId }: { companyId: string }) {
   const { state } = useIelDemo();
   const reading = getCultureReading(state, companyId);
+  const profile = getCompanyCultureProfile(state, companyId);
 
   const answered = reading.filter(
     (entry) => entry.state !== 'sem-resposta'
@@ -426,6 +489,15 @@ export function CultureProfile({ companyId }: { companyId: string }) {
               Onde a equipe posiciona, com o rastro em volta proporcional a
               quanto a consulta se dispersou.
             </li>
+            <li className="flex items-baseline gap-2">
+              <span
+                aria-hidden="true"
+                className="size-2.5 shrink-0 translate-y-px rotate-45 bg-foreground/75"
+              />
+              A média da empresa no eixo — é ela que o cálculo de aderência
+              compara com a resposta do candidato. Enquanto o perfil não fecha,
+              ela não é desenhada.
+            </li>
             <li>
               Os extremos do trilho são as próprias alternativas do
               questionário. Um extremo não é melhor que o outro: é outra
@@ -441,6 +513,9 @@ export function CultureProfile({ companyId }: { companyId: string }) {
             key={entry.question.axisId}
             entry={entry}
             companyId={companyId}
+            profile={profile.find(
+              (axis) => axis.axisId === entry.question.axisId
+            )}
           />
         ))}
       </ul>

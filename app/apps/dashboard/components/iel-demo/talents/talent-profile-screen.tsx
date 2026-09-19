@@ -188,6 +188,7 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
             <FitReading
               job={job}
               talentId={talent.id}
+              application={contextApplication}
             />
           ) : null}
 

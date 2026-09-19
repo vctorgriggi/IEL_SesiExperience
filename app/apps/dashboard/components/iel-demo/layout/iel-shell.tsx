@@ -387,6 +387,10 @@ function ShortScript({ onNavigate }: { onNavigate: () => void }) {
       href: iel.jobs.byId('VAG-02').index
     },
     {
+      text: 'Responder o fit como candidata (Ana, vaga 2): aceite, cinco perguntas no celular, sem login e sem o nome da empresa.',
+      href: iel.applications.byId('CAND-05').fit
+    },
+    {
       text: 'Registrar o encaminhamento e ver a trajetória dela entre os dois processos.',
       href: iel.jobs.byId('VAG-02').referral
     }

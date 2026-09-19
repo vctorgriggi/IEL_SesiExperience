@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -18,14 +19,21 @@ import {
   getCriterion,
   getEvidencesForJob,
   getJob,
+  getJobRanking,
   getRecentHistory,
   getReferralListSelection,
+  getRescueCandidates,
   getSourceBreakdown,
   getTalent,
   getTeam,
-  JOB_STAGE_LABEL
+  JOB_STAGE_LABEL,
+  REFERRAL_LIMIT,
+  RESCUE_TECHNICAL_CEILING
 } from '@/features/iel-demo/state/selectors';
-import type { CandidateFilter } from '@/features/iel-demo/state/selectors';
+import type {
+  CandidateFilter,
+  JobRankingEntry
+} from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { JobCriterion } from '@/features/iel-demo/types';
 
@@ -41,6 +49,7 @@ import {
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import { AxisWeights } from '../companies/axis-weights';
+import { RankRow } from '../instruments/rank-row';
 import { CriterionStateLegend } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
 import {
@@ -68,6 +77,7 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
     useState<CandidateFilter>('todas');
   const [candidateSearch, setCandidateSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showRescue, setShowRescue] = useState(false);
   const [activeCriterion, setActiveCriterion] = useState<{
     applicationId: string;
     criterionId: string;
@@ -149,6 +159,122 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
   });
   const visibleApplications = filteredApplications.slice(0, visibleCount);
 
+  /*
+    Ranking M5.
+
+    A lista ordenada e a matriz por critério mostram o mesmo conjunto: o
+    ranking é filtrado pelos ids que sobreviveram à triagem e à busca, e
+    pagina com o mesmo `visibleCount`. Duas listas com populações diferentes
+    na mesma tela fariam o analista contar candidato duas vezes.
+  */
+  const screenedIds = new Set(
+    filteredApplications.map((application) => application.id)
+  );
+  const jobRanking = getJobRanking(state, job.id);
+  const screenedRanking = jobRanking.filter((entry) =>
+    screenedIds.has(entry.application.id)
+  );
+  const rescueRanking = getRescueCandidates(state, job.id).filter((entry) =>
+    screenedIds.has(entry.application.id)
+  );
+  const rankingRows = showRescue
+    ? rescueRanking
+    : screenedRanking.slice(0, visibleCount);
+
+  const compatibleInScreening = screenedRanking.filter(
+    (entry) => entry.adherence.compatible === true
+  ).length;
+  const belowThresholdInScreening = screenedRanking.filter(
+    (entry) => entry.adherence.compatible === false
+  ).length;
+  const withoutFitAnswer = screenedRanking.filter(
+    (entry) => entry.adherence.compatible === null
+  ).length;
+  const compatibleInJob = jobRanking.filter(
+    (entry) => entry.adherence.compatible === true
+  ).length;
+
+  const referralListFull = referralList.length >= REFERRAL_LIMIT;
+
+  const addToReferralList = (applicationId: string) => {
+    dispatch({
+      type: 'add-to-referral-list',
+      jobId: job.id,
+      applicationId,
+      at: nowIso()
+    });
+    const application = getApplication(state, applicationId);
+    const talent = application ? getTalent(application.talentId) : null;
+    toast.success(
+      `${talent?.name ?? 'Candidatura'} entrou na lista de encaminhamento desta vaga.`
+    );
+  };
+
+  const toggleComparison = (applicationId: string) => {
+    const isSelected = comparison.includes(applicationId);
+    if (!isSelected && comparison.length >= COMPARISON_LIMIT) {
+      toast.error(
+        `A comparação aceita até ${COMPARISON_LIMIT} candidatos. Remova um para incluir outro.`
+      );
+      return;
+    }
+    dispatch({
+      type: 'toggle-comparison',
+      jobId: job.id,
+      applicationId
+    });
+  };
+
+  /** Uma linha do ranking, com as ações que a situação dela permite. */
+  const renderRankRow = (entry: JobRankingEntry) => {
+    const alreadyListed = referralList.includes(entry.application.id);
+    const pendingFit = entry.fitStatus !== 'respondido';
+
+    return (
+      <RankRow
+        key={entry.application.id}
+        rank={entry.rank}
+        name={entry.talent?.name ?? entry.application.id}
+        headline={entry.talent?.headline}
+        technicalMatch={entry.technicalMatch}
+        adherence={
+          entry.adherence.total === null
+            ? null
+            : Math.round(entry.adherence.total)
+        }
+        threshold={entry.adherence.threshold}
+        belowThreshold={entry.belowThreshold}
+        selected={comparison.includes(entry.application.id)}
+        onSelect={() => toggleComparison(entry.application.id)}
+        actions={
+          <>
+            {pendingFit ? (
+              <Link
+                href={iel.applications.byId(entry.application.id).fit}
+                className="whitespace-nowrap text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Abrir questionário (demo)
+              </Link>
+            ) : null}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={alreadyListed || referralListFull}
+              title={
+                referralListFull && !alreadyListed
+                  ? `Limite de ${REFERRAL_LIMIT} currículos por vaga`
+                  : undefined
+              }
+              onClick={() => addToReferralList(entry.application.id)}
+            >
+              {alreadyListed ? 'Na lista' : 'Adicionar à lista'}
+            </Button>
+          </>
+        }
+      />
+    );
+  };
+
   const jobHistory = getRecentHistory(state, 40).filter(
     (event) =>
       event.entityRef === null ||
@@ -187,6 +313,11 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
             label: 'Na triagem atual',
             value: filteredApplications.length,
             hint: `de ${applications.length} na vaga`
+          },
+          {
+            label: 'Compatíveis',
+            value: compatibleInJob,
+            hint: `aderência de ${ADHERENCE_THRESHOLD}% ou mais, entre quem respondeu`
           },
           {
             label: 'Respostas a incorporar',
@@ -325,9 +456,63 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
       {tab === 'candidatos' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
-            {/* ranking M5: RankRow por candidatura entra aqui quando
-                getJobRanking existir — a lista ordenada por técnico e fit,
-                com o corte marcado, fica acima da matriz por critério. */}
+            {/*
+              Ranking M5.
+
+              A cena do pitch: o analista abre a vaga e vê técnico e fit lado
+              a lado, ordenados pela aderência, com o corte marcado. As duas
+              colunas não se somam — quem cruza é quem decide. A matriz por
+              critério continua abaixo: ela é onde cada conclusão se confere
+              contra a origem do dado.
+            */}
+            <Panel
+              padding="none"
+              elevation={1}
+              className="overflow-hidden"
+            >
+              <div className="border-b border-border px-5 py-3">
+                <PanelHeader
+                  eyebrow="Ordenado por aderência"
+                  title="Ranking desta vaga"
+                  hint="A ordem é a da aderência, não de uma nota combinada. Quem não respondeu o questionário vai para o fim da lista, nunca para o zero: ausência de resposta não é aderência mínima."
+                  meta={
+                    <>
+                      {compatibleInScreening} compatíveis (≥{' '}
+                      {ADHERENCE_THRESHOLD}%) · {belowThresholdInScreening}{' '}
+                      abaixo do corte · {withoutFitAnswer} sem resposta
+                    </>
+                  }
+                  actions={
+                    <Button
+                      size="sm"
+                      variant={showRescue ? 'default' : 'outline'}
+                      aria-pressed={showRescue}
+                      onClick={() => setShowRescue((value) => !value)}
+                    >
+                      Ver resgate do filtro técnico (S2)
+                    </Button>
+                  }
+                />
+                {showRescue ? (
+                  <p className="mt-3 border-l-2 border-warning/50 pl-3 text-xs leading-relaxed text-muted-foreground">
+                    Técnico abaixo de {RESCUE_TECHNICAL_CEILING} e aderência
+                    acima do corte — o filtro automático teria descartado estas
+                    candidaturas. A decisão de reabrir continua sendo do
+                    analista.
+                  </p>
+                ) : null}
+              </div>
+
+              {rankingRows.length === 0 ? (
+                <p className="px-5 py-6 text-sm text-muted-foreground">
+                  {showRescue
+                    ? 'Nenhuma candidatura desta triagem foi descartada pelo filtro técnico com aderência acima do corte.'
+                    : 'Nenhuma candidatura na triagem atual.'}
+                </p>
+              ) : (
+                <div>{rankingRows.map(renderRankRow)}</div>
+              )}
+            </Panel>
 
             <div className="flex flex-col gap-2 px-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <p>
@@ -372,35 +557,8 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                     criterionId: criterion.id
                   })
                 }
-                onToggleComparison={(applicationId) => {
-                  const isSelected = comparison.includes(applicationId);
-                  if (!isSelected && comparison.length >= COMPARISON_LIMIT) {
-                    toast.error(
-                      `A comparação aceita até ${COMPARISON_LIMIT} candidatos. Remova um para incluir outro.`
-                    );
-                    return;
-                  }
-                  dispatch({
-                    type: 'toggle-comparison',
-                    jobId: job.id,
-                    applicationId
-                  });
-                }}
-                onAddToReferralList={(applicationId) => {
-                  dispatch({
-                    type: 'add-to-referral-list',
-                    jobId: job.id,
-                    applicationId,
-                    at: nowIso()
-                  });
-                  const application = getApplication(state, applicationId);
-                  const talent = application
-                    ? getTalent(application.talentId)
-                    : null;
-                  toast.success(
-                    `${talent?.name ?? 'Candidatura'} entrou na lista de encaminhamento desta vaga.`
-                  );
-                }}
+                onToggleComparison={toggleComparison}
+                onAddToReferralList={addToReferralList}
               />
               {visibleCount < filteredApplications.length ? (
                 <div className="border-t border-border p-3 text-center">
