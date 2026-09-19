@@ -1,133 +1,145 @@
 /*
  * Identidade visual da Central IEL.
  *
- * Duas heranças precisavam sair do caminho.
+ * Direção: produto moderno de people analytics — fundo claro, sem-serifa,
+ * azul como marca e violeta como segunda voz, superfícies planas com sombra
+ * mínima, espaçamento generoso. É o vocabulário que o mercado da categoria
+ * usa hoje, e é o que a apresentação precisa transmitir: não um painel
+ * interno, um produto.
  *
- * A primeira é o tema do Arki, monocromático âmbar: `--success`, `--warning`
- * e `--info` apontam todos para tons de `--chart-*` laranja. Num SaaS
- * genérico isso passa; aqui quebra o produto, porque a leitura inteira
- * depende de distinguir "alinhamento identificado" de "ponto a esclarecer" e
- * de "divergência identificada" num relance.
+ * Duas heranças ficam para trás.
  *
- * A segunda é o vocabulário de painel administrativo: fundo cinza-azulado,
- * tudo em cartão branco com sombra, barra lateral escura. É o desenho padrão
- * de qualquer ferramenta interna, e fazia uma central de análise de pessoas
- * parecer um ERP.
+ * O tema do Arki é monocromático âmbar: `--success`, `--warning` e `--info`
+ * apontam todos para `--chart-*` laranja. Aqui a leitura inteira depende de
+ * distinguir "alinhamento" de "a esclarecer" e de "divergência" num relance,
+ * então os estados ganham verde, âmbar e vermelho de verdade. O violeta e o
+ * teal ficam para dados categóricos, sem competir com os estados.
  *
- * O que está aqui no lugar: um fundo de papel quente, tinta quase preta,
- * azul institucional profundo como marca e um ocre industrial como segunda
- * voz. Papel e tinta, não vidro e sombra — a tela é uma mesa de trabalho com
- * documentos, que é a analogia que o próprio briefing usa.
+ * O vocabulário de painel administrativo — barra lateral escura, fundo
+ * cinza-azulado, tudo em cartão pesado — saiu por completo.
  *
  * Os estados nunca dependem só de cor: cada um carrega ícone e rótulo
  * textual. A cor é reforço, não é o canal principal.
  *
- * Diálogos e toasts são renderizados em portais no fim do `body`, fora da
- * árvore da página — por isso o escopo cobre também o `body` enquanto uma
- * tela do IEL estiver montada.
+ * Diálogos e toasts são renderizados em portais no fim do `body`; por isso o
+ * escopo cobre o `body` enquanto uma tela do IEL estiver montada.
  */
 
 body:has([data-iel-theme]),
 [data-iel-theme] {
-  /* --- Papel e tinta --------------------------------------------------- */
-  --background: 40 24% 96%;
-  --foreground: 28 12% 13%;
-  --card: 40 40% 99%;
-  --card-foreground: 28 12% 13%;
-  --popover: 40 40% 99%;
-  --popover-foreground: 28 12% 13%;
-  --muted: 38 18% 93%;
-  --muted-foreground: 30 7% 40%;
-  --secondary: 38 18% 92%;
-  --secondary-foreground: 28 12% 22%;
-  --border: 34 14% 86%;
-  --border-strong: 32 12% 72%;
-  --input: 34 14% 82%;
+  /* --- Superfície e texto ---------------------------------------------- */
+  --background: 220 20% 98%;
+  --foreground: 224 22% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 22% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 22% 12%;
+  --muted: 220 16% 95%;
+  --muted-foreground: 220 9% 44%;
+  --secondary: 220 16% 94%;
+  --secondary-foreground: 224 18% 24%;
+  --border: 220 13% 90%;
+  --border-strong: 220 12% 78%;
+  --input: 220 13% 86%;
 
   /* --- Marca ----------------------------------------------------------- */
-  --primary: 213 62% 24%;
-  --primary-foreground: 40 40% 98%;
-  --accent: 213 40% 92%;
-  --accent-foreground: 213 62% 24%;
-  --ring: 213 55% 38%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 221 90% 96%;
+  --accent-foreground: 221 75% 40%;
+  --ring: 221 83% 53%;
 
   /* --- Estados --------------------------------------------------------- */
-  --success: 152 42% 30%;
-  --success-foreground: 40 40% 98%;
-  --warning: 30 78% 38%;
-  --warning-foreground: 40 40% 98%;
-  --destructive: 6 62% 44%;
-  --destructive-foreground: 40 40% 98%;
-  --info: 213 55% 34%;
-  --info-foreground: 40 40% 98%;
+  --success: 152 60% 34%;
+  --success-foreground: 0 0% 100%;
+  --warning: 32 95% 42%;
+  --warning-foreground: 0 0% 100%;
+  --destructive: 0 72% 49%;
+  --destructive-foreground: 0 0% 100%;
+  --info: 221 83% 53%;
+  --info-foreground: 0 0% 100%;
 
   /*
-   * Série categórica. O ocre é a segunda voz da identidade: puxa a indústria
-   * sem competir com os estados, que precisam do verde, do âmbar e do
-   * vermelho reservados para si.
+   * Série categórica. Azul e violeta são a dupla da identidade; teal, âmbar
+   * e rosa completam sem tocar nas cores reservadas aos estados.
    */
-  --chart-1: 213 62% 30%;
-  --chart-2: 18 58% 44%;
-  --chart-3: 188 45% 30%;
-  --chart-4: 152 35% 34%;
-  --chart-5: 265 28% 44%;
+  --chart-1: 221 83% 53%;
+  --chart-2: 262 80% 58%;
+  --chart-3: 173 62% 38%;
+  --chart-4: 32 95% 50%;
+  --chart-5: 336 72% 54%;
 
-  /* --- Barra de navegação, em tinta ------------------------------------ */
-  --sidebar: 28 14% 12%;
-  --sidebar-foreground: 40 22% 90%;
-  --sidebar-primary: 213 58% 52%;
-  --sidebar-primary-foreground: 40 40% 98%;
-  --sidebar-accent: 28 12% 20%;
-  --sidebar-accent-foreground: 40 30% 96%;
-  --sidebar-border: 28 10% 24%;
-  --sidebar-ring: 213 58% 52%;
+  /* --- Barra de navegação, clara --------------------------------------- */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 224 22% 12%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 221 90% 96%;
+  --sidebar-accent-foreground: 221 75% 40%;
+  --sidebar-border: 220 13% 90%;
+  --sidebar-ring: 221 83% 53%;
 
-  /* Cantos secos: o arredondado forte era o que mais datava a tela. */
-  --card-radius: 0.375rem;
-  --control-radius: 0.25rem;
+  /* Cantos suaves, como a categoria usa. */
+  --card-radius: 0.875rem;
+  --control-radius: 0.5rem;
   --radius-pill: 9999px;
+
+  /* Gradiente da marca, para o único lugar que merece destaque por tela. */
+  --iel-gradient: linear-gradient(
+    135deg,
+    hsl(221 83% 53%) 0%,
+    hsl(262 80% 58%) 100%
+  );
 }
 
 .dark body:has([data-iel-theme]),
 [data-iel-theme].dark,
 .dark [data-iel-theme] {
-  --background: 28 12% 10%;
-  --foreground: 40 18% 92%;
-  --card: 28 11% 13%;
-  --card-foreground: 40 18% 92%;
-  --popover: 28 11% 13%;
-  --popover-foreground: 40 18% 92%;
-  --muted: 28 10% 17%;
-  --muted-foreground: 34 8% 64%;
-  --secondary: 28 10% 19%;
-  --secondary-foreground: 40 18% 92%;
-  --border: 28 9% 22%;
-  --border-strong: 28 8% 34%;
-  --input: 28 9% 24%;
+  --background: 224 24% 8%;
+  --foreground: 220 20% 94%;
+  --card: 224 22% 11%;
+  --card-foreground: 220 20% 94%;
+  --popover: 224 22% 11%;
+  --popover-foreground: 220 20% 94%;
+  --muted: 224 18% 15%;
+  --muted-foreground: 220 10% 64%;
+  --secondary: 224 18% 17%;
+  --secondary-foreground: 220 20% 94%;
+  --border: 224 16% 20%;
+  --border-strong: 224 14% 32%;
+  --input: 224 16% 22%;
 
-  --primary: 213 62% 62%;
-  --primary-foreground: 28 20% 10%;
-  --accent: 213 30% 22%;
-  --accent-foreground: 213 70% 78%;
-  --ring: 213 62% 62%;
+  --primary: 221 90% 64%;
+  --primary-foreground: 224 30% 8%;
+  --accent: 221 40% 18%;
+  --accent-foreground: 221 90% 76%;
+  --ring: 221 90% 64%;
 
-  --success: 152 40% 48%;
-  --warning: 34 78% 56%;
-  --destructive: 6 64% 60%;
-  --info: 213 60% 62%;
+  --success: 152 55% 50%;
+  --warning: 34 92% 58%;
+  --destructive: 0 75% 62%;
+  --info: 221 90% 64%;
 
-  --chart-1: 213 62% 60%;
-  --chart-2: 18 62% 58%;
-  --chart-3: 188 45% 50%;
-  --chart-4: 152 38% 50%;
-  --chart-5: 265 38% 66%;
+  --chart-1: 221 90% 64%;
+  --chart-2: 262 85% 70%;
+  --chart-3: 173 60% 50%;
+  --chart-4: 34 92% 60%;
+  --chart-5: 336 78% 66%;
+
+  --sidebar: 224 22% 11%;
+  --sidebar-foreground: 220 20% 94%;
+  --sidebar-primary: 221 90% 64%;
+  --sidebar-primary-foreground: 224 30% 8%;
+  --sidebar-accent: 221 40% 18%;
+  --sidebar-accent-foreground: 221 90% 76%;
+  --sidebar-border: 224 16% 20%;
+  --sidebar-ring: 221 90% 64%;
 }
 
 /*
- * Tipografia.
- *
- * O dashboard sobrescreve o tema com Nunito, arredondada e genérica. O design
- * system já declara Inter e Source Serif 4; a Central usa o que o tema pede.
+ * Tipografia: Inter em tudo, com pesos e espaçamento fazendo a hierarquia.
+ * O dashboard sobrescreve o tema com Nunito; a Central usa o que o design
+ * system declara.
  */
 body:has([data-iel-theme]) {
   font-family:
@@ -136,49 +148,63 @@ body:has([data-iel-theme]) {
     system-ui,
     sans-serif;
   background-color: hsl(var(--background));
+  font-feature-settings:
+    'cv11' 1,
+    'ss01' 1;
 }
 
 [data-iel-theme] {
   --font-sans: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--iel-font-serif), ui-serif, Georgia, serif;
 }
 
-/* Títulos e números de destaque falam com outra voz. */
+/* Títulos: mesma família, peso alto e tracking fechado. */
 [data-iel-theme] .iel-display {
-  font-family: var(--iel-font-serif), ui-serif, Georgia, serif;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-weight: 650;
+  letter-spacing: -0.022em;
 }
 
+/* Números de destaque: tabulares, para alinhar em coluna. */
 [data-iel-theme] .iel-figure {
-  font-family: var(--iel-font-serif), ui-serif, Georgia, serif;
   font-variant-numeric: tabular-nums lining-nums;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 650;
+  letter-spacing: -0.03em;
 }
 
-/* Rótulo de seção: versalete espaçado, no lugar de mais um negrito. */
+/* Rótulo de seção: versalete curto e espaçado. */
 [data-iel-theme] .iel-eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
 }
 
 /*
- * Superfície: folha sobre a mesa. Borda fina e um fio de sombra rente ao
- * papel — o suficiente para separar, longe do cartão flutuante.
+ * Superfície: branco sobre fundo claro, borda fina e sombra mínima. O cartão
+ * flutuante com sombra pesada saiu; o que separa um bloco do outro é o fundo
+ * levemente mais escuro da página.
  */
 [data-iel-theme] .iel-panel {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--card-radius);
-  box-shadow: 0 1px 0 0 hsl(var(--foreground) / 0.04);
+  box-shadow:
+    0 1px 2px 0 hsl(224 22% 12% / 0.04),
+    0 1px 3px -1px hsl(224 22% 12% / 0.04);
 }
 
-/* Faixa superior em tinta, usada pela navegação. */
+/* Faixa de navegação: clara, colada ao topo, separada por régua. */
 [data-iel-theme] .iel-ink {
-  background: hsl(var(--sidebar));
+  background: hsl(var(--sidebar) / 0.85);
   color: hsl(var(--sidebar-foreground));
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+}
+
+/* Texto com o gradiente da marca. */
+[data-iel-theme] .iel-gradient-text {
+  background: var(--iel-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
