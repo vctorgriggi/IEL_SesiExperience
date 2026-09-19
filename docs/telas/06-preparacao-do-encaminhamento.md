@@ -17,6 +17,9 @@ receber e registra o encaminhamento. É o ponto em que a informação interna do
 - **Mensagem para a empresa** — texto que acompanha o encaminhamento.
 - **Prévia** (`referrals/referral-preview-dialog.tsx`) — a visão da empresa, antes de registrar.
 
+- **Link do relatório para a empresa** (`referrals/report-link.tsx`), disponível depois de
+  registrar o encaminhamento. Leva para [Relatório para a empresa](20-relatorio-para-a-empresa.md).
+
 ## De onde vêm os dados hoje
 
 `state.referralList[jobId]`, mais os seletores de talento, análise e evidência compartilhável.
@@ -50,3 +53,4 @@ Entra em: [Encaminhamentos](13-encaminhamentos.md).
 ## Histórico
 
 - 2026-09-19 — criada.
+- 2026-09-19 — registra o link do relatório para a empresa (S3), gerado após o encaminhamento.

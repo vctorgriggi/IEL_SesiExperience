@@ -18,6 +18,11 @@ mudado desde então.
 - **Lista de encaminhamentos** com empresa, vaga, data, quantidade de perfis e situação.
 - **Estado vazio** próprio quando não há registro.
 
+- **Link do relatório para a empresa** (`referrals/report-link.tsx`) — aparece depois que o
+  encaminhamento é registrado, porque é o registro que cria o que a empresa vai abrir. O link é **por
+  vaga**, não por pessoa: a empresa recebe uma remessa, e é a remessa que a página mostra. Leva para
+  [Relatório para a empresa](20-relatorio-para-a-empresa.md).
+
 ## De onde vêm os dados hoje
 
 `getRegisteredReferrals` e `getReferralsByCompany` sobre `state.referrals`.
@@ -44,3 +49,4 @@ Entra em: [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md).
 ## Histórico
 
 - 2026-09-19 — criada.
+- 2026-09-19 — registra o link do relatório para a empresa (S3), gerado após o encaminhamento.
