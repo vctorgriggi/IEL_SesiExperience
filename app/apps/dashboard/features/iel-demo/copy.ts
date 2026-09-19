@@ -77,7 +77,7 @@ export function missingAnswers(respondidas: number, total: number): string {
   return `Faltam respostas — ${respondidas} de ${total}`;
 }
 
-/** Rótulo de cada ponto do dia a dia, em palavra comum. */
+/** Rótulo de cada um dos 10 temas, em palavra comum. */
 export const AXIS_LABEL: Record<FitAxisId, string> = Object.fromEntries(
   FIT_AXES.map((axis) => [axis.id, axis.label])
 ) as Record<FitAxisId, string>;
@@ -89,16 +89,16 @@ export const COPY = {
     combina: COMBINA_COM_A_EMPRESA,
     naoCombina: 'abaixo do mínimo',
     semResposta: SEM_RESPOSTA,
-    hint: 'Compara o que a empresa pratica com o que a pessoa procura em cinco pontos do dia a dia. Não é nota, não mede desempenho.'
+    hint: 'Compara como a equipe da empresa prefere trabalhar com como a pessoa prefere trabalhar, nos 10 temas. Não é nota, não mede desempenho.'
   },
   technical: {
     label: 'Requisitos da vaga',
     hint: 'Percentual que o sistema de vagas já calcula sobre os requisitos técnicos. Vem da planilha, não é recalculado aqui.'
   },
   axes: {
-    label: 'Os 5 pontos do dia a dia',
-    singular: 'ponto do dia a dia',
-    hint: 'Cinco condições de trabalho que os dois lados descrevem nas mesmas palavras.'
+    label: 'Os 10 temas',
+    singular: 'tema',
+    hint: 'Dez temas do jeito de trabalhar, respondidos pelos dois lados com as mesmas frases.'
   },
   culture: {
     label: 'Como a empresa trabalha',

@@ -2,8 +2,9 @@
  * Roteiro da conversa do candidato (M3 + M7, em forma de conversa — C2).
  *
  * Diz o mesmo que o questionário em telas (`candidate/fit-questionnaire-screen`)
- * e grava a mesma coisa: as cinco perguntas são as de
- * `CANDIDATE_FIT_QUESTIONS`, o aceite é o de `CANDIDATE_CONSENT_TEXT`, e o
+ * e grava a mesma coisa: as 10 frases são as de `perguntasDoCandidato` (as
+ * que a empresa da vaga escolheu), respondidas na escala de concordância; o
+ * aceite é o de `CANDIDATE_CONSENT_TEXT`, e o
  * resultado sai pela mesma ação do reducer. Muda só a forma — uma fala por
  * vez, com botão de ouvir —, que é o que o público operacional pede (R10).
  *
@@ -12,12 +13,12 @@
  * segmento e turno.
  */
 
+import { CANDIDATE_CONSENT_TEXT } from '../analysis/candidate-questionnaire';
 import {
-  CANDIDATE_CONSENT_TEXT,
-  CANDIDATE_FIT_QUESTIONS
-} from '../analysis/candidate-questionnaire';
-import type { CultureOptionValue } from '../analysis/culture';
-import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
+  ESCALA_CONCORDANCIA,
+  isValorDaEscala,
+  type ValorDaEscala
+} from '../analysis/instrumento';
 import type { CandidateJobView } from '../state/selectors';
 import type { ConversaRoteiro, PassoRoteiro } from './motor';
 
@@ -48,14 +49,63 @@ function saudacao(vaga: CandidateJobView): PassoRoteiro[] {
   ];
 }
 
+/** Uma frase do questionário, como a conversa a mostra. */
+export type FraseDoRoteiro = { itemId: string; texto: string };
+
+/** Os 5 botões da escala, com o rótulo escrito, um por linha no celular. */
+export function opcoesDaEscala(): { id: string; label: string }[] {
+  return ESCALA_CONCORDANCIA.map((ponto) => ({
+    id: String(ponto.valor),
+    label: ponto.rotulo
+  }));
+}
+
+/** As frases como passos de pergunta da conversa. */
+export function passosDasFrases(
+  frases: FraseDoRoteiro[],
+  apoio?: string
+): PassoRoteiro[] {
+  return frases.map(
+    (frase, index): PassoRoteiro => ({
+      tipo: 'pergunta',
+      id: `p-${frase.itemId}`,
+      chave: frase.itemId,
+      texto: frase.texto,
+      apoio: apoio ?? `Frase ${index + 1} de ${frases.length}`,
+      opcoes: opcoesDaEscala()
+    })
+  );
+}
+
+/**
+ * As respostas da conversa no formato das ações do reducer (`itemId → 1..5`),
+ * ou `null` enquanto faltar alguma frase. Um valor fora da escala derruba a
+ * conversão inteira: melhor não gravar do que gravar uma frase errada.
+ */
+export function respostasDaEscala(
+  respostas: Record<string, string>,
+  itemIds: string[]
+): Record<string, ValorDaEscala> | null {
+  const resultado: Record<string, ValorDaEscala> = {};
+  for (const itemId of itemIds) {
+    const valor = Number(respostas[itemId]);
+    if (!isValorDaEscala(valor)) return null;
+    resultado[itemId] = valor;
+  }
+  return resultado;
+}
+
 export function montarRoteiroCandidato({
   variante,
   vaga,
-  respondidoEm
+  respondidoEm,
+  frases
 }: {
   variante: VarianteCandidato;
   vaga: CandidateJobView | null;
   respondidoEm: string | null;
+  /** As 10 frases da vaga, já no texto simples. */
+  frases: FraseDoRoteiro[];
 }): ConversaRoteiro {
   if (variante === 'invalido' || !vaga) {
     return {
@@ -120,7 +170,7 @@ export function montarRoteiroCandidato({
         tipo: 'mensagem',
         id: 'convite',
         texto:
-          'São 5 perguntas sobre como você prefere trabalhar. Leva uns 5 minutos e não existe resposta certa.'
+          'São 10 frases sobre como você prefere trabalhar. Para cada uma, diga se concorda ou discorda. Leva uns 5 minutos e não existe resposta certa.'
       },
       {
         tipo: 'mensagem',
@@ -150,90 +200,20 @@ export function montarRoteiroCandidato({
       {
         tipo: 'mensagem',
         id: 'combinado',
-        texto: 'Combinado. Toque na opção que mais se parece com você.'
+        texto:
+          'Combinado. Para cada frase, toque no quanto você concorda com ela.'
       },
-      ...CANDIDATE_FIT_QUESTIONS.map(
-        (pergunta): PassoRoteiro => ({
-          tipo: 'pergunta',
-          id: `p-${pergunta.axisId}`,
-          chave: pergunta.axisId,
-          texto: pergunta.prompt,
-          apoio: pergunta.hint,
-          opcoes: pergunta.options.map((opcao) => ({
-            id: opcao.id,
-            label: opcao.label
-          }))
-        })
-      ),
+      ...passosDasFrases(frases),
       {
         tipo: 'fim',
         id: 'fim',
         textos: [
-          'Pronto, recebemos as suas 5 respostas. Obrigado!',
-          'Agora o IEL compara o que você respondeu com o jeito de trabalhar da empresa desta vaga. Se o seu currículo for enviado, a empresa vê o resultado por ponto, nunca as suas respostas uma a uma.',
+          `Pronto, recebemos as suas ${frases.length} respostas. Obrigado!`,
+          'Agora o IEL compara o que você respondeu com o jeito de trabalhar da empresa desta vaga. Se o seu currículo for enviado, a empresa vê o resultado por tema, nunca as suas respostas uma a uma.',
           'Se a empresa quiser conversar, o contato vem por quem já fala com você. Você não precisa fazer mais nada agora.'
         ],
         acoes: ['ver-registro', 'responder-de-novo']
       }
     ]
-  };
-}
-
-/**
- * As respostas da conversa no formato que `answer-fit-questionnaire` aceita,
- * ou `null` enquanto faltar alguma.
- *
- * Converte o id da alternativa escolhida no `value` ordinal da mesma
- * alternativa — é o mesmo número que o questionário em telas grava. Um id
- * desconhecido derruba a conversão inteira: melhor não gravar do que gravar
- * um eixo errado.
- */
-export function respostasDoCandidato(
-  respostas: Record<string, string>
-): Record<FitAxisId, CultureOptionValue> | null {
-  const resultado: Partial<Record<FitAxisId, CultureOptionValue>> = {};
-
-  for (const eixo of FIT_AXES) {
-    const pergunta = CANDIDATE_FIT_QUESTIONS.find(
-      (entry) => entry.axisId === eixo.id
-    );
-    const opcao = pergunta?.options.find(
-      (entry) => entry.id === respostas[eixo.id]
-    );
-    if (!opcao) return null;
-    resultado[eixo.id] = opcao.value;
-  }
-
-  return respostasCompletasPorEixo(resultado);
-}
-
-/**
- * O objeto com os cinco eixos, ou `null` se faltar um. Os eixos são escritos
- * um a um para o TypeScript provar que as cinco chaves estão lá, sem
- * conversão de tipo escondendo uma resposta pela metade.
- */
-export function respostasCompletasPorEixo<T>(
-  parcial: Partial<Record<FitAxisId, T>>
-): Record<FitAxisId, T> | null {
-  const apoio = parcial['apoio-inicial'];
-  const autonomia = parcial.autonomia;
-  const comunicacao = parcial['comunicacao-prioridades'];
-  const ritmo = parcial['ritmo-turno'];
-  const aprendizado = parcial.aprendizado;
-  if (
-    apoio === undefined ||
-    autonomia === undefined ||
-    comunicacao === undefined ||
-    ritmo === undefined ||
-    aprendizado === undefined
-  ) {
-    return null;
-  }
-  return {
-    'apoio-inicial': apoio,
-    autonomia,
-    'comunicacao-prioridades': comunicacao,
-    'ritmo-turno': ritmo,
-    aprendizado
   };
 }

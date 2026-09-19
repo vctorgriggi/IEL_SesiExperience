@@ -101,11 +101,11 @@ export function AxisWeights({ job }: { job: Job }) {
       <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableCaption className="sr-only">
-            Peso de cada ponto do dia a dia nesta vaga e a proposta da análise
+            Peso de cada tema nesta vaga e a proposta da análise
           </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead scope="col">Ponto do dia a dia</TableHead>
+              <TableHead scope="col">Tema</TableHead>
               <TableHead
                 scope="col"
                 className="w-[160px]"

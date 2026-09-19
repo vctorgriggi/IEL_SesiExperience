@@ -5,7 +5,7 @@ import {
   formatAdherence,
   type AdherenceResult
 } from '@/features/iel-demo/analysis/adherence';
-import { CULTURE_QUESTIONS } from '@/features/iel-demo/analysis/culture';
+import { FIT_AXES } from '@/features/iel-demo/analysis/fit-axes';
 import {
   faixaDeAderencia,
   MINIMO_DE_EIXOS_PARA_RANQUEAR,
@@ -253,12 +253,12 @@ export function ListaEntidadesMapa({
                         {!temBaseParaRanquear(aderencia) ? (
                           <>
                             só {aderencia.coverage.answeredAxes} de{' '}
-                            {CULTURE_QUESTIONS.length} eixos em comum
+                            {FIT_AXES.length} eixos em comum
                           </>
                         ) : aderencia.compatible ? (
                           <>
                             aderência · {aderencia.coverage.answeredAxes} de{' '}
-                            {CULTURE_QUESTIONS.length} eixos
+                            {FIT_AXES.length} eixos
                           </>
                         ) : (
                           <span className="font-medium text-warning">

@@ -44,7 +44,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-ANA-01',
-        axisId: 'apoio-inicial',
+        axisId: 'lideranca-autonomia',
         value: 'Espera orientação de alguém da equipe nas primeiras semanas.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -52,7 +52,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-ANA-02',
-        axisId: 'aprendizado',
+        axisId: 'aprendizado-desenvolvimento',
         value: 'Quer aprender a rotina de estoque.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -60,7 +60,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-ANA-03',
-        axisId: 'ritmo-turno',
+        axisId: 'execucao-ritmo',
         value: 'Procura trabalho fixo, próximo de casa.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
@@ -110,7 +110,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-BRUNO-01',
-        axisId: 'autonomia',
+        axisId: 'regras-decisao',
         value: 'Prefere organizar o próprio trabalho durante o turno.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
@@ -118,7 +118,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-BRUNO-02',
-        axisId: 'ritmo-turno',
+        axisId: 'execucao-ritmo',
         value: 'Procura turnos com horário previsível.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
@@ -163,7 +163,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-CARLA-01',
-        axisId: 'aprendizado',
+        axisId: 'aprendizado-desenvolvimento',
         value: 'Tem interesse em aprender controle de materiais.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -206,7 +206,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-DIEGO-01',
-        axisId: 'aprendizado',
+        axisId: 'aprendizado-desenvolvimento',
         value: 'Quer voltar para a área de expedição.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
@@ -248,7 +248,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-ELISA-01',
-        axisId: 'comunicacao-prioridades',
+        axisId: 'interacao-convivencia',
         value: 'Prefere rotina com procedimentos definidos por escrito.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -256,7 +256,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-ELISA-02',
-        axisId: 'aprendizado',
+        axisId: 'aprendizado-desenvolvimento',
         value: 'Quer seguir na área de estoque.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
@@ -294,7 +294,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-FABIO-01',
-        axisId: 'apoio-inicial',
+        axisId: 'lideranca-autonomia',
         value: 'Espera treinamento formal antes de assumir a rotina.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -339,7 +339,7 @@ export const DEMO_TALENTS: Talent[] = [
     preferences: [
       {
         id: 'PREF-GABRIELA-01',
-        axisId: 'autonomia',
+        axisId: 'regras-decisao',
         value: 'Prefere executar com autonomia após o período inicial.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -347,7 +347,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-GABRIELA-02',
-        axisId: 'comunicacao-prioridades',
+        axisId: 'interacao-convivencia',
         value: 'Prefere receber prioridades por escrito.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
         sourceId: 'FONTE-IEL',
@@ -355,7 +355,7 @@ export const DEMO_TALENTS: Talent[] = [
       },
       {
         id: 'PREF-GABRIELA-03',
-        axisId: 'ritmo-turno',
+        axisId: 'execucao-ritmo',
         value: 'Disponibilidade em horário comercial.',
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',

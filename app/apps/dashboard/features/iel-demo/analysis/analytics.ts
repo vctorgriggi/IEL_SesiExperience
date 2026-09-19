@@ -40,6 +40,7 @@ import {
   type EventoComunicacao,
   type ExecucaoSincronizacao,
   type MotivoNaoContratacao,
+  type NumeroDaPergunta,
   type RemessaHistorica,
   type RetornoEmpresa
 } from '../fixtures/outcomes';
@@ -49,7 +50,6 @@ import {
 } from '../state/selectors';
 import type { DemoState, Job } from '../types';
 import { ADHERENCE_THRESHOLD } from './adherence';
-import { CANDIDATE_FIT_QUESTIONS } from './candidate-questionnaire';
 import { FIT_AXES, type FitAxisId } from './fit-axes';
 
 export {
@@ -539,7 +539,7 @@ export function getFunilDoPeriodo(
 }
 
 export type DuasPontas = {
-  /** Empresas com vaga ativa cujo perfil fecha nos 5 pontos. */
+  /** Empresas com vaga ativa cujo perfil fecha nos 10 temas. */
   empresasPerfilCompleto: Kpi;
   /** Candidaturas às vagas ativas que concluíram o questionário. */
   candidatosConcluiram: Kpi;
@@ -555,7 +555,7 @@ function empresasComVagaAtiva(state: DemoState) {
  * A consulta à equipe fechou: a amostra atingiu o mínimo de respostas da
  * equipe (`getCultureSampleProgress(...).ready`).
  *
- * A régua anterior — os 5 pontos fechados um a um — dava 0% em toda a base
+ * A régua anterior — os temas fechados um a um — dava 0% em toda a base
  * de demonstração, porque cada ponto só fecha com 3 respostas da equipe
  * naquele ponto, e isso depende de quais perguntas cada colaborador
  * respondeu. Para o painel, a pergunta útil é "a empresa já respondeu?", e
@@ -1296,8 +1296,8 @@ export function getFunilDaComunicacao(
 }
 
 export type PontoDeAbandono = {
-  ponto: 'aceite' | 1 | 2 | 3 | 4 | 5;
-  /** "Aceite" ou "Pergunta 2 · Quem organiza o trabalho". */
+  ponto: 'aceite' | NumeroDaPergunta;
+  /** "Aceite" ou "Frase 2 · Mudanças e novidades". */
   rotulo: string;
   n: number;
   /** % sobre quem abriu o convite. */
@@ -1311,7 +1311,7 @@ export type OndeOCandidatoPara = Suprimivel & {
 };
 
 /**
- * Onde o candidato para (**vivo**): abandonos no aceite e em cada uma das 5
+ * Onde o candidato para (**vivo**): abandonos no aceite e em cada uma das 10
  * perguntas, sobre quem abriu o convite. Quem ainda está no prazo não conta
  * como abandono. Com menos de 5 aberturas no recorte, tudo vem oculto.
  */
@@ -1324,9 +1324,10 @@ export function getOndeOCandidatoPara(
   const abertos = eventos.filter((e) => e.aberto).length;
   const pontos: PontoDeAbandono[] = [
     { ponto: 'aceite' as const, rotulo: 'Aceite' },
-    ...CANDIDATE_FIT_QUESTIONS.map((q, index) => ({
-      ponto: (index + 1) as 1 | 2 | 3 | 4 | 5,
-      rotulo: `Pergunta ${index + 1} · ${AXIS_LABEL[q.axisId]}`
+    // O candidato responde uma frase por tema, na ordem dos temas.
+    ...FIT_AXES.map((axis, index) => ({
+      ponto: (index + 1) as NumeroDaPergunta,
+      rotulo: `Frase ${index + 1} · ${AXIS_LABEL[axis.id]}`
     }))
   ].map((p) => {
     const n = eventos.filter((e) => e.paradaEm === p.ponto).length;
@@ -1664,7 +1665,7 @@ export type PontoQueMaisSepara = Suprimivel & {
 };
 
 /**
- * O ponto que mais pesa, por setor (**histórico**, últimos 12 meses).
+ * O tema que mais pesa, por setor (**histórico**, últimos 12 meses).
  *
  * Para cada setor, entre os contratados com os 90 dias apurados: a diferença
  * de "combina" entre quem ficou e quem saiu, ponto a ponto, e o ponto em que

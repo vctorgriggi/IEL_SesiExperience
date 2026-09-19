@@ -13,8 +13,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ANA-01',
     talentId: 'ANA',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
+    axisId: 'lideranca-autonomia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-12'
@@ -22,8 +22,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ANA-02',
     talentId: 'ANA',
-    axisId: 'ritmo-turno',
-    optionId: 'fixo',
+    axisId: 'execucao-ritmo',
+    value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-02'
@@ -31,8 +31,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ANA-03',
     talentId: 'ANA',
-    axisId: 'aprendizado',
-    optionId: 'rotina-propria',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-12'
@@ -40,8 +40,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ANA-04',
     talentId: 'ANA',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'por-escrito',
+    axisId: 'interacao-convivencia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-12'
@@ -51,8 +51,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-BRUNO-01',
     talentId: 'BRUNO',
-    axisId: 'autonomia',
-    optionId: 'autonomia-ampla',
+    axisId: 'regras-decisao',
+    value: 2,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-05'
@@ -60,8 +60,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-BRUNO-02',
     talentId: 'BRUNO',
-    axisId: 'ritmo-turno',
-    optionId: 'variacao-prevista',
+    axisId: 'execucao-ritmo',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-05'
@@ -69,8 +69,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-BRUNO-03',
     talentId: 'BRUNO',
-    axisId: 'apoio-inicial',
-    optionId: 'por-conta',
+    axisId: 'lideranca-autonomia',
+    value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-05'
@@ -78,8 +78,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-BRUNO-04',
     talentId: 'BRUNO',
-    axisId: 'aprendizado',
-    optionId: 'ja-domina',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 2,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-05'
@@ -89,8 +89,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-CARLA-01',
     talentId: 'CARLA',
-    axisId: 'aprendizado',
-    optionId: 'processos-amplos',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-07-28'
@@ -98,8 +98,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-CARLA-02',
     talentId: 'CARLA',
-    axisId: 'apoio-inicial',
-    optionId: 'troca-informal',
+    axisId: 'lideranca-autonomia',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-07-28'
@@ -107,8 +107,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-CARLA-03',
     talentId: 'CARLA',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'verbal-inicio',
+    axisId: 'interacao-convivencia',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-07-28'
@@ -116,8 +116,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-CARLA-04',
     talentId: 'CARLA',
-    axisId: 'autonomia',
-    optionId: 'parcial',
+    axisId: 'regras-decisao',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-07-28'
@@ -127,8 +127,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-DIEGO-01',
     talentId: 'DIEGO',
-    axisId: 'aprendizado',
-    optionId: 'rotina-propria',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-07-15'
@@ -136,8 +136,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-DIEGO-02',
     talentId: 'DIEGO',
-    axisId: 'autonomia',
-    optionId: 'parcial',
+    axisId: 'regras-decisao',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-07-15'
@@ -145,8 +145,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-DIEGO-03',
     talentId: 'DIEGO',
-    axisId: 'ritmo-turno',
-    optionId: 'variacao-prevista',
+    axisId: 'execucao-ritmo',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-07-15'
@@ -154,8 +154,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-DIEGO-04',
     talentId: 'DIEGO',
-    axisId: 'apoio-inicial',
-    optionId: 'troca-informal',
+    axisId: 'lideranca-autonomia',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-07-15'
@@ -165,8 +165,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ELISA-01',
     talentId: 'ELISA',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'por-escrito',
+    axisId: 'interacao-convivencia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-20'
@@ -174,8 +174,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ELISA-02',
     talentId: 'ELISA',
-    axisId: 'aprendizado',
-    optionId: 'rotina-propria',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-01'
@@ -183,8 +183,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ELISA-03',
     talentId: 'ELISA',
-    axisId: 'autonomia',
-    optionId: 'rotina-definida',
+    axisId: 'regras-decisao',
+    value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-20'
@@ -192,8 +192,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ELISA-04',
     talentId: 'ELISA',
-    axisId: 'ritmo-turno',
-    optionId: 'fixo',
+    axisId: 'execucao-ritmo',
+    value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-20'
@@ -201,8 +201,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-ELISA-05',
     talentId: 'ELISA',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
+    axisId: 'lideranca-autonomia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-20'
@@ -212,8 +212,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-FABIO-01',
     talentId: 'FABIO',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
+    axisId: 'lideranca-autonomia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-18'
@@ -221,8 +221,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-FABIO-02',
     talentId: 'FABIO',
-    axisId: 'aprendizado',
-    optionId: 'processos-amplos',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-18'
@@ -230,8 +230,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-FABIO-03',
     talentId: 'FABIO',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'verbal-inicio',
+    axisId: 'interacao-convivencia',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-18'
@@ -239,8 +239,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-FABIO-04',
     talentId: 'FABIO',
-    axisId: 'autonomia',
-    optionId: 'parcial',
+    axisId: 'regras-decisao',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-18'
@@ -250,8 +250,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-GABRIELA-01',
     talentId: 'GABRIELA',
-    axisId: 'autonomia',
-    optionId: 'autonomia-ampla',
+    axisId: 'regras-decisao',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-22'
@@ -259,8 +259,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-GABRIELA-02',
     talentId: 'GABRIELA',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'por-escrito',
+    axisId: 'interacao-convivencia',
+    value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-22'
@@ -268,8 +268,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-GABRIELA-03',
     talentId: 'GABRIELA',
-    axisId: 'ritmo-turno',
-    optionId: 'fixo',
+    axisId: 'execucao-ritmo',
+    value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
     updatedAt: '2026-08-10'
@@ -277,8 +277,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-GABRIELA-04',
     talentId: 'GABRIELA',
-    axisId: 'apoio-inicial',
-    optionId: 'troca-informal',
+    axisId: 'lideranca-autonomia',
+    value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-22'
@@ -286,8 +286,8 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
   {
     id: 'CULT-GABRIELA-05',
     talentId: 'GABRIELA',
-    axisId: 'aprendizado',
-    optionId: 'processos-amplos',
+    axisId: 'aprendizado-desenvolvimento',
+    value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
     updatedAt: '2026-08-22'

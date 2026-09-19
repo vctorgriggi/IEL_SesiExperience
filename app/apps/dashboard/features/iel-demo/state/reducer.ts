@@ -1,4 +1,3 @@
-import type { CultureOptionId, CultureOptionValue } from '../analysis/culture';
 import {
   addDays,
   buildInviteToken,
@@ -8,6 +7,14 @@ import {
 } from '../analysis/culture-invites';
 import type { FitAxisId } from '../analysis/fit-axes';
 import { getFitAxis } from '../analysis/fit-axes';
+import {
+  alinharAoPolo,
+  blocoDoConvite,
+  getItem,
+  isValorDaEscala,
+  itensDoTema,
+  type ValorDaEscala
+} from '../analysis/instrumento';
 import type { ImportPlan } from '../analysis/spreadsheet-import';
 import { normalizeEmail } from '../analysis/spreadsheet-import';
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
@@ -106,7 +113,8 @@ export type DemoAction =
        */
       type: 'answer-fit-questionnaire';
       applicationId: string;
-      answers: Record<FitAxisId, CultureOptionValue>;
+      /** Concordância por frase: `itemId → 1..5`. */
+      answers: Record<string, ValorDaEscala>;
       consentVersion: string;
       at: string;
     }
@@ -119,14 +127,16 @@ export type DemoAction =
   | { type: 'cancel-clarification'; clarificationId: string; at: string }
   | {
       /**
-       * A empresa confirma ou corrige o traçado proposto pela análise.
-       * Registra como resposta da gestão: a proposta sozinha nunca vira
-       * resposta, porque o enunciado exige supervisão humana.
+       * A empresa confirma ou corrige o traçado proposto pela análise, por
+       * tema. Registra como resposta da gestão em todas as frases do tema
+       * (espelhada nas de polo −1): a proposta sozinha nunca vira resposta,
+       * porque o enunciado exige supervisão humana.
        */
       type: 'answer-culture';
       companyId: string;
       axisId: FitAxisId;
-      optionId: string;
+      /** Valor do tema, no sentido do tema (1..5). */
+      value: ValorDaEscala;
       at: string;
     }
   | {
@@ -216,7 +226,11 @@ export type DemoAction =
        */
       type: 'answer-culture-invite';
       token: string;
-      answers: Record<FitAxisId, CultureOptionId>;
+      /**
+       * Concordância por frase do bloco daquele convite (`itemId → 1..5`).
+       * Frase fora do bloco é ignorada: o link só responde o que recebeu.
+       */
+      answers: Record<string, ValorDaEscala>;
       consentVersion: string;
       at: string;
     }
@@ -389,9 +403,15 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         (entry) => entry.applicationId === action.applicationId
       );
 
+      const answers: Record<string, ValorDaEscala> = {};
+      for (const [itemId, value] of Object.entries(action.answers)) {
+        if (getItem(itemId) && isValorDaEscala(value)) answers[itemId] = value;
+      }
+      if (Object.keys(answers).length === 0) return state;
+
       const response: CandidateFitResponse = {
         applicationId: action.applicationId,
-        answers: action.answers,
+        answers,
         answeredAt: action.at,
         consent: { acceptedAt: action.at, version: action.consentVersion }
       };
@@ -416,7 +436,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
             : 'Questionário de fit respondido',
           description: previous
             ? `A candidatura ${action.applicationId} teve a resposta substituída. Aceite registrado na versão ${action.consentVersion}; a aderência é recalculada sobre a resposta nova.`
-            : `A candidatura ${action.applicationId} respondeu os cinco eixos. Aceite de uso de dados registrado na versão ${action.consentVersion}.`,
+            : `A candidatura ${action.applicationId} respondeu ${Object.keys(answers).length} frases do instrumento. Aceite de uso de dados registrado na versão ${action.consentVersion}.`,
           entityRef: action.applicationId
         })
       };
@@ -486,36 +506,40 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
 
     case 'answer-culture': {
       const answeredAt = action.at.slice(0, 10);
+      const itens = itensDoTema(action.axisId);
+      const doTema = new Set(itens.map((item) => item.id));
       const others = state.cultureAnswers.filter(
         (answer) =>
           !(
             answer.companyId === action.companyId &&
-            answer.axisId === action.axisId &&
+            doTema.has(answer.itemId) &&
             answer.respondent === 'gestao'
           )
       );
 
+      // Simplificação: a gestão confirma o tema, não frase a frase. O valor
+      // vale para todas as frases do tema, espelhado nas de polo −1 — a média
+      // do tema pela gestão passa a ser exatamente o valor confirmado.
+      const gestao: CultureAnswer[] = itens.map((item) => ({
+        id: `CUL-GES-${action.companyId}-${item.id}`,
+        companyId: action.companyId,
+        itemId: item.id,
+        value: alinharAoPolo(item, action.value) as ValorDaEscala,
+        respondent: 'gestao',
+        count: 1,
+        answeredAt
+      }));
+
       return {
         ...state,
-        cultureAnswers: [
-          ...others,
-          {
-            id: `CUL-GES-${action.companyId}-${action.axisId}`,
-            companyId: action.companyId,
-            axisId: action.axisId,
-            optionId: action.optionId,
-            respondent: 'gestao',
-            count: 1,
-            answeredAt
-          }
-        ],
+        cultureAnswers: [...others, ...gestao],
         history: [
           {
             id: `HIST-${state.history.length + 1}-culture`,
             at: action.at,
             actor: 'Gestão da empresa',
             action: 'Traçado cultural respondido',
-            description: `A empresa confirmou o traçado no eixo ${action.axisId}. A leitura passa a comparar esta resposta com a da equipe.`,
+            description: `A empresa confirmou o tema "${getFitAxis(action.axisId).label}". A leitura passa a comparar esta resposta com a da equipe.`,
             entityRef: action.companyId
           },
           ...state.history
@@ -536,8 +560,8 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         history: appendHistory(state, {
           at: action.at,
           actor: 'Empresa da vaga',
-          action: 'Peso do eixo definido pela empresa',
-          description: `O eixo "${getFitAxis(action.axisId).label}" passa a ter peso ${action.weight} na vaga ${action.jobId}. O peso ordena a leitura e a atenção; não produz nota.`,
+          action: 'Peso do tema definido pela empresa',
+          description: `O tema "${getFitAxis(action.axisId).label}" passa a ter peso ${action.weight} na vaga ${action.jobId}. O peso ordena a leitura e a atenção; não produz nota.`,
           entityRef: action.jobId
         })
       };
@@ -1137,18 +1161,22 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         };
       }
 
-      const answers: CultureAnswer[] = Object.entries(action.answers).map(
-        ([axisId, optionId]) => ({
-          id: `CUL-INV-${invite.id}-${axisId}`,
+      const bloco = new Set(blocoDoConvite(invite).map((item) => item.id));
+      const answers: CultureAnswer[] = Object.entries(action.answers)
+        .filter(
+          ([itemId, value]) => bloco.has(itemId) && isValorDaEscala(value)
+        )
+        .map(([itemId, value]) => ({
+          id: `CUL-INV-${invite.id}-${itemId}`,
           companyId: invite.companyId,
-          axisId: axisId as FitAxisId,
-          optionId,
+          itemId,
+          value,
           respondent: invite.role,
           count: 1,
           answeredAt,
           inviteId: invite.id
-        })
-      );
+        }));
+      if (answers.length === 0) return state;
 
       const answeredIds = new Set(answers.map((answer) => answer.id));
 

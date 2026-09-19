@@ -133,7 +133,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
         id: `${job.id}-questionario`,
         tipo: 'questionario',
         titulo: job.title,
-        resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} as 5 perguntas`,
+        resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} as 10 frases`,
         href: iel.jobs.byId(job.id).index,
         verbo: 'Abrir a vaga',
         urgencia: 4
@@ -151,7 +151,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
       id: `${company.id}-cultura`,
       tipo: 'cultura',
       titulo: company.name,
-      resumo: `${plural(emAberto, 'ponto do dia a dia', 'pontos do dia a dia')} sem resposta suficiente da equipe`,
+      resumo: `${plural(emAberto, 'tema', 'temas')} sem resposta suficiente da equipe`,
       href: routes.dashboard.iel.companies.byId(company.id),
       verbo: 'Abrir a empresa',
       urgencia: 5

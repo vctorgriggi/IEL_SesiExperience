@@ -21,11 +21,17 @@
 
 import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
 import {
-  CULTURE_QUESTIONS,
-  MIN_TEAM_RESPONSES,
-  type CultureOptionValue
+  calcularPerfilCultural,
+  escolherPerguntasDoCandidato
 } from '../analysis/culture';
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
+import {
+  blocoDoIndice,
+  ESCALA_MAX,
+  ESCALA_MIN,
+  ITENS_DO_INSTRUMENTO,
+  type ValorDaEscala
+} from '../analysis/instrumento';
 import type {
   AnalysisByApplication,
   Application,
@@ -45,7 +51,16 @@ import type {
   Team
 } from '../types';
 import { DEMO_REFERENCE_DATE } from './companies';
+import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_JOBS } from './jobs';
+import {
+  agregarRespostas,
+  createRandom as createRandomSintetico,
+  responderFrase,
+  responderQuestionario,
+  type AlvoCultural,
+  type RespostaIndividual
+} from './respostas-sinteticas';
 
 /** Semente fixa: trocar este número muda toda a base gerada. */
 const SEED = 20260914;
@@ -558,13 +573,39 @@ function buildLightCompanies(random: () => number, firstIndex: number) {
  * — se toda vaga priorizasse todos os eixos, a prioridade não separaria nada
  * e as telas de triagem por prontidão ficariam sem contraste.
  */
+/**
+ * Os cinco temas que herdaram os antigos "pontos do dia a dia" continuam
+ * sorteados pelo gerador principal, na mesma ordem: trocar o instrumento não
+ * pode deslocar a sequência e mudar nomes, etapas e datas da base inteira. Os
+ * outros cinco saem de um gerador próprio, semeado pela vaga.
+ */
+const TEMAS_DO_GERADOR_PRINCIPAL: FitAxisId[] = [
+  'lideranca-autonomia',
+  'regras-decisao',
+  'interacao-convivencia',
+  'execucao-ritmo',
+  'aprendizado-desenvolvimento'
+];
+
+function hashDoTexto(texto: string): number {
+  let hash = 0;
+  for (const char of texto) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return hash;
+}
+
 function buildAxisWeights(
-  random: () => number
+  random: () => number,
+  jobId: string
 ): Partial<Record<FitAxisId, AxisWeight>> {
   const weights: Partial<Record<FitAxisId, AxisWeight>> = {};
+  const peso = (draw: number): AxisWeight =>
+    draw > 0.75 ? 'alto' : draw > 0.3 ? 'medio' : 'baixo';
+  for (const tema of TEMAS_DO_GERADOR_PRINCIPAL) {
+    weights[tema] = peso(random());
+  }
+  const proprio = createRandomSintetico(hashDoTexto(`pesos:${jobId}`));
   for (const axis of FIT_AXES) {
-    const draw = random();
-    weights[axis.id] = draw > 0.75 ? 'alto' : draw > 0.3 ? 'medio' : 'baixo';
+    if (weights[axis.id] === undefined) weights[axis.id] = peso(proprio());
   }
   return weights;
 }
@@ -595,7 +636,12 @@ function build(): GeneratedBase {
   const applications: Application[] = [];
   const analysis: AnalysisByApplication = {};
   const evidences: Evidence[] = [];
-  const fitResponses: CandidateFitResponse[] = [];
+  const pendingFit: {
+    applicationId: string;
+    talentId: string;
+    jobId: string;
+    answeredAt: string;
+  }[] = [];
 
   for (let c = 0; c < GENERATED_COMPANY_COUNT; c += 1) {
     const companyId = `GEN-EMP-${String(c + 1).padStart(2, '0')}`;
@@ -658,7 +704,7 @@ function build(): GeneratedBase {
         organizationalContext:
           'Contexto organizacional informado pela empresa na base demo.',
         criteria: buildCriteria(jobId, random),
-        axisWeights: buildAxisWeights(random),
+        axisWeights: buildAxisWeights(random, jobId),
         // O pano de fundo não traz proposta assistida: ela é um trecho real de
         // um texto real, e inventar citação para centenas de vagas fictícias
         // encheria a base de evidência sem lastro.
@@ -735,18 +781,16 @@ function build(): GeneratedBase {
     });
 
     if (random() < FIT_RESPONSE_RATE) {
-      const answers = {} as Record<FitAxisId, CultureOptionValue>;
-      for (const axis of FIT_AXES) {
-        answers[axis.id] = (1 + Math.floor(random() * 3)) as CultureOptionValue;
-      }
-      const answeredAt = `${dateBefore(Math.max(dayOffset - 1, 0))}T12:00:00.000Z`;
-      fitResponses.push({
+      // As cinco sorteadas do instrumento antigo continuam sendo consumidas
+      // do gerador principal, para a sequência — e com ela nomes, etapas e
+      // datas da base — não mudar. As respostas ao instrumento novo saem
+      // depois, com semente própria, quando o perfil das empresas existe.
+      for (let i = 0; i < 5; i += 1) random();
+      pendingFit.push({
         applicationId,
-        answers,
-        answeredAt,
-        // O aceite existe também no pano de fundo: uma resposta sem aceite
-        // seria tratamento sem base legal, inclusive em base fictícia.
-        consent: { acceptedAt: answeredAt, version: CANDIDATE_CONSENT_VERSION }
+        talentId,
+        jobId: job.id,
+        answeredAt: `${dateBefore(Math.max(dayOffset - 1, 0))}T12:00:00.000Z`
       });
     }
 
@@ -812,6 +856,16 @@ function build(): GeneratedBase {
   // Por último, de propósito: ver `buildLightCompanies`.
   companies.push(...buildLightCompanies(random, GENERATED_COMPANY_COUNT + 1));
 
+  // Só as empresas com vaga têm consulta à equipe. As ~2.500 empresas leves
+  // da carteira não têm consulta por definição; gerar respostas para elas
+  // faria cada uma aparecer como "perfil aberto" na fila do dia.
+  const culture = buildCultureAnswers(
+    companies.filter((company) =>
+      jobs.some((job) => job.companyId === company.id)
+    ),
+    talents
+  );
+
   return {
     companies,
     teams,
@@ -820,28 +874,161 @@ function build(): GeneratedBase {
     applications,
     analysis,
     evidences,
-    fitResponses,
-    // Só as empresas com vaga têm consulta à equipe. As ~2.500 empresas leves
-    // da carteira não têm consulta por definição; gerar respostas para elas
-    // faria cada uma aparecer como "perfil aberto" na fila do dia.
-    ...buildCultureAnswers(
-      companies.filter((company) =>
-        jobs.some((job) => job.companyId === company.id)
-      ),
-      talents
-    )
+    // A vaga do roteiro é de empresa curada: o perfil dela vem das
+    // respostas curadas, não das geradas.
+    fitResponses: buildFitResponses(pendingFit, jobs, [
+      ...DEMO_CULTURE_ANSWERS,
+      ...culture.cultureAnswers
+    ]),
+    ...culture
   };
 }
 
 /**
  * Semente própria: as respostas culturais são geradas fora dos laços acima
  * para que acrescentá-las não desloque a sequência do gerador principal e
- * mude nomes, etapas e datas de toda a base existente.
+ * mude nomes, etapas e datas de toda a base existente. A semente mudou com o
+ * instrumento de 52 frases: as respostas são outras, a base em volta não.
  */
-const SEED_CULTURA = 20260921;
+const SEED_CULTURA = 20260922;
+
+/** Semente das respostas dos candidatos gerados ao instrumento novo. */
+const SEED_FIT = 20260923;
 
 /** Um talento a cada quatro responde: o mapa mostra a paisagem sem virar borrão. */
 const TALENTOS_POR_RESPOSTA_CULTURAL = 4;
+
+type PerfilDeSetor = {
+  temas: Partial<Record<FitAxisId, number>>;
+  itens?: Partial<Record<string, number>>;
+};
+
+/**
+ * O jeito de trabalhar típico de cada setor, pela equipe.
+ *
+ * Sem isto todas as empresas geradas cairiam no meio da escala, e o "tema que
+ * mais pesa" e o mapa de cultura não teriam o que mostrar. Linha de produção
+ * de alimentos e bebidas é de ritmo constante, regra e conferência; logística
+ * e transporte alternam demandas e reorganizam horário; metalurgia e peças dão
+ * autonomia a quem já domina a rotina; química e papel são de procedimento.
+ * Temas não citados ficam em "tanto faz" com um desvio pequeno por empresa.
+ */
+const PERFIL_POR_SETOR: Record<string, PerfilDeSetor> = {
+  Alimentos: {
+    temas: {
+      'orientacao-resultados': 4.5,
+      'execucao-ritmo': 4.5,
+      'regras-decisao': 4.5,
+      inovacao: 4,
+      'lideranca-autonomia': 2,
+      'interacao-convivencia': 2.5
+    }
+  },
+  Bebidas: {
+    temas: {
+      'orientacao-resultados': 4,
+      'execucao-ritmo': 4.5,
+      'regras-decisao': 4,
+      inovacao: 3.5,
+      'lideranca-autonomia': 2.5
+    }
+  },
+  Logística: {
+    temas: {
+      'execucao-ritmo': 1.5,
+      'interacao-convivencia': 4.5,
+      'lideranca-autonomia': 4,
+      'regras-decisao': 2.5,
+      'foco-cliente': 4
+    },
+    itens: { I47: 5, I24: 5 }
+  },
+  Transporte: {
+    temas: {
+      'execucao-ritmo': 2,
+      'interacao-convivencia': 4,
+      'lideranca-autonomia': 4.5,
+      'regras-decisao': 2.5
+    },
+    itens: { I47: 5 }
+  },
+  Metalurgia: {
+    temas: {
+      'lideranca-autonomia': 4.5,
+      'orientacao-resultados': 4,
+      'aprendizado-desenvolvimento': 3.5,
+      'adaptacao-carreira': 4
+    }
+  },
+  Autopeças: {
+    temas: {
+      'aprendizado-desenvolvimento': 4.5,
+      'lideranca-autonomia': 4,
+      inovacao: 2,
+      'orientacao-resultados': 4
+    }
+  },
+  Máquinas: {
+    temas: {
+      'aprendizado-desenvolvimento': 4,
+      'lideranca-autonomia': 4,
+      inovacao: 2.5
+    }
+  },
+  Química: {
+    temas: {
+      'regras-decisao': 5,
+      inovacao: 4.5,
+      'orientacao-resultados': 4.5,
+      'etica-seguranca': 4
+    }
+  },
+  'Papel e celulose': {
+    temas: {
+      'regras-decisao': 4.5,
+      inovacao: 4,
+      'execucao-ritmo': 4,
+      'adaptacao-carreira': 4
+    }
+  },
+  Plásticos: {
+    temas: {
+      'execucao-ritmo': 4,
+      'orientacao-resultados': 3.5,
+      'aprendizado-desenvolvimento': 2.5
+    }
+  },
+  Embalagens: {
+    temas: {
+      'execucao-ritmo': 2.5,
+      'foco-cliente': 4,
+      'interacao-convivencia': 4
+    }
+  },
+  Têxtil: {
+    temas: {
+      'execucao-ritmo': 4,
+      'lideranca-autonomia': 2,
+      'aprendizado-desenvolvimento': 2.5,
+      'adaptacao-carreira': 4.5
+    }
+  }
+};
+
+function limitar(valor: number): number {
+  return Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, valor));
+}
+
+/** O alvo da equipe de uma empresa: o do setor, com um desvio próprio. */
+function alvoDaEmpresa(company: Company, random: () => number): AlvoCultural {
+  const setor = PERFIL_POR_SETOR[company.sector] ?? { temas: {} };
+  const temas = {} as Record<FitAxisId, number>;
+  for (const axis of FIT_AXES) {
+    const base = setor.temas[axis.id] ?? 3;
+    temas[axis.id] = limitar(base + (random() - 0.5) * 0.8);
+  }
+  return { temas, itens: setor.itens };
+}
 
 function buildCultureAnswers(
   companies: Company[],
@@ -852,51 +1039,67 @@ function buildCultureAnswers(
   const talentCultureAnswers: TalentCultureAnswer[] = [];
 
   companies.forEach((company, indice) => {
-    for (const question of CULTURE_QUESTIONS) {
-      const daGestao = pick(random, question.options).id;
-      cultureAnswers.push({
-        id: `GEN-CUL-${company.id}-${question.axisId}-GES`,
-        companyId: company.id,
-        axisId: question.axisId,
-        optionId: daGestao,
-        respondent: 'gestao',
-        count: 1,
-        answeredAt: dateBefore(20 + (indice % 25))
-      });
+    const daEquipe = alvoDaEmpresa(company, random);
 
-      // Uma parte das equipes responde diferente da gestão, e outra parte não
-      // alcança o mínimo de respostas: são os dois casos que a tela precisa
-      // saber mostrar, e uma base só convergente nunca os exercitaria.
-      const daEquipe =
-        random() > 0.7 ? pick(random, question.options).id : daGestao;
-      const respostasDaEquipe =
-        random() > 0.85
-          ? MIN_TEAM_RESPONSES - 1
-          : MIN_TEAM_RESPONSES + Math.floor(random() * 5);
+    // Uma parte das gestões responde diferente da equipe em um tema, e uma
+    // parte das consultas não alcança 10 pessoas: são os dois casos que a
+    // tela precisa saber mostrar, e uma base só convergente e completa nunca
+    // os exercitaria.
+    const temasDaGestao = { ...daEquipe.temas };
+    if (random() < 0.35) {
+      const tema = FIT_AXES[Math.floor(random() * FIT_AXES.length)]!.id;
+      temasDaGestao[tema] = limitar(6 - daEquipe.temas[tema]);
+    }
+    const daGestao: AlvoCultural = {
+      temas: temasDaGestao,
+      itens: daEquipe.itens
+    };
+    const pessoasDaEquipe = random() < 0.2 ? 5 + Math.floor(random() * 3) : 10;
 
-      cultureAnswers.push({
-        id: `GEN-CUL-${company.id}-${question.axisId}-EQP`,
-        companyId: company.id,
-        axisId: question.axisId,
-        optionId: daEquipe,
-        respondent: 'equipe',
-        count: respostasDaEquipe,
-        answeredAt: dateBefore(16 + (indice % 20))
+    const respostas: RespostaIndividual[] = [];
+    // A gestão responde as 52 frases pela tela da empresa.
+    for (const item of ITENS_DO_INSTRUMENTO) {
+      respostas.push({
+        itemId: item.id,
+        value: responderFrase(item, daGestao, random, 0.4),
+        respondent: 'gestao'
       });
     }
+    // A equipe responde em matriz: cada pessoa, o bloco do seu convite.
+    for (let pessoa = 0; pessoa < pessoasDaEquipe; pessoa += 1) {
+      for (const itemId of blocoDoIndice(company.id, pessoa)) {
+        const item = ITENS_DO_INSTRUMENTO.find((entry) => entry.id === itemId)!;
+        respostas.push({
+          itemId,
+          value: responderFrase(item, daEquipe, random),
+          respondent: 'equipe'
+        });
+      }
+    }
+
+    cultureAnswers.push(
+      ...agregarRespostas(
+        company.id,
+        `GEN-CUL-${company.id}`,
+        respostas,
+        (role) =>
+          role === 'gestao'
+            ? dateBefore(20 + (indice % 25))
+            : dateBefore(16 + (indice % 20))
+      )
+    );
   });
 
   talents.forEach((talent, indice) => {
     if (indice % TALENTOS_POR_RESPOSTA_CULTURAL !== 0) return;
 
-    const quantidade =
-      2 + Math.floor(random() * (CULTURE_QUESTIONS.length - 1));
-    for (const question of CULTURE_QUESTIONS.slice(0, quantidade)) {
+    const quantidade = 2 + Math.floor(random() * (FIT_AXES.length - 1));
+    for (const axis of FIT_AXES.slice(0, quantidade)) {
       talentCultureAnswers.push({
-        id: `GEN-CULT-${talent.id}-${question.axisId}`,
+        id: `GEN-CULT-${talent.id}-${axis.id}`,
         talentId: talent.id,
-        axisId: question.axisId,
-        optionId: pick(random, question.options).id,
+        axisId: axis.id,
+        value: (1 + Math.floor(random() * 5)) as ValorDaEscala,
         origin: 'Currículo — informação declarada na inscrição',
         sourceId: 'FONTE-EMPREGARE',
         updatedAt: dateBefore(10 + (indice % 40))
@@ -905,6 +1108,102 @@ function buildCultureAnswers(
   });
 
   return { cultureAnswers, talentCultureAnswers };
+}
+
+/**
+ * Respostas dos candidatos gerados às 10 frases da empresa de cada vaga.
+ *
+ * Cada talento tem um jeito de trabalhar próprio, sorteado uma vez: a maioria
+ * perto do "tanto faz" com preferências aqui e ali, e uma parte com
+ * preferências fortes. Quem cai numa empresa de jeito oposto fica abaixo do
+ * corte — o pano de fundo precisa ter gente dos dois lados dele.
+ */
+function buildFitResponses(
+  pendentes: {
+    applicationId: string;
+    talentId: string;
+    jobId: string;
+    answeredAt: string;
+  }[],
+  jobs: Job[],
+  cultureAnswers: CultureAnswer[]
+): CandidateFitResponse[] {
+  const random = createRandom(SEED_FIT);
+  const companyByJob = new Map(
+    [...DEMO_JOBS, ...jobs].map((job) => [job.id, job.companyId])
+  );
+  const perfilPorEmpresa = new Map<
+    string,
+    ReturnType<typeof calcularPerfilCultural>
+  >();
+  const perfil = (companyId: string) => {
+    const guardado = perfilPorEmpresa.get(companyId);
+    if (guardado) return guardado;
+    const calculado = calcularPerfilCultural(
+      cultureAnswers.filter((answer) => answer.companyId === companyId)
+    );
+    perfilPorEmpresa.set(companyId, calculado);
+    return calculado;
+  };
+
+  const perguntasPorEmpresa = new Map<string, string[]>();
+  const perguntas = (companyId: string): string[] => {
+    const guardadas = perguntasPorEmpresa.get(companyId);
+    if (guardadas) return guardadas;
+    const ids = escolherPerguntasDoCandidato(perfil(companyId)).map(
+      (p) => p.itemId
+    );
+    perguntasPorEmpresa.set(companyId, ids);
+    return ids;
+  };
+
+  const jeitoPorTalento = new Map<string, AlvoCultural>();
+  const jeito = (talentId: string): AlvoCultural => {
+    const guardado = jeitoPorTalento.get(talentId);
+    if (guardado) return guardado;
+    const forte = random() < 0.35;
+    const temas = {} as Record<FitAxisId, number>;
+    for (const axis of FIT_AXES) {
+      temas[axis.id] = forte
+        ? random() < 0.5
+          ? 1 + random()
+          : 4 + random()
+        : 2 + random() * 2;
+    }
+    const alvo = { temas };
+    jeitoPorTalento.set(talentId, alvo);
+    return alvo;
+  };
+
+  return pendentes.map((pendente) => {
+    const companyId = companyByJob.get(pendente.jobId) ?? '';
+    const itemIds = perguntas(companyId);
+    // Uma parte das candidaturas cai numa empresa de jeito oposto ao seu: a
+    // resposta espelha a média da equipe. É quem fica abaixo do corte.
+    const oposta = random() < 0.14;
+    const answers = oposta
+      ? Object.fromEntries(
+          itemIds.map((itemId) => {
+            const media = perfil(companyId).itens[itemId]?.media ?? 3;
+            // O extremo oposto ao da equipe, às vezes um ponto mais perto.
+            const extremo = media >= 3 ? ESCALA_MIN : ESCALA_MAX;
+            const passo = random() < 0.12 ? (media >= 3 ? 1 : -1) : 0;
+            return [itemId, (extremo + passo) as ValorDaEscala];
+          })
+        )
+      : responderQuestionario(itemIds, jeito(pendente.talentId), random, 0.8);
+    return {
+      applicationId: pendente.applicationId,
+      answers,
+      answeredAt: pendente.answeredAt,
+      // O aceite existe também no pano de fundo: uma resposta sem aceite
+      // seria tratamento sem base legal, inclusive em base fictícia.
+      consent: {
+        acceptedAt: pendente.answeredAt,
+        version: CANDIDATE_CONSENT_VERSION
+      }
+    };
+  });
 }
 
 let cache: GeneratedBase | null = null;

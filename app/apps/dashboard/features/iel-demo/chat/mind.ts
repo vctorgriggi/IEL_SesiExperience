@@ -24,9 +24,9 @@ import {
   MIN_RECORTE,
   PERIODO_LABEL
 } from '../analysis/analytics';
-import { getCandidateFitOptionLabel } from '../analysis/candidate-questionnaire';
-import { getCultureQuestion, MIN_TEAM_RESPONSES } from '../analysis/culture';
-import { FIT_AXES, getFitAxis, type FitAxisId } from '../analysis/fit-axes';
+import { MIN_TEAM_RESPONSES } from '../analysis/culture';
+import { FIT_AXES, getFitAxis } from '../analysis/fit-axes';
+import { rotuloDaEscala } from '../analysis/instrumento';
 import { AXIS_LABEL } from '../copy';
 import { plural } from '../format';
 import {
@@ -303,16 +303,9 @@ function fontesDaVaga(state: DemoState, jobId: string): string[] {
   ];
 }
 
-/** A alternativa da empresa mais próxima da média: "o que a empresa pratica". */
-function praticaDaEmpresa(axisId: FitAxisId, media: number): string | null {
-  const pergunta = getCultureQuestion(axisId);
-  if (!pergunta) return null;
-  const maisPerto = pergunta.options.reduce((melhor, opcao) =>
-    Math.abs(opcao.value - media) < Math.abs(melhor.value - media)
-      ? opcao
-      : melhor
-  );
-  return maisPerto.label;
+/** A média da empresa no tema, dita na escala: "Concordo", "Tanto faz"… */
+function praticaDaEmpresa(media: number): string {
+  return rotuloDaEscala(media);
 }
 
 function linhaDePessoa(entry: JobRankingEntry): string {
@@ -386,19 +379,16 @@ function responderVaga(
       .sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0))
       .slice(0, 3)
       .map((axis) => {
-        const empresaFaz = praticaDaEmpresa(axis.axisId, axis.companyMean!);
-        const pessoaPrefere = getCandidateFitOptionLabel(
-          axis.axisId,
-          axis.candidateValue!
-        );
-        return `${AXIS_LABEL[axis.axisId]}: a empresa pratica “${empresaFaz ?? 'sem resposta'}”; ${nome} prefere “${pessoaPrefere}”.`;
+        const empresaFaz = praticaDaEmpresa(axis.companyMean!);
+        const pessoaPrefere = rotuloDaEscala(axis.candidateValue!);
+        return `${AXIS_LABEL[axis.axisId]}: a equipe da empresa responde “${empresaFaz}”; ${nome} responde “${pessoaPrefere}”.`;
       });
 
     return {
       paragrafos: [
         `${nome} tem o melhor requisito entre quem ficou abaixo do corte (${abaixoDestaque.technicalMatch ?? '—'}%), mas combina ${pct(abaixoDestaque.adherence.total)} com a empresa.`,
         diferencas.length > 0
-          ? 'Os pontos do dia a dia em que mais difere:'
+          ? 'Os temas em que mais difere:'
           : 'Não há um ponto que se destaque: a diferença está espalhada.'
       ],
       itens: diferencas,
@@ -534,7 +524,7 @@ function responderEmpresa(
   return {
     paragrafos: [
       abertos.length === 0
-        ? `Os 5 pontos do dia a dia da ${empresa.name} já têm resposta suficiente.`
+        ? `Os 10 temas da ${empresa.name} já têm resposta suficiente.`
         : `${plural(abertos.length, 'ponto está', 'pontos estão')} em aberto: cada ponto precisa de pelo menos ${MIN_TEAM_RESPONSES} respostas da equipe.${prazo}`
     ],
     itens: abertos.map((axis) => AXIS_LABEL[axis.axisId]),

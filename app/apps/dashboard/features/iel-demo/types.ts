@@ -1,10 +1,7 @@
-import type {
-  CultureOptionId,
-  CultureOptionValue,
-  CultureRespondent
-} from './analysis/culture';
+import type { CultureRespondent } from './analysis/culture';
 import type { CultureInviteRole } from './analysis/culture-invites';
 import type { FitAxisId } from './analysis/fit-axes';
+import type { ValorDaEscala } from './analysis/instrumento';
 
 /**
  * Domínio da Central de Seleção IEL (protótipo).
@@ -121,7 +118,11 @@ export type Company = {
  */
 export type CultureSuggestion = {
   axisId: FitAxisId;
-  optionId: CultureOptionId;
+  /**
+   * Valor proposto para o tema, no sentido do tema (1..5). Confirmado, vira a
+   * resposta da gestão em todas as frases do tema — espelhada nas de polo −1.
+   */
+  value: ValorDaEscala;
   /** Trecho do texto existente que sustenta a proposta. */
   excerpt: string;
   /** De onde veio o trecho, nas palavras do produto. */
@@ -130,17 +131,19 @@ export type CultureSuggestion = {
 };
 
 /**
- * Resposta registrada sobre a cultura da empresa.
+ * Resposta registrada sobre a cultura da empresa, numa frase do instrumento.
  *
  * `count` existe porque a consulta à equipe entra agregada: dez pessoas
- * respondendo a mesma alternativa viram um registro com count 10, sem
- * identificar ninguém.
+ * marcando "concordo" na mesma frase viram um registro com count 10, sem
+ * identificar ninguém. O tema sai da frase (`getItem(itemId).tema`).
  */
 export type CultureAnswer = {
   id: string;
   companyId: string;
-  axisId: FitAxisId;
-  optionId: CultureOptionId;
+  /** Frase do instrumento (`I01`..`I52`). */
+  itemId: string;
+  /** Concordância, de 1 (discordo muito) a 5 (concordo muito). */
+  value: ValorDaEscala;
   respondent: CultureRespondent;
   count: number;
   answeredAt: string;
@@ -296,7 +299,8 @@ export type TalentCultureAnswer = {
   id: string;
   talentId: string;
   axisId: FitAxisId;
-  optionId: CultureOptionId;
+  /** Preferência declarada no tema, no sentido do tema (1..5). */
+  value: ValorDaEscala;
   origin: string;
   sourceId: DataSourceId;
   updatedAt: string;
@@ -397,8 +401,11 @@ export type FitStatus = 'respondido' | 'pendente' | 'expirado';
  */
 export type CandidateFitResponse = {
   applicationId: string;
-  /** Uma escolha por eixo, na escala ordinal comum aos dois lados. */
-  answers: Record<FitAxisId, CultureOptionValue>;
+  /**
+   * Concordância por frase (`itemId → 1..5`), nas frases que a empresa da
+   * vaga escolheu (`perguntasDoCandidato`). A mesma escala da equipe.
+   */
+  answers: Record<string, ValorDaEscala>;
   answeredAt: string;
   consent: { acceptedAt: string; version: string };
 };

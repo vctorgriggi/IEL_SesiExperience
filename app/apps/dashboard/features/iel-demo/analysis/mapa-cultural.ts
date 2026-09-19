@@ -1,5 +1,5 @@
 /**
- * Projeta as respostas dos cinco eixos de `culture.ts` em duas dimensões.
+ * Projeta as respostas dos 10 temas do instrumento em duas dimensões.
  *
  * Não é um segundo modelo cultural: os quatro tipos nomeiam regiões do plano e
  * descrevem ambiente de trabalho, nunca traço de pessoa.
@@ -17,12 +17,17 @@
  */
 
 import { ADHERENCE_THRESHOLD } from './adherence';
-import { getCultureOptionLabel, type CultureOptionId } from './culture';
 import { getFitAxis, type FitAxisId } from './fit-axes';
+import { ESCALA_NEUTRO, rotuloDaEscala } from './instrumento';
 
+/**
+ * A resposta de um lado num tema: a concordância média, no sentido do tema
+ * (1..5). Para a empresa, a média das frases que fecham; para o talento, a
+ * preferência declarada.
+ */
 export type RespostaDeEixo = {
   axisId: FitAxisId;
-  optionId: CultureOptionId;
+  value: number;
 };
 
 export type PosicaoCultural = {
@@ -70,41 +75,30 @@ export const EIXO_RITMO_LABEL = {
 };
 
 /**
- * Alternativa por alternativa, o quanto ela empurra a posição. É a regra
- * inteira do mapa: com esta tabela qualquer ponto se refaz à mão.
+ * Tema por tema, para onde o "concordo muito" empurra a posição. "Discordo
+ * muito" empurra para o lado oposto, e "tanto faz" não empurra: a
+ * contribuição é o vetor vezes `(valor − 3) / 2`. É a regra inteira do mapa:
+ * com esta tabela qualquer ponto se refaz à mão.
  *
- * Acrescentar alternativa em `CULTURE_QUESTIONS` sem acrescentá-la aqui faz o
- * eixo deixar de contar; o teste desta pasta falha por isso de propósito.
+ * Os vetores seguem o sentido de cada tema (as frases de polo 1): conferir,
+ * concluir e seguir o procedimento puxam para estrutura; conversar e pensar
+ * em quem recebe puxam para pessoas; organizar-se sozinho puxa para entrega e
+ * flexibilidade.
  */
-export const CONTRIBUICAO_POR_ALTERNATIVA: Record<
+export const CONTRIBUICAO_POR_TEMA: Record<
   FitAxisId,
-  Record<CultureOptionId, { x: number; y: number }>
+  { x: number; y: number }
 > = {
-  'apoio-inicial': {
-    'acompanhamento-formal': { x: -1, y: -0.5 },
-    'troca-informal': { x: -0.5, y: 0.5 },
-    'por-conta': { x: 0.5, y: 0.5 }
-  },
-  autonomia: {
-    'rotina-definida': { x: 0, y: -1 },
-    parcial: { x: 0, y: 0 },
-    'autonomia-ampla': { x: 0.25, y: 1 }
-  },
-  'comunicacao-prioridades': {
-    'por-escrito': { x: -0.25, y: -1 },
-    'verbal-inicio': { x: -0.25, y: 0 },
-    'ao-longo-do-dia': { x: 0.5, y: 0.75 }
-  },
-  'ritmo-turno': {
-    fixo: { x: -0.25, y: -1 },
-    'variacao-prevista': { x: 0, y: 0 },
-    'variacao-frequente': { x: 0.75, y: 0.75 }
-  },
-  aprendizado: {
-    'rotina-propria': { x: -0.25, y: -0.75 },
-    'processos-amplos': { x: -0.75, y: 0.5 },
-    'ja-domina': { x: 1, y: 0 }
-  }
+  'orientacao-resultados': { x: 0.25, y: -1 },
+  inovacao: { x: 0, y: -1 },
+  'aprendizado-desenvolvimento': { x: 0.25, y: 0.75 },
+  'foco-cliente': { x: -0.5, y: 0 },
+  'etica-seguranca': { x: -0.5, y: -0.25 },
+  'execucao-ritmo': { x: 0, y: -1 },
+  'regras-decisao': { x: -0.25, y: -0.75 },
+  'interacao-convivencia': { x: -1, y: 0.25 },
+  'lideranca-autonomia': { x: 0.75, y: 0.5 },
+  'adaptacao-carreira': { x: 0, y: -0.75 }
 };
 
 /**
@@ -118,17 +112,18 @@ export function calcularPosicaoCultural(
 ): PosicaoCultural | null {
   const validas = respostas.filter(
     (resposta) =>
-      CONTRIBUICAO_POR_ALTERNATIVA[resposta.axisId]?.[resposta.optionId]
+      CONTRIBUICAO_POR_TEMA[resposta.axisId] !== undefined &&
+      Number.isFinite(resposta.value)
   );
   if (validas.length === 0) return null;
 
   let somaX = 0;
   let somaY = 0;
   for (const resposta of validas) {
-    const contribuicao =
-      CONTRIBUICAO_POR_ALTERNATIVA[resposta.axisId]![resposta.optionId]!;
-    somaX += contribuicao.x;
-    somaY += contribuicao.y;
+    const vetor = CONTRIBUICAO_POR_TEMA[resposta.axisId];
+    const intensidade = (resposta.value - ESCALA_NEUTRO) / 2;
+    somaX += vetor.x * intensidade;
+    somaY += vetor.y * intensidade;
   }
 
   return {
@@ -274,15 +269,11 @@ export function compararRespostas(
     leituras.push({
       axisId: doTalento.axisId,
       axisLabel: getFitAxis(doTalento.axisId).label,
-      opcaoDoTalento: getCultureOptionLabel(
-        doTalento.axisId,
-        doTalento.optionId
-      ),
-      opcaoDaEmpresa: getCultureOptionLabel(
-        daEmpresa.axisId,
-        daEmpresa.optionId
-      ),
-      convergente: doTalento.optionId === daEmpresa.optionId
+      opcaoDoTalento: rotuloDaEscala(doTalento.value),
+      opcaoDaEmpresa: rotuloDaEscala(daEmpresa.value),
+      // Menos de um ponto de distância na escala de 1 a 5 é nuance, não
+      // outra resposta: o mesmo limiar da divergência gestão × equipe.
+      convergente: Math.abs(doTalento.value - daEmpresa.value) < 1
     });
   }
 

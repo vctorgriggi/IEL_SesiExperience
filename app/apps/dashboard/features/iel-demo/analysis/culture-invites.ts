@@ -46,8 +46,14 @@ export type CultureInviteRole = 'gestao' | 'rh' | 'equipe';
 /** Prazo de resposta da amostra, em dias (R2). */
 export const CULTURE_INVITE_DEADLINE_DAYS = 3;
 
-/** Versão do texto de aceite apresentado ao colaborador. */
-export const CULTURE_CONSENT_VERSION = '2026-09-19';
+/**
+ * Versão do texto de aceite apresentado ao colaborador.
+ *
+ * 2026-09-21: o instrumento passou a ser o do cliente — cerca de 15 frases
+ * por pessoa numa escala de concordância, uns 5 minutos. O que se coleta
+ * mudou, então a versão sobe.
+ */
+export const CULTURE_CONSENT_VERSION = '2026-09-21';
 
 const TOKEN_LENGTH = 16;
 

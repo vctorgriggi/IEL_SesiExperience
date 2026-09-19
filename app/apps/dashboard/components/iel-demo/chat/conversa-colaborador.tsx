@@ -58,7 +58,8 @@ export function ConversaColaborador({ token }: { token: string }) {
       }
       onPrimeiraResposta={() => setTravado(convite)}
       onConcluir={(respostas) => {
-        const answers = respostasDoColaborador(respostas);
+        if (!convite) return;
+        const answers = respostasDoColaborador(respostas, convite);
         if (!answers) return;
         dispatch({
           type: 'answer-culture-invite',

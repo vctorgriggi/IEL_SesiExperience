@@ -112,8 +112,11 @@ const HISTORY_MIN_DAYS = 14;
 
 export type CanalComunicacao = 'email' | 'whatsapp';
 export type Dispositivo = 'celular' | 'computador';
-/** Onde a pessoa parou: no aceite, numa das 5 perguntas, ou `null`. */
-export type PontoDeParada = 'aceite' | 1 | 2 | 3 | 4 | 5 | null;
+/** Número da frase no questionário do candidato: 10 frases, uma por tema. */
+export type NumeroDaPergunta = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+/** Onde a pessoa parou: no aceite, numa das 10 frases, ou `null`. */
+export type PontoDeParada = 'aceite' | NumeroDaPergunta | null;
 
 /**
  * Convite ao questionário de fit de uma candidatura existente.
@@ -134,7 +137,7 @@ export type EventoComunicacao = {
   /** Verdadeiro se, e somente se, a candidatura tem resposta de fit. */
   concluido: boolean;
   /**
-   * `'aceite'` quando abriu e não aceitou; 1..5 quando começou e parou nessa
+   * `'aceite'` quando abriu e não aceitou; 1..10 quando começou e parou nessa
    * pergunta; `null` quando concluiu, ainda não abriu ou está no prazo.
    */
   paradaEm: PontoDeParada;
@@ -178,7 +181,7 @@ export const CANAL_LABEL: Record<CanalComunicacao, string> = {
  * de pessoa: só o que a medição precisa.
  */
 export type EnvioHistorico = {
-  /** Aderência total na entrada, 0..100 (média simples dos 5 pontos). */
+  /** Aderência total na entrada, 0..100 (média simples dos 10 temas). */
   aderencia: number;
   /** Aderência por ponto do dia a dia, na ordem de `FIT_AXES`. */
   porPonto: number[];
@@ -385,12 +388,17 @@ const MOTIVOS: { motivo: MotivoNaoContratacao; peso: number }[] = [
 ];
 
 /** Onde quem começou e não terminou parou, pergunta a pergunta. */
-const PARADA_PESOS: { ponto: 1 | 2 | 3 | 4 | 5; peso: number }[] = [
-  { ponto: 1, peso: 30 },
-  { ponto: 2, peso: 18 },
-  { ponto: 3, peso: 24 },
-  { ponto: 4, peso: 16 },
-  { ponto: 5, peso: 12 }
+const PARADA_PESOS: { ponto: NumeroDaPergunta; peso: number }[] = [
+  { ponto: 1, peso: 22 },
+  { ponto: 2, peso: 12 },
+  { ponto: 3, peso: 14 },
+  { ponto: 4, peso: 10 },
+  { ponto: 5, peso: 9 },
+  { ponto: 6, peso: 8 },
+  { ponto: 7, peso: 7 },
+  { ponto: 8, peso: 7 },
+  { ponto: 9, peso: 6 },
+  { ponto: 10, peso: 5 }
 ];
 
 function weighted(random: () => number, items: { peso: number }[]): number {
@@ -543,20 +551,23 @@ function probRetorno(enviadaEm: string): number {
  * Viés de cada setor em cada ponto do dia a dia, em pontos de aderência.
  *
  * Sem ele todo setor combinaria igual em todos os pontos, e o que a analista
- * procura no BI é justamente o ponto que não fecha num setor: no frigorífico,
- * o turno e o apoio no início; na logística, como chegam as tarefas. Os
+ * procura no BI é justamente o tema que não fecha num setor: no frigorífico,
+ * regras e ritmo; na logística, o ritmo do turno, que varia. Os
  * demais setores recebem um desvio pequeno e estável, derivado do nome. O
  * ponto de viés mais negativo também pesa na saída (`pontoCritico`).
  */
 const VIES_POR_SETOR: Record<string, Partial<Record<FitAxisId, number>>> = {
-  Frigorífico: { 'ritmo-turno': -16, 'apoio-inicial': -10 },
-  Alimentos: { 'ritmo-turno': -10, aprendizado: -6 },
-  'Indústria de alimentos': { 'ritmo-turno': -10, aprendizado: -6 },
-  Laticínios: { 'ritmo-turno': -8, 'apoio-inicial': -6 },
-  Logística: { 'comunicacao-prioridades': -9 },
-  'Distribuição e logística': { 'comunicacao-prioridades': -9 },
-  Metalurgia: { autonomia: -7 },
-  Autopeças: { aprendizado: 6 }
+  Frigorífico: { 'regras-decisao': -16, 'execucao-ritmo': -10 },
+  Alimentos: { 'regras-decisao': -10, 'execucao-ritmo': -7 },
+  'Indústria de alimentos': { 'regras-decisao': -10, 'execucao-ritmo': -7 },
+  Laticínios: { 'execucao-ritmo': -9, 'lideranca-autonomia': -6 },
+  Logística: { 'execucao-ritmo': -12, 'adaptacao-carreira': -6 },
+  'Distribuição e logística': {
+    'execucao-ritmo': -12,
+    'adaptacao-carreira': -6
+  },
+  Metalurgia: { 'lideranca-autonomia': -7 },
+  Autopeças: { 'aprendizado-desenvolvimento': 6 }
 };
 
 function viesDoSetor(setor: string): number[] {
@@ -574,7 +585,7 @@ function viesDoSetor(setor: string): number[] {
  * Sem isso, quem sai só dependeria da aderência total, e todos os pontos
  * separariam quem ficou de quem saiu na mesma medida — a lista "o ponto que
  * mais pesa, por setor" sairia sorteada. No frigorífico quem sai é quem não
- * fecha com o turno; na logística, com a forma como as tarefas chegam.
+ * fecha com as regras; na logística, com o ritmo do turno.
  */
 function pontoCritico(vies: number[]): {
   indice: number;

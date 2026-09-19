@@ -7,16 +7,11 @@ import {
 } from '@/features/iel-demo/analysis/adherence';
 import {
   CULTURE_SCALE_MAX,
-  CULTURE_SCALE_MIN,
-  getCultureQuestion,
-  type CultureOption,
-  type CultureOptionValue
+  CULTURE_SCALE_MIN
 } from '@/features/iel-demo/analysis/culture';
-import {
-  getFitAxis,
-  type FitAxisId
-} from '@/features/iel-demo/analysis/fit-axes';
+import { FIT_AXES, getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
 import { getFitInsights } from '@/features/iel-demo/analysis/fit-insights';
+import { rotuloDaEscala } from '@/features/iel-demo/analysis/instrumento';
 import { COPY, type EstadoDeLeitura } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -83,8 +78,8 @@ import { formatarData } from '../shared/datas';
  */
 const JARGAO: [RegExp, string][] = [
   [/\bcoleta dirigida\b/gi, 'pergunta à pessoa'],
-  [/\beixos\b/gi, 'pontos do dia a dia'],
-  [/\beixo\b/gi, 'ponto do dia a dia'],
+  [/\beixos\b/gi, 'temas'],
+  [/\beixo\b/gi, 'tema'],
   [/\bencaminhamento\b/gi, 'envio do currículo'],
   [/\baderência\b/gi, 'o quanto combina']
 ];
@@ -96,7 +91,7 @@ export function semJargao(texto: string): string {
   );
 }
 
-/** Posição de um valor da escala 1..3 no trilho, em porcentagem. */
+/** Posição de um valor da escala (1..5) no trilho, em porcentagem. */
 function posicao(valor: number): number {
   const amplitude = CULTURE_SCALE_MAX - CULTURE_SCALE_MIN;
   return ((valor - CULTURE_SCALE_MIN) / amplitude) * 100;
@@ -160,43 +155,19 @@ function Trilho({ entry }: { entry: AdherenceAxisEntry | null }) {
 }
 
 /**
- * O rótulo da alternativa que a média da empresa mais se aproxima.
+ * A média da empresa no tema, dita na escala de concordância.
  *
- * A empresa responde por várias vozes — gestão, RH, equipe — e a média sai
- * contínua (1,67). Ninguém marcou "1,67": o que a analista precisa ler é qual
- * das três alternativas do questionário aquela média descreve. Empate entre
- * duas não acontece na prática (a escala tem passo 1 e a média raramente cai
- * exatamente no meio), e quando cai, a primeira da lista ganha — o texto
- * abaixo, com o percentual do ponto, é que carrega a precisão.
+ * A empresa responde por várias vozes e a média sai contínua (3,67). Ninguém
+ * marcou "3,67": o que a analista lê é o ponto da escala mais próximo —
+ * "Concordo". O percentual do tema, ao lado, é que carrega a precisão.
  */
-function rotuloDaEmpresa(
-  axisId: FitAxisId,
-  media: number | null
-): string | null {
-  if (media === null) return null;
-  const question = getCultureQuestion(axisId);
-  if (!question) return null;
-  const opcao = question.options.reduce<CultureOption | null>(
-    (melhor, atual) =>
-      melhor === null ||
-      Math.abs(atual.value - media) < Math.abs(melhor.value - media)
-        ? atual
-        : melhor,
-    null
-  );
-  return opcao?.label ?? null;
+function rotuloDaEmpresa(media: number | null): string | null {
+  return media === null ? null : rotuloDaEscala(media);
 }
 
-/** O rótulo da alternativa que a pessoa marcou no questionário. */
-function rotuloDaPessoa(
-  axisId: FitAxisId,
-  valor: CultureOptionValue | null
-): string | null {
-  if (valor === null) return null;
-  const question = getCultureQuestion(axisId);
-  return (
-    question?.options.find((option) => option.value === valor)?.label ?? null
-  );
+/** O que a pessoa respondeu no tema, dito na escala. */
+function rotuloDaPessoa(valor: number | null): string | null {
+  return valor === null ? null : rotuloDaEscala(valor);
 }
 
 /**
@@ -249,10 +220,8 @@ function EstadoDoPonto({ estado }: { estado: EstadoDeLeitura }) {
  */
 function doisLados(entry: AdherenceAxisEntry, primeiroNome: string): string {
   const empresa =
-    rotuloDaEmpresa(entry.axisId, entry.companyMean) ??
-    'sem respostas suficientes';
-  const pessoa =
-    rotuloDaPessoa(entry.axisId, entry.candidateValue) ?? 'ainda não respondeu';
+    rotuloDaEmpresa(entry.companyMean) ?? 'sem respostas suficientes';
+  const pessoa = rotuloDaPessoa(entry.candidateValue) ?? 'ainda não respondeu';
   return `Empresa: ${empresa} · ${primeiroNome}: ${pessoa}`;
 }
 
@@ -286,7 +255,7 @@ export function FitCards({
 }) {
   const percentual = adherence?.total ?? null;
   const medidos = adherence?.coverage.answeredAxes ?? 0;
-  const pontos = adherence?.coverage.totalAxes ?? 5;
+  const pontos = adherence?.coverage.totalAxes ?? FIT_AXES.length;
   const faltam = pontos - medidos;
 
   return (
@@ -368,9 +337,9 @@ export function FitCards({
           <p className="mt-auto text-xs text-muted-foreground">
             {percentual === null
               ? COPY.fit.semResposta
-              : `medido em ${medidos} de ${pontos} pontos${
+              : `medido em ${medidos} de ${pontos} temas${
                   faltam > 0
-                    ? ` · ${plural(faltam, 'ponto ainda em aberto', 'pontos ainda em aberto')}`
+                    ? ` · ${plural(faltam, 'tema ainda em aberto', 'temas ainda em aberto')}`
                     : ''
                 }`}
           </p>
@@ -445,7 +414,7 @@ export function TalentFitView({
    * O ranking já traz a aderência de quem está nele; quem abriu a página por
    * link direto pode não estar (vaga encerrada, candidatura arquivada), e aí
    * a conta vem do estado pela candidatura. É a mesma função nos dois
-   * caminhos — a tabela nunca fica sem os cinco pontos.
+   * caminhos — a tabela nunca fica sem os 10 temas.
    */
   const adherence = entry?.adherence ?? getAdherence(state, application.id);
   const pontos = adherence?.byAxis ?? [];
@@ -482,7 +451,7 @@ export function TalentFitView({
               <TableCaption className="sr-only">{`Pontos do dia a dia: onde a empresa e ${primeiroNome} estão em cada um`}</TableCaption>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead scope="col">Ponto do dia a dia</TableHead>
+                  <TableHead scope="col">Tema</TableHead>
                   <TableHead
                     scope="col"
                     className="w-[200px]"

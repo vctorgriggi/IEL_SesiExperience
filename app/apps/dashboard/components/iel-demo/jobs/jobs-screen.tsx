@@ -20,6 +20,7 @@ import {
 import { Search } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Input } from '@workspace/ui/shadcn/input';
 import { Label } from '@workspace/ui/shadcn/label';
@@ -42,6 +43,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarDataCurta } from '../shared/datas';
 import { normalizarBusca } from './busca';
 import { RodapeDaTabela, usePaginacao } from './table-pagination';
@@ -164,9 +166,13 @@ export function JobsScreen() {
         <Tabs
           value={estado}
           onValueChange={trocarAba}
-          className="max-w-full overflow-x-auto"
         >
-          <TabsList className="**:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
+          <TabsList
+            className={cn(
+              ABAS_SEM_ROLAGEM,
+              '**:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1'
+            )}
+          >
             {ESTADOS.map((item) => (
               <TabsTrigger
                 key={item}

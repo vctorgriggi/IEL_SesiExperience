@@ -68,6 +68,7 @@ import {
 } from '@workspace/ui/shadcn/tooltip';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import {
   BADGE_DE_ESTADO,
   barraDaAderencia,
@@ -206,7 +207,7 @@ export function BiScreen() {
       </div>
 
       <Tabs defaultValue="reabertura">
-        <TabsList>
+        <TabsList className={ABAS_SEM_ROLAGEM}>
           <TabsTrigger value="reabertura">Reabertura</TabsTrigger>
           <TabsTrigger value="match">Qualidade do match</TabsTrigger>
           <TabsTrigger value="operacao">Operação</TabsTrigger>
@@ -865,7 +866,7 @@ function PontoQueMaisPesa({
   return (
     <Card className="h-full shadow-xs">
       <CardHeader>
-        <TituloHistorico>O ponto que mais pesa, por setor</TituloHistorico>
+        <TituloHistorico>O tema que mais pesa, por setor</TituloHistorico>
         <CardDescription>
           Onde quem ficou 90 dias mais se diferencia de quem saiu ·{' '}
           {recorte(setor)}. Sempre 12 meses, qualquer que seja o período.
@@ -1336,7 +1337,7 @@ function montarCsv(dados: {
 
   for (const p of dados.pontos) {
     linhas.push([
-      'O ponto que mais pesa, por setor',
+      'O tema que mais pesa, por setor',
       p.setor,
       p.oculto ? OCULTO_CSV : (p.ponto ?? 'sem comparação'),
       p.diferencaPp === null ? '—' : `${p.diferencaPp} p.p.`

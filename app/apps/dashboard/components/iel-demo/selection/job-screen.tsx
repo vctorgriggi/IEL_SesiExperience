@@ -347,7 +347,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
                 ? 'ninguém da equipe foi convidado ainda'
                 : `${amostra.answered} de ${amostra.total} responderam`}
               {perfilAberto
-                ? ` · ${plural(pontosAbertos, 'ponto em aberto', 'pontos em aberto')}`
+                ? ` · ${plural(pontosAbertos, 'tema em aberto', 'temas em aberto')}`
                 : ' · perfil fechado'}
             </span>
             <Link

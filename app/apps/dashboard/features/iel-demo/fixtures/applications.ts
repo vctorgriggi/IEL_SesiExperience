@@ -1,9 +1,17 @@
 import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
+import {
+  calcularPerfilCultural,
+  escolherPerguntasDoCandidato
+} from '../analysis/culture';
+import type { FitAxisId } from '../analysis/fit-axes';
 import type {
   AnalysisByApplication,
   Application,
   CandidateFitResponse
 } from '../types';
+import { DEMO_CULTURE_ANSWERS } from './culture';
+import { DEMO_JOBS } from './jobs';
+import { createRandom, responderQuestionario } from './respostas-sinteticas';
 
 /**
  * Dez candidaturas para oito talentos: Ana (vagas 1 e 2) e Carla (vagas 1 e 3)
@@ -169,171 +177,226 @@ export const DEMO_APPLICATIONS: Application[] = [
 /**
  * Respostas de fit das candidaturas curadas (M3, R4).
  *
- * Fixas e coerentes com as histórias que o roteiro conta, porque é delas que
- * sai o percentual que aparece na demonstração. Ana espera orientação nas
- * primeiras semanas e a Cerrado quase não tem apoio estruturado — a aderência
- * dela cai justamente no eixo em que a leitura por estado já apontava
- * divergência, e é isso que torna o número explicável em vez de mágico.
- * Bruno, que prefere organizar o próprio trabalho, sobe pelo mesmo motivo.
- *
- * Diego não responde os cinco eixos iguais a ninguém: a disponibilidade dele
- * está em esclarecimento aberto (ESC-02), e a resposta "pode mudar, desde que
- * eu saiba com antecedência" é o que o esclarecimento veio confirmar.
+ * Cada pessoa tem um jeito de trabalhar declarado por tema (1..5, no sentido
+ * do tema) e responde as 10 frases que a empresa da vaga escolheu para ela
+ * (`escolherPerguntasDoCandidato` sobre o perfil curado). As histórias do
+ * roteiro estão nos valores: Ana espera acompanhamento nas primeiras semanas
+ * e a equipe da Cerrado se organiza sozinha — a aderência dela cai
+ * justamente em "Autonomia", o tema em que gestão e equipe da Cerrado também
+ * divergem. Bruno, que prefere organizar o próprio trabalho, sobe pelo mesmo
+ * motivo. Fábio espera treinamento formal e a Horizonte é de acompanhamento
+ * e procedimento: técnico baixo e aderência alta, o caso de resgate da R10.
  *
  * O aceite acompanha cada resposta, com data e versão do texto — sem ele não
  * há base legal para a resposta existir (LGPD, art. 7º, I). Nenhuma resposta
  * carrega empresa: R5.
  */
-export const DEMO_FIT_RESPONSES: CandidateFitResponse[] = [
+type JeitoDeTrabalhar = Record<FitAxisId, number>;
+
+const ANA: JeitoDeTrabalhar = {
+  'orientacao-resultados': 4,
+  inovacao: 4,
+  'aprendizado-desenvolvimento': 3,
+  'foco-cliente': 4,
+  'etica-seguranca': 4,
+  'execucao-ritmo': 4,
+  'regras-decisao': 4,
+  'interacao-convivencia': 3,
+  'lideranca-autonomia': 1,
+  'adaptacao-carreira': 3
+};
+
+const RESPOSTAS_CURADAS: {
+  applicationId: string;
+  jobId: string;
+  jeito: JeitoDeTrabalhar;
+  answeredAt: string;
+  acceptedAt: string;
+}[] = [
   {
-    // Ana: espera acompanhamento (apoio-inicial = 3) e rotina combinada.
+    // Ana: espera acompanhamento no início e uma tarefa de cada vez.
     applicationId: 'CAND-01',
-    answers: {
-      'apoio-inicial': 3,
-      autonomia: 1,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 3,
-      aprendizado: 2
-    },
+    jobId: 'VAG-01',
+    jeito: ANA,
     answeredAt: '2026-09-05T14:10:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-05T14:08:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-05T14:08:00.000Z'
   },
   {
-    // Bruno: prefere autonomia ampla (autonomia = 3) e pouco apoio formal.
+    // Bruno: organiza o próprio trabalho e alterna demandas sem problema.
     applicationId: 'CAND-02',
-    answers: {
-      'apoio-inicial': 1,
-      autonomia: 3,
-      'comunicacao-prioridades': 2,
-      'ritmo-turno': 2,
-      aprendizado: 2
+    jobId: 'VAG-01',
+    jeito: {
+      'orientacao-resultados': 3,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 4,
+      'foco-cliente': 3,
+      'etica-seguranca': 3,
+      'execucao-ritmo': 2,
+      'regras-decisao': 3,
+      'interacao-convivencia': 4,
+      'lideranca-autonomia': 5,
+      'adaptacao-carreira': 3
     },
     answeredAt: '2026-09-04T19:30:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-04T19:28:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-04T19:28:00.000Z'
   },
   {
     // Carla: quer aprender controle de materiais e trabalha bem com lista.
     applicationId: 'CAND-03',
-    answers: {
-      'apoio-inicial': 2,
-      autonomia: 2,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 2,
-      aprendizado: 3
+    jobId: 'VAG-01',
+    jeito: {
+      'orientacao-resultados': 4,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 5,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 3,
+      'regras-decisao': 4,
+      'interacao-convivencia': 2,
+      'lideranca-autonomia': 3,
+      'adaptacao-carreira': 4
     },
     answeredAt: '2026-09-06T08:45:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-06T08:44:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-06T08:44:00.000Z'
   },
   {
     // Diego: disponibilidade negociável — o ponto do esclarecimento ESC-02.
     applicationId: 'CAND-04',
-    answers: {
-      'apoio-inicial': 2,
-      autonomia: 2,
-      'comunicacao-prioridades': 2,
-      'ritmo-turno': 2,
-      aprendizado: 2
+    jobId: 'VAG-01',
+    jeito: {
+      'orientacao-resultados': 3,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 3,
+      'foco-cliente': 3,
+      'etica-seguranca': 3,
+      'execucao-ritmo': 3,
+      'regras-decisao': 3,
+      'interacao-convivencia': 3,
+      'lideranca-autonomia': 3,
+      'adaptacao-carreira': 4
     },
     answeredAt: '2026-09-02T21:05:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-02T21:02:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-02T21:02:00.000Z'
   },
   {
     // Ana na vaga 2: mesma pessoa, outra candidatura, outro registro (R4).
     applicationId: 'CAND-05',
-    answers: {
-      'apoio-inicial': 3,
-      autonomia: 1,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 3,
-      aprendizado: 2
-    },
+    jobId: 'VAG-02',
+    jeito: ANA,
     answeredAt: '2026-07-02T13:20:00.000Z',
-    consent: {
-      acceptedAt: '2026-07-02T13:18:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-07-02T13:18:00.000Z'
   },
   {
-    // Elisa: procedimentos por escrito, apoio moderado.
+    // Elisa: procedimento definido e combinados por escrito.
     applicationId: 'CAND-06',
-    answers: {
-      'apoio-inicial': 2,
-      autonomia: 2,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 3,
-      aprendizado: 2
+    jobId: 'VAG-02',
+    jeito: {
+      'orientacao-resultados': 5,
+      inovacao: 4,
+      'aprendizado-desenvolvimento': 3,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 4,
+      'regras-decisao': 5,
+      'interacao-convivencia': 2,
+      'lideranca-autonomia': 3,
+      'adaptacao-carreira': 3
     },
     answeredAt: '2026-08-28T17:40:00.000Z',
-    consent: {
-      acceptedAt: '2026-08-28T17:38:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-08-28T17:38:00.000Z'
   },
   {
     // Fábio: espera treinamento formal antes de assumir a rotina. Match
     // técnico baixo e aderência alta — é o caso de resgate da dor R10.
     applicationId: 'CAND-07',
-    answers: {
-      'apoio-inicial': 3,
-      autonomia: 1,
-      'comunicacao-prioridades': 2,
-      'ritmo-turno': 2,
-      aprendizado: 3
+    jobId: 'VAG-02',
+    jeito: {
+      'orientacao-resultados': 4.5,
+      inovacao: 4,
+      'aprendizado-desenvolvimento': 3,
+      'foco-cliente': 3.5,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 4,
+      'regras-decisao': 4.5,
+      'interacao-convivencia': 3,
+      'lideranca-autonomia': 1.5,
+      'adaptacao-carreira': 3.5
     },
     answeredAt: '2026-09-01T09:15:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-01T09:12:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-01T09:12:00.000Z'
   },
   {
     // Carla na vaga 3: candidatura própria, resposta própria.
     applicationId: 'CAND-08',
-    answers: {
-      'apoio-inicial': 2,
-      autonomia: 2,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 2,
-      aprendizado: 3
+    jobId: 'VAG-03',
+    jeito: {
+      'orientacao-resultados': 4,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 5,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 3,
+      'regras-decisao': 4,
+      'interacao-convivencia': 2,
+      'lideranca-autonomia': 3,
+      'adaptacao-carreira': 4
     },
     answeredAt: '2026-09-06T08:52:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-06T08:51:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-06T08:51:00.000Z'
   },
   {
-    // Gabriela: autonomia após o período inicial, prioridades por escrito.
+    // Gabriela: autonomia depois do período inicial, prioridades por escrito.
     applicationId: 'CAND-09',
-    answers: {
-      'apoio-inicial': 2,
-      autonomia: 3,
-      'comunicacao-prioridades': 3,
-      'ritmo-turno': 3,
-      aprendizado: 2
+    jobId: 'VAG-03',
+    jeito: {
+      'orientacao-resultados': 4,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 4,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 4,
+      'regras-decisao': 3,
+      'interacao-convivencia': 2,
+      'lideranca-autonomia': 4,
+      'adaptacao-carreira': 4
     },
     answeredAt: '2026-09-07T11:00:00.000Z',
-    consent: {
-      acceptedAt: '2026-09-07T10:58:00.000Z',
-      version: CANDIDATE_CONSENT_VERSION
-    }
+    acceptedAt: '2026-09-07T10:58:00.000Z'
   }
   // CAND-10 (Hugo) fica sem resposta de propósito: a mesa de seleção precisa
   // mostrar como é uma candidatura sem fit medido — R7, quem não responde
   // sai do processo, mas sai por decisão do analista, não por sumiço.
 ];
+
+/** As frases que cada vaga curada pergunta, a partir do perfil curado. */
+function frasesDaVaga(jobId: string): string[] {
+  const companyId = DEMO_JOBS.find((job) => job.id === jobId)?.companyId;
+  const perfil = calcularPerfilCultural(
+    DEMO_CULTURE_ANSWERS.filter((answer) => answer.companyId === companyId)
+  );
+  return escolherPerguntasDoCandidato(perfil).map(
+    (pergunta) => pergunta.itemId
+  );
+}
+
+const random = createRandom(20260920);
+
+export const DEMO_FIT_RESPONSES: CandidateFitResponse[] = RESPOSTAS_CURADAS.map(
+  (resposta) => ({
+    applicationId: resposta.applicationId,
+    answers: responderQuestionario(
+      frasesDaVaga(resposta.jobId),
+      { temas: resposta.jeito },
+      random,
+      0.4
+    ),
+    answeredAt: resposta.answeredAt,
+    consent: {
+      acceptedAt: resposta.acceptedAt,
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  })
+);
 
 export const DEMO_ANALYSIS: AnalysisByApplication = {
   // Ana Ribeiro — Assistente de Logística (Cerrado Distribuição)

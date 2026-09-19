@@ -1,122 +1,150 @@
+import type { FitAxisId } from '../analysis/fit-axes';
+import { blocoDoConvite, itensDoTema } from '../analysis/instrumento';
 import type { CultureAnswer } from '../types';
+import { DEMO_CULTURE_INVITES } from './culture-invites';
+import {
+  agregarRespostas,
+  createRandom,
+  responderFrase,
+  type AlvoCultural,
+  type RespostaIndividual
+} from './respostas-sinteticas';
 
 /**
- * Respostas registradas sobre a cultura das empresas da base demo.
+ * Respostas registradas sobre a cultura das empresas curadas.
+ *
+ * Saem dos convites de `DEMO_CULTURE_INVITES`: cada convite respondido
+ * responde o próprio bloco de frases, com o alvo do seu papel, e o resultado
+ * é agregado por frase, papel e valor — nenhum registro diz quem respondeu.
  *
  * A distribuição é desenhada para mostrar o que uma fonte única esconderia.
- * Na Cerrado Distribuição, a gestão responde que há troca informal no apoio a
- * quem entra; a equipe, consultada de forma agregada e anônima, responde em
- * maioria que cada um assume a rotina por conta. Não é contradição a ser
- * resolvida escolhendo um lado: é a informação mais útil da tela, porque é
- * disso que a pessoa que entrar vai depender no primeiro mês.
+ * Na Cerrado Distribuição, a gestão diz que quem entra tem acompanhamento
+ * ("Autonomia" baixa); a equipe, consultada de forma agregada e anônima,
+ * responde que cada um se organiza sozinho. Não é contradição a ser resolvida
+ * escolhendo um lado: é a informação mais útil da tela, porque é disso que a
+ * pessoa que entrar vai depender no primeiro mês.
  *
  * A Oficina Pantanal aparece com consulta insuficiente de propósito: duas
- * respostas não são "a equipe", e a tela precisa dizer isso em vez de tratar
- * duas pessoas como o conjunto.
+ * respostas de equipe não são "a equipe", e nenhuma frase fecha.
  */
-export const DEMO_CULTURE_ANSWERS: CultureAnswer[] = [
-  // --- Cerrado Distribuição: gestão e equipe divergem no apoio inicial ---
-  {
-    id: 'CUL-01',
-    companyId: 'EMP-01',
-    axisId: 'apoio-inicial',
-    optionId: 'troca-informal',
-    respondent: 'gestao',
-    count: 1,
-    answeredAt: '2026-09-05'
-  },
-  {
-    id: 'CUL-02',
-    companyId: 'EMP-01',
-    axisId: 'apoio-inicial',
-    optionId: 'por-conta',
-    respondent: 'equipe',
-    count: 5,
-    answeredAt: '2026-09-08'
-  },
-  {
-    id: 'CUL-03',
-    companyId: 'EMP-01',
-    axisId: 'apoio-inicial',
-    optionId: 'troca-informal',
-    respondent: 'equipe',
-    count: 2,
-    answeredAt: '2026-09-08'
-  },
-  {
-    id: 'CUL-04',
-    companyId: 'EMP-01',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'por-escrito',
-    respondent: 'gestao',
-    count: 1,
-    answeredAt: '2026-09-05'
-  },
-  {
-    id: 'CUL-05',
-    companyId: 'EMP-01',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'por-escrito',
-    respondent: 'equipe',
-    count: 6,
-    answeredAt: '2026-09-08'
-  },
-  {
-    id: 'CUL-06',
-    companyId: 'EMP-01',
-    axisId: 'comunicacao-prioridades',
-    optionId: 'verbal-inicio',
-    respondent: 'equipe',
-    count: 1,
-    answeredAt: '2026-09-08'
-  },
 
-  // --- Horizonte Alimentos: gestão, RH e equipe convergem ---
-  {
-    id: 'CUL-07',
-    companyId: 'EMP-02',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
-    respondent: 'gestao',
-    count: 1,
-    answeredAt: '2026-09-02'
-  },
-  {
-    id: 'CUL-08',
-    companyId: 'EMP-02',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
-    respondent: 'rh',
-    count: 1,
-    answeredAt: '2026-09-02'
-  },
-  {
-    id: 'CUL-09',
-    companyId: 'EMP-02',
-    axisId: 'apoio-inicial',
-    optionId: 'acompanhamento-formal',
-    respondent: 'equipe',
-    count: 4,
-    answeredAt: '2026-09-06'
-  },
+/** Semente própria das respostas curadas. */
+const SEED_CULTURA_CURADA = 20260919;
 
-  // --- Oficina Pantanal: consulta à equipe sem base suficiente ---
-  {
-    id: 'CUL-10',
-    companyId: 'EMP-03',
-    axisId: 'autonomia',
-    optionId: 'autonomia-ampla',
-    respondent: 'gestao',
-    count: 1,
-    answeredAt: '2026-08-30'
-  },
-  {
-    id: 'CUL-11',
-    companyId: 'EMP-03',
-    axisId: 'autonomia',
-    optionId: 'parcial',
-    respondent: 'equipe',
-    count: 2,
-    answeredAt: '2026-09-01'
+/** Cerrado Distribuição, pela equipe: alterna demandas, cada um por si. */
+const CERRADO_EQUIPE: AlvoCultural = {
+  temas: {
+    'orientacao-resultados': 4.5,
+    inovacao: 4,
+    'aprendizado-desenvolvimento': 2.5,
+    'foco-cliente': 4,
+    'etica-seguranca': 4,
+    'execucao-ritmo': 1.5,
+    'regras-decisao': 2,
+    'interacao-convivencia': 4.5,
+    'lideranca-autonomia': 5,
+    'adaptacao-carreira': 2.5
   }
+};
+
+/** A gestão da Cerrado: igual à equipe, menos na autonomia. */
+const CERRADO_GESTAO: AlvoCultural = {
+  temas: { ...CERRADO_EQUIPE.temas, 'lideranca-autonomia': 2 }
+};
+
+/**
+ * Temas que a gestão da Cerrado já confirmou pela tela da empresa. Os demais
+ * ficam com a proposta da análise pendente (`cultureSuggestions`).
+ */
+const CERRADO_TEMAS_DA_GESTAO: FitAxisId[] = [
+  'lideranca-autonomia',
+  'interacao-convivencia'
 ];
+
+/** Horizonte Alimentos: linha de produção, procedimento e acompanhamento. */
+const HORIZONTE: AlvoCultural = {
+  temas: {
+    'orientacao-resultados': 4.5,
+    inovacao: 4,
+    'aprendizado-desenvolvimento': 2.5,
+    'foco-cliente': 3.5,
+    'etica-seguranca': 3.5,
+    'execucao-ritmo': 4,
+    'regras-decisao': 4.5,
+    'interacao-convivencia': 3,
+    'lideranca-autonomia': 2,
+    'adaptacao-carreira': 3.5
+  }
+};
+
+/** Oficina Pantanal: cada um cuida do próprio serviço. */
+const PANTANAL: AlvoCultural = {
+  temas: {
+    'orientacao-resultados': 4,
+    inovacao: 3,
+    'aprendizado-desenvolvimento': 4,
+    'foco-cliente': 3,
+    'etica-seguranca': 3.5,
+    'execucao-ritmo': 3,
+    'regras-decisao': 3,
+    'interacao-convivencia': 3.5,
+    'lideranca-autonomia': 4,
+    'adaptacao-carreira': 3
+  }
+};
+
+/** Os alvos de cada empresa curada, para os convites e para os candidatos. */
+const ALVO_CULTURAL_CURADO: Record<string, AlvoCultural> = {
+  'EMP-01': CERRADO_EQUIPE,
+  'EMP-02': HORIZONTE,
+  'EMP-03': PANTANAL
+};
+
+function alvoDoConvite(companyId: string, role: string): AlvoCultural {
+  if (companyId === 'EMP-01' && role !== 'equipe') return CERRADO_GESTAO;
+  return ALVO_CULTURAL_CURADO[companyId] ?? CERRADO_EQUIPE;
+}
+
+function construir(): CultureAnswer[] {
+  const random = createRandom(SEED_CULTURA_CURADA);
+  const porEmpresa = new Map<string, RespostaIndividual[]>();
+  const datas = new Map<string, string>();
+
+  for (const convite of DEMO_CULTURE_INVITES) {
+    if (!convite.answeredAt) continue;
+    const alvo = alvoDoConvite(convite.companyId, convite.role);
+    const lista = porEmpresa.get(convite.companyId) ?? [];
+    for (const item of blocoDoConvite(convite)) {
+      lista.push({
+        itemId: item.id,
+        value: responderFrase(item, alvo, random),
+        respondent: convite.role
+      });
+    }
+    porEmpresa.set(convite.companyId, lista);
+    datas.set(`${convite.companyId}:${convite.role}`, convite.answeredAt);
+  }
+
+  // A gestão da Cerrado respondeu pela tela da empresa, tema a tema, sem
+  // convite — como a proposta assistida registra ao ser confirmada.
+  const cerrado = porEmpresa.get('EMP-01') ?? [];
+  for (const tema of CERRADO_TEMAS_DA_GESTAO) {
+    for (const item of itensDoTema(tema)) {
+      cerrado.push({
+        itemId: item.id,
+        value: responderFrase(item, CERRADO_GESTAO, random, 0),
+        respondent: 'gestao'
+      });
+    }
+  }
+  porEmpresa.set('EMP-01', cerrado);
+  datas.set('EMP-01:gestao', '2026-09-05');
+
+  return [...porEmpresa.entries()].flatMap(([companyId, respostas]) =>
+    agregarRespostas(companyId, `CUL-${companyId}`, respostas, (role) =>
+      (datas.get(`${companyId}:${role}`) ?? '2026-09-05').slice(0, 10)
+    )
+  );
+}
+
+export const DEMO_CULTURE_ANSWERS: CultureAnswer[] = construir();

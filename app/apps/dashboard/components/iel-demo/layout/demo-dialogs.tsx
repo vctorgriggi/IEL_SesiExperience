@@ -74,7 +74,7 @@ const COMO_FUNCIONA: { icone: LucideIcon; titulo: string; frase: string }[] = [
     icone: EyeOffIcon,
     titulo: 'Não é teste psicológico e não produz nota.',
     frase:
-      'São cinco perguntas sobre preferências de trabalho — nada de personalidade, saúde, família, religião ou opinião.'
+      'São frases sobre preferências de trabalho — nada de personalidade, saúde, família, religião ou opinião.'
   },
   {
     icone: BuildingIcon,
@@ -192,13 +192,13 @@ const PASSOS_COMPLETOS: Passo[] = [
   },
   {
     texto:
-      'Responder como colaborador da empresa pelo link do celular: cinco perguntas, sem login, sem ver colegas nem contagem.',
+      'Responder como colaborador da empresa pelo link do celular: cerca de 15 frases, sem login, sem ver colegas nem contagem.',
     href: ROTAS.cultureInvite.byToken('418c781c386bb301'),
     rotulo: 'responder'
   },
   {
     texto:
-      'Responder o fit como candidata: aceite, cinco perguntas e nenhuma menção ao nome da empresa.',
+      'Responder o fit como candidata: aceite, 10 frases e nenhuma menção ao nome da empresa.',
     href: ROTAS.applications.byId('CAND-05').fit,
     rotulo: 'responder'
   },
@@ -284,7 +284,7 @@ const PASSOS_CURTOS: Passo[] = [
   },
   {
     texto:
-      'Responder pelo celular como candidata: aceite, cinco perguntas, nenhum nome de empresa.',
+      'Responder pelo celular como candidata: aceite, 10 frases, nenhum nome de empresa.',
     href: ROTAS.applications.byId('CAND-05').fit,
     rotulo: 'responder'
   },

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CultureOptionId } from '../analysis/culture';
 import { CULTURE_CONSENT_VERSION } from '../analysis/culture-invites';
-import type { FitAxisId } from '../analysis/fit-axes';
+import { ITENS_DO_INSTRUMENTO } from '../analysis/instrumento';
 import { buildInitialDemoState } from '../fixtures';
 import { demoReducer } from './reducer';
 import {
@@ -14,13 +13,10 @@ import {
 
 const AT = '2026-09-14T10:00:00.000Z';
 
-const RESPOSTAS: Record<FitAxisId, CultureOptionId> = {
-  'apoio-inicial': 'troca-informal',
-  autonomia: 'parcial',
-  'comunicacao-prioridades': 'por-escrito',
-  'ritmo-turno': 'fixo',
-  aprendizado: 'rotina-propria'
-};
+// "Concordo" em todas as frases: o reducer guarda só as do bloco do convite.
+const RESPOSTAS = Object.fromEntries(
+  ITENS_DO_INSTRUMENTO.map((item) => [item.id, 4 as const])
+);
 
 function convidar(state = buildInitialDemoState(), at = AT) {
   return demoReducer(state, {
@@ -65,10 +61,6 @@ describe('resposta pelo link (M2)', () => {
   it('marca o convite como respondido e entra na média da empresa', () => {
     const state = convidar();
     const convite = getCultureInvites(state, 'EMP-02').at(-1)!;
-    const antes = getCompanyCultureProfile(state, 'EMP-02').find(
-      (eixo) => eixo.axisId === 'autonomia'
-    );
-
     const depois = demoReducer(state, {
       type: 'answer-culture-invite',
       token: convite.token,
@@ -81,11 +73,12 @@ describe('resposta pelo link (M2)', () => {
     expect(atualizado?.answeredAt).toBe('2026-09-15T09:00:00.000Z');
     expect(atualizado?.consentVersion).toBe(CULTURE_CONSENT_VERSION);
 
-    const perfil = getCompanyCultureProfile(depois, 'EMP-02').find(
-      (eixo) => eixo.axisId === 'autonomia'
+    // Instrumento de 52 frases: o convite responde o próprio bloco (16).
+    const doConvite = depois.cultureAnswers.filter(
+      (answer) => answer.inviteId === convite.id
     );
-    expect(perfil?.respondents).toBe((antes?.respondents ?? 0) + 1);
-    expect(perfil?.mean).toBe(2);
+    expect(doConvite).toHaveLength(16);
+    expect(getCompanyCultureProfile(depois, 'EMP-02')).toHaveLength(10);
   });
 
   it('o mesmo link vale uma vez só', () => {

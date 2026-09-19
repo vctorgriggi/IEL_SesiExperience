@@ -57,6 +57,11 @@ type PersistedState = {
    * Entram no delta porque a resposta de um colaborador convidado muda a média
    * da empresa, e uma média que volta ao valor de fábrica depois de recarregar
    * a página desmentiria o "N de M responderam" da tela ao lado.
+   *
+   * Com o instrumento de 52 frases, um convite respondido traz um registro por
+   * frase do bloco (cerca de 15) e a confirmação da gestão traz um por frase do
+   * tema. Continua sendo delta por `id`: o que a base já reconstrói a cada
+   * carga não é gravado de novo.
    */
   changedCultureAnswers: CultureAnswer[];
   /** Convites criados ou alterados (resposta, reenvio). */

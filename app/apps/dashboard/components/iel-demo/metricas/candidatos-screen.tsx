@@ -47,6 +47,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { LADO, PREENCHIMENTO_CLARO, PREENCHIMENTO_DE_ESTADO } from './cores';
 import { formatarNumero } from './formato';
 import { Funil } from './funil';
@@ -62,12 +63,12 @@ const TODOS = 'todos';
 type AbaDoFunil = 'total' | CanalComunicacao;
 
 /**
- * Candidatos: comunicação, questionário e consentimento.
+ * Questionários: envio, resposta e consentimento.
  *
- * Não é a lista de pessoas (essa é Pessoas). A tela responde uma pergunta:
- * "o convite chega, é aberto e o questionário é concluído?". Por isso só há
- * agregados — nenhum nome, nenhum contato — e todo recorte com menos de 5
- * pessoas sai como "—".
+ * Não é a lista de pessoas (essa é o Banco de talentos). A tela responde uma
+ * pergunta: "o convite chega, é aberto e o questionário é concluído?". Por
+ * isso só há agregados — nenhum nome, nenhum contato — e todo recorte com
+ * menos de 5 pessoas sai como "—".
  */
 export function CandidatosScreen() {
   const { state } = useIelDemo();
@@ -76,7 +77,7 @@ export function CandidatosScreen() {
   const [canal, setCanal] = useState<string>(TODOS);
   const [aba, setAba] = useState<AbaDoFunil>('total');
 
-  usePageHeader({ breadcrumb: [{ label: 'Candidatos' }] });
+  usePageHeader({ breadcrumb: [{ label: 'Questionários' }] });
 
   const vagas = useMemo(
     () => getVisibleJobs(state).filter((job) => job.stage !== 'encerrada'),
@@ -119,9 +120,11 @@ export function CandidatosScreen() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight">Candidatos</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Questionários
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Comunicação, questionário e consentimento
+            Envio, resposta e consentimento
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -227,7 +230,7 @@ export function CandidatosScreen() {
                   setAba(valor);
               }}
             >
-              <TabsList>
+              <TabsList className={ABAS_SEM_ROLAGEM}>
                 <TabsTrigger value="total">Total</TabsTrigger>
                 <TabsTrigger
                   value="email"
@@ -324,7 +327,7 @@ const PRIVACIDADE = [
     icone: FileLock2,
     titulo: 'Você vê a leitura, não as respostas uma a uma',
     texto:
-      'O quanto combina com a empresa e os 5 pontos ficam visíveis. Cada resposta, não.'
+      'O quanto combina com a empresa e os 10 temas ficam visíveis. Cada resposta, não.'
   },
   {
     icone: UserCheck,
