@@ -40,8 +40,8 @@ Use este checklist antes e depois de fazer o deploy do dashboard (e de qualquer 
 
 ## 4. App de chat (demonstração)
 
-- [ ] **Migrações antes de subir o app**: `bun --cwd packages/database run migrate`. O chat exige a extensão `vector` (base de conhecimento); o Postgres precisa suportá-la — a imagem local é `pgvector/pgvector:pg16`, e em serviço gerenciado confira se `CREATE EXTENSION vector` é permitido antes do deploy.
-- [ ] **Conta de demonstração**: `bun --cwd packages/database run seed-demo` contra o banco de produção. Defina `DEMO_EMAIL` e `DEMO_PASSWORD` no ambiente do comando — o padrão (`demo@arki.dev` / `Demo1234`) é público e serve só para local.
+- [ ] **Migrações antes de subir o app**: `bun --filter @workspace/database migrate`. O chat exige a extensão `vector` (base de conhecimento); o Postgres precisa suportá-la — a imagem local é `pgvector/pgvector:pg16`, e em serviço gerenciado confira se `CREATE EXTENSION vector` é permitido antes do deploy.
+- [ ] **Conta de demonstração**: `bun --filter @workspace/database seed-demo` contra o banco de produção. Defina `DEMO_EMAIL` e `DEMO_PASSWORD` no ambiente do comando — o padrão (`demo@arki.dev` / `Demo1234`) é público e serve só para local.
 - [ ] **`OPENAI_API_KEY`** é obrigatória: além dos modelos de chat, os embeddings da base de conhecimento dependem dela. Enquanto ela não estiver configurada, `/chat` responde erro — o app sobe, mas não gera resposta. Configure antes de divulgar a URL.
 - [ ] **O chat não precisa do dashboard.** Ele tem login próprio em `/sign-in` e serve as próprias rotas de dados, então `NEXT_PUBLIC_DASHBOARD_URL` não entra no deploy dele. Precisa de `DATABASE_URL` e `AUTH_SECRET`; `AUTH_COOKIE_DOMAIN` só quando você quiser compartilhar sessão com outro app do produto.
 - [ ] **`AI_CHAT_KB_ADMIN_EMAILS`**: emails que administram a base de conhecimento. Só eles apagam documentos e não gastam cota de demonstração.

@@ -5,7 +5,7 @@ Uma entrega no Arki só está pronta quando estes itens foram validados no escop
 - Build: `bun run build`
 - Lint: `bun run lint`
 - Typecheck: `bun run typecheck`
-- Testes: `bun run test` e, quando houver fluxo crítico no dashboard, `bun --cwd apps/dashboard run test:e2e`
+- Testes: `bun run test` e, quando houver fluxo crítico no dashboard, `bun --filter @workspace/dashboard test:e2e`
 - Release: envs revisados, migrações conferidas, docs/scripts atualizados e checklist de deploy aplicável revisado
 
 ## Regra prática

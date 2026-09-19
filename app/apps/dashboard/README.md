@@ -7,7 +7,7 @@ App principal autenticado, com UI e API via Next.js Route Handlers em `app/api/`
 Da raiz do monorepo:
 
 ```bash
-bun --cwd apps/dashboard run dev
+bun --filter @workspace/dashboard dev
 ```
 
 Se o banco ainda não estiver pronto:
@@ -15,7 +15,7 @@ Se o banco ainda não estiver pronto:
 ```bash
 bun run quickstart
 docker compose up
-bun --cwd packages/database run migrate
+bun --filter @workspace/database migrate
 ```
 
 ## Padrão atual
@@ -37,7 +37,7 @@ navegador. Não usa banco, sessão nem integrações externas.
 # NEXT_PUBLIC_DASHBOARD_URL, AUTH_SECRET e DATABASE_URL só satisfazem a
 # validação de env do monorepo; a demonstração não consulta o banco.
 cp apps/dashboard/.env.example apps/dashboard/.env
-bun --cwd apps/dashboard run dev
+bun --filter @workspace/dashboard dev
 # abrir http://localhost:3000/iel
 ```
 

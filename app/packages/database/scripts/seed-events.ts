@@ -259,7 +259,7 @@ async function resolveOrgAndUser(): Promise<{
 
   if (!user) {
     throw new Error(
-      `Usuário ${SEED_USER_EMAIL} não encontrado. Crie a conta com "bun --cwd packages/database run seed-demo", ou aponte SEED_USER_EMAIL para uma conta existente.`
+      `Usuário ${SEED_USER_EMAIL} não encontrado. Crie a conta com "bun --filter @workspace/database seed-demo", ou aponte SEED_USER_EMAIL para uma conta existente.`
     );
   }
 

@@ -35,7 +35,7 @@ Arki is a SaaS starter kit built as a Turborepo monorepo with Bun.
 ### Adding a new feature to the dashboard
 
 1. If it needs new DB tables: add schema in `packages/database/src/schemas/<domain>/`
-2. Run `bun --cwd packages/database run generate` then `bun --cwd packages/database run migrate` to apply (or `bun --cwd packages/database run push` for quick dev)
+2. Run `bun --filter @workspace/database generate` then `bun --filter @workspace/database migrate` to apply (or `bun --filter @workspace/database push` for quick dev)
 3. If it needs HTTP API: add Route Handlers in `apps/dashboard/app/api/<domain>/` (GET/POST/PUT/DELETE in `route.ts`). Use `@workspace/database` in the handler or in server-only functions.
 4. Add UI components in `apps/dashboard/components/<feature>/`
 5. Add page in `apps/dashboard/app/(protected)/<feature>/`
@@ -58,8 +58,8 @@ Arki is a SaaS starter kit built as a Turborepo monorepo with Bun.
 ### Database schema changes
 
 1. Edit schema files in `packages/database/src/schemas/<domain>/`
-2. Run `bun --cwd packages/database run generate` to create migration files in `packages/database/drizzle/`
-3. Run `bun --cwd packages/database run migrate` (Docker/prod) or `bun --cwd packages/database run push` (quick dev, no history)
+2. Run `bun --filter @workspace/database generate` to create migration files in `packages/database/drizzle/`
+3. Run `bun --filter @workspace/database migrate` (Docker/prod) or `bun --filter @workspace/database push` (quick dev, no history)
 4. Update any affected Zod schemas and DTOs
 
 ## Auth (Auth.js / next-auth v5)

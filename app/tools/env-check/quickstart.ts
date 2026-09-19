@@ -21,7 +21,7 @@ const DATABASE_URL_ENV_PATHS = [
 const AUTH_SECRET_ENV_PATHS = ['apps/dashboard/.env'] as const;
 
 const APPS = [
-  { name: 'Dashboard', cmd: 'bun --cwd apps/dashboard run dev', url: 'http://localhost:3000' }
+  { name: 'Dashboard', cmd: 'bun --filter @workspace/dashboard dev', url: 'http://localhost:3000' }
 ] as const;
 
 function resolvePath(relativePath: string): string {
@@ -147,7 +147,7 @@ function printNextSteps(postgresUp: boolean): void {
     step++;
   }
 
-  console.log(`  ${step}. Aplicar migrações: bun --cwd packages/database run migrate`);
+  console.log(`  ${step}. Aplicar migrações: bun --filter @workspace/database migrate`);
   step++;
   console.log(`  ${step}. Iniciar os aplicativos que quiser usar:`);
 

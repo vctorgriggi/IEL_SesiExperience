@@ -33,7 +33,7 @@ confirme que `CREATE EXTENSION vector` é permitido antes de migrar.
 
 ## Comandos
 
-Todos rodam a partir da raiz do monorepo com `bun --cwd packages/database run <script>`.
+Todos rodam a partir da raiz do monorepo com `bun --filter @workspace/database <script>`.
 
 | Script | O que faz |
 |---|---|
@@ -47,8 +47,8 @@ Todos rodam a partir da raiz do monorepo com `bun --cwd packages/database run <s
 ### Fluxo ao mudar o schema
 
 ```bash
-bun --cwd packages/database run generate   # revise o SQL gerado antes de aplicar
-bun --cwd packages/database run migrate
+bun --filter @workspace/database generate   # revise o SQL gerado antes de aplicar
+bun --filter @workspace/database migrate
 ```
 
 A migração gerada é um arquivo SQL comum: dá para editá-la à mão quando precisar
@@ -58,5 +58,5 @@ de algo que o gerador não expressa, como criar uma extensão.
 
 ```bash
 docker compose down -v && docker compose up -d
-bun --cwd packages/database run migrate
+bun --filter @workspace/database migrate
 ```

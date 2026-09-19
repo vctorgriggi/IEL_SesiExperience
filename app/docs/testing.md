@@ -4,7 +4,7 @@
 
 - `bun run test`: roda a suite registrada no Turbo.
 - `bun run test:coverage`: roda a suite completa com cobertura e valida os thresholds do `vitest.config.ts` (também roda no CI).
-- `bun --cwd apps/dashboard run test:e2e`: roda os E2E do dashboard com Playwright.
+- `bun --filter @workspace/dashboard test:e2e`: roda os E2E do dashboard com Playwright.
 - `RUN_AI_INTEGRATION_TESTS=1 bun run test`: habilita os testes de crédito do chat (`packages/ai`) contra Postgres real. O que garante o saldo ali é SQL (decremento condicional dentro de transação), então esses casos, incluindo o de envios simultâneos, só provam alguma coisa com banco de verdade.
 
 ## Pré-requisitos
@@ -18,4 +18,4 @@
 ## Quando rodar o quê
 
 - Mudanças de UI isoladas: `bun run test` se houver cobertura local.
-- Mudanças em auth, rotas API, schema ou fluxos críticos: `bun run test` e `bun --cwd apps/dashboard run test:e2e`.
+- Mudanças em auth, rotas API, schema ou fluxos críticos: `bun run test` e `bun --filter @workspace/dashboard test:e2e`.

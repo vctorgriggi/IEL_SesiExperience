@@ -58,21 +58,21 @@ bun run quickstart
 
 # Development
 bun run dev
-bun --cwd apps/dashboard run dev
+bun --filter @workspace/dashboard dev
 
 # Database
-bun --cwd packages/database run generate
-bun --cwd packages/database run migrate
-bun --cwd packages/database run push
-bun --cwd packages/database run studio
-bun --cwd packages/database run seed-events
+bun --filter @workspace/database generate
+bun --filter @workspace/database migrate
+bun --filter @workspace/database push
+bun --filter @workspace/database studio
+bun --filter @workspace/database seed-events
 
 # Quality
 bun run lint
 bun run typecheck
 bun run format
 bun run test
-bun --cwd apps/dashboard run test:e2e
+bun --filter @workspace/dashboard test:e2e
 
 # Utilities
 bun run build
@@ -93,7 +93,7 @@ The root `docker-compose.yml` starts the local Postgres instance.
 
 - Start it with `docker compose up`
 - Use `DATABASE_URL=postgresql://arki_user:arki_password@localhost:5432/arki_events` for local development
-- Run `bun --cwd packages/database run migrate` after the database is up
+- Run `bun --filter @workspace/database migrate` after the database is up
 
 ## Main Patterns
 
@@ -120,7 +120,7 @@ The root `docker-compose.yml` starts the local Postgres instance.
 
 - `bun run test` runs the test suite registered in Turbo
 - `bun run test:coverage` runs the full suite with coverage and enforces the thresholds in `vitest.config.ts` (also runs in CI)
-- `bun --cwd apps/dashboard run test:e2e` runs dashboard Playwright tests
+- `bun --filter @workspace/dashboard test:e2e` runs dashboard Playwright tests
 - `vitest.setup.ts` injects an `AUTH_SECRET` compatible with test requirements
 
 ## Important Guides
