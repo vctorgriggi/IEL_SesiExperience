@@ -12,9 +12,7 @@ Arki is a SaaS starter kit built as a Turborepo monorepo with Bun.
 
 | Path | What it does | Tech |
 |---|---|---|
-| `apps/dashboard` | Main web application + API (auth, CRUD, webhooks via Route Handlers in `app/api/`) | Next.js 15, React 19 |
-| `apps/marketing` | Public marketing site | Next.js 15 |
-| `apps/ai-chat` | Example app: AI-powered chat (runs with `bun run dev`) | Next.js 15, Vercel AI SDK |
+| `apps/dashboard` | Main web application + API (auth, CRUD, webhooks via Route Handlers in `app/api/`) and the IEL prototype under `/iel` | Next.js 15, React 19 |
 | `packages/auth` | Authentication logic (Auth.js/next-auth, sessions, TOTP, permissions) | Auth.js (next-auth v5) |
 | `packages/database` | Drizzle schemas, client, migrations | Drizzle ORM, PostgreSQL |
 | `packages/ui` | Design system components | Native React components, Tailwind CSS 4 |

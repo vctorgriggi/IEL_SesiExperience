@@ -43,7 +43,6 @@ const APPS: AppConfig[] = [
       { key: 'DATABASE_URL', level: 'critical', check: 'url' },
       { key: 'AUTH_SECRET', level: 'critical', check: 'secret' },
       { key: 'NEXT_PUBLIC_DASHBOARD_URL', level: 'recommended', check: 'url' },
-      { key: 'NEXT_PUBLIC_MARKETING_URL', level: 'recommended', check: 'url' },
       { key: 'NEXT_PUBLIC_THEME_MODE', level: 'optional' },
       { key: 'EMAIL_PROVIDER', level: 'optional' },
       { key: 'EMAIL_FEEDBACK_INBOX', level: 'optional' },
@@ -51,35 +50,6 @@ const APPS: AppConfig[] = [
       { key: 'EMAIL_SENDGRID_API_KEY', level: 'optional' },
       { key: 'MONITORING_PROVIDER', level: 'optional' },
       { key: 'MONITORING_ALERT_WEBHOOK_URL', level: 'optional' }
-    ]
-  },
-  {
-    app: 'ai-chat',
-    envPath: 'apps/ai-chat/.env',
-    rules: [
-      { key: 'DATABASE_URL', level: 'critical', check: 'url' },
-      { key: 'AUTH_SECRET', level: 'critical', check: 'secret' },
-      { key: 'OPENAI_API_KEY', level: 'critical', check: 'secret' },
-      { key: 'ANTHROPIC_API_KEY', level: 'optional', check: 'secret' },
-      { key: 'AI_CHAT_KB_ADMIN_EMAILS', level: 'recommended' },
-      { key: 'NEXT_PUBLIC_DASHBOARD_URL', level: 'recommended', check: 'url' },
-      { key: 'NEXT_PUBLIC_AI_CHAT_URL', level: 'recommended', check: 'url' },
-      { key: 'NEXT_PUBLIC_MARKETING_URL', level: 'optional', check: 'url' },
-      { key: 'NEXT_PUBLIC_THEME_MODE', level: 'optional' },
-      { key: 'RATE_LIMIT_REDIS_URL', level: 'optional', check: 'url' },
-      { key: 'AI_CHAT_FREE_MESSAGES', level: 'optional' },
-      { key: 'AI_CHAT_SYSTEM_PROMPT', level: 'optional' }
-    ]
-  },
-  {
-    app: 'marketing',
-    envPath: 'apps/marketing/.env',
-    rules: [
-      { key: 'DATABASE_URL', level: 'critical', check: 'url' },
-      { key: 'NEXT_PUBLIC_DASHBOARD_URL', level: 'recommended', check: 'url' },
-      { key: 'NEXT_PUBLIC_MARKETING_URL', level: 'recommended', check: 'url' },
-      { key: 'NEXT_PUBLIC_API_URL', level: 'optional', check: 'url' },
-      { key: 'NEXT_PUBLIC_THEME_MODE', level: 'optional' }
     ]
   },
   {
@@ -213,13 +183,7 @@ function main() {
   }
 
   const consistencyChecks = [
-    { key: 'DATABASE_URL', apps: ['dashboard', 'ai-chat', 'marketing', 'database'] },
-    { key: 'AUTH_SECRET', apps: ['dashboard', 'ai-chat'] },
-    { key: 'NEXT_PUBLIC_DASHBOARD_URL', apps: ['dashboard', 'ai-chat', 'marketing'] },
-    { key: 'NEXT_PUBLIC_AI_CHAT_URL', apps: ['dashboard', 'ai-chat'] },
-    { key: 'AUTH_COOKIE_DOMAIN', apps: ['dashboard', 'ai-chat'] },
-    { key: 'NEXT_PUBLIC_MARKETING_URL', apps: ['dashboard', 'marketing'] },
-    { key: 'NEXT_PUBLIC_THEME_MODE', apps: ['dashboard', 'ai-chat', 'marketing'] }
+    { key: 'DATABASE_URL', apps: ['dashboard', 'database'] }
   ];
 
   console.log(`${BLUE}[consistência]${RESET}`);

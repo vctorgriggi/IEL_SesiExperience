@@ -22,9 +22,7 @@ SaaS starter kit in a Bun monorepo.
 
 ```text
 apps/
-  dashboard/       # Main app (:3000), auth, and product API
-  marketing/       # Public website (:3001)
-  ai-chat/         # Example AI chat app (:3003)
+  dashboard/       # Main app (:3000), auth, product API and the IEL prototype (/iel)
 
 packages/
   ai/              # AI chat domain: conversations, messages, credits
@@ -61,8 +59,6 @@ bun run quickstart
 # Development
 bun run dev
 bun --cwd apps/dashboard run dev
-bun --cwd apps/marketing run dev
-bun --cwd apps/ai-chat run dev
 
 # Database
 bun --cwd packages/database run generate
@@ -89,8 +85,7 @@ bun run tools/env-check/env-doctor.ts
 ## Local URLs
 
 - Dashboard: `http://localhost:3000`
-- Marketing: `http://localhost:3001`
-- AI Chat: `http://localhost:3003`
+- IEL prototype: `http://localhost:3000/iel`
 
 ## Docker & Database
 

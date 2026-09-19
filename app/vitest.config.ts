@@ -80,10 +80,6 @@ export default defineConfig({
         replacement: resolve(root, 'packages/database/src/index.ts')
       },
       {
-        find: '~/',
-        replacement: resolve(root, 'apps/ai-chat') + '/'
-      },
-      {
         find: '@/',
         replacement: resolve(root, 'apps/dashboard') + '/'
       }

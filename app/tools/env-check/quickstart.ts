@@ -10,24 +10,18 @@ const DEFAULT_DATABASE_URL = 'postgresql://arki_user:arki_password@localhost:543
 
 const ENV_FILES = [
   { examplePath: 'apps/dashboard/.env.example', envPath: 'apps/dashboard/.env' },
-  { examplePath: 'apps/marketing/.env.example', envPath: 'apps/marketing/.env' },
-  { examplePath: 'apps/ai-chat/.env.example', envPath: 'apps/ai-chat/.env' },
   { examplePath: 'packages/database/.env.example', envPath: 'packages/database/.env' }
 ] as const;
 
 const DATABASE_URL_ENV_PATHS = [
   'apps/dashboard/.env',
-  'apps/marketing/.env',
-  'apps/ai-chat/.env',
   'packages/database/.env'
 ] as const;
 
-const AUTH_SECRET_ENV_PATHS = ['apps/dashboard/.env', 'apps/ai-chat/.env'] as const;
+const AUTH_SECRET_ENV_PATHS = ['apps/dashboard/.env'] as const;
 
 const APPS = [
-  { name: 'Dashboard', cmd: 'bun --cwd apps/dashboard run dev', url: 'http://localhost:3000' },
-  { name: 'Marketing', cmd: 'bun --cwd apps/marketing run dev', url: 'http://localhost:3001' },
-  { name: 'AI Chat', cmd: 'bun --cwd apps/ai-chat run dev', url: 'http://localhost:3003' }
+  { name: 'Dashboard', cmd: 'bun --cwd apps/dashboard run dev', url: 'http://localhost:3000' }
 ] as const;
 
 function resolvePath(relativePath: string): string {

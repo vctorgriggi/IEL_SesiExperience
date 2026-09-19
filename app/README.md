@@ -8,6 +8,10 @@ Starter kit SaaS em monorepo com Bun, Turborepo, Next.js 15, Auth.js (next-auth)
 - Node.js 20+
 - Docker opcional, apenas para subir Postgres local
 
+> A flag `bun --cwd <caminho> run <script>` deixou de existir no Bun 1.4. Nessa
+> versão, use `bun --filter <nome-do-workspace> run <script>` (por exemplo
+> `bun --filter @workspace/dashboard run dev`) ou entre na pasta antes de rodar.
+
 ## Onboarding técnico em 30 minutos
 
 Na raiz do repo:
@@ -33,8 +37,7 @@ bun --cwd apps/dashboard run dev
 URLs locais:
 
 - Dashboard: http://localhost:3000
-- Marketing: http://localhost:3001
-- AI Chat: http://localhost:3003
+- Protótipo IEL: http://localhost:3000/iel
 
 `bun run quickstart` copia `.env.example` para `.env` quando necessário, sincroniza `DATABASE_URL`, gera `AUTH_SECRET` e roda a validação de ambiente.
 
@@ -48,8 +51,6 @@ URLs locais:
 | `bun run typecheck` | Typecheck do monorepo |
 | `bun run test` | Suite de testes registrada no Turbo |
 | `bun --cwd apps/dashboard run dev` | Sobe só o dashboard |
-| `bun --cwd apps/marketing run dev` | Sobe só o marketing |
-| `bun --cwd apps/ai-chat run dev` | Sobe só o AI Chat |
 | `bun --cwd packages/database run migrate` | Aplica migrações do Drizzle |
 | `bun --cwd packages/database run generate` | Gera novas migrações |
 | `bun --cwd packages/database run push` | Sincroniza schema sem histórico |
