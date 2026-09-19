@@ -13,6 +13,7 @@ import {
   getJobSummary,
   getOverviewMetrics,
   getRecentHistory,
+  getSourceBreakdown,
   getStageDistribution,
   getTalent,
   getVisibleJobs,
@@ -43,6 +44,7 @@ import {
   formatDateTime,
   IelPageHeader,
   InfoHint,
+  SourceBreakdownBar,
   StatCard
 } from '../shared/ui';
 
@@ -61,6 +63,7 @@ export function OverviewScreen() {
   const stages = getStageDistribution(state, companyFilter);
   const coverage = getCoverageByDimension(state, companyFilter);
   const history = getRecentHistory(state, 6);
+  const overviewSources = getSourceBreakdown(state.evidences);
 
   const jobSummaries = getVisibleJobs(state)
     .filter(
@@ -184,6 +187,13 @@ export function OverviewScreen() {
           }
         />
       </section>
+
+      <Card padding="sm">
+        <SourceBreakdownBar
+          breakdown={overviewSources}
+          total={state.evidences.length}
+        />
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">

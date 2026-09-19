@@ -13,9 +13,11 @@ import {
   getCompany,
   getComparisonSelection,
   getCriterion,
+  getEvidencesForJob,
   getJob,
   getRecentHistory,
   getReferralListSelection,
+  getSourceBreakdown,
   getTalent,
   getTeam,
   JOB_STAGE_LABEL
@@ -43,7 +45,8 @@ import {
   formatDate,
   formatDateTime,
   IelPageHeader,
-  InfoHint
+  InfoHint,
+  SourceBreakdownBar
 } from '../shared/ui';
 import { AssistantPanel } from './assistant-panel';
 import { CandidatesMatrix } from './candidates-matrix';
@@ -116,6 +119,9 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
     : null;
   const activeCriterionData =
     activeCriterion && getCriterion(job, activeCriterion.criterionId);
+
+  const jobEvidences = getEvidencesForJob(state, job);
+  const jobSourceBreakdown = getSourceBreakdown(jobEvidences);
 
   const jobHistory = getRecentHistory(state, 40).filter(
     (event) =>
@@ -219,8 +225,15 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
       {tab === 'candidatos' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
-            <Card padding="sm">
-              <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <Card
+              padding="sm"
+              className="gap-3"
+            >
+              <SourceBreakdownBar
+                breakdown={jobSourceBreakdown}
+                total={jobEvidences.length}
+              />
+              <div className="flex flex-col gap-2 border-t border-border pt-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p>
                   Selecione de 2 a {COMPARISON_LIMIT} candidatos para comparar.
                   A seleção é temporária e não é a lista de encaminhamento.

@@ -322,3 +322,90 @@ export function BarList({
     </ul>
   );
 }
+
+const SOURCE_DOT_CLASS: Record<string, string> = {
+  'FONTE-EMPREGARE': 'bg-chart-1',
+  'FONTE-IEL': 'bg-chart-3',
+  'FONTE-EMPRESA': 'bg-chart-2',
+  'FONTE-AVALIACAO': 'bg-chart-5'
+};
+
+/**
+ * Procedência de um conjunto de registros.
+ *
+ * É a afirmação central do produto: esta leitura reúne informações que hoje
+ * vivem em sistemas separados. Sem isso na tela, a integração fica só no
+ * modelo de dados e o analista vê um painel qualquer.
+ */
+export function SourceBreakdownBar({
+  breakdown,
+  total,
+  className
+}: {
+  breakdown: { sourceId: string; shortName: string; count: number }[];
+  total: number;
+  className?: string;
+}) {
+  if (breakdown.length === 0) return null;
+
+  return (
+    <div
+      className={cn('flex flex-wrap items-center gap-x-4 gap-y-1', className)}
+    >
+      <p className="text-xs text-muted-foreground">
+        Esta análise reúne{' '}
+        <span className="font-semibold text-foreground">
+          {total} {total === 1 ? 'registro' : 'registros'}
+        </span>{' '}
+        de{' '}
+        <span className="font-semibold text-foreground">
+          {breakdown.length} {breakdown.length === 1 ? 'fonte' : 'fontes'}
+        </span>
+        <InfoHint
+          className="ml-1"
+          label="Em produção, cada fonte é um sistema ou etapa diferente: consultá-las separadamente e juntar o resultado é o trabalho manual que a central substitui."
+        />
+      </p>
+      <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {breakdown.map((entry) => (
+          <li
+            key={entry.sourceId}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'size-2 shrink-0 rounded-full',
+                SOURCE_DOT_CLASS[entry.sourceId] ?? 'bg-muted-foreground'
+              )}
+            />
+            {entry.shortName}
+            <span className="font-medium tabular-nums text-foreground">
+              {entry.count}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Ponto colorido da fonte, para uso inline junto de um registro. */
+export function SourceDot({
+  sourceId,
+  className
+}: {
+  sourceId: string;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'inline-block size-2 shrink-0 rounded-full',
+        SOURCE_DOT_CLASS[sourceId] ?? 'bg-muted-foreground',
+        className
+      )}
+    />
+  );
+}

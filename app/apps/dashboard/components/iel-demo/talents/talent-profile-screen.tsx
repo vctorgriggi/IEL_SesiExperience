@@ -16,9 +16,11 @@ import {
   getAssessments,
   getCompany,
   getEvidencesByTalent,
+  getEvidencesForApplication,
   getEvidencesForCriterion,
   getJob,
   getReferralListSelection,
+  getSourceBreakdown,
   getTalent,
   REFERRAL_STAGE_LABEL
 } from '@/features/iel-demo/state/selectors';
@@ -48,7 +50,9 @@ import {
   CoverageMeter,
   formatDate,
   IelPageHeader,
-  InfoHint
+  InfoHint,
+  SourceBreakdownBar,
+  SourceDot
 } from '../shared/ui';
 
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
@@ -188,6 +192,16 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
+                <SourceBreakdownBar
+                  breakdown={getSourceBreakdown(
+                    getEvidencesForApplication(state, job, contextApplication)
+                  )}
+                  total={
+                    getEvidencesForApplication(state, job, contextApplication)
+                      .length
+                  }
+                  className="border-b border-border pb-3"
+                />
                 <CoverageMeter
                   coverage={getCoverage(
                     job,
@@ -266,14 +280,29 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                                   {analysis.note}
                                 </span>
                                 {evidences.length > 0 ? (
-                                  <span className="mt-1 block pl-4 text-[11px] font-medium text-primary">
-                                    {plural(
-                                      evidences.length,
-                                      'evidência',
-                                      'evidências'
-                                    )}{' '}
-                                    registrada
-                                    {evidences.length === 1 ? '' : 's'} — abrir
+                                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 pl-4 text-[11px] text-muted-foreground">
+                                    {getSourceBreakdown(evidences).map(
+                                      (entry) => (
+                                        <span
+                                          key={entry.sourceId}
+                                          className="inline-flex items-center gap-1"
+                                        >
+                                          <SourceDot
+                                            sourceId={entry.sourceId}
+                                          />
+                                          {entry.shortName}
+                                          {entry.count > 1 ? (
+                                            <span className="tabular-nums">
+                                              ({entry.count})
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      )
+                                    )}
+                                    <span className="font-medium text-primary">
+                                      ver evidência
+                                      {evidences.length === 1 ? '' : 's'}
+                                    </span>
                                   </span>
                                 ) : null}
                               </button>

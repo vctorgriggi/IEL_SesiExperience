@@ -7,6 +7,7 @@ import {
   DEMO_ASSESSMENTS,
   DEMO_CATALOG,
   DEMO_COMPANIES,
+  DEMO_DATA_SOURCES,
   DEMO_JOBS,
   DEMO_PERSONAS,
   DEMO_TALENTS
@@ -17,6 +18,7 @@ import type {
   Clarification,
   Company,
   CriterionRef,
+  DataSourceId,
   DemoState,
   Dimension,
   Evidence,
@@ -479,3 +481,85 @@ export function getRecentHistory(state: DemoState, limit = 8) {
 }
 
 export const DEMO_REFERENCE_DATE = DEMO_CATALOG.referenceDate;
+
+export type SourceBreakdown = {
+  sourceId: DataSourceId;
+  name: string;
+  /** Nome curto para caber numa linha de resumo. */
+  shortName: string;
+  count: number;
+};
+
+/** Nome da fonte sem o sufixo "— demonstração", para uso em linha. */
+function shortSourceName(name: string): string {
+  return name.split('—')[0]!.trim();
+}
+
+/**
+ * De quantas fontes distintas um conjunto de registros se compõe.
+ *
+ * É o número que torna visível o trabalho de reunião que a central faz: sem
+ * ela, cada fonte seria uma consulta separada do analista.
+ */
+export function getSourceBreakdown(evidences: Evidence[]): SourceBreakdown[] {
+  const counts = new Map<DataSourceId, number>();
+  for (const evidence of evidences) {
+    counts.set(evidence.sourceId, (counts.get(evidence.sourceId) ?? 0) + 1);
+  }
+
+  return DEMO_DATA_SOURCES.filter((source) => counts.has(source.id))
+    .map((source) => ({
+      sourceId: source.id,
+      name: source.name,
+      shortName: shortSourceName(source.name),
+      count: counts.get(source.id) ?? 0
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/** Todos os registros que sustentam a análise de uma vaga. */
+export function getEvidencesForJob(state: DemoState, job: Job): Evidence[] {
+  const applications = getApplicationsByJob(state, job.id);
+  const seen = new Set<string>();
+  const result: Evidence[] = [];
+
+  for (const application of applications) {
+    for (const criterion of job.criteria) {
+      for (const evidence of getEvidencesForCriterion(
+        state,
+        application,
+        criterion.id
+      )) {
+        if (seen.has(evidence.id)) continue;
+        seen.add(evidence.id);
+        result.push(evidence);
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Registros que sustentam a análise de uma candidatura. */
+export function getEvidencesForApplication(
+  state: DemoState,
+  job: Job,
+  application: Application
+): Evidence[] {
+  const seen = new Set<string>();
+  const result: Evidence[] = [];
+
+  for (const criterion of job.criteria) {
+    for (const evidence of getEvidencesForCriterion(
+      state,
+      application,
+      criterion.id
+    )) {
+      if (seen.has(evidence.id)) continue;
+      seen.add(evidence.id);
+      result.push(evidence);
+    }
+  }
+
+  return result;
+}
