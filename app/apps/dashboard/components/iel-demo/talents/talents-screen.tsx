@@ -43,7 +43,7 @@ export function TalentsScreen() {
   const [busca, setBusca] = useState('');
   const iel = routes.dashboard.iel;
 
-  usePageHeader({ breadcrumb: [{ label: 'Pessoas' }] });
+  usePageHeader({ breadcrumb: [{ label: 'Banco de talentos' }] });
 
   // Uma passada pelas candidaturas para todas as pessoas, em vez de um filtro
   // por linha.
@@ -94,7 +94,9 @@ export function TalentsScreen() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">Pessoas</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Banco de talentos
+        </h1>
         <p className="text-sm text-muted-foreground">
           Quem se candidatou pelo IEL. Clique para abrir o perfil.
         </p>

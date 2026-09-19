@@ -1,9 +1,12 @@
 import {
   ADHERENCE_THRESHOLD,
   computeAdherence,
+  computeThemeAdherence,
+  emptyAdherence,
   type AdherenceResult,
   type CandidateAxisValues,
-  type CompanyAxisMeans
+  type CompanyAxisMeans,
+  type CompanyItemMeans
 } from '../analysis/adherence';
 import {
   CRITERION_STATE_META,
@@ -12,19 +15,26 @@ import {
   type CoverageSummary
 } from '../analysis/criterion-states';
 import {
-  CULTURE_QUESTIONS,
-  getCultureOptionLabel,
-  getCultureOptionValue,
+  calcularPerfilCultural,
+  escolherPerguntasDoCandidato,
   MIN_TEAM_RESPONSES,
-  type CultureOptionId,
-  type CultureQuestion,
-  type CultureRespondent
+  type CultureDispersion,
+  type CultureRespondent,
+  type PerfilCultural,
+  type PerfilDoTema,
+  type PerguntaDoCandidato
 } from '../analysis/culture';
 import {
   getSuggestedSampleSize,
   type CultureInviteRole
 } from '../analysis/culture-invites';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
+import {
+  blocoDoConvite,
+  getItem,
+  rotuloDaEscala,
+  type ItemDoInstrumento
+} from '../analysis/instrumento';
 import {
   calcularEncaixeCultural,
   calcularPosicaoCultural,
@@ -1186,16 +1196,16 @@ export const CULTURE_AXIS_STATE_LABEL: Record<CultureAxisState, string> = {
 
 export type CultureVoice = {
   respondent: CultureRespondent;
-  /** Alternativa mais respondida por este papel. */
-  optionId: CultureOptionId;
-  optionLabel: string;
-  /** Respostas nesta alternativa e total do papel. */
-  count: number;
+  /** Média do papel no tema, no sentido do tema (1..5). */
+  mean: number;
+  /** A média dita na escala: "Concordo", "Tanto faz"… */
+  label: string;
+  /** Maior número de respostas do papel numa frase do tema. */
   total: number;
 };
 
 export type CultureAxisReading = {
-  question: CultureQuestion;
+  axisId: FitAxisId;
   voices: CultureVoice[];
   state: CultureAxisState;
   /** Proposta da análise ainda não confirmada por ninguém. */
@@ -1203,78 +1213,59 @@ export type CultureAxisReading = {
 };
 
 /**
- * Leitura do traçado cultural de uma empresa, eixo a eixo.
+ * Leitura do traçado cultural de uma empresa, tema a tema.
  *
- * Nunca reduz os papéis a um valor só. Se a gestão diz uma coisa e a equipe
- * diz outra, as duas aparecem e o eixo é marcado como divergente — o enunciado
- * pede redução de vieses, e média entre quem manda e quem executa apaga
- * exatamente o viés que interessa ver.
+ * Nunca reduz os papéis a um valor só. Se a gestão responde uma coisa e a
+ * equipe outra, as duas aparecem e o tema é marcado como divergente — média
+ * entre quem manda e quem executa apaga exatamente o viés que interessa ver.
  */
 export function getCultureReading(
   state: DemoState,
   companyId: string
 ): CultureAxisReading[] {
   const company = getCompany(companyId);
-  const answers = state.cultureAnswers.filter(
-    (answer) => answer.companyId === companyId
-  );
+  const perfil = perfilDaEmpresa(state, companyId);
 
-  return CULTURE_QUESTIONS.map((question) => {
-    const axisAnswers = answers.filter(
-      (answer) => answer.axisId === question.axisId
-    );
-
+  return perfil.temas.map((tema) => {
     const voices: CultureVoice[] = [];
     for (const respondent of [
       'gestao',
       'rh',
       'equipe'
     ] as CultureRespondent[]) {
-      const byRespondent = axisAnswers.filter(
-        (answer) => answer.respondent === respondent
-      );
-      if (byRespondent.length === 0) continue;
-
-      const total = byRespondent.reduce((sum, a) => sum + a.count, 0);
-      const top = [...byRespondent].sort((a, b) => b.count - a.count)[0]!;
+      const mean = tema.porPapel[respondent];
+      if (mean === undefined) continue;
       voices.push({
         respondent,
-        optionId: top.optionId,
-        optionLabel: getCultureOptionLabel(question.axisId, top.optionId),
-        count: top.count,
-        total
+        mean,
+        label: rotuloDaEscala(mean),
+        total: tema.respondentesPorPapel[respondent]
       });
     }
 
+    const gestaoRespondeu = tema.porPapel.gestao !== undefined;
     const pendingSuggestion =
       company?.cultureSuggestions.find(
-        (suggestion) =>
-          suggestion.axisId === question.axisId &&
-          !axisAnswers.some((answer) => answer.respondent === 'gestao')
+        (suggestion) => suggestion.axisId === tema.axisId && !gestaoRespondeu
       ) ?? null;
 
     return {
-      question,
+      axisId: tema.axisId,
       voices,
-      state: readCultureAxisState(voices),
+      state: readCultureAxisState(tema),
       pendingSuggestion
     };
   });
 }
 
-function readCultureAxisState(voices: CultureVoice[]): CultureAxisState {
-  if (voices.length === 0) return 'sem-resposta';
+function readCultureAxisState(tema: PerfilDoTema): CultureAxisState {
+  const temEquipe = tema.porPapel.equipe !== undefined;
+  const temLideranca =
+    tema.porPapel.gestao !== undefined || tema.porPapel.rh !== undefined;
 
-  const team = voices.find((voice) => voice.respondent === 'equipe');
-  const management = voices.find((voice) => voice.respondent !== 'equipe');
-
-  if (!team) return management ? 'apenas-gestao' : 'sem-resposta';
-  if (team.total < MIN_TEAM_RESPONSES) return 'consulta-insuficiente';
-  if (!management) return 'convergente';
-
-  return voices.every((voice) => voice.optionId === voices[0]!.optionId)
-    ? 'convergente'
-    : 'divergente';
+  if (!temEquipe) return temLideranca ? 'apenas-gestao' : 'sem-resposta';
+  if (!tema.fecha) return 'consulta-insuficiente';
+  return tema.dispersao === 'divergente' ? 'divergente' : 'convergente';
 }
 
 /** Eixos em que a leitura do traçado cultural não se sustenta sozinha. */
@@ -1313,7 +1304,7 @@ export type CultureMapPoint = {
 export function getTalentCultureAnswers(talentId: string): RespostaDeEixo[] {
   return ALL_TALENT_CULTURE_ANSWERS.filter(
     (answer) => answer.talentId === talentId
-  ).map((answer) => ({ axisId: answer.axisId, optionId: answer.optionId }));
+  ).map((answer) => ({ axisId: answer.axisId, value: answer.value }));
 }
 
 export type CompanyCultureAnswers = {
@@ -1332,35 +1323,18 @@ export function getCompanyCultureAnswers(
   const team: RespostaDeEixo[] = [];
   let divergentAxes = 0;
 
-  for (const entry of getCultureReading(state, companyId)) {
-    const management = entry.voices.find(
-      (voice) => voice.respondent !== 'equipe'
-    );
-    const teamVoice = entry.voices.find(
-      (voice) => voice.respondent === 'equipe'
-    );
+  for (const tema of perfilDaEmpresa(state, companyId).temas) {
+    const equipeFecha = tema.fecha && tema.equipe !== null;
+    const doTime = equipeFecha ? (tema.porPapel.equipe ?? null) : null;
 
-    if (management) {
-      declared.push({
-        axisId: entry.question.axisId,
-        optionId: management.optionId
-      });
+    if (tema.lideranca !== null) {
+      declared.push({ axisId: tema.axisId, value: tema.lideranca });
+    } else if (doTime !== null) {
+      declared.push({ axisId: tema.axisId, value: doTime });
     }
 
-    if (teamVoice && teamVoice.total >= MIN_TEAM_RESPONSES) {
-      team.push({
-        axisId: entry.question.axisId,
-        optionId: teamVoice.optionId
-      });
-      if (!management) {
-        declared.push({
-          axisId: entry.question.axisId,
-          optionId: teamVoice.optionId
-        });
-      }
-    }
-
-    if (entry.state === 'divergente') divergentAxes += 1;
+    if (doTime !== null) team.push({ axisId: tema.axisId, value: doTime });
+    if (tema.dispersao === 'divergente') divergentAxes += 1;
   }
 
   return { declared, team, divergentAxes };
@@ -1512,11 +1486,16 @@ export const MIN_ROLE_RESPONSES_TO_SHOW = 2;
 
 export type CultureDisplayVoice = {
   respondent: CultureDisplayRespondent;
-  /** Alternativa mais respondida pelo grupo. */
-  optionId: CultureOptionId;
-  optionLabel: string;
-  count: number;
+  /** Média do grupo no tema, no sentido do tema (1..5). */
+  mean: number;
+  label: string;
+  /** Maior número de respostas do grupo numa frase do tema. */
   total: number;
+  /**
+   * Dispersão das respostas no tema, de 0 (todos iguais) a 1 (desvio de dois
+   * pontos ou mais). Só a equipe tem: gestão e RH são poucas pessoas.
+   */
+  spread: number;
 };
 
 export type CultureDisplayVoices = {
@@ -1528,33 +1507,54 @@ export type CultureDisplayVoices = {
   withheld: number;
 };
 
-function topAnswer(
+/** Média do grupo no tema, a partir das frases que o grupo respondeu. */
+function mediaDoGrupo(
+  state: DemoState,
+  companyId: string,
   axisId: FitAxisId,
-  answers: CultureAnswer[]
-): Omit<CultureDisplayVoice, 'respondent'> | null {
-  const byOption = new Map<CultureOptionId, number>();
+  roles: CultureRespondent[]
+): { mean: number; total: number } | null {
+  const perfil = perfilDaEmpresa(state, companyId);
+  const valores: number[] = [];
   let total = 0;
-  for (const answer of answers) {
-    byOption.set(
-      answer.optionId,
-      (byOption.get(answer.optionId) ?? 0) + answer.count
-    );
-    total += answer.count;
+  for (const item of Object.values(perfil.itens)) {
+    if (item.tema !== axisId) continue;
+    let soma = 0;
+    let n = 0;
+    for (const role of roles) {
+      const doPapel = item.porPapel[role];
+      if (!doPapel) continue;
+      soma += doPapel.media * doPapel.n;
+      n += doPapel.n;
+    }
+    if (n === 0) continue;
+    const frase = getItem(item.itemId)!;
+    valores.push(frase.polo === 1 ? soma / n : 6 - soma / n);
+    total = Math.max(total, n);
   }
-  if (total === 0) return null;
-  const [optionId, count] = [...byOption.entries()].sort(
-    (a, b) => b[1] - a[1]
-  )[0]!;
+  if (valores.length === 0) return null;
   return {
-    optionId,
-    optionLabel: getCultureOptionLabel(axisId, optionId),
-    count,
+    mean: valores.reduce((a, b) => a + b, 0) / valores.length,
     total
   };
 }
 
+/** Desvio médio das frases do tema, em fração de dois pontos da escala. */
+function dispersaoDoTema(
+  state: DemoState,
+  companyId: string,
+  axisId: FitAxisId
+): number {
+  const desvios = Object.values(perfilDaEmpresa(state, companyId).itens)
+    .filter((item) => item.tema === axisId && item.nEquipe > 0)
+    .map((item) => item.desvio);
+  if (desvios.length === 0) return 0;
+  const medio = desvios.reduce((a, b) => a + b, 0) / desvios.length;
+  return Math.min(1, medio / 2);
+}
+
 /**
- * O que a tela pode desenhar de cada papel num ponto (PRODUTO.md §5.1).
+ * O que a tela pode desenhar de cada papel num tema (PRODUTO.md §5.1).
  *
  * A analista vê a dispersão gestão × equipe, mas nunca uma resposta
  * individual — e "a gestão" quase sempre é uma pessoa só. Por isso:
@@ -1573,30 +1573,33 @@ export function getCultureDisplayVoices(
   companyId: string,
   axisId: FitAxisId
 ): CultureDisplayVoices {
-  const answers = state.cultureAnswers.filter(
-    (answer) => answer.companyId === companyId && answer.axisId === axisId
+  const tema = perfilDaEmpresa(state, companyId).temas.find(
+    (entry) => entry.axisId === axisId
   );
-  const of = (role: CultureRespondent) =>
-    answers.filter((answer) => answer.respondent === role);
-  const sum = (list: CultureAnswer[]) =>
-    list.reduce((total, answer) => total + answer.count, 0);
-
-  const gestao = of('gestao');
-  const rh = of('rh');
-  const equipe = of('equipe');
-  const gestaoN = sum(gestao);
-  const rhN = sum(rh);
-  const equipeN = sum(equipe);
+  const gestaoN = tema?.respondentesPorPapel.gestao ?? 0;
+  const rhN = tema?.respondentesPorPapel.rh ?? 0;
+  const equipeN = tema?.respondentesPorPapel.equipe ?? 0;
 
   const voices: CultureDisplayVoice[] = [];
   let withheld = 0;
 
   const push = (
     respondent: CultureDisplayRespondent,
-    list: CultureAnswer[]
+    roles: CultureRespondent[]
   ) => {
-    const top = topAnswer(axisId, list);
-    if (top) voices.push({ respondent, ...top });
+    const grupo = mediaDoGrupo(state, companyId, axisId, roles);
+    if (grupo) {
+      voices.push({
+        respondent,
+        mean: grupo.mean,
+        label: rotuloDaEscala(grupo.mean),
+        total: grupo.total,
+        spread:
+          respondent === 'equipe'
+            ? dispersaoDoTema(state, companyId, axisId)
+            : 0
+      });
+    }
   };
 
   const separados =
@@ -1604,15 +1607,15 @@ export function getCultureDisplayVoices(
     (rhN === 0 || rhN >= MIN_ROLE_RESPONSES_TO_SHOW);
 
   if (separados) {
-    push('gestao', gestao);
-    push('rh', rh);
+    if (gestaoN > 0) push('gestao', ['gestao']);
+    if (rhN > 0) push('rh', ['rh']);
   } else if (gestaoN + rhN >= MIN_ROLE_RESPONSES_TO_SHOW) {
-    push('lideranca', [...gestao, ...rh]);
+    push('lideranca', ['gestao', 'rh']);
   } else {
     withheld += gestaoN + rhN;
   }
 
-  if (equipeN >= MIN_TEAM_RESPONSES) push('equipe', equipe);
+  if (equipeN >= MIN_TEAM_RESPONSES) push('equipe', ['equipe']);
   else withheld += equipeN;
 
   return { voices, withheld };
@@ -1709,110 +1712,140 @@ export function getTalentTransparency(
  * Perfil cultural da empresa como média (M1, R2)
  * ------------------------------------------------------------------ */
 
-export type CultureDispersion = 'convergente' | 'divergente';
+export type { CultureDispersion };
 
 export type CompanyCultureAxisProfile = {
   axisId: FitAxisId;
-  /** Média ponderada por `count` de todos os papéis. `null` sem resposta. */
+  /**
+   * Média do tema, no sentido do tema (1..5): a das frases que fecham, ou,
+   * enquanto nenhuma fecha, a provisória de todas as frases com resposta.
+   * `null` sem resposta nenhuma.
+   */
   mean: number | null;
-  /** Quantas pessoas responderam este eixo, somados os papéis. */
+  /** Maior número de respostas numa frase do tema, somados os papéis. */
   respondents: number;
   /** Média de cada papel, para a tela mostrar de onde vem a média geral. */
   byRole: { gestao?: number; rh?: number; equipe?: number };
   /** Diagnóstico gestão × equipe. `null` quando não há como comparar. */
   dispersion: CultureDispersion | null;
-  /** O perfil fecha neste eixo? Falso não é zero: é perfil em aberto. */
+  /** O perfil fecha neste tema? Falso não é zero: é perfil em aberto. */
   ready: boolean;
 };
 
 /**
- * O perfil cultural da empresa, eixo a eixo, como o cliente opera.
+ * Memória do perfil por empresa, válida enquanto a lista de respostas for a
+ * mesma. O reducer nunca muta a lista — toda resposta nova cria outra —, então
+ * a identidade do array basta para saber se o perfil mudou. Sem isto a mesa de
+ * seleção recalcularia o perfil da empresa uma vez por candidatura.
+ */
+const PERFIL_CACHE = new WeakMap<
+  DemoState['cultureAnswers'],
+  Map<string, PerfilCultural>
+>();
+const RESPOSTAS_POR_EMPRESA = new WeakMap<
+  DemoState['cultureAnswers'],
+  Map<string, CultureAnswer[]>
+>();
+
+function respostasDaEmpresa(
+  state: DemoState,
+  companyId: string
+): CultureAnswer[] {
+  let indice = RESPOSTAS_POR_EMPRESA.get(state.cultureAnswers);
+  if (!indice) {
+    indice = new Map();
+    for (const answer of state.cultureAnswers) {
+      const lista = indice.get(answer.companyId) ?? [];
+      lista.push(answer);
+      indice.set(answer.companyId, lista);
+    }
+    RESPOSTAS_POR_EMPRESA.set(state.cultureAnswers, indice);
+  }
+  return indice.get(companyId) ?? [];
+}
+
+/**
+ * O perfil da empresa por frase e por tema (M1, R2).
  *
- * "O fit cultural é a média do que a empresa entende" (00:41:44). O briefing
- * dizia o contrário — que a média entre quem manda e quem executa apaga o
- * viés que interessa ver — e nisso o briefing perdeu, mas só em parte: a
- * média virou o perfil, e a dispersão continua calculada ao lado. Uma coisa
- * não apaga a outra. A média é o que o motor de aderência compara; a
- * dispersão é o que o analista leva para a conversa com a empresa.
+ * "O fit cultural é a média do que a empresa entende" (00:41:44). Por frase:
+ * média, n, desvio e se fecha (`MIN_TEAM_RESPONSES` respostas da equipe). Por
+ * tema: a média das frases que fecham, e `fecha` quando ao menos uma frase
+ * discriminante fecha. A separação gestão/RH × equipe e o diagnóstico de
+ * divergência vêm junto: a média é o perfil, a dispersão é o diagnóstico.
+ */
+export function perfilDaEmpresa(
+  state: DemoState,
+  empresaId: string
+): PerfilCultural {
+  let porEmpresa = PERFIL_CACHE.get(state.cultureAnswers);
+  if (!porEmpresa) {
+    porEmpresa = new Map();
+    PERFIL_CACHE.set(state.cultureAnswers, porEmpresa);
+  }
+  const guardado = porEmpresa.get(empresaId);
+  if (guardado) return guardado;
+  const perfil = calcularPerfilCultural(respostasDaEmpresa(state, empresaId));
+  porEmpresa.set(empresaId, perfil);
+  return perfil;
+}
+
+/**
+ * O perfil cultural da empresa, tema a tema, no formato que as telas leem.
  *
- * A média é ponderada por `count` e junta gestão, RH e equipe no mesmo bolo,
- * porque é assim que "o que a empresa entende" se forma: cinco pessoas da
- * equipe pesam cinco vezes mais que a gestora sozinha. Nenhuma resposta
- * individual é identificável — a equipe entra agregada desde a fixture.
- *
- * `ready` é falso enquanto a consulta à equipe não alcança
- * `MIN_TEAM_RESPONSES`. O documento de produto é explícito: abaixo do mínimo
- * de respondentes o perfil não fecha e a tela diz isso, em vez de tratar duas
- * pessoas como "a empresa". Um eixo não pronto não entra no cálculo da
- * aderência.
+ * `ready` é falso enquanto nenhuma frase discriminante do tema alcança
+ * `MIN_TEAM_RESPONSES` respostas da equipe: abaixo do mínimo o perfil não
+ * fecha e a tela diz isso, em vez de tratar duas pessoas como "a empresa".
  */
 export function getCompanyCultureProfile(
   state: DemoState,
   companyId: string
 ): CompanyCultureAxisProfile[] {
-  const answers = state.cultureAnswers.filter(
-    (answer) => answer.companyId === companyId
-  );
-  const reading = getCultureReading(state, companyId);
-
-  return FIT_AXES.map((axis) => {
-    const axisAnswers = answers.filter((answer) => answer.axisId === axis.id);
-
-    let weightedSum = 0;
-    let respondents = 0;
-    const roleTotals: Record<CultureRespondent, { sum: number; n: number }> = {
-      gestao: { sum: 0, n: 0 },
-      rh: { sum: 0, n: 0 },
-      equipe: { sum: 0, n: 0 }
-    };
-
-    for (const answer of axisAnswers) {
-      const value = getCultureOptionValue(axis.id, answer.optionId);
-      // Resposta a uma alternativa que não existe mais no questionário não
-      // entra na média: seria número sem significado no eixo atual.
-      if (value === null) continue;
-      weightedSum += value * answer.count;
-      respondents += answer.count;
-      roleTotals[answer.respondent].sum += value * answer.count;
-      roleTotals[answer.respondent].n += answer.count;
-    }
-
-    const byRole: CompanyCultureAxisProfile['byRole'] = {};
-    for (const role of ['gestao', 'rh', 'equipe'] as CultureRespondent[]) {
-      const entry = roleTotals[role];
-      if (entry.n > 0) byRole[role] = entry.sum / entry.n;
-    }
-
-    const axisReading = reading.find(
-      (entry) => entry.question.axisId === axis.id
-    );
-    const dispersion: CultureDispersion | null =
-      axisReading?.state === 'divergente'
-        ? 'divergente'
-        : axisReading?.state === 'convergente'
-          ? 'convergente'
-          : null;
-
-    return {
-      axisId: axis.id,
-      mean: respondents > 0 ? weightedSum / respondents : null,
-      respondents,
-      byRole,
-      dispersion,
-      ready: roleTotals.equipe.n >= MIN_TEAM_RESPONSES
-    };
-  });
+  return perfilDaEmpresa(state, companyId).temas.map((tema) => ({
+    axisId: tema.axisId,
+    mean: tema.media ?? tema.mediaProvisoria,
+    respondents: tema.respondentes,
+    byRole: tema.porPapel,
+    dispersion: tema.dispersao,
+    ready: tema.fecha
+  }));
 }
 
-/** Médias por eixo já filtradas pelo que fechou: o que a aderência consome. */
-function toAdherenceProfile(
-  profile: CompanyCultureAxisProfile[]
-): CompanyAxisMeans {
-  const means: CompanyAxisMeans = {};
-  for (const axis of profile) {
-    means[axis.axisId] = axis.ready ? axis.mean : null;
+/** Médias por frase, no formato que o motor de aderência consome. */
+function toItemMeans(perfil: PerfilCultural): CompanyItemMeans {
+  const means: CompanyItemMeans = {};
+  for (const [itemId, item] of Object.entries(perfil.itens)) {
+    means[itemId] = { media: item.media, fecha: item.fecha };
   }
   return means;
+}
+
+/** Médias por tema já filtradas pelo que fechou (o Mapa de Cultura). */
+function toAdherenceProfile(perfil: PerfilCultural): CompanyAxisMeans {
+  const means: CompanyAxisMeans = {};
+  for (const tema of perfil.temas) {
+    means[tema.axisId] = tema.fecha ? tema.media : null;
+  }
+  return means;
+}
+
+/**
+ * As 10 frases que o candidato desta vaga responde (M3, R4).
+ *
+ * Em cada tema, a frase discriminante em que a equipe da empresa é mais
+ * marcante; sem base no tema, a frase padrão, marcada `semBaseDaEmpresa`.
+ */
+export function perguntasDoCandidato(
+  state: DemoState,
+  jobId: string
+): (PerguntaDoCandidato & { item: ItemDoInstrumento })[] {
+  const job = getJob(jobId);
+  const perfil = job
+    ? perfilDaEmpresa(state, job.companyId)
+    : calcularPerfilCultural([]);
+  return escolherPerguntasDoCandidato(perfil).map((pergunta) => ({
+    ...pergunta,
+    item: getItem(pergunta.itemId)!
+  }));
 }
 
 /* ------------------------------------------------------------------ *
@@ -1951,12 +1984,11 @@ export function getTalentCompanyAdherence(
 ): AdherenceResult {
   const valores: CandidateAxisValues = {};
   for (const resposta of getTalentCultureAnswers(talentId)) {
-    const valor = getCultureOptionValue(resposta.axisId, resposta.optionId);
-    if (valor !== null) valores[resposta.axisId] = valor;
+    valores[resposta.axisId] = resposta.value;
   }
 
-  return computeAdherence(
-    toAdherenceProfile(getCompanyCultureProfile(state, companyId)),
+  return computeThemeAdherence(
+    toAdherenceProfile(perfilDaEmpresa(state, companyId)),
     valores,
     {}
   );
@@ -1972,11 +2004,10 @@ export function getAdherence(
   const job = getJob(application.jobId);
   if (!job) return null;
 
-  const profile = getCompanyCultureProfile(state, job.companyId);
   const response = getFitResponse(state, applicationId);
 
   return computeAdherence(
-    toAdherenceProfile(profile),
+    toItemMeans(perfilDaEmpresa(state, job.companyId)),
     response?.answers ?? null,
     getAxisWeights(state, job)
   );
@@ -2029,13 +2060,7 @@ export function getJobRanking(
         application,
         talent: getTalent(application.talentId, state),
         technicalMatch: application.technicalMatch ?? null,
-        adherence: adherence ?? {
-          byAxis: [],
-          total: null,
-          threshold: ADHERENCE_THRESHOLD,
-          compatible: null,
-          coverage: { answeredAxes: 0, totalAxes: FIT_AXES.length }
-        },
+        adherence: adherence ?? emptyAdherence(),
         fitStatus: getFitStatus(state, application)
       };
     })
@@ -2267,6 +2292,11 @@ export type CultureInviteView = {
   expiresAt: string;
   daysLeft: number;
   status: CultureInviteStatus;
+  /**
+   * As frases que este link responde (amostragem em matriz, cerca de 15 das
+   * 52). O texto é o original da planilha: quem responde é da empresa.
+   */
+  bloco: ItemDoInstrumento[];
 };
 
 export function getInviteByToken(
@@ -2283,7 +2313,8 @@ export function getInviteByToken(
     companyName: getCompany(invite.companyId)?.name ?? invite.companyId,
     expiresAt: invite.expiresAt,
     daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
-    status: readInviteStatus(invite, DEMO_REFERENCE_DATE)
+    status: readInviteStatus(invite, DEMO_REFERENCE_DATE),
+    bloco: blocoDoConvite(invite)
   };
 }
 

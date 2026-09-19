@@ -101,15 +101,15 @@ export const DEMO_JOBS: Job[] = [
       // exatamente os eixos em que a expectativa de Ana não encontra a
       // condição da equipe — declarar o peso alto aqui é o que faz a leitura
       // mostrar a divergência no lugar de diluí-la entre cinco eixos iguais.
-      'apoio-inicial': 'alto',
-      autonomia: 'alto',
-      'ritmo-turno': 'medio',
-      'comunicacao-prioridades': 'medio',
-      aprendizado: 'baixo'
+      'lideranca-autonomia': 'alto',
+      'regras-decisao': 'alto',
+      'execucao-ritmo': 'medio',
+      'interacao-convivencia': 'medio',
+      'aprendizado-desenvolvimento': 'baixo'
     },
     axisWeightSuggestions: [
       {
-        axisId: 'apoio-inicial',
+        axisId: 'lideranca-autonomia',
         weight: 'alto',
         excerpt:
           'Equipe com pouca sobreposição entre turnos. O apoio nas primeiras atividades ainda não foi confirmado pela empresa.',
@@ -117,7 +117,7 @@ export const DEMO_JOBS: Job[] = [
         sourceId: 'FONTE-EMPREGARE'
       },
       {
-        axisId: 'autonomia',
+        axisId: 'regras-decisao',
         weight: 'alto',
         excerpt:
           'Apoio à expedição: conferência de pedidos, registro de saídas e organização das cargas do turno da tarde.',
@@ -125,7 +125,7 @@ export const DEMO_JOBS: Job[] = [
         sourceId: 'FONTE-EMPREGARE'
       },
       {
-        axisId: 'ritmo-turno',
+        axisId: 'execucao-ritmo',
         weight: 'medio',
         excerpt: 'Disponibilidade para o turno da tarde',
         sourceLabel: 'Requisitos essenciais da vaga',
@@ -216,15 +216,15 @@ export const DEMO_JOBS: Job[] = [
       // referência nas primeiras semanas. O aprendizado pesa alto porque a
       // função é aprender a rotina do estoque, e o apoio inicial pesa alto
       // porque é a condição que a empresa assumiu e precisa sustentar.
-      aprendizado: 'alto',
-      'apoio-inicial': 'alto',
-      'comunicacao-prioridades': 'medio',
-      'ritmo-turno': 'baixo',
-      autonomia: 'baixo'
+      'aprendizado-desenvolvimento': 'alto',
+      'lideranca-autonomia': 'alto',
+      'interacao-convivencia': 'medio',
+      'execucao-ritmo': 'baixo',
+      'regras-decisao': 'baixo'
     },
     axisWeightSuggestions: [
       {
-        axisId: 'aprendizado',
+        axisId: 'aprendizado-desenvolvimento',
         weight: 'alto',
         excerpt:
           'Apoio administrativo ao estoque: controle de materiais, registro de entradas e saídas e apoio a inventários.',
@@ -232,7 +232,7 @@ export const DEMO_JOBS: Job[] = [
         sourceId: 'FONTE-EMPREGARE'
       },
       {
-        axisId: 'apoio-inicial',
+        axisId: 'lideranca-autonomia',
         weight: 'alto',
         excerpt:
           'O gestor confirmou colega de referência nas primeiras quatro semanas e reunião semanal de prioridades.',
@@ -313,15 +313,15 @@ export const DEMO_JOBS: Job[] = [
       // prioridades que chegam de fora. O contexto da equipe está pouco
       // documentado, então os demais eixos ficam em médio ou baixo — declarar
       // peso alto onde não há informação só produziria alarme vazio.
-      'comunicacao-prioridades': 'alto',
-      'ritmo-turno': 'medio',
-      'apoio-inicial': 'medio',
-      aprendizado: 'baixo',
-      autonomia: 'baixo'
+      'interacao-convivencia': 'alto',
+      'execucao-ritmo': 'medio',
+      'lideranca-autonomia': 'medio',
+      'aprendizado-desenvolvimento': 'baixo',
+      'regras-decisao': 'baixo'
     },
     axisWeightSuggestions: [
       {
-        axisId: 'comunicacao-prioridades',
+        axisId: 'interacao-convivencia',
         weight: 'alto',
         excerpt:
           'Assistência administrativa: organização de documentos, atendimento telefônico e apoio a orçamentos.',
@@ -329,7 +329,7 @@ export const DEMO_JOBS: Job[] = [
         sourceId: 'FONTE-EMPREGARE'
       },
       {
-        axisId: 'apoio-inicial',
+        axisId: 'lideranca-autonomia',
         weight: 'medio',
         excerpt:
           'Atividades e expectativas da equipe estão parcialmente documentadas; o contexto organizacional ainda é insuficiente para comparar candidatos nessa dimensão.',

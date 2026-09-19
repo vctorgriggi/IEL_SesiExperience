@@ -133,6 +133,15 @@ Um link sem login é uma credencial portadora. Por isso:
 - A aderência é **explicável até o eixo**: o analista vê por que deu 41% e não 72%. Sem caixa-preta.
 - O corte de 35% é **do cliente e configurável**, não descoberto por modelo. Devolutivas futuras (C3) o calibram; nunca o substituem sem decisão humana.
 
+### 5.8 IA de terceiros
+
+- **Provedor**: DeepSeek (API `api.deepseek.com`, modelo `deepseek-flash` por padrão). Anthropic fica como alternativa, com a mesma regra. Só liga com `IEL_AI_PROVIDER` e a chave do provedor; sem elas, tudo roda na regra fixa, sem IA paga.
+- **A IA não decide**: aderência, ranking e corte são calculados pela regra fixa antes (R7). O modelo só conta em palavras o que já foi calculado, responde à pergunta livre da analista no Mind e sugere perguntas de entrevista. Não produz nota, não ordena pessoas e não recomenda contratar. A decisão continua da analista e da empresa.
+- **O que sai**: a pergunta da analista, o título e os requisitos da vaga, o % de combina e de requisitos, os temas em que cada pessoa combina ou difere, o estado dos critérios e o texto dos registros citados. Tudo **pseudonimizado** no servidor (`features/iel-demo/ai/pseudonimizar.ts`).
+- **O que não sai**: nome de pessoa (vira "Pessoa A", "Pessoa B"), nome da empresa (vira "a empresa") e do contato dela, e-mail, telefone, CPF, datas (nascimento incluso), cidade e os ids da base, que carregam nomes. O mapa de volta fica só na memória do servidor, durante a requisição; os nomes voltam mascarados ("Helena C.") antes de chegar à tela. Pedido de contato no Mind é recusado no navegador, sem chamar a API.
+- **Transferência internacional (LGPD, art. 33)**: o provedor processa fora do Brasil. A pseudonimização reduz o risco, mas o dado pseudonimizado continua pessoal para o IEL, que tem o mapa (art. 13, § 4º). **A base legal e o instrumento de transferência (cláusulas-padrão, art. 33, II) estão a confirmar com o jurídico do IEL** antes de ligar a chave com dado real. Na demonstração, a base é fictícia.
+- **Contenção**: a rota do Mind aceita 20 pedidos por minuto por IP; timeout de 20 s; qualquer falha do modelo cai para a regra fixa com aviso na resposta.
+
 ## 6. O que a reunião revoga no briefing
 
 Decisões que o protótipo tomou seguindo o briefing e que o cliente contrariou. Registradas porque foram escolhas deliberadas, não descuido — e porque a razão de revertê-las precisa ficar explícita.

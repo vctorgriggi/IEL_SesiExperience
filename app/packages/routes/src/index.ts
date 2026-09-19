@@ -86,6 +86,8 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
      */
     iel: {
       index: resolve('/iel'),
+      /** Porta da analista: os links de candidato e empresa não passam por aqui. */
+      signIn: resolve('/iel/entrar'),
       jobs: {
         index: resolve('/iel/vagas'),
         byId: (jobId: string) => {

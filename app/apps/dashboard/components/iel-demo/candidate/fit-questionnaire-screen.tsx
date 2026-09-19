@@ -3,19 +3,20 @@
 import { useState, type ReactNode } from 'react';
 import {
   CANDIDATE_CONSENT_TEXT,
-  CANDIDATE_CONSENT_VERSION,
-  CANDIDATE_FIT_QUESTIONS,
-  type CandidateFitOption
+  CANDIDATE_CONSENT_VERSION
 } from '@/features/iel-demo/analysis/candidate-questionnaire';
-import type { CultureOptionValue } from '@/features/iel-demo/analysis/culture';
-import type { FitAxisId } from '@/features/iel-demo/analysis/fit-axes';
+import {
+  ESCALA_CONCORDANCIA,
+  type ValorDaEscala
+} from '@/features/iel-demo/analysis/instrumento';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
   getCandidateJobView,
   getFitResponse,
   getFitStatus,
-  getTalent
+  getTalent,
+  perguntasDoCandidato
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import { CircleCheckIcon, ClockIcon } from 'lucide-react';
@@ -65,47 +66,38 @@ import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
  *
  * ## Forma
  *
- * Uma pergunta por tela, alvos de 48px, corpo de 15px. O público é operacional
- * e com baixo letramento digital: o que não é a pergunta atual, o botão de
- * seguir ou o de voltar não está na tela.
+ * Uma frase por tela, alvos de 48px, corpo de 15px. O público é operacional
+ * e com baixo letramento digital: o que não é a frase atual, o botão de
+ * seguir ou o de voltar não está na tela. A frase é o `textoSimples` do
+ * instrumento, e a escala de concordância aparece em 5 opções grandes, uma
+ * por linha, com o rótulo escrito.
+ *
+ * As 10 frases são as que a empresa da vaga escolheu (`perguntasDoCandidato`):
+ * uma por tema, onde a equipe dela é mais marcante.
  */
-
-const TOTAL_QUESTIONS = CANDIDATE_FIT_QUESTIONS.length;
 
 type Step =
   | { kind: 'consent' }
   | { kind: 'question'; index: number }
   | { kind: 'done' };
 
-type Answers = Partial<Record<FitAxisId, CandidateFitOption>>;
+type Answers = Partial<Record<string, ValorDaEscala>>;
 
 /**
- * As cinco respostas completas, ou `null` enquanto faltar alguma.
- *
- * Os eixos são escritos um a um de propósito: é o que deixa o TypeScript
- * provar que o objeto entregue ao `dispatch` tem as cinco chaves, sem
- * conversão de tipo escondendo um questionário respondido pela metade.
+ * As respostas completas, ou `null` enquanto faltar alguma frase: nada de
+ * gravar um questionário respondido pela metade.
  */
 function respostasCompletas(
-  answers: Answers
-): Record<FitAxisId, CultureOptionValue> | null {
-  const apoio = answers['apoio-inicial'];
-  const autonomia = answers.autonomia;
-  const comunicacao = answers['comunicacao-prioridades'];
-  const ritmo = answers['ritmo-turno'];
-  const aprendizado = answers.aprendizado;
-
-  if (!apoio || !autonomia || !comunicacao || !ritmo || !aprendizado) {
-    return null;
+  answers: Answers,
+  itemIds: string[]
+): Record<string, ValorDaEscala> | null {
+  const completas: Record<string, ValorDaEscala> = {};
+  for (const itemId of itemIds) {
+    const valor = answers[itemId];
+    if (valor === undefined) return null;
+    completas[itemId] = valor;
   }
-
-  return {
-    'apoio-inicial': apoio.value,
-    autonomia: autonomia.value,
-    'comunicacao-prioridades': comunicacao.value,
-    'ritmo-turno': ritmo.value,
-    aprendizado: aprendizado.value
-  };
+  return completas;
 }
 
 export function FitQuestionnaireScreen({
@@ -135,6 +127,10 @@ export function FitQuestionnaireScreen({
   const application = getApplication(state, applicationId);
   const jobView = getCandidateJobView(state, applicationId);
   const talent = application ? getTalent(application.talentId) : null;
+  const perguntas = application
+    ? perguntasDoCandidato(state, application.jobId)
+    : [];
+  const totalQuestions = perguntas.length;
 
   if (!application || !jobView) {
     return (
@@ -175,7 +171,10 @@ export function FitQuestionnaireScreen({
   };
 
   const submit = () => {
-    const completas = respostasCompletas(answers);
+    const completas = respostasCompletas(
+      answers,
+      perguntas.map((pergunta) => pergunta.itemId)
+    );
     if (!completas) return;
 
     dispatch({
@@ -248,7 +247,7 @@ export function FitQuestionnaireScreen({
             <p>
               O IEL compara o que você respondeu com o jeito de trabalhar da
               empresa desta vaga. Se o seu currículo for enviado, a empresa vê o
-              resultado por ponto — nunca as suas respostas uma a uma.
+              resultado por tema — nunca as suas respostas uma a uma.
             </p>
             <p>
               Se a empresa quiser conversar, o contato vem por quem já fala com
@@ -286,8 +285,9 @@ export function FitQuestionnaireScreen({
             {CANDIDATE_CONSENT_TEXT.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            São 5 perguntas sobre como você prefere trabalhar. Leva cerca de 5
-            minutos e não existe resposta certa.
+            São {totalQuestions} frases sobre como você prefere trabalhar. Para
+            cada uma, diga se concorda ou discorda. Leva cerca de 5 minutos e
+            não existe resposta certa.
           </p>
         </div>
 
@@ -343,13 +343,13 @@ export function FitQuestionnaireScreen({
     );
   }
 
-  const question = CANDIDATE_FIT_QUESTIONS[step.index];
+  const question = perguntas[step.index];
   if (!question) return null;
 
-  const chosen = answers[question.axisId];
-  const isLast = step.index === TOTAL_QUESTIONS - 1;
-  const rotuloProgresso = `Pergunta ${step.index + 1} de ${TOTAL_QUESTIONS}`;
-  const valorProgresso = Math.round(((step.index + 1) / TOTAL_QUESTIONS) * 100);
+  const chosen = answers[question.itemId];
+  const isLast = step.index === totalQuestions - 1;
+  const rotuloProgresso = `Frase ${step.index + 1} de ${totalQuestions}`;
+  const valorProgresso = Math.round(((step.index + 1) / totalQuestions) * 100);
 
   return (
     <CandidateFrame badge={badge}>
@@ -360,7 +360,7 @@ export function FitQuestionnaireScreen({
           aria-hidden="true"
         >
           <span>{rotuloProgresso}</span>
-          <span>cerca de 1 min</span>
+          <span>cerca de 30 s</span>
         </div>
         <Progress
           className="h-1.5 bg-muted"
@@ -381,13 +381,13 @@ export function FitQuestionnaireScreen({
           className="text-[22px] font-semibold leading-[1.25] tracking-tight outline-none"
         >
           <span className="sr-only">{rotuloProgresso}: </span>
-          {question.prompt}
+          {question.item.textoSimples}
         </h1>
         <p
           id="fit-pergunta-dica"
           className="text-sm leading-relaxed text-muted-foreground"
         >
-          {question.hint}
+          O quanto você concorda? Não existe resposta certa.
         </p>
       </div>
 
@@ -395,28 +395,33 @@ export function FitQuestionnaireScreen({
         className="gap-2.5"
         aria-labelledby="fit-pergunta"
         aria-describedby="fit-pergunta-dica"
-        value={chosen?.id ?? ''}
+        value={chosen === undefined ? '' : String(chosen)}
         onValueChange={(value) => {
-          const option = question.options.find((entry) => entry.id === value);
+          const option = ESCALA_CONCORDANCIA.find(
+            (entry) => String(entry.valor) === value
+          );
           if (!option) return;
-          setAnswers((current) => ({ ...current, [question.axisId]: option }));
+          setAnswers((current) => ({
+            ...current,
+            [question.itemId]: option.valor
+          }));
         }}
       >
-        {question.options.map((option) => {
-          const selected = chosen?.id === option.id;
+        {ESCALA_CONCORDANCIA.map((option) => {
+          const selected = chosen === option.valor;
           return (
             <Label
-              key={option.id}
-              htmlFor={`${question.axisId}-${option.id}`}
+              key={option.valor}
+              htmlFor={`${question.itemId}-${option.valor}`}
               data-selected={selected ? '' : undefined}
               className="flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-[1.35] data-[selected]:border-foreground data-[selected]:bg-muted/50 data-[selected]:ring-1 data-[selected]:ring-foreground"
             >
               <RadioGroupItem
-                id={`${question.axisId}-${option.id}`}
+                id={`${question.itemId}-${option.valor}`}
                 className="size-[18px]"
-                value={option.id}
+                value={String(option.valor)}
               />
-              <span>{option.label}</span>
+              <span>{option.rotulo}</span>
             </Label>
           );
         })}
@@ -426,7 +431,7 @@ export function FitQuestionnaireScreen({
         <Button
           size="lg"
           className="h-12 w-full text-[15px]"
-          disabled={!chosen}
+          disabled={chosen === undefined}
           onClick={() => {
             if (isLast) {
               submit();

@@ -11,18 +11,18 @@ import type { CultureRespondentInvite } from '../types';
 /**
  * Convites da amostra de colaboradores das empresas curadas (M2).
  *
- * São coerentes com as respostas que já existem em `DEMO_CULTURE_ANSWERS`:
- * quem já respondeu tem `answeredAt`, e a soma dos respondidos bate com o
- * `count` agregado das respostas de equipe daquela empresa. O contrário
- * produziria uma tela dizendo "7 de 10 responderam" sobre uma média formada
- * por outro número de pessoas.
+ * São a fonte de `DEMO_CULTURE_ANSWERS`: cada convite respondido responde o
+ * próprio bloco de frases (`blocoDoConvite`), e as respostas são agregadas a
+ * partir daí. O contrário produziria uma tela dizendo "7 de 10 responderam"
+ * sobre uma média formada por outro número de pessoas.
  *
  * As três empresas cobrem os três estados que a visão geral precisa mostrar:
  *
  * - **Cerrado Distribuição**: consulta em andamento, prazo vencendo amanhã.
  *   A segunda leva de convites saiu depois da primeira, e é o prazo dela que
  *   a tela mostra.
- * - **Horizonte Alimentos**: consulta completa, gestão, RH e equipe.
+ * - **Horizonte Alimentos**: consulta completa — gestão, RH e 10 pessoas da
+ *   equipe, o bastante para toda frase ter ao menos 3 respostas da equipe.
  * - **Oficina Pantanal**: prazo vencido com 3 de 8. O perfil não fecha, e a
  *   tela diz isso em vez de tratar duas respostas de equipe como "a equipe".
  *
@@ -119,17 +119,26 @@ const INVITE_SEEDS: InviteSeed[] = [
     sentAt: '2026-09-01',
     answeredAt: '2026-09-02'
   },
-  ...['Heitor Salles', 'Ivone Caldas', 'Juliano Peixoto', 'Kátia Beltrão'].map(
-    (name, index) => ({
-      id: `INV-EMP02-${String(index + 3).padStart(2, '0')}`,
-      companyId: 'EMP-02',
-      corporateEmail: corporateEmail(name, 'horizonte.example.com'),
-      role: 'equipe' as const,
-      area: 'Estoque',
-      sentAt: '2026-09-04',
-      answeredAt: '2026-09-06'
-    })
-  ),
+  ...[
+    'Heitor Salles',
+    'Ivone Caldas',
+    'Juliano Peixoto',
+    'Kátia Beltrão',
+    'Lara Pimentel',
+    'Mauro Teixeira',
+    'Nádia Coutinho',
+    'Orlando Viana',
+    'Priscila Moura',
+    'Renan Castilho'
+  ].map((name, index) => ({
+    id: `INV-EMP02-${String(index + 3).padStart(2, '0')}`,
+    companyId: 'EMP-02',
+    corporateEmail: corporateEmail(name, 'horizonte.example.com'),
+    role: 'equipe' as const,
+    area: 'Estoque',
+    sentAt: '2026-09-04',
+    answeredAt: '2026-09-06'
+  })),
 
   {
     id: 'INV-EMP03-01',

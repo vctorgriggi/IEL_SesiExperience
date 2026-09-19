@@ -19,7 +19,7 @@ import { DEMO_JOBS } from './jobs';
 import { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 5;
+export const DEMO_SCHEMA_VERSION = 6;
 
 const GENERATED = getGeneratedBase();
 

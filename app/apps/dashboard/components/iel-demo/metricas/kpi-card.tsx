@@ -2,7 +2,13 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 import type { Kpi } from '@/features/iel-demo/analysis/analytics';
-import { Minus, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
+import {
+  Info,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon
+} from 'lucide-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -13,6 +19,11 @@ import {
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@workspace/ui/shadcn/tooltip';
 
 import {
   BADGE_DE_ESTADO,
@@ -30,6 +41,11 @@ export type CartaoDeIndicadorProps = Omit<
 > & {
   /** Rótulo curto, no topo. Pode quebrar em duas linhas. */
   rotulo: ReactNode;
+  /**
+   * O rótulo em texto puro, para o `aria-label` do ⓘ ("Sobre {rótulo}").
+   * Só é preciso quando `rotulo` não é uma string.
+   */
+  rotuloTexto?: string;
   /** O número. Fica sempre na cor do texto: a cor mora no ícone e no selo. */
   valor: ReactNode;
   /** Selo à direita do número (variação ou etiqueta). */
@@ -40,9 +56,12 @@ export type CartaoDeIndicadorProps = Omit<
   tom?: TomDeCor;
   /** Mini indicador visual logo abaixo do número (pontos, barra fina). */
   indicador?: ReactNode;
-  /** Linha forte do rodapé. */
+  /** Linha única do rodapé, curta. Vazia, não reserva altura. */
   rodape?: ReactNode;
-  /** Linha de apoio do rodapé, em `text-muted-foreground`. */
+  /**
+   * A explicação longa do indicador. Não fica no corpo do cartão: vai para a
+   * dica do ⓘ ao lado do rótulo (e para o leitor de tela).
+   */
   apoio?: ReactNode;
   /**
    * Frase inteira para o leitor de tela. Quando existe, o desenho do cartão
@@ -52,18 +71,61 @@ export type CartaoDeIndicadorProps = Omit<
 };
 
 /**
- * O esqueleto de todo cartão de número do /iel: ícone tingido e rótulo no
- * topo, número grande com o selo à direita, mini indicador opcional e rodapé.
+ * A ajuda do cartão: um ⓘ de 14px ao lado do rótulo, com a explicação na
+ * dica do mouse.
+ *
+ * A explicação já morou no corpo do cartão, em duas linhas de apoio que
+ * ocupavam quase um terço da altura para dizer o que quase nunca se lê. Aqui
+ * ela fica a um toque — e continua inteira para o leitor de tela, que não
+ * depende de passar o mouse: o `aria-label` nomeia o indicador e o texto vem
+ * logo depois, fora do botão (dentro dele o `aria-label` o esconderia).
+ */
+function AjudaDoIndicador({
+  rotulo,
+  texto
+}: {
+  rotulo?: string;
+  texto: ReactNode;
+}) {
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={rotulo ? `Sobre ${rotulo}` : 'Sobre este indicador'}
+            className="mt-[3px] inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring"
+          >
+            <Info
+              aria-hidden="true"
+              className="size-3.5"
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64 text-pretty">
+          {texto}
+        </TooltipContent>
+      </Tooltip>
+      <span className="sr-only">{texto}</span>
+    </>
+  );
+}
+
+/**
+ * O esqueleto de todo cartão de número do /iel: ícone tingido, rótulo e ⓘ no
+ * topo, número grande com o selo à direita, mini indicador opcional e uma
+ * linha de rodapé.
  *
  * Fundo branco com borda: a cor vem do ícone e do selo, no máximo dois pontos
  * de cor por cartão. O topo tem altura mínima de duas linhas de rótulo, para
- * os números de uma mesma fileira ficarem na mesma altura; o apoio reserva
- * duas linhas e o rodapé fica colado embaixo (`mt-auto`), para o rodapé de
- * um cartão alinhar com o do vizinho mesmo quando um apoio quebra e o outro
- * não. O cartão ocupa a altura toda da célula (`h-full`).
+ * os números de uma mesma fileira ficarem na mesma altura. O rodapé é uma
+ * linha só e fica colado embaixo (`mt-auto`), então os cartões de uma mesma
+ * fileira terminam na mesma altura; sem rodapé, nada é reservado. O cartão
+ * ocupa a altura toda da célula (`h-full`).
  */
 export function CartaoDeIndicador({
   rotulo,
+  rotuloTexto,
   valor,
   selo,
   icone: Icone,
@@ -99,8 +161,21 @@ export function CartaoDeIndicador({
               <Icone className="size-4" />
             </span>
           ) : null}
-          <CardDescription className="line-clamp-2 min-w-0 flex-1 leading-5">
-            {rotulo}
+          {/*
+           * O ⓘ fica fora do `line-clamp`: dentro dele o `overflow: hidden`
+           * cortaria o anel de foco do botão.
+           */}
+          <CardDescription className="flex min-w-0 flex-1 items-start gap-1.5 leading-5">
+            <span className="line-clamp-2 min-w-0">{rotulo}</span>
+            {apoio ? (
+              <AjudaDoIndicador
+                rotulo={
+                  rotuloTexto ??
+                  (typeof rotulo === 'string' ? rotulo : undefined)
+                }
+                texto={apoio}
+              />
+            ) : null}
           </CardDescription>
         </div>
         {/*
@@ -115,24 +190,18 @@ export function CartaoDeIndicador({
         </div>
         {indicador}
       </CardHeader>
-      {rodape || apoio ? (
+      {rodape ? (
         <CardFooter
           aria-hidden={oculto}
-          className="mt-auto flex-col items-start gap-1 pt-1 text-sm"
+          className="mt-auto pt-1 text-sm"
         >
-          {rodape ? (
-            // O rodapé cresce para cima quando quebra: o apoio tem altura fixa
-            // de duas linhas e o bloco fica colado embaixo, então a última
-            // linha do rodapé alinha com a do vizinho.
-            <span className="flex max-w-full min-w-0 items-center gap-2 font-medium">
-              {rodape}
-            </span>
-          ) : null}
-          {apoio ? (
-            <span className="line-clamp-2 min-h-10 text-muted-foreground">
-              {apoio}
-            </span>
-          ) : null}
+          {/*
+           * Uma linha só, colada embaixo: os cartões de uma fileira terminam
+           * na mesma altura sem reservar espaço em quem não tem rodapé.
+           */}
+          <span className="flex max-w-full min-w-0 items-center gap-2 font-medium">
+            {rodape}
+          </span>
         </CardFooter>
       ) : null}
     </Card>
@@ -147,11 +216,11 @@ export type KpiCardProps = {
    */
   valor?: ReactNode;
   /**
-   * Linha forte do rodapé. Padrão: a direção da variação em palavras
+   * Linha única do rodapé. Padrão: a direção da variação em palavras
    * ("Subiu no período"), ou "Sem comparação" quando `variacao` é `null`.
    */
   rodape?: ReactNode;
-  /** Linha de apoio do rodapé, em `text-muted-foreground`. Padrão: `kpi.descricao`. */
+  /** A explicação do ⓘ. Padrão: `kpi.descricao`. */
   apoio?: ReactNode;
   /**
    * Indicador em que cair é o resultado desejado (reabertura, tempo do
@@ -191,8 +260,9 @@ function direcao(kpi: Kpi): {
 
 /**
  * O *section card* do `dashboard-01` alimentado por um `Kpi` de
- * `analytics.ts`, sobre o `CartaoDeIndicador`: ícone e rótulo → número em
- * 30px tabular → selo da variação → rodapé em duas linhas.
+ * `analytics.ts`, sobre o `CartaoDeIndicador`: ícone, rótulo e o ⓘ com a
+ * descrição → número em 30px tabular → selo da variação → uma linha de
+ * rodapé.
  *
  * O selo da variação é o único lugar em que o cartão diz "bom" ou "ruim":
  * verde quando melhorou, vermelho quando piorou, cinza sem variação. Quem
@@ -235,6 +305,7 @@ export function KpiCard({
       icone={icone}
       tom={tom}
       indicador={indicador}
+      rotuloTexto={kpi.rotulo}
       rotulo={
         <>
           {kpi.rotulo}

@@ -25,10 +25,10 @@ import {
   ChartColumn,
   ChartNoAxesColumnIncreasing,
   ChevronsUpDown,
+  ClipboardList,
   HelpCircle,
-  Inbox,
+  Home,
   ListOrdered,
-  MessageSquare,
   Plug,
   ScatterChart,
   Search,
@@ -136,7 +136,7 @@ function ItemDaBarra({
           <SidebarMenuBadge
             className={cn(
               'tabular-nums',
-              item.label === 'Hoje' && BADGE_DE_ESTADO.atencao
+              item.label === 'Início' && BADGE_DE_ESTADO.atencao
             )}
           >
             {item.badge}
@@ -151,14 +151,14 @@ function ItemDaBarra({
  *
  * Ela já foi uma árvore Empresa → Vaga. Com mais de 2.500 empresas atendidas
  * e perto de 2.500 vagas por mês, a árvore não cabia e não se achava nada
- * nela. Ficaram destinos fixos em seções com título — Seleção, Pessoas,
+ * nela. Ficaram destinos fixos em seções com título — Seleção, Talentos,
  * Análise —, as últimas vagas em que a analista mexeu, a seção Sistema no pé
  * e a busca ⌘K para chegar em qualquer outra coisa.
  *
  * Papéis (prancha 2): só o analista tem app. Empresa e candidato recebem
  * link, e essas telas ficam fora desta casca.
  */
-export function AppSidebar() {
+export function AppSidebar({ podeSair }: { podeSair: boolean }) {
   const { state, persona } = useIelDemo();
   const pathname = usePathname();
   const iel = routes.dashboard.iel;
@@ -214,8 +214,8 @@ export function AppSidebar() {
 
   /*
    * A barra em seções com título, no padrão do `sidebar-07`: o que é da
-   * seleção do dia, o que é da base de pessoas e o que é análise. Seção vazia
-   * (a do gestor, por exemplo) não aparece.
+   * seleção do dia, o que é do banco de talentos e o que é análise. Seção
+   * vazia (a do gestor, por exemplo) não aparece.
    */
   const secoes: Secao[] = eGestor
     ? [
@@ -239,8 +239,8 @@ export function AppSidebar() {
           itens: [
             item(
               iel.index,
-              'Hoje',
-              Inbox,
+              'Início',
+              Home,
               pathname === iel.index,
               pendencias > 0 ? pendencias : null
             ),
@@ -266,23 +266,23 @@ export function AppSidebar() {
           ]
         },
         /*
-         * Pessoas, Candidatos e o mapa reúnem a base de talentos do IEL, então
-         * ficam fora do menu do gestor: seriam porta para o recorte de outras
-         * empresas (PRODUTO.md §5).
+         * O banco de talentos, os questionários e o mapa reúnem a base de
+         * pessoas do IEL, então ficam fora do menu do gestor: seriam porta
+         * para o recorte de outras empresas (PRODUTO.md §5).
          */
         {
-          titulo: 'Pessoas',
+          titulo: 'Talentos',
           itens: [
             item(
               iel.talents.index,
-              'Pessoas',
+              'Banco de talentos',
               Users,
               pathname.startsWith(iel.talents.index)
             ),
             item(
               iel.candidates,
-              'Candidatos',
-              MessageSquare,
+              'Questionários',
+              ClipboardList,
               pathname.startsWith(iel.candidates)
             ),
             item(
@@ -439,7 +439,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser />
+        <NavUser podeSair={podeSair} />
       </SidebarFooter>
 
       <BuscaGlobal

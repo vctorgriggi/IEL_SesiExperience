@@ -1,6 +1,6 @@
 'use client';
 
-import { CULTURE_QUESTIONS } from '@/features/iel-demo/analysis/culture';
+import { FIT_AXES } from '@/features/iel-demo/analysis/fit-axes';
 import {
   classificarCultura,
   FAIXA_DE_ENCAIXE_LABEL,
@@ -106,8 +106,8 @@ export function EncaixeCultural({
         <CardTitle>Ambiente de trabalho, lado a lado</CardTitle>
         <CardDescription>
           {plural(leitura.axes.length, 'eixo comparado', 'eixos comparados')} de{' '}
-          {CULTURE_QUESTIONS.length}. Posiciona os dois lados a partir das
-          respostas já dadas. Descreve ambiente de trabalho, não personalidade.
+          {FIT_AXES.length}. Posiciona os dois lados a partir das respostas já
+          dadas. Descreve ambiente de trabalho, não personalidade.
         </CardDescription>
         <CardAction>
           <FaixaBadge faixa={leitura.fit.faixa} />

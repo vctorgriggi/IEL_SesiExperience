@@ -92,12 +92,12 @@ function montarMensagem(
     const atividade = contexto.atividade ?? contexto.vaga ?? 'a vaga';
     const onde = contexto.cidade ? `, em ${contexto.cidade}` : '';
     return {
-      whatsapp: `Olá! Aqui é o ${REMETENTE}. Recebemos sua candidatura para a vaga de ${atividade}${onde}. Responda 5 perguntas rápidas sobre como você prefere trabalhar. É pelo celular e não precisa de senha.`,
+      whatsapp: `Olá! Aqui é o ${REMETENTE}. Recebemos sua candidatura para a vaga de ${atividade}${onde}. Responda 10 frases rápidas sobre como você prefere trabalhar. É pelo celular e não precisa de senha.`,
       assunto: `Sua candidatura: ${atividade}${onde}`,
       email: [
         'Olá!',
         `Recebemos sua candidatura para a vaga de ${atividade}${onde}.`,
-        'Para seguir, responda 5 perguntas rápidas sobre como você prefere trabalhar. Leva uns 5 minutos, pelo celular, e não existe resposta certa.'
+        'Para seguir, responda 10 frases rápidas sobre como você prefere trabalhar. Leva uns 5 minutos, pelo celular, e não existe resposta certa.'
       ]
     };
   }
@@ -105,12 +105,12 @@ function montarMensagem(
   if (destinatario === 'colaborador') {
     const empresa = contexto.empresa ?? 'sua empresa';
     return {
-      whatsapp: `Olá! Aqui é o ${REMETENTE}. A ${empresa} quer saber como é trabalhar aí, contado por quem vive o dia a dia. São 5 perguntas, uns 5 minutos. Ninguém vê a sua resposta, nem a sua gestão.`,
-      assunto: `Como é trabalhar na ${empresa}? 5 perguntas`,
+      whatsapp: `Olá! Aqui é o ${REMETENTE}. A ${empresa} quer saber como é trabalhar aí, contado por quem vive o dia a dia. São cerca de 15 frases, uns 5 minutos. Ninguém vê a sua resposta, nem a sua gestão.`,
+      assunto: `Como é trabalhar na ${empresa}? Cerca de 15 frases`,
       email: [
         'Olá!',
         `A ${empresa} está ouvindo quem trabalha lá para descrever como é o dia a dia. As respostas ajudam o IEL a indicar candidatos que combinam com o jeito da equipe.`,
-        'São 5 perguntas, uns 5 minutos. A sua resposta entra só na média: ninguém vê o que você respondeu, nem a sua gestão.'
+        'São cerca de 15 frases, uns 5 minutos. A sua resposta entra só na média: ninguém vê o que você respondeu, nem a sua gestão.'
       ]
     };
   }
@@ -122,7 +122,7 @@ function montarMensagem(
     email: [
       contexto.empresa ? `Olá, equipe ${contexto.empresa}!` : 'Olá!',
       `Os currículos${vaga} estão prontos para leitura.`,
-      'A página abre sem login e mostra, de cada pessoa, os requisitos e como ela combina com a empresa em 5 pontos do dia a dia.'
+      'A página abre sem login e mostra, de cada pessoa, os requisitos e como ela combina com a empresa nos 10 temas.'
     ]
   };
 }

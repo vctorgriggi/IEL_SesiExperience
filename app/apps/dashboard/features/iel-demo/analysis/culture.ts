@@ -1,224 +1,45 @@
 /**
- * Traçado cultural da empresa.
+ * Perfil cultural da empresa, a partir das respostas ao instrumento.
  *
  * Três restrições moldam este desenho, e nenhuma delas é opcional.
  *
- * **Não pode ser um formulário longo.** O enunciado lista como limitações do
- * fit cultural o custo alto e o tempo elevado de aplicação. Pedir que a
- * empresa preencha uma bateria de perguntas recria o problema que o desafio
- * quer remover. Por isso a análise assistida lê o que a empresa já escreveu —
- * descrição da vaga, rotina da equipe, respostas do gestor — e **propõe** o
- * traçado com o trecho que a sustenta. A empresa confirma ou corrige, num
- * clique por eixo.
+ * **Não pode ser um formulário longo.** O enunciado lista custo e tempo de
+ * aplicação como limitações do fit cultural. O instrumento do cliente tem 52
+ * frases; ninguém responde as 52. Cada colaborador recebe um bloco de cerca de
+ * 15 (`instrumento.ts`, amostragem em matriz) e o perfil se forma pela soma
+ * dos blocos.
  *
- * **Não pode ser uma pessoa só.** Se apenas a gestão responde, o traçado vira
- * autorretrato: no papel todo mundo colabora, na prática cada um resolve o
- * seu. O enunciado exige redução de vieses. Então cada eixo admite respostas
- * de papéis diferentes — gestão, RH e a própria equipe — e a leitura mostra
- * quando elas não coincidem, em vez de escolher uma versão.
+ * **Não pode ser uma pessoa só.** O perfil é a média de uma amostra (R2), e
+ * uma frase só "fecha" com `MIN_TEAM_RESPONSES` respostas da equipe. Gestão e
+ * RH entram na média, mas a leitura mostra quando divergem da equipe, em vez
+ * de escolher uma versão.
  *
- * **A decisão continua humana.** O enunciado exige supervisão humana e diz
- * que recomendações devem apoiar, não substituir. A proposta da análise nunca
- * vira resposta sozinha: fica pendente até alguém confirmar, e o trecho de
- * origem fica visível para que a confirmação seja informada.
+ * **A decisão continua humana.** A proposta da análise assistida nunca vira
+ * resposta sozinha: fica pendente até alguém da empresa confirmar.
  *
- * As respostas da equipe são agregadas e anônimas: a LGPD está nas exigências
- * do desafio, e quem responde sobre o próprio ambiente de trabalho não pode
- * ficar identificado para a gestão.
+ * As respostas da equipe são agregadas e anônimas: quem responde sobre o
+ * próprio ambiente de trabalho não pode ficar identificado para a gestão.
  */
 
 import type { FitAxisId } from './fit-axes';
-
-export type CultureOptionId = string;
-
-/**
- * Posição da alternativa na escala do eixo. Sempre 1, 2 ou 3.
- *
- * É uma escala **ordinal**, não uma nota. A ordem expressa *quanto* de apoio,
- * de autonomia, de estrutura ou de previsibilidade a alternativa descreve —
- * nunca "melhor" ou "pior". Uma empresa em que cada um assume a rotina por
- * conta (1 em apoio inicial) não é pior do que uma com acompanhamento
- * definido (3): é outra condição de trabalho, e a pessoa que combina com ela
- * é outra.
- *
- * O valor existe por uma razão só: sem uma escala comum aos dois lados não há
- * distância a medir, e sem distância não há percentual de aderência — que é a
- * regra de negócio do cliente (R3, M4). Todo eixo usa a mesma amplitude
- * (mínimo 1, máximo 3) para que um eixo não pese mais que outro por acidente
- * de escala; o que pondera é o peso declarado pela empresa.
- */
-export type CultureOptionValue = 1 | 2 | 3;
-
-export const CULTURE_SCALE_MIN: CultureOptionValue = 1;
-export const CULTURE_SCALE_MAX: CultureOptionValue = 3;
-
-export type CultureOption = {
-  id: CultureOptionId;
-  /** Texto da alternativa, em termos de prática observável. */
-  label: string;
-  /** Posição ordinal no eixo. Ver `CultureOptionValue`. */
-  value: CultureOptionValue;
-};
-
-export type CultureQuestion = {
-  axisId: FitAxisId;
-  /** Pergunta feita a quem responde sobre a própria empresa. */
-  prompt: string;
-  options: CultureOption[];
-};
+import { FIT_AXES } from './fit-axes';
+import {
+  alinharAoPolo,
+  ESCALA_MAX,
+  ESCALA_MIN,
+  ESCALA_NEUTRO,
+  getItem,
+  ITEM_PADRAO_POR_TEMA,
+  itensDoTema,
+  type ValorDaEscala
+} from './instrumento';
 
 /**
- * O questionário. É o parâmetro do produto: trocar ou acrescentar eixos aqui
- * muda o traçado das duas pontas sem tocar nas telas.
- *
- * As alternativas descrevem prática de trabalho, nunca traço de pessoa. O
- * enunciado veda dado de saúde na seleção e manda tratar bem-estar pela
- * perspectiva do ambiente e das relações de trabalho.
+ * Amplitude da escala comum aos dois lados. Todas as telas que desenham um
+ * trilho empresa × pessoa leem daqui, para nenhuma fixar 1..3 ou 1..5.
  */
-export const CULTURE_QUESTIONS: CultureQuestion[] = [
-  {
-    axisId: 'apoio-inicial',
-    prompt: 'Como alguém que entra hoje aprende a rotina?',
-    // Escala: quanto de apoio estruturado existe no início. 1 = nenhum.
-    options: [
-      {
-        id: 'acompanhamento-formal',
-        label: 'Há acompanhamento definido nas primeiras semanas',
-        value: 3
-      },
-      {
-        id: 'troca-informal',
-        label: 'Há troca informal com colegas, sem acompanhamento definido',
-        value: 2
-      },
-      {
-        id: 'por-conta',
-        label: 'A pessoa assume a rotina por conta desde o início',
-        value: 1
-      }
-    ]
-  },
-  {
-    axisId: 'autonomia',
-    prompt: 'Quanto da rotina do dia é decidido por quem executa?',
-    // Escala: quanto de autonomia tem quem executa. 1 = nenhuma.
-    options: [
-      {
-        id: 'rotina-definida',
-        label: 'A rotina chega definida por outra pessoa',
-        value: 1
-      },
-      {
-        id: 'parcial',
-        label: 'Parte é definida, parte a pessoa organiza',
-        value: 2
-      },
-      {
-        id: 'autonomia-ampla',
-        label: 'Quem executa organiza o próprio trabalho',
-        value: 3
-      }
-    ]
-  },
-  {
-    axisId: 'comunicacao-prioridades',
-    prompt: 'Como as prioridades do dia chegam até a equipe?',
-    // Escala: quanto de estrutura tem a comunicação. 1 = nenhuma, o combinado
-    // vai surgindo no meio do turno.
-    options: [
-      {
-        id: 'por-escrito',
-        label: 'Por escrito, em checklist ou sistema',
-        value: 3
-      },
-      {
-        id: 'verbal-inicio',
-        label: 'Verbalmente, no início do turno',
-        value: 2
-      },
-      {
-        id: 'ao-longo-do-dia',
-        label: 'Ao longo do dia, conforme surgem',
-        value: 1
-      }
-    ]
-  },
-  {
-    axisId: 'ritmo-turno',
-    prompt: 'O horário praticado varia ao longo da semana?',
-    // Escala: quanto de previsibilidade tem o horário. 1 = nenhuma.
-    options: [
-      { id: 'fixo', label: 'Horário fixo, sem variação', value: 3 },
-      {
-        id: 'variacao-prevista',
-        label: 'Varia, mas com escala combinada com antecedência',
-        value: 2
-      },
-      {
-        id: 'variacao-frequente',
-        label: 'Varia conforme a demanda, com pouca antecedência',
-        value: 1
-      }
-    ]
-  },
-  {
-    axisId: 'aprendizado',
-    prompt: 'O que a empresa espera que a pessoa aprenda nos primeiros meses?',
-    // Escala: quanto de aprendizado a função comporta no início. 1 = nenhum,
-    // espera-se domínio na entrada.
-    options: [
-      {
-        id: 'rotina-propria',
-        label: 'A rotina específica da função',
-        value: 2
-      },
-      {
-        id: 'processos-amplos',
-        label: 'A rotina e os processos das áreas vizinhas',
-        value: 3
-      },
-      {
-        id: 'ja-domina',
-        label: 'Espera-se que já domine a rotina ao entrar',
-        value: 1
-      }
-    ]
-  }
-];
-
-export function getCultureQuestion(axisId: FitAxisId): CultureQuestion | null {
-  return (
-    CULTURE_QUESTIONS.find((question) => question.axisId === axisId) ?? null
-  );
-}
-
-export function getCultureOptionLabel(
-  axisId: FitAxisId,
-  optionId: CultureOptionId
-): string {
-  const question = getCultureQuestion(axisId);
-  return (
-    question?.options.find((option) => option.id === optionId)?.label ??
-    optionId
-  );
-}
-
-/**
- * Posição ordinal de uma alternativa no eixo.
- *
- * Devolve `null` quando a alternativa não existe mais no questionário — trocar
- * um eixo é mudar o parâmetro do produto, e uma resposta antiga órfã não pode
- * virar um número inventado no meio do cálculo de aderência.
- */
-export function getCultureOptionValue(
-  axisId: FitAxisId,
-  optionId: CultureOptionId
-): CultureOptionValue | null {
-  const question = getCultureQuestion(axisId);
-  return (
-    question?.options.find((option) => option.id === optionId)?.value ?? null
-  );
-}
+export const CULTURE_SCALE_MIN = ESCALA_MIN;
+export const CULTURE_SCALE_MAX = ESCALA_MAX;
 
 /** Quem respondeu. A equipe entra agregada e sem identificação. */
 export type CultureRespondent = 'gestao' | 'rh' | 'equipe';
@@ -230,9 +51,277 @@ export const CULTURE_RESPONDENT_LABEL: Record<CultureRespondent, string> = {
 };
 
 /**
- * Quantas respostas da equipe sustentam uma leitura.
+ * Quantas respostas da equipe sustentam uma frase.
  *
- * Abaixo disso a tela diz que a consulta ainda não tem base suficiente, em
- * vez de tratar duas respostas como "a equipe".
+ * Abaixo disso a frase não fecha e a tela diz que a consulta ainda não tem
+ * base, em vez de tratar duas respostas como "a equipe".
  */
 export const MIN_TEAM_RESPONSES = 3;
+
+/**
+ * Diferença, em pontos da escala de 1 a 5, a partir da qual gestão/RH e
+ * equipe "respondem diferente" num tema. Um ponto é a distância entre
+ * "concordo" e "tanto faz": abaixo disso é nuance, não outra versão.
+ */
+export const LIMIAR_DE_DIVERGENCIA = 1;
+
+/** O mínimo que o cálculo precisa de uma resposta registrada. */
+export type RespostaAgregada = {
+  itemId: string;
+  value: ValorDaEscala;
+  respondent: CultureRespondent;
+  count: number;
+};
+
+export type PerfilDoItem = {
+  itemId: string;
+  tema: FitAxisId;
+  /** Média de todos os papéis, ponderada por `count`. `null` sem resposta. */
+  media: number | null;
+  /** Respostas na frase, somados os papéis. */
+  n: number;
+  /** Respostas da equipe: é o que decide se a frase fecha. */
+  nEquipe: number;
+  /** Desvio-padrão das respostas (0 quando todos respondem igual). */
+  desvio: number;
+  /** n da equipe ≥ `MIN_TEAM_RESPONSES`. */
+  fecha: boolean;
+  porPapel: Partial<Record<CultureRespondent, { media: number; n: number }>>;
+};
+
+export type CultureDispersion = 'convergente' | 'divergente';
+
+export type PerfilDoTema = {
+  axisId: FitAxisId;
+  /** Média, no sentido do tema, das frases que fecham. `null` se nenhuma. */
+  media: number | null;
+  /** Média de todas as frases com resposta, fechadas ou não. */
+  mediaProvisoria: number | null;
+  /** Alguma frase discriminante do tema fechou. */
+  fecha: boolean;
+  /** Maior número de respostas numa frase do tema: aproxima "quantas pessoas". */
+  respondentes: number;
+  /** Maior número de respostas por papel numa frase do tema. */
+  respondentesPorPapel: Record<CultureRespondent, number>;
+  /** Média do tema por papel, no sentido do tema. */
+  porPapel: Partial<Record<CultureRespondent, number>>;
+  /** Gestão e RH juntos, e a equipe, para o diagnóstico de divergência. */
+  lideranca: number | null;
+  equipe: number | null;
+  dispersao: CultureDispersion | null;
+};
+
+export type PerfilCultural = {
+  itens: Record<string, PerfilDoItem>;
+  temas: PerfilDoTema[];
+};
+
+const PAPEIS: CultureRespondent[] = ['gestao', 'rh', 'equipe'];
+
+function media(valores: number[]): number | null {
+  if (valores.length === 0) return null;
+  return valores.reduce((soma, valor) => soma + valor, 0) / valores.length;
+}
+
+/**
+ * Perfil por frase e por tema a partir das respostas agregadas de uma empresa.
+ *
+ * Função pura: quem filtra as respostas da empresa é o seletor. Uma resposta
+ * a uma frase que não existe mais no instrumento é ignorada — número órfão
+ * não entra na média.
+ */
+export function calcularPerfilCultural(
+  respostas: RespostaAgregada[]
+): PerfilCultural {
+  type Acumulado = {
+    soma: number;
+    somaQuadrados: number;
+    n: number;
+    porPapel: Record<CultureRespondent, { soma: number; n: number }>;
+  };
+  const porItem = new Map<string, Acumulado>();
+
+  for (const resposta of respostas) {
+    if (!getItem(resposta.itemId) || resposta.count <= 0) continue;
+    const atual = porItem.get(resposta.itemId) ?? {
+      soma: 0,
+      somaQuadrados: 0,
+      n: 0,
+      porPapel: {
+        gestao: { soma: 0, n: 0 },
+        rh: { soma: 0, n: 0 },
+        equipe: { soma: 0, n: 0 }
+      }
+    };
+    atual.soma += resposta.value * resposta.count;
+    atual.somaQuadrados += resposta.value * resposta.value * resposta.count;
+    atual.n += resposta.count;
+    atual.porPapel[resposta.respondent].soma += resposta.value * resposta.count;
+    atual.porPapel[resposta.respondent].n += resposta.count;
+    porItem.set(resposta.itemId, atual);
+  }
+
+  const itens: Record<string, PerfilDoItem> = {};
+  for (const [itemId, acumulado] of porItem) {
+    const item = getItem(itemId)!;
+    const mediaDoItem = acumulado.soma / acumulado.n;
+    const variancia = Math.max(
+      0,
+      acumulado.somaQuadrados / acumulado.n - mediaDoItem * mediaDoItem
+    );
+    const porPapel: PerfilDoItem['porPapel'] = {};
+    for (const papel of PAPEIS) {
+      const entrada = acumulado.porPapel[papel];
+      if (entrada.n > 0) {
+        porPapel[papel] = { media: entrada.soma / entrada.n, n: entrada.n };
+      }
+    }
+    const nEquipe = acumulado.porPapel.equipe.n;
+    itens[itemId] = {
+      itemId,
+      tema: item.tema,
+      media: mediaDoItem,
+      n: acumulado.n,
+      nEquipe,
+      desvio: Math.sqrt(variancia),
+      fecha: nEquipe >= MIN_TEAM_RESPONSES,
+      porPapel
+    };
+  }
+
+  const temas: PerfilDoTema[] = FIT_AXES.map((axis) => {
+    const doTema = itensDoTema(axis.id);
+    const comResposta = doTema
+      .map((item) => ({ item, perfil: itens[item.id] }))
+      .filter(
+        (
+          entrada
+        ): entrada is {
+          item: (typeof doTema)[number];
+          perfil: PerfilDoItem;
+        } => entrada.perfil !== undefined && entrada.perfil.media !== null
+      );
+
+    const fechados = comResposta.filter((entrada) => entrada.perfil.fecha);
+    const alinhada = (entrada: (typeof comResposta)[number]) =>
+      alinharAoPolo(entrada.item, entrada.perfil.media!);
+
+    const porPapel: PerfilDoTema['porPapel'] = {};
+    const respondentesPorPapel: Record<CultureRespondent, number> = {
+      gestao: 0,
+      rh: 0,
+      equipe: 0
+    };
+    for (const papel of PAPEIS) {
+      const valores: number[] = [];
+      for (const entrada of comResposta) {
+        const doPapel = entrada.perfil.porPapel[papel];
+        if (!doPapel) continue;
+        valores.push(alinharAoPolo(entrada.item, doPapel.media));
+        respondentesPorPapel[papel] = Math.max(
+          respondentesPorPapel[papel],
+          doPapel.n
+        );
+      }
+      const valor = media(valores);
+      if (valor !== null) porPapel[papel] = valor;
+    }
+
+    // Divergência: só nas frases em que os dois lados responderam, para não
+    // comparar a gestão numa frase com a equipe em outra.
+    const liderancaValores: number[] = [];
+    const equipeValores: number[] = [];
+    for (const entrada of comResposta) {
+      const gestao = entrada.perfil.porPapel.gestao;
+      const rh = entrada.perfil.porPapel.rh;
+      const equipe = entrada.perfil.porPapel.equipe;
+      if (!equipe || (!gestao && !rh)) continue;
+      const nLideranca = (gestao?.n ?? 0) + (rh?.n ?? 0);
+      const somaLideranca =
+        (gestao ? gestao.media * gestao.n : 0) + (rh ? rh.media * rh.n : 0);
+      liderancaValores.push(
+        alinharAoPolo(entrada.item, somaLideranca / nLideranca)
+      );
+      equipeValores.push(alinharAoPolo(entrada.item, equipe.media));
+    }
+    const lideranca = media(liderancaValores);
+    const equipe = media(equipeValores);
+
+    const fecha = fechados.some((entrada) => entrada.item.discrimina);
+    const dispersao: CultureDispersion | null =
+      !fecha || lideranca === null || equipe === null
+        ? null
+        : Math.abs(lideranca - equipe) >= LIMIAR_DE_DIVERGENCIA
+          ? 'divergente'
+          : 'convergente';
+
+    return {
+      axisId: axis.id,
+      media: media(fechados.map(alinhada)),
+      mediaProvisoria: media(comResposta.map(alinhada)),
+      fecha,
+      respondentes: Math.max(0, ...comResposta.map((e) => e.perfil.n)),
+      respondentesPorPapel,
+      porPapel,
+      lideranca,
+      equipe,
+      dispersao
+    };
+  });
+
+  return { itens, temas };
+}
+
+/**
+ * O quanto a empresa é marcante numa frase: longe do "tanto faz" e com a
+ * equipe de acordo entre si.
+ *
+ * `|média − 3| × 1 / (1 + desvio)`. Uma frase em que a equipe inteira
+ * responde "concordo muito" separa candidatos; uma em que metade concorda e
+ * metade discorda não diz nada sobre a empresa, mesmo com média longe do 3.
+ */
+export function marcaDaEmpresa(perfil: PerfilDoItem): number {
+  if (perfil.media === null) return 0;
+  return Math.abs(perfil.media - ESCALA_NEUTRO) * (1 / (1 + perfil.desvio));
+}
+
+export type PerguntaDoCandidato = {
+  itemId: string;
+  axisId: FitAxisId;
+  /**
+   * O tema ainda não fechou na empresa: a frase é a padrão do tema e a
+   * resposta não pesa até o perfil fechar.
+   */
+  semBaseDaEmpresa: boolean;
+};
+
+/**
+ * As 10 frases do candidato, uma por tema, escolhidas pela empresa.
+ *
+ * Em cada tema, a frase discriminante que fecha e em que a empresa é mais
+ * marcante (`marcaDaEmpresa`). Sem frase fechada, a padrão do tema, marcada
+ * `semBaseDaEmpresa`. Frases de desejabilidade social nunca entram.
+ */
+export function escolherPerguntasDoCandidato(
+  perfil: PerfilCultural
+): PerguntaDoCandidato[] {
+  return FIT_AXES.map((axis) => {
+    let melhor: { itemId: string; marca: number } | null = null;
+    for (const item of itensDoTema(axis.id)) {
+      if (!item.discrimina) continue;
+      const doItem = perfil.itens[item.id];
+      if (!doItem?.fecha) continue;
+      const marca = marcaDaEmpresa(doItem);
+      if (!melhor || marca > melhor.marca) {
+        melhor = { itemId: item.id, marca };
+      }
+    }
+    return melhor
+      ? { itemId: melhor.itemId, axisId: axis.id, semBaseDaEmpresa: false }
+      : {
+          itemId: ITEM_PADRAO_POR_TEMA[axis.id],
+          axisId: axis.id,
+          semBaseDaEmpresa: true
+        };
+  });
+}

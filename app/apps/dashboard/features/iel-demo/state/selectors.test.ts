@@ -7,6 +7,7 @@ import {
   getDimensionSummary,
   getRequiredAttentionPoints
 } from '../analysis/criterion-states';
+import { blocoDoConvite } from '../analysis/instrumento';
 import {
   buildImportPlan,
   parseSpreadsheet
@@ -383,14 +384,10 @@ describe('persistência local versionada', () => {
     const respondido = demoReducer(importado, {
       type: 'answer-culture-invite',
       token: convite.token,
-      answers: {
-        'apoio-inicial': 'troca-informal',
-        autonomia: 'parcial',
-        'comunicacao-prioridades': 'por-escrito',
-        'ritmo-turno': 'fixo',
-        aprendizado: 'rotina-propria'
-      },
-      consentVersion: '2026-09-19',
+      answers: Object.fromEntries(
+        blocoDoConvite(convite).map((item) => [item.id, 4 as const])
+      ),
+      consentVersion: '2026-09-21',
       at: '2026-09-14T12:00:00.000Z'
     });
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { sair } from '@/app/(iel)/iel/entrar/actions';
 import { DEMO_PERSONAS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
-import { MoreVertical, RotateCcw, UserCog } from 'lucide-react';
+import { LogOut, MoreVertical, RotateCcw, UserCog } from 'lucide-react';
 
 import { toast } from '@workspace/ui';
 import { Avatar, AvatarFallback } from '@workspace/ui/shadcn/avatar';
@@ -49,7 +50,7 @@ function iniciais(nome: string): string {
  * base são ações de quem apresenta, e cabem onde um produto de verdade
  * guarda as ações da conta.
  */
-export function NavUser() {
+export function NavUser({ podeSair }: { podeSair: boolean }) {
   const { state, dispatch, persona, resetDemo } = useIelDemo();
   const { isMobile } = useSidebar();
   const [confirmarReset, setConfirmarReset] = useState(false);
@@ -110,6 +111,16 @@ export function NavUser() {
             </DropdownMenuRadioGroup>
 
             <DropdownMenuSeparator />
+            {podeSair ? (
+              <DropdownMenuItem
+                onSelect={() => {
+                  void sair();
+                }}
+              >
+                <LogOut />
+                Sair da Central
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem onSelect={() => setConfirmarReset(true)}>
               <RotateCcw />
               Reiniciar demonstração

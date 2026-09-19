@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  CULTURE_QUESTIONS,
-  type CultureOptionId
-} from '@/features/iel-demo/analysis/culture';
 import { CULTURE_CONSENT_VERSION } from '@/features/iel-demo/analysis/culture-invites';
-import type { FitAxisId } from '@/features/iel-demo/analysis/fit-axes';
+import {
+  ESCALA_CONCORDANCIA,
+  type ValorDaEscala
+} from '@/features/iel-demo/analysis/instrumento';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getInviteByToken } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
@@ -24,8 +23,9 @@ import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 /**
  * A tela de quem trabalha na empresa e recebeu o link (M2 + M7).
  *
- * Responde uma pergunta — "como é trabalhar aqui?" — em cinco telas, uma
- * pergunta por vez, sem login. Quem abre isto é um colaborador operacional no
+ * Responde uma pergunta — "como é trabalhar aqui?" — pelas frases do bloco
+ * daquele convite (cerca de 15 das 52 do instrumento, amostragem em matriz),
+ * uma frase por tela, na escala de concordância, sem login. Quem abre isto é um colaborador operacional no
  * celular, no intervalo do turno: uma pergunta por vez, alternativas de 60px,
  * um botão só e nada para configurar. A tela cabe em 390px sem rolagem.
  *
@@ -48,12 +48,10 @@ import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
  * resposta — sem ela não há como demonstrar a que a pessoa consentiu.
  */
 
-/** Um passo do fluxo: o aceite, as cinco perguntas, a confirmação. */
+/** Um passo do fluxo: o aceite, as frases do bloco, a confirmação. */
 type Step = { kind: 'consent' } | { kind: 'question'; index: number };
 
-type Answers = Partial<Record<FitAxisId, CultureOptionId>>;
-
-const TOTAL_QUESTIONS = CULTURE_QUESTIONS.length;
+type Answers = Partial<Record<string, ValorDaEscala>>;
 
 /** "15/09": o prazo como a frase do rodapé o diz. */
 function shortDate(iso: string): string {
@@ -108,16 +106,21 @@ export function CultureInviteScreen({ token }: { token: string }) {
         : step.kind
   );
 
+  const bloco = invite?.bloco ?? [];
+  const totalQuestions = bloco.length;
+
   const submit = (final: Answers) => {
-    const complete = CULTURE_QUESTIONS.every(
-      (question) => final[question.axisId] !== undefined
-    );
-    if (!complete) return;
+    const completas: Record<string, ValorDaEscala> = {};
+    for (const item of bloco) {
+      const valor = final[item.id];
+      if (valor === undefined) return;
+      completas[item.id] = valor;
+    }
 
     dispatch({
       type: 'answer-culture-invite',
       token,
-      answers: final as Record<FitAxisId, CultureOptionId>,
+      answers: completas,
       consentVersion: CULTURE_CONSENT_VERSION,
       at: nowIso()
     });
@@ -168,8 +171,9 @@ export function CultureInviteScreen({ token }: { token: string }) {
               Como é trabalhar aqui?
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              São 5 perguntas sobre o dia a dia na {invite.companyName}. Leva
-              até 5 minutos.
+              São {totalQuestions} frases sobre o dia a dia na{' '}
+              {invite.companyName}. Para cada uma, diga o quanto concorda. Leva
+              uns 5 minutos.
             </p>
           </div>
 
@@ -183,7 +187,8 @@ export function CultureInviteScreen({ token }: { token: string }) {
               <p>
                 <span className="font-medium">O que é coletado.</span> Coletamos
                 só seu e-mail corporativo, área e papel, que já estavam no
-                convite, e as 5 respostas. Seu nome não é pedido.
+                convite, e o quanto você concorda com cada frase. Seu nome não é
+                pedido.
               </p>
               <p>
                 <span className="font-medium">Quem vê.</span> A empresa vê a
@@ -231,13 +236,13 @@ export function CultureInviteScreen({ token }: { token: string }) {
         </section>
       ) : (
         (() => {
-          const question = CULTURE_QUESTIONS[step.index];
+          const question = bloco[step.index];
           if (!question) return null;
-          const chosen = answers[question.axisId];
-          const isLast = step.index === TOTAL_QUESTIONS - 1;
-          const rotuloProgresso = `Pergunta ${step.index + 1} de ${TOTAL_QUESTIONS}`;
+          const chosen = answers[question.id];
+          const isLast = step.index === totalQuestions - 1;
+          const rotuloProgresso = `Frase ${step.index + 1} de ${totalQuestions}`;
           const valorProgresso = Math.round(
-            ((step.index + 1) / TOTAL_QUESTIONS) * 100
+            ((step.index + 1) / totalQuestions) * 100
           );
 
           return (
@@ -249,7 +254,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   aria-hidden="true"
                 >
                   <span>{rotuloProgresso}</span>
-                  <span>até 5 min</span>
+                  <span>uns 5 min</span>
                 </div>
                 <Progress
                   className="h-1.5 bg-muted"
@@ -269,14 +274,14 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
                 >
                   <span className="sr-only">{rotuloProgresso}: </span>
-                  {question.prompt}
+                  {question.texto}
                 </h1>
                 <p
                   id="consulta-pergunta-dica"
                   className="text-sm leading-relaxed text-muted-foreground"
                 >
-                  Responda pelo que acontece de verdade no seu setor, não pelo
-                  que deveria acontecer.
+                  O quanto você concorda? Responda pelo que vale de verdade no
+                  seu dia a dia, não pelo que deveria ser.
                 </p>
               </div>
 
@@ -284,20 +289,24 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 aria-labelledby="consulta-pergunta"
                 aria-describedby="consulta-pergunta-dica"
                 className="gap-2.5"
-                value={chosen ?? ''}
-                onValueChange={(value) =>
+                value={chosen === undefined ? '' : String(chosen)}
+                onValueChange={(value) => {
+                  const option = ESCALA_CONCORDANCIA.find(
+                    (entry) => String(entry.valor) === value
+                  );
+                  if (!option) return;
                   setAnswers((current) => ({
                     ...current,
-                    [question.axisId]: value
-                  }))
-                }
+                    [question.id]: option.valor
+                  }));
+                }}
               >
-                {question.options.map((option) => {
-                  const selected = chosen === option.id;
-                  const id = `${question.axisId}-${option.id}`;
+                {ESCALA_CONCORDANCIA.map((option) => {
+                  const selected = chosen === option.valor;
+                  const id = `${question.id}-${option.valor}`;
                   return (
                     <Label
-                      key={option.id}
+                      key={option.valor}
                       htmlFor={id}
                       className={cn(
                         'flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-snug transition-colors',
@@ -308,10 +317,10 @@ export function CultureInviteScreen({ token }: { token: string }) {
                     >
                       <RadioGroupItem
                         id={id}
-                        value={option.id}
+                        value={String(option.valor)}
                         className="size-[18px]"
                       />
-                      <span className="whitespace-normal">{option.label}</span>
+                      <span className="whitespace-normal">{option.rotulo}</span>
                     </Label>
                   );
                 })}

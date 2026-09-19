@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { ADHERENCE_THRESHOLD, computeAdherence } from '../analysis/adherence';
-import {
-  assertCandidateQuestionnaireMirrorsCompany,
-  CANDIDATE_CONSENT_VERSION
-} from '../analysis/candidate-questionnaire';
+import { ADHERENCE_THRESHOLD } from '../analysis/adherence';
+import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
 import {
   getCoverage,
   getCriterionAnalysis
@@ -22,15 +19,11 @@ import {
 import type { DemoState, Job } from '../types';
 import { applySyncEventPayload, demoReducer, type DemoAction } from './reducer';
 import {
-  getAdherence,
   getApplication,
   getAxisWeight,
   getAxisWeights,
   getCandidateJobView,
   getClarification,
-  getCompanyCultureProfile,
-  getCultureAttentionPoints,
-  getCultureReading,
   getFitGaps,
   getFitReading,
   getFitResponse,
@@ -45,6 +38,8 @@ import {
   getTalentTransparency,
   getVisibleTalentIds,
   getWeightLearning,
+  perfilDaEmpresa,
+  perguntasDoCandidato,
   REFERRAL_LIMIT,
   WEIGHT_LEARNING_MIN_OCCURRENCES
 } from './selectors';
@@ -709,7 +704,9 @@ describe('aderência ao contexto, eixo a eixo', () => {
     const job = getJob('VAG-01')!;
     const reading = getFitReading(state, job, 'ANA');
 
-    const apoio = reading.find((entry) => entry.axis.id === 'apoio-inicial')!;
+    const apoio = reading.find(
+      (entry) => entry.axis.id === 'lideranca-autonomia'
+    )!;
 
     // A empresa ainda não informou o apoio inicial. Ana declarou esperar
     // orientação. Um lado vazio não diverge do outro: é lacuna.
@@ -748,7 +745,7 @@ describe('aderência ao contexto, eixo a eixo', () => {
     });
 
     const apoio = getFitReading(state, getJob('VAG-01')!, 'ANA').find(
-      (entry) => entry.axis.id === 'apoio-inicial'
+      (entry) => entry.axis.id === 'lideranca-autonomia'
     )!;
 
     // Agora os dois lados informaram, e eles não coincidem. É a cena que o
@@ -766,99 +763,10 @@ describe('aderência ao contexto, eixo a eixo', () => {
     // Ana não declarou nada sobre autonomia nem sobre comunicação de
     // prioridades: é o que uma coleta dirigida iria buscar.
     expect(gaps.map((entry) => entry.axis.id).sort()).toEqual([
-      'autonomia',
-      'comunicacao-prioridades'
+      'regras-decisao',
+      'interacao-convivencia'
     ]);
     expect(gaps.every((entry) => entry.preference === null)).toBe(true);
-  });
-});
-
-describe('traçado cultural da empresa', () => {
-  it('mostra a divergência entre gestão e equipe em vez de escolher uma versão', () => {
-    const state = buildInitialDemoState();
-    const apoio = getCultureReading(state, 'EMP-01').find(
-      (entry) => entry.question.axisId === 'apoio-inicial'
-    )!;
-
-    // A gestão responde que há troca informal; a equipe, em maioria, responde
-    // que cada um assume por conta. Uma fonte única esconderia isso.
-    const gestao = apoio.voices.find((voice) => voice.respondent === 'gestao')!;
-    const equipe = apoio.voices.find((voice) => voice.respondent === 'equipe')!;
-
-    expect(gestao.optionId).toBe('troca-informal');
-    expect(equipe.optionId).toBe('por-conta');
-    expect(apoio.state).toBe('divergente');
-
-    // As duas versões continuam visíveis: nada é reduzido a um valor só.
-    expect(apoio.voices).toHaveLength(2);
-    expect(equipe.total).toBe(7);
-  });
-
-  it('não trata poucas respostas como se fossem a equipe', () => {
-    const state = buildInitialDemoState();
-    const autonomia = getCultureReading(state, 'EMP-03').find(
-      (entry) => entry.question.axisId === 'autonomia'
-    )!;
-
-    // Duas respostas não sustentam uma leitura sobre o conjunto.
-    expect(autonomia.state).toBe('consulta-insuficiente');
-  });
-
-  it('marca como convergente quando gestão, RH e equipe coincidem', () => {
-    const state = buildInitialDemoState();
-    const apoio = getCultureReading(state, 'EMP-02').find(
-      (entry) => entry.question.axisId === 'apoio-inicial'
-    )!;
-
-    expect(apoio.voices.map((voice) => voice.respondent).sort()).toEqual([
-      'equipe',
-      'gestao',
-      'rh'
-    ]);
-    expect(apoio.state).toBe('convergente');
-  });
-
-  it('a proposta da análise não vale como resposta até ser confirmada', () => {
-    let state = buildInitialDemoState();
-    const axis = 'ritmo-turno';
-
-    const before = getCultureReading(state, 'EMP-01').find(
-      (entry) => entry.question.axisId === axis
-    )!;
-
-    // Existe proposta montada a partir da descrição da vaga, mas o eixo
-    // continua sem resposta: supervisão humana é exigência do enunciado.
-    expect(before.pendingSuggestion?.optionId).toBe('fixo');
-    expect(before.pendingSuggestion?.excerpt).toContain('Turno da tarde');
-    expect(before.state).toBe('sem-resposta');
-    expect(before.voices).toHaveLength(0);
-
-    state = demoReducer(state, {
-      type: 'answer-culture',
-      companyId: 'EMP-01',
-      axisId: axis,
-      optionId: 'variacao-prevista',
-      at: AT
-    });
-
-    const after = getCultureReading(state, 'EMP-01').find(
-      (entry) => entry.question.axisId === axis
-    )!;
-
-    // A empresa corrigiu a proposta: vale a resposta humana, não a sugestão.
-    expect(after.voices[0]?.respondent).toBe('gestao');
-    expect(after.voices[0]?.optionId).toBe('variacao-prevista');
-    expect(after.pendingSuggestion).toBeNull();
-    expect(state.history[0]?.action).toBe('Traçado cultural respondido');
-  });
-
-  it('aponta os eixos cuja leitura não se sustenta sozinha', () => {
-    const state = buildInitialDemoState();
-    const attention = getCultureAttentionPoints(state, 'EMP-01');
-
-    expect(attention.map((entry) => entry.question.axisId)).toContain(
-      'apoio-inicial'
-    );
   });
 });
 
@@ -938,8 +846,10 @@ describe('peso dos eixos declarado pela empresa', () => {
     // pode deixar um de fora. Silêncio da empresa não é prioridade baixa: é
     // ausência de decisão, e o padrão precisa refletir isso.
     const semDeclaracao: Job = { ...job, axisWeights: {} };
-    expect(getAxisWeight(semDeclaracao, 'apoio-inicial')).toBe('medio');
-    expect(getAxisWeight(semDeclaracao, 'aprendizado', state)).toBe('medio');
+    expect(getAxisWeight(semDeclaracao, 'lideranca-autonomia')).toBe('medio');
+    expect(
+      getAxisWeight(semDeclaracao, 'aprendizado-desenvolvimento', state)
+    ).toBe('medio');
   });
 
   it('carrega os pesos curados da vaga 1, onde a história acontece', () => {
@@ -948,9 +858,9 @@ describe('peso dos eixos declarado pela empresa', () => {
     // É nestes dois eixos que a expectativa de Ana não encontra a condição da
     // equipe. Declará-los prioritários é o que faz a leitura mostrar a
     // diferença em vez de diluí-la entre cinco eixos equivalentes.
-    expect(getAxisWeight(job, 'apoio-inicial')).toBe('alto');
-    expect(getAxisWeight(job, 'autonomia')).toBe('alto');
-    expect(getAxisWeight(job, 'aprendizado')).toBe('baixo');
+    expect(getAxisWeight(job, 'lideranca-autonomia')).toBe('alto');
+    expect(getAxisWeight(job, 'regras-decisao')).toBe('alto');
+    expect(getAxisWeight(job, 'aprendizado-desenvolvimento')).toBe('baixo');
 
     // A proposta assistida nasce pendente e cita um trecho real do texto da
     // vaga: confirmar no escuro não seria supervisão humana.
@@ -958,7 +868,7 @@ describe('peso dos eixos declarado pela empresa', () => {
     const pendente = getPendingAxisWeightSuggestion(
       state,
       job,
-      'apoio-inicial'
+      'lideranca-autonomia'
     )!;
     expect(pendente.weight).toBe('alto');
     expect(job.organizationalContext).toContain(pendente.excerpt);
@@ -969,39 +879,43 @@ describe('peso dos eixos declarado pela empresa', () => {
     const job = getJob('VAG-01')!;
 
     expect(
-      getPendingAxisWeightSuggestion(state, job, 'apoio-inicial')
+      getPendingAxisWeightSuggestion(state, job, 'lideranca-autonomia')
     ).not.toBeNull();
 
     state = demoReducer(state, {
       type: 'set-axis-weight',
       jobId: 'VAG-01',
-      axisId: 'apoio-inicial',
+      axisId: 'lideranca-autonomia',
       weight: 'medio',
       at: AT
     });
 
     // A correção da empresa vence a fixture: é a decisão mais recente, e tem
     // autor e hora.
-    expect(getAxisWeight(job, 'apoio-inicial', state)).toBe('medio');
+    expect(getAxisWeight(job, 'lideranca-autonomia', state)).toBe('medio');
     expect(state.history[0]!.action).toBe('Peso do eixo definido pela empresa');
     expect(state.history[0]!.entityRef).toBe('VAG-01');
 
     // Respondido o eixo, a proposta deixa de ser pendente — mesmo contrato do
     // traçado cultural.
     expect(
-      getPendingAxisWeightSuggestion(state, job, 'apoio-inicial')
+      getPendingAxisWeightSuggestion(state, job, 'lideranca-autonomia')
     ).toBeNull();
 
     // Os demais eixos e as demais vagas não são afetados.
-    expect(getAxisWeight(job, 'autonomia', state)).toBe('alto');
-    expect(getAxisWeight(getJob('VAG-02')!, 'aprendizado', state)).toBe('alto');
+    expect(getAxisWeight(job, 'regras-decisao', state)).toBe('alto');
+    expect(
+      getAxisWeight(getJob('VAG-02')!, 'aprendizado-desenvolvimento', state)
+    ).toBe('alto');
   });
 
   it('leva o peso para dentro da leitura de aderência sem mudar o resto dela', () => {
     const state = buildInitialDemoState();
     const reading = getFitReading(state, getJob('VAG-01')!, 'ANA');
 
-    const apoio = reading.find((entry) => entry.axis.id === 'apoio-inicial')!;
+    const apoio = reading.find(
+      (entry) => entry.axis.id === 'lideranca-autonomia'
+    )!;
     expect(apoio.weight).toBe('alto');
     // O peso ordena a atenção; não altera o estado lido no eixo.
     expect(apoio.state).toBe('sem-informacao');
@@ -1045,7 +959,7 @@ describe('leitura assistida dos eixos', () => {
     );
 
     const atencao = insights.findIndex(
-      (insight) => insight.axisId === 'apoio-inicial'
+      (insight) => insight.axisId === 'lideranca-autonomia'
     );
     expect(insights[atencao]!.kind).toBe('atencao');
     // O texto descreve o encontro dos dois lados, nunca a pessoa.
@@ -1069,14 +983,16 @@ describe('leitura assistida dos eixos', () => {
       getAxisWeights(state, job)
     );
 
-    const lacuna = insights.find((insight) => insight.axisId === 'autonomia')!;
+    const lacuna = insights.find(
+      (insight) => insight.axisId === 'regras-decisao'
+    )!;
     expect(lacuna.kind).toBe('lacuna');
     expect(lacuna.detail).toContain('coleta dirigida');
 
     // Comunicação de prioridades também falta do lado da pessoa, mas a vaga
     // dá peso médio a esse eixo: não vira alarme.
     expect(
-      insights.some((insight) => insight.axisId === 'comunicacao-prioridades')
+      insights.some((insight) => insight.axisId === 'interacao-convivencia')
     ).toBe(false);
   });
 });
@@ -1145,14 +1061,16 @@ describe('aprendizado dos processos sobre o peso dos eixos', () => {
     state = demoReducer(state, {
       type: 'set-axis-weight',
       jobId: 'VAG-01',
-      axisId: 'apoio-inicial',
+      axisId: 'lideranca-autonomia',
       weight: 'medio',
       at: AT
     });
     state = declineAnaOnJobOne(state);
 
     const learning = getWeightLearning(state, 'VAG-01');
-    const apoio = learning.find((entry) => entry.axisId === 'apoio-inicial')!;
+    const apoio = learning.find(
+      (entry) => entry.axisId === 'lideranca-autonomia'
+    )!;
 
     expect(apoio.occurrences).toBeGreaterThanOrEqual(
       WEIGHT_LEARNING_MIN_OCCURRENCES
@@ -1162,7 +1080,7 @@ describe('aprendizado dos processos sobre o peso dos eixos', () => {
 
     // A proposta não se aplica sozinha: o peso continua o que a empresa
     // definiu até alguém confirmar.
-    expect(getAxisWeight(getJob('VAG-01')!, 'apoio-inicial', state)).toBe(
+    expect(getAxisWeight(getJob('VAG-01')!, 'lideranca-autonomia', state)).toBe(
       'medio'
     );
 
@@ -1173,14 +1091,14 @@ describe('aprendizado dos processos sobre o peso dos eixos', () => {
       weight: apoio.suggestedWeight,
       at: AT
     });
-    expect(getAxisWeight(getJob('VAG-01')!, 'apoio-inicial', state)).toBe(
+    expect(getAxisWeight(getJob('VAG-01')!, 'lideranca-autonomia', state)).toBe(
       'alto'
     );
     // Confirmado, o padrão sai da lista: propor de novo o que já vale seria
     // ruído.
     expect(
       getWeightLearning(state, 'VAG-01').some(
-        (entry) => entry.axisId === 'apoio-inicial'
+        (entry) => entry.axisId === 'lideranca-autonomia'
       )
     ).toBe(false);
   });
@@ -1215,159 +1133,7 @@ describe('aprendizado dos processos sobre o peso dos eixos', () => {
   });
 });
 
-describe('perfil cultural da empresa como média', () => {
-  it('calcula a média ponderada por respondente, não por papel', () => {
-    const state = buildInitialDemoState();
-    const profile = getCompanyCultureProfile(state, 'EMP-01');
-    const apoio = profile.find((entry) => entry.axisId === 'apoio-inicial')!;
-
-    // Cerrado, apoio inicial: gestão respondeu "troca informal" (2, 1 pessoa)
-    // e a equipe respondeu "por conta" (1, 5 pessoas) e "troca informal"
-    // (2, 2 pessoas). A média é do que a empresa entende (00:41:44), então as
-    // 8 respostas entram com o mesmo peso individual: (2 + 5 + 4) / 8.
-    expect(apoio.respondents).toBe(8);
-    expect(apoio.mean).toBeCloseTo(11 / 8, 10);
-    expect(apoio.byRole.gestao).toBe(2);
-    expect(apoio.byRole.equipe).toBeCloseTo(9 / 7, 10);
-
-    // A média é o perfil; a dispersão continua sendo o diagnóstico. Uma não
-    // apaga a outra — foi essa a correção da reunião sobre o briefing.
-    expect(apoio.dispersion).toBe('divergente');
-    expect(apoio.ready).toBe(true);
-  });
-
-  it('não fecha o perfil onde a consulta à equipe não tem base', () => {
-    const state = buildInitialDemoState();
-    const profile = getCompanyCultureProfile(state, 'EMP-03');
-    const autonomia = profile.find((entry) => entry.axisId === 'autonomia')!;
-
-    // Oficina Pantanal: duas respostas da equipe. Duas pessoas não são "a
-    // equipe", e o documento de produto manda o perfil não fechar e a tela
-    // dizer isso, em vez de tratar duas como o conjunto.
-    expect(autonomia.respondents).toBe(3);
-    expect(autonomia.mean).not.toBeNull();
-    expect(autonomia.ready).toBe(false);
-
-    // Eixo sem resposta nenhuma não tem média para mostrar.
-    const aprendizado = profile.find(
-      (entry) => entry.axisId === 'aprendizado'
-    )!;
-    expect(aprendizado.mean).toBeNull();
-    expect(aprendizado.respondents).toBe(0);
-  });
-});
-
-describe('motor de aderência', () => {
-  it('mede a distância entre os dois lados na escala ordinal', () => {
-    // Extremos opostos na escala 1..3: distância máxima, aderência zero.
-    const oposto = computeAdherence(
-      { 'apoio-inicial': 1 },
-      { 'apoio-inicial': 3 },
-      { 'apoio-inicial': 'alto' }
-    );
-    expect(oposto.byAxis[0]?.adherence).toBe(0);
-    expect(oposto.total).toBe(0);
-
-    // Mesma resposta dos dois lados: 100. Não é "vai dar certo", é "o que a
-    // empresa pratica é o que a pessoa procura naquele eixo".
-    const igual = computeAdherence(
-      { 'apoio-inicial': 2 },
-      { 'apoio-inicial': 2 },
-      { 'apoio-inicial': 'alto' }
-    );
-    expect(igual.byAxis[0]?.adherence).toBe(100);
-    expect(igual.total).toBe(100);
-  });
-
-  it('pondera o total pelo peso que a empresa declarou', () => {
-    // Conta refeita à mão, que é o critério de aceitação: com peso alto = 3 e
-    // baixo = 1, um eixo em 100 (alto) e outro em 0 (baixo) dão
-    // (100×3 + 0×1) / (3 + 1) = 75.
-    const result = computeAdherence(
-      { 'apoio-inicial': 2, aprendizado: 1 },
-      { 'apoio-inicial': 2, aprendizado: 3 },
-      { 'apoio-inicial': 'alto', aprendizado: 'baixo' }
-    );
-
-    expect(result.total).toBe(75);
-    expect(result.coverage).toEqual({ answeredAxes: 2, totalAxes: 5 });
-  });
-
-  it('não inventa número onde falta um dos lados', () => {
-    // Empresa sem perfil fechado: não há do que medir distância.
-    const semEmpresa = computeAdherence({}, { 'apoio-inicial': 3 }, {});
-    expect(semEmpresa.byAxis[0]?.adherence).toBeNull();
-    expect(semEmpresa.total).toBeNull();
-    expect(semEmpresa.compatible).toBeNull();
-
-    // Candidato que não respondeu também não tem medida. `null` e não zero:
-    // zero é uma medida, ausência é outra coisa, e confundir as duas
-    // transformaria silêncio em demérito.
-    const semCandidato = computeAdherence({ 'apoio-inicial': 2 }, null, {});
-    expect(semCandidato.byAxis[0]?.adherence).toBeNull();
-    expect(semCandidato.total).toBeNull();
-    expect(semCandidato.compatible).toBeNull();
-    expect(semCandidato.coverage.answeredAxes).toBe(0);
-  });
-
-  it('aplica o corte de 35% do cliente exatamente na borda', () => {
-    // R3 (00:20:19): "no mínimo 35%". Mínimo inclui o 35.
-    const noCorte = computeAdherence(
-      { 'apoio-inicial': 1 + 2 * (1 - ADHERENCE_THRESHOLD / 100) },
-      { 'apoio-inicial': 1 },
-      {}
-    );
-    expect(noCorte.total).toBeCloseTo(ADHERENCE_THRESHOLD, 10);
-    expect(noCorte.compatible).toBe(true);
-
-    const abaixo = computeAdherence(
-      { 'apoio-inicial': 1 + 2 * (1 - 34.99 / 100) },
-      { 'apoio-inicial': 1 },
-      {}
-    );
-    expect(abaixo.total).toBeCloseTo(34.99, 10);
-    expect(abaixo.compatible).toBe(false);
-  });
-
-  it('monta a aderência da candidatura a partir do estado', () => {
-    const state = buildInitialDemoState();
-    const ana = getAdherence(state, 'CAND-01')!;
-
-    // Cerrado só fechou dois eixos; o denominador precisa ficar visível.
-    expect(ana.coverage).toEqual({ answeredAxes: 2, totalAxes: 5 });
-
-    // Ana espera acompanhamento (3) numa empresa que mal tem apoio (1,375):
-    // 100 × (1 − 1,625/2) = 18,75. É o eixo em que a leitura por estado já
-    // apontava divergência — o número explica a mesma coisa, com escala.
-    const apoio = ana.byAxis.find((entry) => entry.axisId === 'apoio-inicial')!;
-    expect(apoio.candidateValue).toBe(3);
-    expect(apoio.adherence).toBeCloseTo(18.75, 10);
-    expect(apoio.weight).toBe('alto');
-
-    // Total ponderado: apoio (18,75 × 3) e comunicação (93,75 × 2) sobre 5.
-    expect(ana.total).toBeCloseTo(48.75, 10);
-    expect(ana.compatible).toBe(true);
-  });
-
-  it('não calcula aderência onde o perfil da empresa não fechou', () => {
-    const state = buildInitialDemoState();
-    // Oficina Pantanal tem duas respostas da equipe num eixo só.
-    const carla = getAdherence(state, 'CAND-08')!;
-
-    expect(carla.total).toBeNull();
-    expect(carla.compatible).toBeNull();
-    expect(carla.coverage.answeredAxes).toBe(0);
-  });
-});
-
 describe('questionário de fit do candidato', () => {
-  it('usa a mesma escala dos dois lados', () => {
-    // Um eixo acrescentado só de um lado, ou uma alternativa com valor
-    // diferente entre empresa e candidato, daria um percentual que parece
-    // certo e não é. Como isso não aparece em tela nenhuma, a garantia é esta.
-    expect(assertCandidateQuestionnaireMirrorsCompany()).toEqual([]);
-  });
-
   it('grava resposta e aceite juntos, com histórico', () => {
     let state = buildInitialDemoState();
     expect(getFitResponse(state, 'CAND-10')).toBeNull();
@@ -1375,19 +1141,14 @@ describe('questionário de fit do candidato', () => {
     state = demoReducer(state, {
       type: 'answer-fit-questionnaire',
       applicationId: 'CAND-10',
-      answers: {
-        'apoio-inicial': 2,
-        autonomia: 2,
-        'comunicacao-prioridades': 2,
-        'ritmo-turno': 2,
-        aprendizado: 2
-      },
+      // Frases do instrumento, uma por tema (`perguntasDoCandidato`).
+      answers: { I03: 2, I06: 2, I11: 2, I27: 2, I40: 2 },
       consentVersion: CANDIDATE_CONSENT_VERSION,
       at: AT
     });
 
     const response = getFitResponse(state, 'CAND-10')!;
-    expect(response.answers['apoio-inicial']).toBe(2);
+    expect(response.answers.I03).toBe(2);
     // A base legal é o consentimento (LGPD, art. 7º, I). Sem versão e hora
     // do aceite não há como demonstrar a que a pessoa consentiu.
     expect(response.consent.version).toBe(CANDIDATE_CONSENT_VERSION);
@@ -1399,17 +1160,11 @@ describe('questionário de fit do candidato', () => {
     let state = buildInitialDemoState();
     const before = state.fitResponses?.length ?? 0;
 
-    const answer = (value: 1 | 2 | 3) =>
+    const answer = (value: 1 | 3) =>
       demoReducer(state, {
         type: 'answer-fit-questionnaire',
         applicationId: 'CAND-01',
-        answers: {
-          'apoio-inicial': value,
-          autonomia: value,
-          'comunicacao-prioridades': value,
-          'ritmo-turno': value,
-          aprendizado: value
-        },
+        answers: { I03: value, I06: value, I11: value, I27: value, I40: value },
         consentVersion: CANDIDATE_CONSENT_VERSION,
         at: AT
       });
@@ -1418,7 +1173,7 @@ describe('questionário de fit do candidato', () => {
     state = answer(3);
 
     expect(state.fitResponses).toHaveLength(before);
-    expect(getFitResponse(state, 'CAND-01')?.answers.autonomia).toBe(3);
+    expect(getFitResponse(state, 'CAND-01')?.answers.I40).toBe(3);
     // A troca fica registrada: a aderência muda com ela, e o analista precisa
     // poder explicar por que o percentual de ontem não é o de hoje.
     expect(state.history[0]?.action).toBe(
@@ -1482,13 +1237,16 @@ describe('ranking por vaga', () => {
     state = demoReducer(state, {
       type: 'answer-fit-questionnaire',
       applicationId: 'CAND-01',
-      answers: {
-        'apoio-inicial': 3,
-        autonomia: 3,
-        'comunicacao-prioridades': 1,
-        'ritmo-turno': 3,
-        aprendizado: 3
-      },
+      // O extremo oposto ao da equipe da Cerrado em cada frase da vaga.
+      answers: Object.fromEntries(
+        perguntasDoCandidato(state, 'VAG-01').map((pergunta) => [
+          pergunta.itemId,
+          (perfilDaEmpresa(state, 'EMP-01').itens[pergunta.itemId]?.media ??
+            3) >= 3
+            ? (1 as const)
+            : (5 as const)
+        ])
+      ),
       consentVersion: CANDIDATE_CONSENT_VERSION,
       at: AT
     });

@@ -113,6 +113,7 @@ import { CartaoDeIndicador, KpiCard } from '../metricas/kpi-card';
 import { MarcadorHistorico } from '../metricas/marcador-historico';
 import { PERIODO_PADRAO, SeletorPeriodo } from '../metricas/seletor-periodo';
 import { ValorOculto } from '../metricas/valor-oculto';
+import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarDataCurta, formatarDataHora } from '../shared/datas';
 import { CompanyCultureTable } from './culture-profile';
 import { CultureInviteForm, CultureSampleTable } from './culture-sample';
@@ -169,9 +170,9 @@ function deadlineLabel(progress: CultureSampleProgress): string {
   return `vence em ${plural(days, 'dia', 'dias')}`;
 }
 
-type AbaEmpresas = 'com-vaga' | 'perfil-aberto' | 'todas';
+type AbaEmpresas = 'com-vaga' | 'aguardando-equipe' | 'todas';
 
-const ABAS_EMPRESAS: AbaEmpresas[] = ['com-vaga', 'perfil-aberto', 'todas'];
+const ABAS_EMPRESAS: AbaEmpresas[] = ['com-vaga', 'aguardando-equipe', 'todas'];
 
 const TODOS_OS_SETORES = 'todos';
 
@@ -224,12 +225,14 @@ export function CompaniesScreen() {
 
   const porAba = useMemo(() => {
     const comVaga = filtradas.filter((linha) => linha.openJobs > 0);
-    const perfilAberto = filtradas.filter(
+    // O avesso do KPI "Consulta à equipe fechada": a consulta ainda tem
+    // ponto em aberto, ou seja, a equipe não respondeu o bastante.
+    const aguardandoEquipe = filtradas.filter(
       (linha) => linha.openPoints !== null && linha.openPoints > 0
     );
     return {
       'com-vaga': comVaga,
-      'perfil-aberto': perfilAberto,
+      'aguardando-equipe': aguardandoEquipe,
       todas: filtradas
     } satisfies Record<AbaEmpresas, CompanyListRow[]>;
   }, [filtradas]);
@@ -306,19 +309,29 @@ export function CompaniesScreen() {
           <Tabs
             value={aba}
             onValueChange={trocarAba}
-            className="max-w-full overflow-x-auto"
           >
-            <TabsList className="**:data-[slot=badge]:h-5 **:data-[slot=badge]:min-w-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
+            <TabsList
+              className={cn(
+                ABAS_SEM_ROLAGEM,
+                '**:data-[slot=badge]:h-5 **:data-[slot=badge]:min-w-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1'
+              )}
+            >
               <TabsTrigger value="com-vaga">
                 Com vaga aberta{' '}
                 <Badge variant="secondary">
                   {porAba['com-vaga'].length.toLocaleString('pt-BR')}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="perfil-aberto">
-                Perfil em aberto{' '}
+              {/*
+               * "Perfil em aberto" confundia com "Com vaga aberta": uma fala
+               * de vaga, a outra de consulta. O nome agora diz quem está
+               * esperando — a equipe da empresa, que ainda não respondeu o
+               * bastante para o perfil fechar.
+               */}
+              <TabsTrigger value="aguardando-equipe">
+                Aguardando a equipe{' '}
                 <Badge variant="secondary">
-                  {porAba['perfil-aberto'].length.toLocaleString('pt-BR')}
+                  {porAba['aguardando-equipe'].length.toLocaleString('pt-BR')}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="todas">
@@ -405,7 +418,9 @@ export function CompaniesScreen() {
                   scope="col"
                   className="w-[14rem]"
                 >
-                  Perfil da empresa
+                  {/* Mesmo nome do KPI e da aba: é a consulta à equipe que o
+                      "N de M" conta. */}
+                  Consulta à equipe
                 </TableHead>
                 <TableHead
                   scope="col"
@@ -471,8 +486,8 @@ export function CompaniesScreen() {
                                   ,{' '}
                                   {plural(
                                     openPoints,
-                                    'ponto em aberto',
-                                    'pontos em aberto'
+                                    'tema em aberto',
+                                    'temas em aberto'
                                   )}
                                 </span>
                               </>
@@ -749,7 +764,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           hint={`mínimo de ${progress.requiredForProfile} respostas da equipe por ponto`}
         />
         <SectionCard
-          description="Pontos fechados"
+          description="Temas fechados"
           icone={ClipboardCheck}
           tom="empresa"
           value={`${suficientes} de ${profile.length}`}
@@ -766,8 +781,8 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           }
           footer={
             suficientes === profile.length
-              ? 'Os cinco pontos fecham'
-              : `${plural(profile.length - suficientes, 'ponto em aberto', 'pontos em aberto')}`
+              ? 'Os 10 temas fecham'
+              : `${plural(profile.length - suficientes, 'tema em aberto', 'temas em aberto')}`
           }
           hint="Ponto sem base não entra no cálculo"
         />
@@ -786,7 +801,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
       </div>
 
       <Tabs defaultValue="cultura">
-        <TabsList>
+        <TabsList className={ABAS_SEM_ROLAGEM}>
           <TabsTrigger value="cultura">Como a empresa trabalha</TabsTrigger>
           {ehAnalista ? (
             <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>

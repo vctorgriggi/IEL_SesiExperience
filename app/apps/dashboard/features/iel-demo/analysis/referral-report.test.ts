@@ -78,16 +78,25 @@ describe('ponto onde mais divergem', () => {
   it('aponta o ponto com mais gente fora de "combina"', () => {
     expect(
       findMostDivergentAxis([
-        pessoa(['apoio-inicial', 'difere'], ['autonomia', 'combina']),
-        pessoa(['apoio-inicial', 'parecido'], ['autonomia', 'combina'])
+        pessoa(
+          ['lideranca-autonomia', 'difere'],
+          ['regras-decisao', 'combina']
+        ),
+        pessoa(
+          ['lideranca-autonomia', 'parecido'],
+          ['regras-decisao', 'combina']
+        )
       ])
-    ).toBe('apoio-inicial');
+    ).toBe('lideranca-autonomia');
   });
 
   it('não conta silêncio como divergência', () => {
     expect(
       findMostDivergentAxis([
-        pessoa(['apoio-inicial', 'sem-resposta'], ['autonomia', 'combina'])
+        pessoa(
+          ['lideranca-autonomia', 'sem-resposta'],
+          ['regras-decisao', 'combina']
+        )
       ])
     ).toBeNull();
   });

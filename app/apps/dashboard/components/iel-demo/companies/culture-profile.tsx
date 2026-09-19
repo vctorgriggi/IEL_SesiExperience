@@ -4,9 +4,14 @@ import { useState } from 'react';
 import {
   CULTURE_SCALE_MAX,
   CULTURE_SCALE_MIN,
-  getCultureOptionValue,
   MIN_TEAM_RESPONSES
 } from '@/features/iel-demo/analysis/culture';
+import {
+  ESCALA_CONCORDANCIA,
+  getItem,
+  ITEM_PADRAO_POR_TEMA,
+  rotuloDaEscala
+} from '@/features/iel-demo/analysis/instrumento';
 import { COPY, type EstadoDeLeitura } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -150,21 +155,9 @@ function EstadoBadge({ estado }: { estado: EstadoDeLeitura }) {
   );
 }
 
-/** A alternativa que a média descreve: a mais próxima do valor médio. */
-function meanOptionLabel(
-  entry: CultureAxisReading,
-  mean: number
-): string | null {
-  const options = entry.question.options;
-  const nearest = options.reduce<(typeof options)[number] | null>(
-    (melhor, option) =>
-      melhor === null ||
-      Math.abs(option.value - mean) < Math.abs(melhor.value - mean)
-        ? option
-        : melhor,
-    null
-  );
-  return nearest?.label ?? null;
+/** A média dita na escala de concordância: o ponto mais próximo. */
+function meanOptionLabel(mean: number): string {
+  return rotuloDaEscala(mean);
 }
 
 /**
@@ -183,15 +176,8 @@ function AxisTrack({
   display: CultureDisplayVoices;
   profile: CompanyCultureAxisProfile | undefined;
 }) {
-  const marks = display.voices
-    .map((voice) => ({
-      voice,
-      value: getCultureOptionValue(entry.question.axisId, voice.optionId)
-    }))
-    .filter(
-      (mark): mark is { voice: CultureDisplayVoice; value: 1 | 2 | 3 } =>
-        mark.value !== null
-    );
+  const marks: { voice: CultureDisplayVoice; value: number }[] =
+    display.voices.map((voice) => ({ voice, value: voice.mean }));
 
   const percentOf = (value: number) =>
     ((value - CULTURE_SCALE_MIN) / (CULTURE_SCALE_MAX - CULTURE_SCALE_MIN)) *
@@ -207,7 +193,7 @@ function AxisTrack({
       : marks
           .map(
             (mark) =>
-              `${CULTURE_DISPLAY_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
+              `${CULTURE_DISPLAY_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.label}`
           )
           .join('. ');
 
@@ -223,12 +209,10 @@ function AxisTrack({
         <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted" />
 
         {marks.map((mark) => {
-          // Dispersão: quanto da consulta ficou fora da alternativa mais votada.
-          // Só a equipe responde em conjunto, então só ela tem faixa.
+          // Dispersão: o desvio das respostas da equipe no tema. Só a equipe
+          // responde em conjunto, então só ela tem faixa.
           const spread =
-            mark.voice.respondent === 'equipe' && mark.voice.total > 0
-              ? 1 - mark.voice.count / mark.voice.total
-              : 0;
+            mark.voice.respondent === 'equipe' ? mark.voice.spread : 0;
 
           return (
             <span
@@ -288,8 +272,14 @@ function respondentsLabel(
   entry: CultureAxisReading,
   progress: CultureSampleProgress
 ): string {
+  // Com amostragem em matriz cada pessoa responde parte das frases do tema;
+  // quem respondeu a consulta é o que os convites contam. Sem convite (base
+  // já agregada), vale o maior número de respostas numa frase do tema.
   const equipe = entry.voices.find((voice) => voice.respondent === 'equipe');
-  const respondidas = equipe?.total ?? 0;
+  const respondidas =
+    progress.byRole.equipe.total > 0
+      ? progress.byRole.equipe.answered
+      : (equipe?.total ?? 0);
   const total = Math.max(progress.byRole.equipe.total, respondidas);
   return `${respondidas} de ${total} da equipe`;
 }
@@ -306,19 +296,16 @@ function SuggestionRow({
   const suggestion = entry.pendingSuggestion;
   if (!suggestion) return null;
 
-  const sugerida = entry.question.options.find(
-    (option) => option.id === suggestion.optionId
-  );
+  // A proposta é um ponto da escala no sentido do tema; a frase padrão do
+  // tema diz a que o "concordo" se refere.
+  const frase = getItem(ITEM_PADRAO_POR_TEMA[entry.axisId]);
+  const sugerida = `${rotuloDaEscala(suggestion.value)}${frase ? ` com “${frase.textoSimples}”` : ''}`;
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="text-sm font-medium">
-          {COPY.axis(entry.question.axisId)}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {sugerida?.label ?? suggestion.optionId}
-        </p>
+        <p className="text-sm font-medium">{COPY.axis(entry.axisId)}</p>
+        <p className="text-sm text-muted-foreground">{sugerida}</p>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger className="text-left text-xs text-muted-foreground underline underline-offset-4">
@@ -338,8 +325,8 @@ function SuggestionRow({
             dispatch({
               type: 'answer-culture',
               companyId,
-              axisId: entry.question.axisId,
-              optionId: suggestion.optionId,
+              axisId: entry.axisId,
+              value: suggestion.value,
               at: nowIso()
             });
             toast.success('Resposta confirmada pela empresa.');
@@ -350,12 +337,15 @@ function SuggestionRow({
         <Select
           value=""
           onValueChange={(value) => {
-            if (!value) return;
+            const option = ESCALA_CONCORDANCIA.find(
+              (entrada) => String(entrada.valor) === value
+            );
+            if (!option) return;
             dispatch({
               type: 'answer-culture',
               companyId,
-              axisId: entry.question.axisId,
-              optionId: value,
+              axisId: entry.axisId,
+              value: option.valor,
               at: nowIso()
             });
             toast.info('Resposta corrigida pela empresa.');
@@ -364,21 +354,21 @@ function SuggestionRow({
           <SelectTrigger
             size="sm"
             className="w-[15rem]"
-            aria-label={`Corrigir ${COPY.axis(entry.question.axisId)}`}
+            aria-label={`Corrigir ${COPY.axis(entry.axisId)}`}
           >
             <SelectValue placeholder="Corrigir para…" />
           </SelectTrigger>
           <SelectContent>
-            {entry.question.options
-              .filter((option) => option.id !== suggestion.optionId)
-              .map((option) => (
-                <SelectItem
-                  key={option.id}
-                  value={option.id}
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
+            {ESCALA_CONCORDANCIA.filter(
+              (option) => option.valor !== suggestion.value
+            ).map((option) => (
+              <SelectItem
+                key={option.valor}
+                value={String(option.valor)}
+              >
+                {option.rotulo}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -421,7 +411,7 @@ function TrackLegend({ withheld }: { withheld: boolean }) {
 }
 
 /**
- * Os cinco pontos do dia a dia da empresa, como tabela.
+ * Os 10 temas da empresa, como tabela.
  *
  * Reutilizada pela tela da vaga: `jobId` acrescenta o peso que aquela vaga
  * declarou para cada ponto — é o peso que explica por que dois candidatos com
@@ -452,8 +442,8 @@ export function CompanyCultureTable({
 
   const displays = new Map(
     reading.map((entry) => [
-      entry.question.axisId,
-      getCultureDisplayVoices(state, companyId, entry.question.axisId)
+      entry.axisId,
+      getCultureDisplayVoices(state, companyId, entry.axisId)
     ])
   );
   const algumOculto = [...displays.values()].some(
@@ -490,7 +480,7 @@ export function CompanyCultureTable({
             </p>
             {sugestoes.map((entry) => (
               <SuggestionRow
-                key={entry.question.axisId}
+                key={entry.axisId}
                 entry={entry}
                 companyId={companyId}
               />
@@ -511,7 +501,7 @@ export function CompanyCultureTable({
                 scope="col"
                 className="w-[14rem]"
               >
-                Ponto do dia a dia
+                Tema
               </TableHead>
               <TableHead scope="col">A equipe diz</TableHead>
               <TableHead
@@ -537,18 +527,18 @@ export function CompanyCultureTable({
           <TableBody>
             {reading.map((entry) => {
               const axisProfile = profile.find(
-                (axis) => axis.axisId === entry.question.axisId
+                (axis) => axis.axisId === entry.axisId
               );
               const mean = axisProfile?.ready
                 ? (axisProfile.mean ?? null)
                 : null;
-              const peso = weights?.[entry.question.axisId];
+              const peso = weights?.[entry.axisId];
 
               return (
-                <TableRow key={entry.question.axisId}>
+                <TableRow key={entry.axisId}>
                   <TableCell className="align-middle">
                     <span className="font-medium">
-                      {COPY.axis(entry.question.axisId)}
+                      {COPY.axis(entry.axisId)}
                     </span>
                     {peso ? (
                       <span className="block text-xs text-muted-foreground">
@@ -562,14 +552,14 @@ export function CompanyCultureTable({
                    * só ainda não sustenta uma leitura da equipe.
                    */}
                   <TableCell className="align-middle text-muted-foreground">
-                    {(mean === null ? null : meanOptionLabel(entry, mean)) ??
+                    {(mean === null ? null : meanOptionLabel(mean)) ??
                       'sem respostas suficientes'}
                   </TableCell>
                   <TableCell className="align-middle">
                     <AxisTrack
                       entry={entry}
                       display={
-                        displays.get(entry.question.axisId) ?? {
+                        displays.get(entry.axisId) ?? {
                           voices: [],
                           withheld: 0
                         }

@@ -5,7 +5,7 @@ import {
   ADHERENCE_THRESHOLD,
   formatAdherence
 } from '@/features/iel-demo/analysis/adherence';
-import { CULTURE_QUESTIONS } from '@/features/iel-demo/analysis/culture';
+import { FIT_AXES } from '@/features/iel-demo/analysis/fit-axes';
 import {
   faixaDeAderencia,
   resumirDivergencia,
@@ -155,7 +155,7 @@ export function DetalhePontoCultural({
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     sobre {leitura.aderencia.coverage.answeredAxes} de{' '}
-                    {CULTURE_QUESTIONS.length} eixos
+                    {FIT_AXES.length} eixos
                   </span>
                   {!leitura.aderencia.compatible ? (
                     <Badge

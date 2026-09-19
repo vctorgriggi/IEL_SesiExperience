@@ -155,7 +155,7 @@ export function OverviewScreen() {
     [state.applications]
   );
 
-  usePageHeader({ breadcrumb: [{ label: 'Hoje' }] });
+  usePageHeader({ breadcrumb: [{ label: 'Início' }] });
 
   if (persona.kind === 'gestor') {
     return <ManagerOverview />;

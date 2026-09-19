@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CANDIDATE_CONSENT_VERSION } from '@/features/iel-demo/analysis/candidate-questionnaire';
 import {
   montarRoteiroCandidato,
-  respostasDoCandidato,
+  respostasDaEscala,
   type VarianteCandidato
 } from '@/features/iel-demo/chat/roteiro-candidato';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -13,7 +13,8 @@ import {
   getApplication,
   getCandidateJobView,
   getFitResponse,
-  getFitStatus
+  getFitStatus,
+  perguntasDoCandidato
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
@@ -61,12 +62,22 @@ export function ConversaCandidato({
           : 'novo';
   const variante = travada ?? varianteAtual;
 
+  // As 10 frases que a empresa da vaga escolheu, no texto simples.
+  const perguntas = application
+    ? perguntasDoCandidato(state, application.jobId)
+    : [];
+  const itemIds = perguntas.map((pergunta) => pergunta.itemId);
+
   if (!montado) return <ConversaCarregando />;
 
   const roteiro = montarRoteiroCandidato({
     variante,
     vaga,
-    respondidoEm: existente?.answeredAt ?? null
+    respondidoEm: existente?.answeredAt ?? null,
+    frases: perguntas.map((pergunta) => ({
+      itemId: pergunta.itemId,
+      texto: pergunta.item.textoSimples
+    }))
   });
 
   const recomecar = () => {
@@ -91,7 +102,7 @@ export function ConversaCandidato({
       }
       onPrimeiraResposta={() => setTravada(variante)}
       onConcluir={(respostas) => {
-        const answers = respostasDoCandidato(respostas);
+        const answers = respostasDaEscala(respostas, itemIds);
         if (!answers) return;
         dispatch({
           type: 'answer-fit-questionnaire',

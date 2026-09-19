@@ -28,11 +28,23 @@ export const env = createEnv({
     ALLOWED_ORIGINS: allowedOriginsSchema,
     SECURITY_X_FRAME_OPTIONS: z.enum(['deny', 'sameorigin']).optional(),
     SECURITY_REFERRER_POLICY: z.string().min(1).optional(),
-    // Ambas opcionais: a análise assistida da Central IEL (/iel) funciona sem
-    // elas, no modo determinístico. Só ativam o modelo real quando as duas
-    // estão presentes — veja features/iel-demo/ai/index.ts.
-    IEL_AI_PROVIDER: z.enum(['deterministic', 'anthropic']).optional(),
-    ANTHROPIC_API_KEY: z.string().min(1).optional()
+    // Todas opcionais e só do servidor: o Mind e a análise assistida (/iel)
+    // funcionam sem elas, na regra fixa. O modelo real só liga quando o
+    // provedor e a chave dele estão presentes — veja
+    // features/iel-demo/ai/index.ts.
+    /*
+     * Senha de equipe da Central IEL. Sem ela, a porta fica aberta: é o que
+     * permite rodar o protótipo local sem configurar nada. Em produção,
+     * defina uma senha — e troque pelo login com conta quando houver banco.
+     */
+    IEL_SENHA_ANALISTA: z.string().min(1).optional(),
+    IEL_AI_PROVIDER: z
+      .enum(['deterministic', 'anthropic', 'deepseek'])
+      .optional(),
+    ANTHROPIC_API_KEY: z.string().min(1).optional(),
+    DEEPSEEK_API_KEY: z.string().min(1).optional(),
+    // Padrão `deepseek-flash` (features/iel-demo/ai/deepseek-provider.ts).
+    DEEPSEEK_MODEL: z.string().min(1).optional()
   },
   client: {
     NEXT_PUBLIC_DASHBOARD_URL: z
@@ -56,8 +68,11 @@ export const env = createEnv({
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     SECURITY_X_FRAME_OPTIONS: process.env.SECURITY_X_FRAME_OPTIONS,
     SECURITY_REFERRER_POLICY: process.env.SECURITY_REFERRER_POLICY,
+    IEL_SENHA_ANALISTA: process.env.IEL_SENHA_ANALISTA,
     IEL_AI_PROVIDER: process.env.IEL_AI_PROVIDER,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL
   },
   emptyStringAsUndefined: true
 });

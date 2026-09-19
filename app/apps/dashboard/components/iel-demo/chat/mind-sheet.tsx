@@ -7,7 +7,8 @@ import { montarPendencias } from '@/components/iel-demo/overview/pendencias';
 import { buildAssistantRequestPayload } from '@/features/iel-demo/ai/build-request';
 import {
   assistantResponseSchema,
-  type AssistantKind
+  MAX_PERGUNTA,
+  type AssistantResponse
 } from '@/features/iel-demo/ai/types';
 import {
   candidaturasParaPergunta,
@@ -24,6 +25,7 @@ import {
   type MindPergunta,
   type MindResposta
 } from '@/features/iel-demo/chat/mind';
+import { montarContextoLivre } from '@/features/iel-demo/chat/mind-livre';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getJob } from '@/features/iel-demo/state/selectors';
 import { ArrowUp, RotateCcw } from 'lucide-react';
@@ -50,9 +52,12 @@ export { contextoDaRota, type MindContexto };
  *
  * A conversa é guiada por chips: cada chip é uma pergunta que o Mind sabe
  * responder a partir dos mesmos seletores da tela (`features/.../chat/mind`).
- * O campo livre existe, mas é honesto — sem modelo ligado, ele diz que
- * responde pelas sugestões — e nunca vira porta para contato de pessoa: um
- * pedido de telefone ou e-mail é recusado aqui mesmo, sem chamar a API.
+ * O campo livre manda a pergunta, com as palavras da analista, para
+ * `/api/iel/assistant`. Com modelo ligado (DeepSeek), a resposta vem dele,
+ * sobre dados pseudonimizados no servidor; sem modelo, o Mind é honesto e
+ * diz que responde pelas sugestões. O campo nunca vira porta para contato de
+ * pessoa: um pedido de telefone ou e-mail é recusado aqui mesmo, sem chamar
+ * a API.
  */
 export type MindSheetProps = {
   contexto: MindContexto;
@@ -65,16 +70,22 @@ type Mensagem =
   | { id: string; autor: 'mind'; texto: string }
   | { id: string; autor: 'mind'; resposta: MindResposta };
 
-const ROTULO_DO_TIPO: Record<AssistantKind, string> = {
-  'resumir-selecao': 'resumo dos primeiros da vaga',
-  'comparar-selecionados': 'comparação dos primeiros da vaga',
-  'mostrar-lacunas': 'o que falta perguntar'
-};
-
 /** Nome do modelo como a analista o lê no rodapé da resposta. */
-const NOME_DO_MODELO: Record<string, string> = {
-  anthropic: 'Claude (Anthropic)'
-};
+function nomeDoModelo(corpo: AssistantResponse): string {
+  if (corpo.provider === 'deepseek') {
+    return `DeepSeek (${corpo.modelo ?? 'modelo padrão'})`;
+  }
+  if (corpo.provider === 'anthropic') return 'Claude (Anthropic)';
+  return corpo.provider;
+}
+
+/** Texto do provedor em parágrafos, sem o título que a regra fixa põe. */
+function paragrafosDe(texto: string): string[] {
+  return texto
+    .split(/\n{2,}/)
+    .map((paragrafo) => paragrafo.trim())
+    .filter(Boolean);
+}
 
 export function MindSheet({ contexto, open, onOpenChange }: MindSheetProps) {
   return (
@@ -197,46 +208,78 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
       return;
     }
 
+    // O tipo inferido só serve à regra fixa, se o modelo cair; com modelo,
+    // quem manda é a pergunta.
     const kind = tipoDaPerguntaLivre(pergunta);
     setPensando(true);
     rolar();
     try {
-      const payload = buildAssistantRequestPayload(
-        state,
-        jobId,
-        candidaturasParaPergunta(state, jobId),
-        kind
-      );
+      const selecionadas = candidaturasParaPergunta(state, jobId);
+      const pendencias =
+        contexto.tipo === 'hoje'
+          ? montarPendencias(state).map(
+              (pendencia) => `${pendencia.titulo}: ${pendencia.resumo}`
+            )
+          : [];
+      const payload = {
+        ...buildAssistantRequestPayload(state, jobId, selecionadas, kind),
+        pergunta,
+        contexto: montarContextoLivre(state, jobId, selecionadas, pendencias)
+      };
       const resposta = await fetch(api.iel.assistant(), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (resposta.status === 429) {
+        acrescentar({
+          id: novoId(),
+          autor: 'mind',
+          texto:
+            'Muitas perguntas seguidas. Espere um minuto e tente de novo; as sugestões continuam funcionando.'
+        });
+        setChipsVisiveis(true);
+        return;
+      }
       const corpo = assistantResponseSchema.parse(await resposta.json());
+      const job = getJob(jobId);
+      const fontes = [
+        ...(job ? [job.title] : []),
+        ...corpo.citations.map((citacao) => citacao.label)
+      ].filter((fonte, indice, todas) => todas.indexOf(fonte) === indice);
 
-      if (corpo.provider === 'deterministic') {
+      // Sem modelo ligado: o comportamento de sempre, honesto.
+      if (corpo.provider === 'deterministic' && !corpo.aviso) {
         acrescentar({ id: novoId(), autor: 'mind', texto: SEM_MODELO });
         setChipsVisiveis(true);
         return;
       }
 
-      const job = getJob(jobId);
+      // O modelo estava ligado, mas falhou: a regra fixa respondeu.
+      if (corpo.provider === 'deterministic') {
+        acrescentar({
+          id: novoId(),
+          autor: 'mind',
+          resposta: {
+            paragrafos: [
+              corpo.aviso ?? SEM_MODELO,
+              ...paragrafosDe(corpo.text)
+            ],
+            fontes,
+            origem: { tipo: 'regra' },
+            fecho: 'A decisão é sua.'
+          }
+        });
+        return;
+      }
+
       acrescentar({
         id: novoId(),
         autor: 'mind',
         resposta: {
-          paragrafos: [
-            `Entendi como: ${ROTULO_DO_TIPO[kind]}.`,
-            ...corpo.text.split(/\n{2,}/).filter(Boolean)
-          ],
-          fontes: [
-            ...(job ? [job.title] : []),
-            ...corpo.citations.map((citacao) => citacao.label)
-          ],
-          origem: {
-            tipo: 'modelo',
-            nome: NOME_DO_MODELO[corpo.provider] ?? corpo.provider
-          },
+          paragrafos: paragrafosDe(corpo.text),
+          fontes,
+          origem: { tipo: 'modelo', nome: nomeDoModelo(corpo) },
           fecho: 'A decisão é sua.'
         }
       });
@@ -278,12 +321,26 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
           </div>
 
           {pensando ? (
-            <p
-              role="status"
-              className="text-xs text-muted-foreground"
-            >
-              Mind está lendo a vaga…
-            </p>
+            <div className="flex justify-start">
+              <p
+                role="status"
+                className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm text-muted-foreground"
+              >
+                <span
+                  aria-hidden="true"
+                  className="flex gap-1"
+                >
+                  {[0, 1, 2].map((ponto) => (
+                    <span
+                      key={ponto}
+                      className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse"
+                      style={{ animationDelay: `${ponto * 150}ms` }}
+                    />
+                  ))}
+                </span>
+                Mind está digitando…
+              </p>
+            </div>
           ) : null}
 
           {chipsVisiveis && perguntas.length > 0 ? (
@@ -337,7 +394,7 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
           onChange={(event) => setTexto(event.target.value)}
           placeholder="Pergunte ao Mind…"
           aria-label="Pergunte ao Mind"
-          maxLength={280}
+          maxLength={MAX_PERGUNTA}
           autoComplete="off"
         />
         <Button

@@ -3,6 +3,7 @@
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import type { AdherenceAxisEntry } from '@/features/iel-demo/analysis/adherence';
 import { getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
+import { rotuloDaEscala } from '@/features/iel-demo/analysis/instrumento';
 import { COPY } from '@/features/iel-demo/copy';
 import { AXIS_WEIGHT_LABEL } from '@/features/iel-demo/state/selectors';
 
@@ -12,7 +13,7 @@ import { Badge } from '@workspace/ui/shadcn/badge';
 import { barraDaAderencia, textoDaAderencia, TRILHO } from '../metricas/cores';
 
 /**
- * Os cinco pontos do dia a dia numa lista com trilho e percentual.
+ * Os dez temas do dia a dia numa lista com trilho e percentual.
  *
  * Cada ponto mostra o alinhamento da pessoa com a empresa naquele aspecto,
  * o peso declarado pela empresa e as respostas dadas por cada lado (LGPD art. 20, § 1º).
@@ -102,17 +103,18 @@ export function PontosDoDia({
               {temMedida ? (
                 <>
                   <span>
-                    Empresa: média {ponto.companyMean?.toFixed(1)} de 3
+                    Empresa: {rotuloDaEscala(ponto.companyMean ?? 0)} (média{' '}
+                    {ponto.companyMean?.toFixed(1)})
                   </span>
                   <span>
-                    {primeiroNome}: opção {ponto.candidateValue} de 3
+                    {primeiroNome}: {rotuloDaEscala(ponto.candidateValue ?? 0)}
                   </span>
                 </>
               ) : (
                 <span>
                   {faltaDaEmpresa
-                    ? 'A empresa ainda não tem respondentes suficientes para este ponto'
-                    : `${primeiroNome} ainda não respondeu este ponto no questionário`}
+                    ? 'A empresa ainda não tem respondentes suficientes para este tema'
+                    : `${primeiroNome} ainda não respondeu este tema no questionário`}
                 </span>
               )}
             </div>

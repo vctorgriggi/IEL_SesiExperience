@@ -1,100 +1,172 @@
 /**
- * Eixos de aderência ao contexto de trabalho.
+ * Os temas do fit: as dimensões em que empresa e pessoa são comparadas.
  *
- * O enunciado dedica uma página inteira ao fit cultural: diz que a abordagem
- * gera valor e que o desafio é "ampliar essa abordagem, reduzir suas
- * limitações e integrá-la a uma jornada centralizada". As limitações listadas
- * são custo, tempo, escala e o fato de viver numa plataforma separada.
+ * Até 2026-09-19 eram cinco "pontos do dia a dia" com três alternativas cada.
+ * O cliente entregou o instrumento dele (`docs/cliente/04-perguntas-empresa.xlsx`):
+ * 52 afirmações em primeira pessoa, agrupadas em temas, respondidas numa
+ * escala de concordância. Os temas da planilha viram as dimensões do fit; as
+ * afirmações moram em `instrumento.ts`.
  *
- * Nada disso se resolve com um resultado de fit vindo de fora. Resolve-se
- * quando os dois lados são descritos nos mesmos termos, dentro da jornada, a
- * partir do que já foi informado: a equipe declara como trabalha, a pessoa
- * declara o que espera, e a leitura acontece eixo a eixo.
+ * A planilha traz 11 grupos. "EXPECTATIVAS FUTURAS" foi juntado a "ADAPTAÇÃO
+ * A MUDANÇAS E CARREIRA": as cinco frases dele falam de trajetória e de
+ * oportunidade nova, que é o mesmo assunto das quatro de carreira, e um tema
+ * só de futuro ficaria com peso próprio na vaga sem descrever nada que a
+ * empresa pratique hoje. Com isso ficam 10 temas, e a tela lê "os 10 temas".
+ * O "IDERANÇA" da planilha é "LIDERANÇA".
  *
- * Duas restrições moldam este vocabulário:
+ * Duas restrições continuam moldando o vocabulário:
  *
- * - O enunciado veda usar dados de saúde e manda tratar bem-estar "sob a
- *   perspectiva do ambiente, bem-estar, relações de trabalho, pertencimento e
- *   condições organizacionais". Todos os eixos aqui são condições de trabalho
- *   observáveis, não traços de personalidade.
- * - O briefing reforça: a dimensão organizacional "considera contexto, não
- *   semelhança de personalidade entre as pessoas". "Precisa de orientação
- *   inicial" descreve uma condição, não uma limitação da pessoa.
+ * - O enunciado veda dado de saúde e manda tratar bem-estar pela perspectiva
+ *   do ambiente e das relações de trabalho. Os temas descrevem como se
+ *   trabalha, nunca traço de personalidade.
+ * - A dimensão organizacional "considera contexto, não semelhança de
+ *   personalidade entre as pessoas". Nenhum tema tem lado certo.
  */
 
 export type FitAxisId =
-  | 'apoio-inicial'
-  | 'autonomia'
-  | 'comunicacao-prioridades'
-  | 'ritmo-turno'
-  | 'aprendizado';
+  | 'orientacao-resultados'
+  | 'inovacao'
+  | 'aprendizado-desenvolvimento'
+  | 'foco-cliente'
+  | 'etica-seguranca'
+  | 'execucao-ritmo'
+  | 'regras-decisao'
+  | 'interacao-convivencia'
+  | 'lideranca-autonomia'
+  | 'adaptacao-carreira';
 
 export type FitAxis = {
   id: FitAxisId;
   /**
    * O que a pessoa lê na tela.
    *
-   * Palavra comum, não nome de eixo: quem usa o produto é a analista, o RH de
-   * uma indústria e um candidato operacional no celular. "Autonomia na
-   * execução" é vocabulário de quem desenhou o instrumento; "quem organiza o
-   * trabalho" é a mesma pergunta em português corrente. O `id` não muda.
+   * Palavra comum, não o nome do tópico: quem usa o produto é a analista, o
+   * RH de uma indústria e um candidato operacional no celular. "Orientação
+   * para resultados" é vocabulário de quem desenhou o instrumento; "jeito de
+   * entregar" é a mesma coisa em português corrente. O `id` não muda.
    */
   label: string;
-  /** O que o eixo descreve, para a leitura não virar julgamento de pessoa. */
+  /** O tópico como está na planilha do cliente (grafia corrigida). */
+  tituloOriginal: string;
+  /** O que o tema descreve, para a leitura não virar julgamento de pessoa. */
   description: string;
-  /** Como a condição é perguntada à empresa. */
+  /** Pergunta de confirmação para a gestão, quando o tema fica em aberto. */
   companyQuestion: string;
-  /** Como a preferência é perguntada à pessoa. */
+  /** Pergunta de coleta dirigida para a pessoa, quando falta o lado dela. */
   talentQuestion: string;
 };
 
 export const FIT_AXES: FitAxis[] = [
   {
-    id: 'apoio-inicial',
-    label: 'Apoio no início',
+    id: 'orientacao-resultados',
+    label: 'Jeito de entregar',
+    tituloOriginal: 'Orientação para resultados',
     description:
-      'Se há alguém acompanhando nas primeiras semanas, e o que a pessoa espera nesse período.',
+      'Como a entrega acontece: conferir cada etapa, terminar uma coisa antes da outra, avisar quando vai atrasar.',
     companyQuestion:
-      'Quem acompanha a pessoa nas primeiras atividades, e em quais horários?',
+      'Na equipe, o esperado é conferir cada etapa e concluir uma tarefa antes da outra?',
     talentQuestion:
-      'No início em uma função nova, você prefere acompanhamento de alguém da equipe ou seguir por conta?'
+      'Você prefere terminar uma tarefa antes de começar outra, conferindo cada etapa?'
   },
   {
-    id: 'autonomia',
-    label: 'Quem organiza o trabalho',
+    id: 'inovacao',
+    label: 'Mudanças e novidades',
+    tituloOriginal: 'Inovação',
     description:
-      'Quanto da rotina é executado sem supervisão direta, e como a pessoa prefere trabalhar.',
+      'Como a equipe lida com ferramenta nova, jeito novo de fazer e situação fora do procedimento.',
     companyQuestion:
-      'A rotina é executada com ou sem supervisão direta durante o turno?',
+      'Quando chega ferramenta ou método novo, a equipe adota logo ou espera a mudança firmar?',
     talentQuestion:
-      'Você prefere uma rotina definida por outra pessoa ou organizar o próprio trabalho?'
+      'Quando chega uma ferramenta nova, você prefere usar logo ou esperar a mudança firmar?'
   },
   {
-    id: 'comunicacao-prioridades',
-    label: 'Como chegam as tarefas do dia',
+    id: 'aprendizado-desenvolvimento',
+    label: 'Aprender coisas novas',
+    tituloOriginal: 'Aprendizado e desenvolvimento',
     description:
-      'Como as prioridades chegam à pessoa no dia a dia, e como ela prefere recebê-las.',
-    companyQuestion: 'Como as prioridades do dia chegam até a equipe?',
-    talentQuestion:
-      'Você prefere receber as prioridades por escrito, verbalmente no início do turno, ou combinar?'
-  },
-  {
-    id: 'ritmo-turno',
-    label: 'Horário e mudanças de turno',
-    description:
-      'O turno praticado e o quanto a disponibilidade da pessoa é firme ou negociável.',
+      'Quanto a função pede conhecer outras atividades e assumir responsabilidade nova.',
     companyQuestion:
-      'Qual o turno e há variação de horário ao longo da semana?',
+      'A função pede conhecer outras atividades além da rotina principal?',
     talentQuestion:
-      'O turno informado é firme para você ou há margem de negociação?'
+      'Você gosta de conhecer outras tarefas, além da sua rotina principal?'
   },
   {
-    id: 'aprendizado',
-    label: 'O que se aprende na função',
+    id: 'foco-cliente',
+    label: 'Pensar em quem recebe',
+    tituloOriginal: 'Foco no cliente',
     description:
-      'O que a função exige aprender no início e o que a pessoa espera aprender.',
-    companyQuestion: 'O que a pessoa precisa aprender nas primeiras semanas?',
-    talentQuestion: 'O que você espera aprender nesta oportunidade?'
+      'Quanto a entrega considera a próxima etapa e as pessoas que vão usar o resultado.',
+    companyQuestion:
+      'Na equipe, cada um se concentra na própria tarefa ou pensa junto com a próxima etapa?',
+    talentQuestion:
+      'Você prefere se concentrar na sua tarefa ou acompanhar quem vai receber o seu serviço?'
+  },
+  {
+    id: 'etica-seguranca',
+    label: 'Segurança e respeito',
+    tituloOriginal: 'Ética, segurança e respeito',
+    description:
+      'Atenção à segurança, forma de discordar, previsibilidade da escala e reação à pressão.',
+    companyQuestion:
+      'Quando o ritmo aperta, a equipe ajusta o jeito de fazer ou mantém o mesmo ritmo?',
+    talentQuestion:
+      'Quando o serviço aperta, você prefere ajustar o jeito de fazer ou manter o ritmo?'
+  },
+  {
+    id: 'execucao-ritmo',
+    label: 'Ritmo do turno',
+    tituloOriginal: 'Execução e ritmo de trabalho',
+    description:
+      'Se o turno pede alternar entre demandas ou seguir uma de cada vez, e quanto o ritmo varia.',
+    companyQuestion:
+      'No turno, as demandas chegam juntas e é preciso alternar entre elas?',
+    talentQuestion:
+      'Você consegue alternar entre várias tarefas ou prefere uma de cada vez?'
+  },
+  {
+    id: 'regras-decisao',
+    label: 'Regras e decisões',
+    tituloOriginal: 'Regras, métodos e decisão',
+    description:
+      'Se a decisão espera entender a regra e as consequências, ou se é preciso agir rápido.',
+    companyQuestion:
+      'Diante do imprevisto, a equipe para para entender a regra ou decide rápido?',
+    talentQuestion:
+      'Diante de algo diferente, você prefere entender a regra antes ou decidir rápido?'
+  },
+  {
+    id: 'interacao-convivencia',
+    label: 'Convivência',
+    tituloOriginal: 'Interação social e convivência',
+    description:
+      'Quanto o trabalho acontece em conversa com os outros, e como os combinados circulam.',
+    companyQuestion:
+      'Os combinados do dia a dia são feitos conversando direto entre as pessoas?',
+    talentQuestion:
+      'Você prefere combinar as coisas conversando direto com as pessoas?'
+  },
+  {
+    id: 'lideranca-autonomia',
+    label: 'Autonomia',
+    tituloOriginal: 'Liderança, autonomia e aprendizagem',
+    description:
+      'Quanto acompanhamento a pessoa recebe da chefia, e quanto se espera que se organize sozinha.',
+    companyQuestion:
+      'Depois de receber o objetivo, a pessoa se organiza sozinha ou tem acompanhamento próximo?',
+    talentQuestion:
+      'Você prefere se organizar sozinho ou ter alguém acompanhando de perto?'
+  },
+  {
+    id: 'adaptacao-carreira',
+    label: 'Carreira e futuro',
+    tituloOriginal:
+      'Adaptação a mudanças e carreira (com expectativas futuras)',
+    description:
+      'Flexibilidade de horário, relação com mudança e o caminho que a pessoa imagina para si.',
+    companyQuestion:
+      'A função pede reorganizar horários com frequência, e há caminho para crescer?',
+    talentQuestion:
+      'Você consegue mudar seus horários quando o trabalho precisa?'
   }
 ];
 
