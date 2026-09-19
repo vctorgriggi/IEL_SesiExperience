@@ -6,9 +6,9 @@ import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getTalentTransparency } from '@/features/iel-demo/state/selectors';
 
-import { Button, Card } from '@workspace/ui';
+import { Button } from '@workspace/ui';
 
-import { formatDate, InfoHint, SourceDot } from '../shared/ui';
+import { formatDate, Panel, PanelHeader, SourceDot } from '../shared/ui';
 
 /**
  * Devolutiva ao candidato.
@@ -31,31 +31,30 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
   const total = transparency.records.length + transparency.preferences.length;
 
   return (
-    <Card padding="sm">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-            O que está registrado sobre você
-            <InfoHint label="Você pode ver a informação que a central reuniu a seu respeito, de onde ela veio e para quais empresas foi enviada. Se algum registro estiver errado, é possível corrigi-lo antes que ele pese numa decisão." />
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+    <Panel padding="sm">
+      <PanelHeader
+        eyebrow="Transparência dos dados"
+        title="O que está registrado sobre você"
+        hint="Você pode ver a informação que a central reuniu a seu respeito, de onde ela veio e para quais empresas foi enviada. Se algum registro estiver errado, é possível corrigi-lo antes que ele pese numa decisão."
+        meta={
+          <>
             {plural(total, 'registro', 'registros')} ·{' '}
             {transparency.sharedWith.length === 0
               ? 'nenhuma empresa recebeu seu perfil até agora'
               : `${plural(transparency.sharedWith.length, 'empresa recebeu', 'empresas receberam')} seu perfil`}
-          </p>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-        >
-          {open ? 'Ocultar' : 'Ver meus dados'}
-        </Button>
-      </div>
+          </>
+        }
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? 'Ocultar' : 'Ver meus dados'}
+          </Button>
+        }
+      />
 
       {open ? (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
@@ -157,6 +156,6 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
           </p>
         </div>
       ) : null}
-    </Card>
+    </Panel>
   );
 }

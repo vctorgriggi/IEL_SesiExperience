@@ -19,18 +19,15 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 import type { ReferralItem } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Textarea,
-  toast
-} from '@workspace/ui';
+import { Alert, Button, Textarea, toast } from '@workspace/ui';
 
-import { Chip, formatDateTime, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDateTime,
+  IelPageHeader,
+  Panel,
+  PanelHeader
+} from '../shared/ui';
 
 function decisionChip(item: ReferralItem) {
   if (item.managerDecision === 'quero-entrevistar') {
@@ -66,16 +63,17 @@ export function ReferralsScreen() {
       />
 
       {referrals.length === 0 ? (
-        <Card padding="lg">
-          <h3 className="text-base font-semibold text-foreground">
-            Nenhum encaminhamento registrado
-          </h3>
+        <Panel padding="lg">
+          <PanelHeader
+            eyebrow="Sem resultados"
+            title="Nenhum encaminhamento registrado"
+          />
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             {persona.kind === 'gestor'
               ? 'Quando o IEL compartilhar perfis para uma vaga da sua empresa, eles aparecem aqui com as evidências autorizadas.'
               : 'Prepare um encaminhamento a partir da lista de uma vaga para registrar o compartilhamento com a empresa.'}
           </p>
-        </Card>
+        </Panel>
       ) : (
         <ul className="space-y-4">
           {referrals.map((referral) => {
@@ -87,7 +85,7 @@ export function ReferralsScreen() {
 
             return (
               <li key={referral.id}>
-                <Card className="gap-3">
+                <Panel className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-base font-semibold text-foreground">
@@ -140,7 +138,7 @@ export function ReferralsScreen() {
                         : 'Ver encaminhamento e retornos'}
                     </Button>
                   </Link>
-                </Card>
+                </Panel>
               </li>
             );
           })}
@@ -225,22 +223,23 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
 
           return (
             <li key={item.applicationId}>
-              <Card className="gap-3">
-                <CardHeader className="gap-1 p-0">
-                  <CardTitle className="text-base">{talent?.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {item.summary}
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {decisionChip(item)}
-                    {application ? (
-                      <Chip>
-                        {REFERRAL_STAGE_LABEL[application.referralStage]}
-                      </Chip>
-                    ) : null}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 p-0">
+              <Panel className="flex flex-col gap-3">
+                <PanelHeader
+                  eyebrow="Perfil compartilhado"
+                  title={talent?.name}
+                  meta={item.summary}
+                  actions={
+                    <div className="flex flex-wrap gap-2">
+                      {decisionChip(item)}
+                      {application ? (
+                        <Chip>
+                          {REFERRAL_STAGE_LABEL[application.referralStage]}
+                        </Chip>
+                      ) : null}
+                    </div>
+                  }
+                />
+                <div className="space-y-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Justificativa do IEL
@@ -411,8 +410,8 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                       </Button>
                     </Link>
                   ) : null}
-                </CardContent>
-              </Card>
+                </div>
+              </Panel>
             </li>
           );
         })}

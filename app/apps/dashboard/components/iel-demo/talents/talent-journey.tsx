@@ -13,9 +13,16 @@ import {
 } from '@/features/iel-demo/state/selectors';
 
 import { routes } from '@workspace/routes';
-import { Card, CardContent, CardHeader, CardTitle, cn } from '@workspace/ui';
+import { cn } from '@workspace/ui';
 
-import { Chip, formatDate, InfoHint, SourceDot } from '../shared/ui';
+import {
+  Chip,
+  formatDate,
+  InfoHint,
+  Panel,
+  PanelHeader,
+  SourceDot
+} from '../shared/ui';
 
 const OUTCOME_TONE: Record<
   JourneyOutcome,
@@ -138,14 +145,13 @@ export function TalentJourney({ talentId }: { talentId: string }) {
   const reused = getReusedEvidences(state, talentId);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-1.5 text-base">
-          Trajetória entre processos
-          <InfoHint label="As candidaturas desta pessoa em ordem, com o desfecho de cada uma. O percurso é entre oportunidades; acompanhamento após a contratação está fora do escopo deste protótipo." />
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5 pt-4">
+    <Panel>
+      <PanelHeader
+        eyebrow="Histórico da pessoa"
+        title="Trajetória entre processos"
+        hint="As candidaturas desta pessoa em ordem, com o desfecho de cada uma. O percurso é entre oportunidades; acompanhamento após a contratação está fora do escopo deste protótipo."
+      />
+      <div className="mt-4 space-y-5">
         {journey.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma candidatura registrada para este perfil na base demo.
@@ -190,7 +196,7 @@ export function TalentJourney({ talentId }: { talentId: string }) {
             </ul>
           </div>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

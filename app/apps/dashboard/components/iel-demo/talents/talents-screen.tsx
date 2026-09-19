@@ -18,7 +18,6 @@ import { routes } from '@workspace/routes';
 import {
   Alert,
   Button,
-  Card,
   Input,
   Table,
   TableBody,
@@ -28,7 +27,7 @@ import {
   TableRow
 } from '@workspace/ui';
 
-import { Chip, IelPageHeader } from '../shared/ui';
+import { Chip, IelPageHeader, Panel } from '../shared/ui';
 
 export function TalentsScreen() {
   const { state, persona } = useIelDemo();
@@ -73,7 +72,7 @@ export function TalentsScreen() {
         description="Uma linha por pessoa. As candidaturas são vínculos desse perfil com vagas."
       />
 
-      <Card padding="sm">
+      <Panel padding="sm">
         <Input
           label="Buscar talento"
           placeholder="Ex.: Ana, estoque, documentos"
@@ -90,12 +89,12 @@ export function TalentsScreen() {
           {rows.length} de {DEMO_TALENTS.length} talentos ·{' '}
           {state.applications.length} candidaturas na base.
         </p>
-      </Card>
+      </Panel>
 
-      <Card padding="none">
+      <Panel padding="none">
         {rows.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <h3 className="text-base font-semibold text-foreground">
+            <h3 className="iel-display text-base text-foreground">
               Nenhum talento encontrado
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
@@ -187,7 +186,7 @@ export function TalentsScreen() {
             </Table>
           </div>
         )}
-      </Card>
+      </Panel>
     </div>
   );
 }

@@ -33,10 +33,6 @@ import { routes } from '@workspace/routes';
 import {
   Alert,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   cn,
   FilterNativeSelect,
   Input,
@@ -52,6 +48,8 @@ import {
   formatDateTime,
   IelPageHeader,
   InfoHint,
+  Panel,
+  PanelHeader,
   SourceBreakdownBar
 } from '../shared/ui';
 import { AssistantPanel } from './assistant-panel';
@@ -252,9 +250,9 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
       {tab === 'candidatos' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
-            <Card
+            <Panel
               padding="sm"
-              className="gap-3"
+              className="flex flex-col gap-3"
             >
               <SourceBreakdownBar
                 breakdown={jobSourceBreakdown}
@@ -323,9 +321,9 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                   </Button>
                 ) : null}
               </div>
-            </Card>
+            </Panel>
 
-            <Card padding="none">
+            <Panel padding="none">
               <CandidatesMatrix
                 job={job}
                 applications={visibleApplications}
@@ -387,7 +385,7 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                   </Button>
                 </div>
               ) : null}
-            </Card>
+            </Panel>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
               <CriterionStateLegend />
@@ -431,17 +429,13 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
 
       {tab === 'contexto' ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Requisitos e critérios
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Cada critério informa a dimensão, a obrigatoriedade e quem
-                confirmou o requisito.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="Critérios da vaga"
+              title="Requisitos e critérios"
+              hint="Cada critério informa a dimensão, a obrigatoriedade e quem confirmou o requisito."
+            />
+            <div className="mt-4 space-y-3">
               <ul className="space-y-3">
                 {job.criteria.map((criterion) => (
                   <li
@@ -478,21 +472,17 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
           <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Contexto da empresa e da equipe
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  A descrição institucional é separada das condições concretas
-                  da equipe.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="Empresa e equipe"
+                title="Contexto da empresa e da equipe"
+                hint="A descrição institucional é separada das condições concretas da equipe."
+              />
+              <div className="mt-4 space-y-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Empresa
@@ -556,16 +546,15 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                     Abrir contexto completo da empresa
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Requisitos essenciais informados
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="Requisitos"
+                title="Requisitos essenciais informados"
+              />
+              <div className="mt-4">
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
                   {job.essentialRequirements.map((requirement) => (
                     <li key={requirement}>{requirement}</li>
@@ -574,22 +563,20 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                 <p className="mt-3 text-xs text-muted-foreground">
                   {job.organizationalContext}
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           </div>
         </div>
       ) : null}
 
       {tab === 'historico' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Histórico da vaga</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ações locais desta demonstração, com autor e momento. Conclusões
-              anteriores são preservadas no registro.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+        <Panel>
+          <PanelHeader
+            eyebrow="Registro"
+            title="Histórico da vaga"
+            hint="Ações locais desta demonstração, com autor e momento. Conclusões anteriores são preservadas no registro."
+          />
+          <div className="mt-4 space-y-4">
             <ul className="space-y-3">
               {jobHistory.map((event) => (
                 <li
@@ -645,8 +632,8 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                 </ul>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       ) : null}
 
       {clarificationTarget ? (

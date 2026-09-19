@@ -13,18 +13,9 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  cn,
-  FilterNativeSelect,
-  toast
-} from '@workspace/ui';
+import { Button, cn, FilterNativeSelect, toast } from '@workspace/ui';
 
-import { Chip, InfoHint, SourceDot } from '../shared/ui';
+import { Chip, InfoHint, Panel, PanelHeader, SourceDot } from '../shared/ui';
 
 const STATE_TONE: Record<
   CultureAxisState,
@@ -218,37 +209,36 @@ export function CultureProfile({ companyId }: { companyId: string }) {
   ).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-1.5 text-base">
-          Traçado cultural declarado
-          <InfoHint label="O que a empresa responde sobre como se trabalha nela, nos mesmos eixos usados para ler a aderência dos candidatos. Descreve prática de trabalho, nunca traço das pessoas." />
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {answered} de {reading.length} eixos com resposta
-          {diverging > 0
-            ? ` · ${diverging} com divergência entre gestão e equipe`
-            : ''}
-          .
-        </p>
-      </CardHeader>
-      <CardContent className="pt-1">
-        <ul className="divide-y divide-border">
-          {reading.map((entry) => (
-            <AxisBlock
-              key={entry.question.axisId}
-              entry={entry}
-              companyId={companyId}
-            />
-          ))}
-        </ul>
+    <Panel>
+      <PanelHeader
+        eyebrow="Voz da empresa"
+        title="Traçado cultural declarado"
+        hint="O que a empresa responde sobre como se trabalha nela, nos mesmos eixos usados para ler a aderência dos candidatos. Descreve prática de trabalho, nunca traço das pessoas."
+        meta={
+          <>
+            {answered} de {reading.length} eixos com resposta
+            {diverging > 0
+              ? ` · ${diverging} com divergência entre gestão e equipe`
+              : ''}
+            .
+          </>
+        }
+      />
+      <ul className="mt-4 divide-y divide-border">
+        {reading.map((entry) => (
+          <AxisBlock
+            key={entry.question.axisId}
+            entry={entry}
+            companyId={companyId}
+          />
+        ))}
+      </ul>
 
-        <p className="mt-4 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
-          As respostas da equipe são agregadas e não identificam quem respondeu.
-          A proposta da análise não substitui a resposta da empresa: ela reduz o
-          tempo de preenchimento e fica sujeita a confirmação.
-        </p>
-      </CardContent>
-    </Card>
+      <p className="mt-4 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
+        As respostas da equipe são agregadas e não identificam quem respondeu. A
+        proposta da análise não substitui a resposta da empresa: ela reduz o
+        tempo de preenchimento e fica sujeita a confirmação.
+      </p>
+    </Panel>
   );
 }

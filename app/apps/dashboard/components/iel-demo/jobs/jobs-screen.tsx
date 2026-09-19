@@ -25,7 +25,6 @@ import {
 import { routes } from '@workspace/routes';
 import {
   Button,
-  Card,
   FilterNativeSelect,
   Input,
   Table,
@@ -36,7 +35,7 @@ import {
   TableRow
 } from '@workspace/ui';
 
-import { Chip, formatDate, IelPageHeader } from '../shared/ui';
+import { Chip, formatDate, IelPageHeader, Panel } from '../shared/ui';
 
 const columnHelper = createColumnHelper<JobSummary>();
 
@@ -193,9 +192,9 @@ export function JobsScreen() {
         title="Vagas"
       />
 
-      <Card
+      <Panel
         padding="sm"
-        className="gap-3"
+        className="flex flex-col gap-3"
       >
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_12rem]">
           <Input
@@ -268,12 +267,12 @@ export function JobsScreen() {
           Mostrando {rows.length} de {totalVisible} vagas visíveis para esta
           persona.
         </p>
-      </Card>
+      </Panel>
 
-      <Card padding="none">
+      <Panel padding="none">
         {rows.length === 0 ? (
           <div className="space-y-3 px-6 py-12 text-center">
-            <h3 className="text-base font-semibold text-foreground">
+            <h3 className="iel-display text-base text-foreground">
               Nenhuma vaga encontrada com esses filtros
             </h3>
             <p className="mx-auto max-w-md text-sm text-muted-foreground">
@@ -357,7 +356,7 @@ export function JobsScreen() {
             </Table>
           </div>
         )}
-      </Card>
+      </Panel>
     </div>
   );
 }
