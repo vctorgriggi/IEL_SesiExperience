@@ -38,7 +38,9 @@ function caminhoDaRota(pathname: string): PageHeaderCrumb[] {
     return [{ label: 'Perguntas' }];
   if (pathname.startsWith(iel.referrals.index))
     return [{ label: 'Encaminhamentos' }];
-  if (pathname.startsWith(iel.dataSources)) return [{ label: 'De onde vem' }];
+  if (pathname.startsWith(iel.dataSources)) return [{ label: 'Integrações' }];
+  if (pathname.startsWith(iel.candidates)) return [{ label: 'Candidatos' }];
+  if (pathname.startsWith(iel.bi)) return [{ label: 'BI' }];
   return [{ label: 'Hoje' }];
 }
 

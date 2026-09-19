@@ -185,7 +185,12 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
-      dataSources: resolve('/iel/fontes-de-dados')
+      /** Integrações: o que entra, o que sai e o que fica de fora. */
+      dataSources: resolve('/iel/fontes-de-dados'),
+      /** Comunicação, questionário e consentimento dos candidatos. */
+      candidates: resolve('/iel/candidatos'),
+      /** Análises com dado agregado. */
+      bi: resolve('/iel/bi')
     },
     openEvents: {
       bySlug: (slug: string) => {

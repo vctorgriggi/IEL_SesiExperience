@@ -17,6 +17,7 @@ import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { ArrowRight, Check, CircleAlert, Clock, RefreshCw } from 'lucide-react';
 
+import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
@@ -54,9 +55,7 @@ import {
   type TipoDePendencia
 } from './pendencias';
 
-// TODO: trocar por `routes.dashboard.iel.bi` quando a rota do BI entrar em
-// `@workspace/routes` (a tela está sendo feita em paralelo).
-const ROTA_DO_BI = '/iel/bi';
+const ROTA_DO_BI = routes.dashboard.iel.bi;
 
 /** Pendências em grupos, na ordem em que chegam (já ordenadas por urgência). */
 function agrupar(

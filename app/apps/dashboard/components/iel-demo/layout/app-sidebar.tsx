@@ -21,12 +21,14 @@ import type { Job } from '@/features/iel-demo/types';
 import {
   Briefcase,
   Building2,
+  ChartColumn,
   ChevronsUpDown,
   CirclePlus,
-  Database,
   HelpCircle,
   Inbox,
   ListOrdered,
+  MessageSquare,
+  Plug,
   Search,
   Users,
   type LucideIcon
@@ -175,6 +177,20 @@ export function AppSidebar() {
           icon: Users,
           badge: null,
           ativo: pathname.startsWith(iel.talents.index)
+        },
+        {
+          href: iel.candidates,
+          label: 'Candidatos',
+          icon: MessageSquare,
+          badge: null,
+          ativo: pathname.startsWith(iel.candidates)
+        },
+        {
+          href: iel.bi,
+          label: 'BI',
+          icon: ChartColumn,
+          badge: null,
+          ativo: pathname.startsWith(iel.bi)
         }
       ];
 
@@ -300,18 +316,21 @@ export function AppSidebar() {
                   <span>Roteiro da demo</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="De onde vem"
-                  isActive={pathname === iel.dataSources}
-                >
-                  <Link href={iel.dataSources}>
-                    <Database />
-                    <span>De onde vem</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Integrações é assunto do IEL: o gestor não vê. */}
+              {eGestor ? null : (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Integrações"
+                    isActive={pathname === iel.dataSources}
+                  >
+                    <Link href={iel.dataSources}>
+                      <Plug />
+                      <span>Integrações</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

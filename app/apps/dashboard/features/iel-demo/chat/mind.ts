@@ -176,7 +176,9 @@ export function contextoDaRota(pathname: string): MindContexto {
   if (secao === 'empresas' && id) {
     return { tipo: 'empresa', id: decodeURIComponent(id) };
   }
-  if (secao === 'talentos') return { tipo: 'candidatos' };
+  if (secao === 'talentos' || secao === 'candidatos') {
+    return { tipo: 'candidatos' };
+  }
   if (secao === 'bi') return { tipo: 'bi' };
   return { tipo: 'hoje' };
 }
