@@ -195,7 +195,7 @@ body:has([data-iel-theme]) {
 
 /* Faixa de navegação: clara, colada ao topo, separada por régua. */
 [data-iel-theme] .iel-ink {
-  background: hsl(var(--sidebar) / 0.85);
+  background: hsl(var(--sidebar) / 0.96);
   color: hsl(var(--sidebar-foreground));
   backdrop-filter: saturate(160%) blur(10px);
   -webkit-backdrop-filter: saturate(160%) blur(10px);
