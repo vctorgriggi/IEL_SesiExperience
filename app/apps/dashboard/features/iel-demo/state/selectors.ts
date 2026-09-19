@@ -1039,3 +1039,79 @@ export function getCultureAttentionPoints(
       entry.state === 'consulta-insuficiente'
   );
 }
+
+export type SharedWithCompany = {
+  companyName: string;
+  jobTitle: string;
+  sharedAt: string | null;
+  /** Quantos registros foram compartilhados naquele encaminhamento. */
+  recordCount: number;
+};
+
+export type TalentTransparency = {
+  /** Registros compartilháveis a respeito da pessoa, com procedência. */
+  records: Evidence[];
+  /** O que ela declarou sobre como prefere trabalhar. */
+  preferences: TalentPreference[];
+  /** Empresas que receberam o perfil, e quando. */
+  sharedWith: SharedWithCompany[];
+  /** Registros marcados como internos, apenas contados. */
+  internalCount: number;
+};
+
+/**
+ * O que a pessoa pode ver sobre os próprios dados.
+ *
+ * As exigências normativas do desafio pedem LGPD com "transparência e
+ * controle de acesso": quem é analisado precisa alcançar o que foi registrado
+ * a respeito de si e para onde isso foi. A solução externa que o enunciado
+ * descreve devolve ao candidato um laudo de perfil; aqui a devolutiva é de
+ * outra natureza — ela mostra procedência e destino, que é o que permite
+ * contestar um registro errado.
+ *
+ * O recorte do candidato é estreito por desenho: o briefing determina que ele
+ * não veja avaliações internas nem nada sobre outras pessoas. Anotações
+ * internas do analista entram apenas como contagem, para que a existência
+ * delas seja transparente sem expor conteúdo de terceiros ou juízo em
+ * elaboração.
+ */
+export function getTalentTransparency(
+  state: DemoState,
+  talentId: string
+): TalentTransparency {
+  const evidences = state.evidences.filter(
+    (evidence) => evidence.talentId === talentId
+  );
+
+  const applicationIds = new Set(
+    getApplicationsByTalent(state, talentId).map(
+      (application) => application.id
+    )
+  );
+
+  const sharedWith: SharedWithCompany[] = [];
+  for (const referral of state.referrals) {
+    if (referral.state !== 'registrado') continue;
+    for (const item of referral.items) {
+      if (!applicationIds.has(item.applicationId)) continue;
+      const job = getJob(referral.jobId);
+      sharedWith.push({
+        companyName: getCompany(referral.companyId)?.name ?? referral.companyId,
+        jobTitle: job?.title ?? referral.jobId,
+        sharedAt: referral.createdAt,
+        recordCount: item.sharedEvidenceIds.length
+      });
+    }
+  }
+
+  return {
+    records: evidences.filter(
+      (evidence) => evidence.visibility === 'compartilhavel'
+    ),
+    preferences: getTalent(talentId)?.preferences ?? [],
+    sharedWith,
+    internalCount: evidences.filter(
+      (evidence) => evidence.visibility === 'interno'
+    ).length
+  };
+}

@@ -16,6 +16,7 @@ import { routes } from '@workspace/routes';
 import { Alert, Button, Card, Checkbox, Textarea, toast } from '@workspace/ui';
 
 import { Chip, DemoDataBadge } from '../shared/ui';
+import { TalentTransparency } from './talent-transparency';
 
 /**
  * Experiência do destinatário (gestor ou candidato): contexto mínimo, pergunta,
@@ -98,6 +99,16 @@ export function RecipientExperienceScreen({
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
+      {/*
+        Antes de pedir que a pessoa responda, mostrar o que já está registrado
+        sobre ela. As exigências normativas do desafio pedem transparência e
+        controle de acesso, e uma pergunta feita sem esse contexto pede
+        confiança sem oferecer nada em troca.
+      */}
+      {!isManager && clarification.recipient.talentId ? (
+        <TalentTransparency talentId={clarification.recipient.talentId} />
+      ) : null}
+
       <Card className="gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <DemoDataBadge />

@@ -27,6 +27,7 @@ import {
   getOverviewMetrics,
   getReusedEvidences,
   getTalentJourney,
+  getTalentTransparency,
   getVisibleTalentIds
 } from './selectors';
 
@@ -839,6 +840,68 @@ describe('traçado cultural da empresa', () => {
 
     expect(attention.map((entry) => entry.question.axisId)).toContain(
       'apoio-inicial'
+    );
+  });
+});
+
+describe('devolutiva ao candidato', () => {
+  it('mostra procedência dos registros e esconde avaliação interna', () => {
+    const state = buildInitialDemoState();
+    const view = getTalentTransparency(state, 'ANA');
+
+    expect(view.records.length).toBeGreaterThan(0);
+    expect(
+      view.records.every(
+        (record) => record.visibility === 'compartilhavel' && record.originLabel
+      )
+    ).toBe(true);
+
+    // O briefing determina que o candidato não veja avaliações internas.
+    // A existência delas é contada, o conteúdo não sai.
+    expect(view.records.some((record) => record.visibility === 'interno')).toBe(
+      false
+    );
+
+    // O traçado declarado por ela também é dela para consultar.
+    expect(view.preferences.length).toBeGreaterThan(0);
+  });
+
+  it('só lista empresas depois que um encaminhamento é registrado', () => {
+    let state = buildInitialDemoState();
+    expect(getTalentTransparency(state, 'ANA').sharedWith).toHaveLength(0);
+
+    state = demoReducer(state, {
+      type: 'register-referral',
+      at: AT,
+      input: {
+        jobId: 'VAG-02',
+        companyId: 'EMP-02',
+        message: 'Encaminhamento de 1 perfil.',
+        items: [
+          {
+            applicationId: 'CAND-05',
+            justification: 'Experiência relacionada.',
+            sharedEvidenceIds: ['EVD-ANA-01', 'EVD-ANA-02'],
+            summary: 'Ana Ribeiro.',
+            attentionPoints: [],
+            suggestedQuestions: []
+          }
+        ]
+      }
+    });
+
+    const shared = getTalentTransparency(state, 'ANA').sharedWith;
+    expect(shared).toHaveLength(1);
+    expect(shared[0]?.companyName).toBe('Horizonte Alimentos');
+    expect(shared[0]?.recordCount).toBe(2);
+  });
+
+  it('não vaza dados de outra pessoa', () => {
+    const state = buildInitialDemoState();
+    const view = getTalentTransparency(state, 'ANA');
+
+    expect(view.records.every((record) => record.talentId === 'ANA')).toBe(
+      true
     );
   });
 });
