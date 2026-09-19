@@ -69,6 +69,12 @@ import {
   TooltipTrigger
 } from '@workspace/ui/shadcn/tooltip';
 
+import {
+  BADGE_DE_ESTADO,
+  TONS_DA_EMPRESA,
+  type EstadoDeCor
+} from '../metricas/cores';
+
 /**
  * Como a empresa trabalha, em cinco linhas de tabela.
  *
@@ -89,10 +95,10 @@ import {
 
 /** Marcador de cada grupo no trilho. Quadrado para gestão/RH, círculo para equipe. */
 const RESPONDENT_MARK: Record<CultureDisplayRespondent, string> = {
-  gestao: 'rounded-[3px] bg-foreground',
-  rh: 'rounded-[3px] bg-muted-foreground',
-  lideranca: 'rounded-[3px] bg-foreground',
-  equipe: 'rounded-full bg-foreground'
+  gestao: cn('rounded-[3px]', TONS_DA_EMPRESA.gestao),
+  rh: cn('rounded-[3px]', TONS_DA_EMPRESA.gestao),
+  lideranca: cn('rounded-[3px]', TONS_DA_EMPRESA.gestao),
+  equipe: cn('rounded-full', TONS_DA_EMPRESA.equipe)
 };
 
 /**
@@ -120,12 +126,12 @@ const ESTADO_ICON: Record<EstadoDeLeitura, typeof CircleCheck> = {
   'sem-resposta': CircleDashed
 };
 
-/** Cor semântica só no ícone, como manda a diretriz visual. */
-const ESTADO_ICON_COLOR: Record<EstadoDeLeitura, string> = {
-  combina: 'text-success',
-  difere: 'text-destructive',
-  faltando: 'text-warning',
-  'sem-resposta': 'text-muted-foreground'
+/** Estado → tom: fundo tingido, texto e ícone no mesmo tom, sempre com a palavra. */
+const ESTADO_TOM: Record<EstadoDeLeitura, EstadoDeCor> = {
+  combina: 'combina',
+  difere: 'difere',
+  faltando: 'atencao',
+  'sem-resposta': 'neutro'
 };
 
 function EstadoBadge({ estado }: { estado: EstadoDeLeitura }) {
@@ -133,9 +139,12 @@ function EstadoBadge({ estado }: { estado: EstadoDeLeitura }) {
   return (
     <Badge
       variant="outline"
-      className="gap-1.5 font-normal"
+      className={cn('gap-1.5', BADGE_DE_ESTADO[ESTADO_TOM[estado]])}
     >
-      <Icon className={cn('size-3', ESTADO_ICON_COLOR[estado])} />
+      <Icon
+        aria-hidden="true"
+        className="size-3"
+      />
       {COPY.estado(estado)}
     </Badge>
   );
@@ -230,7 +239,10 @@ function AxisTrack({
               {spread > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="absolute left-1/2 top-1/2 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/20"
+                  className={cn(
+                    'absolute left-1/2 top-1/2 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full',
+                    TONS_DA_EMPRESA.dispersao
+                  )}
                   style={{ width: `${16 + spread * 44}px` }}
                 />
               ) : null}
@@ -252,7 +264,10 @@ function AxisTrack({
           >
             <span
               aria-hidden="true"
-              className="block size-3 rotate-45 bg-foreground/70 ring-2 ring-background"
+              className={cn(
+                'block size-3 rotate-45 ring-2 ring-background',
+                TONS_DA_EMPRESA.media
+              )}
             />
           </span>
         ) : null}
@@ -376,19 +391,23 @@ function TrackLegend({ withheld }: { withheld: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-[2px] bg-foreground" />
+        <span
+          className={cn('size-2.5 rounded-[2px]', TONS_DA_EMPRESA.gestao)}
+        />
         gestão/RH
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-foreground" />
+        <span className={cn('size-2.5 rounded-full', TONS_DA_EMPRESA.equipe)} />
         equipe
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rotate-45 bg-foreground/70" />
+        <span className={cn('size-2.5 rotate-45', TONS_DA_EMPRESA.media)} />
         média
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-2.5 w-5 rounded-full bg-muted-foreground/20" />
+        <span
+          className={cn('h-2.5 w-5 rounded-full', TONS_DA_EMPRESA.dispersao)}
+        />
         dispersão da equipe
       </span>
       {withheld ? (

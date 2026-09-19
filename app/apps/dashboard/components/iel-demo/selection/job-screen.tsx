@@ -25,12 +25,18 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { JobCriterion } from '@/features/iel-demo/types';
-import { CircleAlert, Info } from 'lucide-react';
+import { CircleAlert, FileSpreadsheet, Info, MoreVertical } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { Alert, toast } from '@workspace/ui';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@workspace/ui/shadcn/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -160,6 +166,31 @@ export function JobScreen({ jobId }: { jobId: string }) {
             <span>{COPY.referral.action}</span>
           )}
         </Button>
+        {/*
+         * A planilha é plano B: o Empregare sincroniza sozinho todo dia às
+         * 06:00. Ela fica no menu da vaga para quando a sincronização falhar
+         * ou a vaga ainda não estiver no Empregare.
+         */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Mais ações"
+            >
+              <MoreVertical aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={iel.jobs.byId(job.id).import}>
+                <FileSpreadsheet aria-hidden="true" />
+                Importar planilha
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </>
     ) : null
   });

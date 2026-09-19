@@ -5,7 +5,10 @@ import type { JobRankingEntry } from '@/features/iel-demo/state/selectors';
 import { RESCUE_TECHNICAL_CEILING } from '@/features/iel-demo/state/selectors';
 import { Activity, CircleCheck, CircleDashed, Loader, X } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
+
+import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
 
 /**
  * Uma linha da lista diz o estado em palavra, nunca só em cor.
@@ -53,66 +56,44 @@ export function readCandidateState(entry: JobRankingEntry): CandidateState {
   return adherence.compatible ? 'combina' : 'abaixo';
 }
 
+/** Estado na lista → tom do badge (fundo tingido, texto e ícone no mesmo tom). */
+const TOM_DO_ESTADO: Record<CandidateState, EstadoDeCor> = {
+  'sem-resposta': 'neutro',
+  resgate: 'atencao',
+  parcial: 'neutro',
+  abaixo: 'atencao',
+  combina: 'combina'
+};
+
+const ICONE_DO_ESTADO: Record<CandidateState, typeof CircleCheck> = {
+  'sem-resposta': CircleDashed,
+  resgate: Activity,
+  parcial: Loader,
+  abaixo: X,
+  combina: CircleCheck
+};
+
 export function CandidateStateBadge({ entry }: { entry: JobRankingEntry }) {
   const estado = readCandidateState(entry);
   const { totalAxes } = entry.adherence.coverage;
   const respondidos = respondidosPelaPessoa(entry);
+  const Icone = ICONE_DO_ESTADO[estado];
 
-  if (estado === 'sem-resposta') {
-    return (
-      <Badge
-        variant="outline"
-        className="px-1.5 text-muted-foreground"
-      >
-        <CircleDashed className="text-muted-foreground" />
-        Ainda não respondeu
-      </Badge>
-    );
-  }
-
-  if (estado === 'resgate') {
-    return (
-      <Badge
-        variant="outline"
-        className="px-1.5 text-muted-foreground"
-      >
-        <Activity className="text-[hsl(var(--brand-accent))]" />
-        Resgate
-      </Badge>
-    );
-  }
-
-  if (estado === 'parcial') {
-    return (
-      <Badge
-        variant="outline"
-        className="px-1.5 text-muted-foreground"
-      >
-        <Loader className="text-muted-foreground" />
-        {respondidos} de {totalAxes} pontos
-      </Badge>
-    );
-  }
-
-  if (estado === 'abaixo') {
-    return (
-      <Badge
-        variant="outline"
-        className="px-1.5 text-muted-foreground"
-      >
-        <X className="text-destructive" />
-        Abaixo de {ADHERENCE_THRESHOLD}%
-      </Badge>
-    );
-  }
+  const rotulo: Record<CandidateState, string> = {
+    'sem-resposta': 'Ainda não respondeu',
+    resgate: 'Resgate',
+    parcial: `${respondidos} de ${totalAxes} pontos`,
+    abaixo: `Abaixo de ${ADHERENCE_THRESHOLD}%`,
+    combina: 'Combina'
+  };
 
   return (
     <Badge
       variant="outline"
-      className="px-1.5 text-muted-foreground"
+      className={cn('px-1.5', BADGE_DE_ESTADO[TOM_DO_ESTADO[estado]])}
     >
-      <CircleCheck className="fill-green-500 stroke-background dark:fill-green-400" />
-      Combina
+      <Icone aria-hidden="true" />
+      {rotulo[estado]}
     </Badge>
   );
 }

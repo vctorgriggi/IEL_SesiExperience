@@ -97,3 +97,90 @@ export function corDaVariacao(
   const melhorou = quedaEBoa ? variacao < 0 : variacao > 0;
   return melhorou ? 'combina' : 'difere';
 }
+
+/** Um lado da leitura, pelo nome: o `tom` dos cartões e ícones de contexto. */
+export type TomDeCor = EstadoDeCor | 'empresa' | 'pessoa';
+
+/** Quadradinho tingido de ícone de contexto: fundo claro e ícone no tom. */
+export const ICONE_TINGIDO: Record<TomDeCor, string> = {
+  combina: BADGE_DE_ESTADO.combina,
+  atencao: BADGE_DE_ESTADO.atencao,
+  difere: BADGE_DE_ESTADO.difere,
+  neutro: BADGE_DE_ESTADO.neutro,
+  empresa: `${LADO.empresa.fundo} ${LADO.empresa.texto}`,
+  pessoa: `${LADO.pessoa.fundo} ${LADO.pessoa.texto}`
+};
+
+/** Preenchimento puro no tom (barra, ponto, mini indicador). */
+export const PREENCHIMENTO_DO_TOM: Record<TomDeCor, string> = {
+  ...PREENCHIMENTO_DE_ESTADO,
+  empresa: LADO.empresa.preenchimento,
+  pessoa: LADO.pessoa.preenchimento
+};
+
+/** Texto no tom da barra de "combina" (mesma faixa de `barraDaAderencia`). */
+export function textoDaAderencia(percentual: number | null): string {
+  if (percentual === null) return TEXTO_DE_ESTADO.neutro;
+  if (percentual >= 60) return TEXTO_DE_ESTADO.combina;
+  if (percentual >= 35) return LADO.pessoa.texto;
+  return TEXTO_DE_ESTADO.atencao;
+}
+
+/**
+ * O trilho de um ponto do dia a dia: a trilha, a faixa entre empresa e pessoa
+ * (clara, só para ler a distância; a palavra do estado fica ao lado) e a marca
+ * do mínimo de 35% no laranja da marca.
+ */
+export const TRILHO = {
+  trilha: 'bg-muted',
+  perto: 'bg-[hsl(var(--estado-combina)/0.3)]',
+  longe: 'bg-[hsl(var(--estado-difere)/0.28)]',
+  minimo: 'bg-[hsl(var(--brand-accent))]'
+} as const;
+
+/**
+ * Tons de azul da empresa, para quando a empresa fala por mais de uma voz
+ * (gestão e equipe), com a média em azul-escuro e a dispersão em azul claro.
+ */
+export const TONS_DA_EMPRESA = {
+  gestao: 'bg-[hsl(var(--data-empresa))]',
+  equipe: 'bg-[hsl(var(--data-empresa-claro))]',
+  media: 'bg-[hsl(var(--data-empresa-escuro))]',
+  mediaTexto: 'text-[hsl(var(--data-empresa-escuro))]',
+  dispersao: 'bg-[hsl(var(--data-empresa)/0.18)]',
+  bordaGestao: 'border-[hsl(var(--data-empresa))]',
+  bordaEquipe: 'border-[hsl(var(--data-empresa-claro))]'
+} as const;
+
+/**
+ * Item ativo da navegação: fundo azul bem claro e texto azul (o lado da
+ * empresa é o lado de quem opera o painel). Para `SidebarMenuButton`, que só
+ * marca o ativo com `data-active`.
+ */
+export const ITEM_ATIVO =
+  'data-[active=true]:bg-[hsl(var(--data-empresa-bg))] data-[active=true]:text-[hsl(var(--data-empresa))] data-[active=true]:hover:bg-[hsl(var(--data-empresa-bg))] data-[active=true]:hover:text-[hsl(var(--data-empresa))]';
+
+/**
+ * Acabamento do selo dos cartões (variação e etiquetas): 24px de altura,
+ * canto `rounded-md`, sem borda, ícone de 12px. Some a um `BADGE_DE_ESTADO`.
+ */
+export const SELO = 'h-6 gap-1 rounded-md border-transparent px-2 font-medium';
+
+/**
+ * Tons claros de barra: o que é contexto, não destaque. Num gráfico, só o
+ * dado que decide leva a cor forte; o resto usa estes (1 ou 2 cores fortes
+ * por card, no máximo).
+ */
+export const PREENCHIMENTO_CLARO = {
+  atencao: 'bg-[hsl(var(--estado-atencao)/0.35)]',
+  neutro: 'bg-[hsl(var(--estado-neutro-fg)/0.4)]',
+  pessoa: 'bg-[hsl(var(--data-pessoa-claro)/0.6)]',
+  empresa: 'bg-[hsl(var(--data-empresa)/0.35)]'
+} as const;
+
+/** Mês em curso: verde-azulado claro com borda tracejada ("ainda não fechou"). */
+export const PREENCHIMENTO_PARCIAL =
+  'bg-[hsl(var(--data-pessoa-claro)/0.45)] border-2 border-b-0 border-dashed border-[hsl(var(--data-pessoa))]';
+
+/** Cor de traço em SVG (linha da média móvel e seus pontos). */
+export const TRACO_ATENCAO = 'hsl(var(--estado-atencao))';

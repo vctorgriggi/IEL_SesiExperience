@@ -14,7 +14,16 @@ import {
 } from '@/features/iel-demo/analysis/analytics';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getVisibleJobs } from '@/features/iel-demo/state/selectors';
-import { ArrowRight, EyeOff, FileLock2, UserCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  ClipboardCheck,
+  EyeOff,
+  FileLock2,
+  MailOpen,
+  ShieldCheck,
+  Timer,
+  UserCheck
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -38,11 +47,14 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { LADO, PREENCHIMENTO_CLARO, PREENCHIMENTO_DE_ESTADO } from './cores';
 import { formatarNumero } from './formato';
 import { Funil } from './funil';
 import { KpiCard } from './kpi-card';
 import { PERIODO_PADRAO, SeletorPeriodo } from './seletor-periodo';
 import { ValorOculto } from './valor-oculto';
+
+const PREENCHIMENTO_ATENCAO_CLARO = PREENCHIMENTO_CLARO.atencao;
 
 const TODAS = 'todas';
 const TODOS = 'todos';
@@ -161,10 +173,21 @@ export function CandidatosScreen() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard kpi={kpis.taxaAbertura} />
-        <KpiCard kpi={kpis.conclusao} />
+        <KpiCard
+          kpi={kpis.taxaAbertura}
+          icone={MailOpen}
+          tom="pessoa"
+        />
+        <KpiCard
+          kpi={kpis.conclusao}
+          icone={ClipboardCheck}
+          tom="pessoa"
+        />
         <KpiCard
           kpi={{ ...kpis.tempoMedioResposta, rotulo: 'Tempo médio' }}
+          quedaEBoa
+          icone={Timer}
+          tom="neutro"
           rodape={
             celular === null
               ? 'Sem aberturas no recorte'
@@ -173,6 +196,8 @@ export function CandidatosScreen() {
         />
         <KpiCard
           kpi={kpis.consentimentos}
+          icone={ShieldCheck}
+          tom="combina"
           apoio="Aceite com versão e horário, antes da primeira pergunta."
         />
       </div>
@@ -258,10 +283,16 @@ export function CandidatosScreen() {
                 key={item.titulo}
                 className="flex gap-3"
               >
-                <item.icone
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex size-8 shrink-0 items-center justify-center rounded-md',
+                    LADO.pessoa.fundo,
+                    LADO.pessoa.texto
+                  )}
+                >
+                  <item.icone className="size-4" />
+                </span>
                 <div className="flex flex-col gap-1">
                   <p className="font-medium">{item.titulo}</p>
                   <p className="text-sm text-muted-foreground">{item.texto}</p>
@@ -306,8 +337,9 @@ function fraseDoAbandono(ponto: PontoDeAbandono): string {
 /**
  * Abandono no aceite e em cada pergunta, sobre quem abriu o convite. A barra
  * é relativa ao maior abandono (os valores são pequenos e, em escala de
- * 0–100, sumiriam); o % escrito ao lado é o real. O ponto com mais abandono
- * vai em laranja, a cor de atenção da marca.
+ * 0–100, sumiriam); o % escrito ao lado é o real. Tudo é atenção, então
+ * tudo é laranja: o ponto com mais abandono no laranja cheio, os outros no
+ * laranja claro.
  */
 function OndeOCandidatoPara({
   oculto,
@@ -360,18 +392,25 @@ function OndeOCandidatoPara({
                   ) : null}
                 </span>
                 <div
-                  className="h-2 overflow-hidden rounded-full bg-muted"
+                  className="h-3 overflow-hidden rounded-full bg-muted/70"
                   aria-hidden
                 >
                   <div
                     className={cn(
                       'h-full rounded-full',
-                      destaque ? 'bg-[hsl(var(--brand-accent))]' : 'bg-primary'
+                      destaque
+                        ? PREENCHIMENTO_DE_ESTADO.atencao
+                        : PREENCHIMENTO_ATENCAO_CLARO
                     )}
                     style={{ width: `${largura}%` }}
                   />
                 </div>
-                <span className="text-right font-medium tabular-nums">
+                <span
+                  className={cn(
+                    'text-right tabular-nums',
+                    destaque ? 'text-base font-semibold' : 'font-medium'
+                  )}
+                >
                   {ponto.pct === null ? (
                     <ValorOculto />
                   ) : (

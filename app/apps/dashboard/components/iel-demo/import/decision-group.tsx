@@ -17,13 +17,16 @@ import {
   CollapsibleTrigger
 } from '@workspace/ui/shadcn/collapsible';
 
+import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
+
 /**
  * O que a importação faz com um grupo de linhas, em palavra comum.
  *
  * O vocabulário da leitura de fit — "Combina", "Difere", "Ainda não
  * respondeu" — não diz nada sobre uma planilha: "8 pessoas novas — Combina"
  * confunde quem está conferindo uma importação. O padrão visual é o mesmo
- * `Badge outline` do restante do produto; o que muda é a palavra e o ícone.
+ * badge tingido do restante do produto (`BADGE_DE_ESTADO`); o que muda é a
+ * palavra e o ícone.
  */
 export type EstadoDaImportacao =
   | 'entram'
@@ -38,12 +41,19 @@ const PALAVRA: Record<EstadoDaImportacao, string> = {
   'com-erro': 'Com erro'
 };
 
-/** Cor só no ícone, como manda a diretriz visual. */
 const ICONE: Record<EstadoDaImportacao, ReactNode> = {
-  entram: <CheckIcon className="text-success" />,
-  atualizam: <ArrowRightLeftIcon className="text-success" />,
-  'sem-mudanca': <MinusIcon className="text-muted-foreground" />,
-  'com-erro': <TriangleAlertIcon className="text-warning" />
+  entram: <CheckIcon aria-hidden="true" />,
+  atualizam: <ArrowRightLeftIcon aria-hidden="true" />,
+  'sem-mudanca': <MinusIcon aria-hidden="true" />,
+  'com-erro': <TriangleAlertIcon aria-hidden="true" />
+};
+
+/** Fundo tingido no tom do estado; a palavra continua ao lado do ícone. */
+const TOM: Record<EstadoDaImportacao, EstadoDeCor> = {
+  entram: 'combina',
+  atualizam: 'combina',
+  'sem-mudanca': 'neutro',
+  'com-erro': 'atencao'
 };
 
 export function GrupoDeDecisao({
@@ -73,7 +83,7 @@ export function GrupoDeDecisao({
             </span>
             <Badge
               variant="outline"
-              className="text-muted-foreground"
+              className={BADGE_DE_ESTADO[TOM[estado]]}
             >
               {ICONE[estado]}
               {PALAVRA[estado]}

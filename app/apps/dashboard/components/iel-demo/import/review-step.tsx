@@ -10,6 +10,7 @@ import { getTalent } from '@/features/iel-demo/state/selectors';
 import type { DemoState } from '@/features/iel-demo/types';
 import { CircleAlert } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
@@ -30,6 +31,7 @@ import {
   TableRow
 } from '@workspace/ui/shadcn/table';
 
+import { BADGE_DE_ESTADO } from '../metricas/cores';
 import { GrupoDeDecisao, type EstadoDaImportacao } from './decision-group';
 
 const DESCARTADA = 'descartado pelo filtro — entra no resgate';
@@ -200,9 +202,12 @@ function TabelaDoGrupo({ grupo }: { grupo: Grupo }) {
                 {linha.descartada ? (
                   <Badge
                     variant="outline"
-                    className="ml-2 gap-1 font-normal text-muted-foreground"
+                    className={cn('ml-2 gap-1', BADGE_DE_ESTADO.atencao)}
                   >
-                    <CircleAlert className="size-3 text-[hsl(var(--brand-accent))]" />
+                    <CircleAlert
+                      aria-hidden="true"
+                      className="size-3"
+                    />
                     {DESCARTADA}
                   </Badge>
                 ) : null}
@@ -233,7 +238,7 @@ function CartaoDeNumero({
   apoio: ReactNode;
 }) {
   return (
-    <Card className="@container/card bg-gradient-to-t from-primary/5 to-card shadow-xs">
+    <Card className="@container/card shadow-xs">
       <CardHeader>
         <CardDescription>{rotulo}</CardDescription>
         <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">

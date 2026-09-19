@@ -72,8 +72,8 @@ body:has([data-iel-theme]),
 
   /*
    * Estado. O kit do Arki aponta `--success`/`--warning`/`--info` para a
-   * série âmbar; aqui os três precisam ser distinguíveis num relance, e a
-   * cor aparece só em ícone e ponto, nunca como fundo de bloco.
+   * série âmbar; aqui os três precisam ser distinguíveis num relance. Para
+   * dado e estado, use as `--estado-*` e `--data-*` abaixo (via `cores.ts`).
    */
   --success: 142 71% 35%;
   --success-foreground: 0 0% 98%;
@@ -95,6 +95,8 @@ body:has([data-iel-theme]),
    */
   --data-empresa: 217 68% 36%;
   --data-empresa-bg: 217 70% 94%;
+  --data-empresa-escuro: 219 72% 22%;
+  --data-empresa-claro: 214 62% 62%;
   --data-pessoa: 176 80% 28%;
   --data-pessoa-claro: 175 40% 56%;
   --data-pessoa-bg: 173 45% 91%;

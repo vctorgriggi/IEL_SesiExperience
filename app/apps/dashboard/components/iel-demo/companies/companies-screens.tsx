@@ -34,18 +34,27 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
+  Building2,
   Check,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   CircleAlert,
+  ClipboardCheck,
   Clock,
-  Search
+  Lightbulb,
+  Phone,
+  Reply,
+  Search,
+  Timer,
+  Users,
+  type LucideIcon
 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { Textarea, toast } from '@workspace/ui';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
@@ -92,7 +101,15 @@ import {
 } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
-import { KpiCard } from '../metricas/kpi-card';
+import {
+  BADGE_DE_ESTADO,
+  LADO,
+  PREENCHIMENTO_CLARO,
+  PREENCHIMENTO_DE_ESTADO,
+  SELO,
+  type TomDeCor
+} from '../metricas/cores';
+import { CartaoDeIndicador, KpiCard } from '../metricas/kpi-card';
 import { MarcadorHistorico } from '../metricas/marcador-historico';
 import { PERIODO_PADRAO, SeletorPeriodo } from '../metricas/seletor-periodo';
 import { ValorOculto } from '../metricas/valor-oculto';
@@ -115,28 +132,28 @@ function SectionCard({
   value,
   badge,
   footer,
-  hint
+  hint,
+  icone,
+  tom
 }: {
   description: string;
   value: string;
   badge?: React.ReactNode;
   footer: string;
   hint?: string;
+  icone: LucideIcon;
+  tom: TomDeCor;
 }) {
   return (
-    <Card className="from-primary/5 to-card bg-gradient-to-t shadow-xs">
-      <CardHeader>
-        <CardDescription>{description}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums">
-          {value}
-        </CardTitle>
-        {badge ? <CardAction>{badge}</CardAction> : null}
-      </CardHeader>
-      <CardFooter className="flex-col items-start gap-1 text-sm">
-        <span className="font-medium">{footer}</span>
-        {hint ? <span className="text-muted-foreground">{hint}</span> : null}
-      </CardFooter>
-    </Card>
+    <CartaoDeIndicador
+      rotulo={description}
+      valor={value}
+      selo={badge}
+      icone={icone}
+      tom={tom}
+      rodape={footer}
+      apoio={hint}
+    />
   );
 }
 
@@ -251,24 +268,35 @@ export function CompaniesScreen() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <KpiCard
           kpi={kpis.empresasComVagaAtiva}
+          icone={Building2}
+          tom="empresa"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={kpis.perfilCompleto}
+          icone={ClipboardCheck}
+          tom="empresa"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={kpis.tempoParaCompletarPerfil}
+          quedaEBoa
+          icone={Timer}
+          tom="neutro"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={{ ...kpis.roteirosUsados, rotulo: 'Roteiros usados' }}
+          icone={Phone}
+          tom="empresa"
           className="lg:col-span-3"
           valor={`${kpis.roteirosUsados.valor ?? 0} de ${kpis.roteirosGerados.valor ?? 0}`}
           apoio={`Roteiros de ligação usados de ${plural(kpis.roteirosGerados.valor ?? 0, 'gerado', 'gerados')} no período.`}
         />
         <KpiCard
           kpi={kpis.retornoSobreCurriculos}
+          icone={Reply}
+          tom="empresa"
           className="sm:col-span-2 lg:col-span-3"
         />
       </div>
@@ -681,11 +709,20 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SectionCard
           description="Responderam"
+          icone={Users}
+          tom="empresa"
           value={`${progress.answered} de ${progress.total}`}
           badge={
             <Badge
               variant="outline"
-              className="gap-1 font-normal"
+              className={cn(
+                SELO,
+                progress.overdue
+                  ? BADGE_DE_ESTADO.atencao
+                  : progress.answered >= progress.total
+                    ? BADGE_DE_ESTADO.combina
+                    : BADGE_DE_ESTADO.neutro
+              )}
             >
               <Clock className="size-3" />
               {deadlineLabel(progress)}
@@ -700,14 +737,16 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         />
         <SectionCard
           description="Pontos fechados"
+          icone={ClipboardCheck}
+          tom="empresa"
           value={`${suficientes} de ${profile.length}`}
           badge={
             suficientes < profile.length ? (
               <Badge
                 variant="outline"
-                className="gap-1 font-normal text-muted-foreground"
+                className={cn(SELO, BADGE_DE_ESTADO.atencao)}
               >
-                <CircleAlert className="size-3 text-[hsl(var(--brand-accent))]" />
+                <CircleAlert className="size-3" />
                 faltam {profile.length - suficientes}
               </Badge>
             ) : undefined
@@ -721,6 +760,8 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         />
         <SectionCard
           description="Sugestões para confirmar"
+          icone={Lightbulb}
+          tom="neutro"
           value={plural(sugestoes, 'ponto', 'pontos')}
           footer={
             sugestoes === 0
@@ -872,11 +913,17 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
  * ------------------------------------------------------------------ */
 
 /** Tom de cada desfecho na barra empilhada: um azul-noite em três passos. */
+/**
+ * Contratou é o resultado bom (verde), não contratou é desfecho neutro
+ * (cinza-ardósia) e sem resposta é o que pede cobrança (laranja claro).
+ */
 const TOM_DO_RETORNO: Record<RetornoEmpresa, string> = {
-  contratou: 'bg-primary',
-  'nao-contratou': 'bg-primary/45',
-  'sem-resposta': 'bg-muted-foreground/25'
+  contratou: PREENCHIMENTO_DE_ESTADO.combina,
+  'nao-contratou': PREENCHIMENTO_CLARO.neutro,
+  'sem-resposta': PREENCHIMENTO_CLARO.atencao
 };
+
+const PREENCHIMENTO_EMPRESA_CLARO = PREENCHIMENTO_CLARO.empresa;
 
 /**
  * "O que aconteceu com os currículos enviados?" — contratou, não contratou
@@ -889,6 +936,8 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
     [periodo]
   );
   const segundo = retorno.motivos[1];
+  const contratou = retorno.itens.find((item) => item.retorno === 'contratou');
+  const maiorMotivo = Math.max(1, ...retorno.motivos.map((m) => m.n));
   // Setores pequenos não viram linha de "—": juntam-se numa frase só.
   const setoresVisiveis = retorno.grupos.filter((grupo) => !grupo.oculto);
   const setoresOcultos = retorno.grupos.length - setoresVisiveis.length;
@@ -911,41 +960,116 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
           </p>
         ) : (
           <>
-            <div
-              className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full"
-              role="img"
-              aria-label={`Retorno das remessas: ${retorno.itens
-                .map((item) => `${item.rotulo}, ${item.pct ?? 0}%`)
-                .join('; ')}`}
-            >
-              {retorno.itens.map((item) =>
-                item.pct ? (
-                  <div
-                    key={item.retorno}
-                    className={TOM_DO_RETORNO[item.retorno]}
-                    style={{ width: `${item.pct}%` }}
-                    title={`${item.rotulo}: ${item.pct}% (${item.n})`}
-                  />
-                ) : null
-              )}
+            <div className="flex items-center gap-4">
+              <div
+                className="flex h-4 min-w-0 flex-1 gap-0.5 overflow-hidden rounded-full"
+                role="img"
+                aria-label={`Retorno das remessas: ${retorno.itens
+                  .map((item) => `${item.rotulo}, ${item.pct ?? 0}%`)
+                  .join('; ')}`}
+              >
+                {retorno.itens.map((item) =>
+                  item.pct ? (
+                    <div
+                      key={item.retorno}
+                      className={cn(
+                        'first:rounded-l-full last:rounded-r-full',
+                        TOM_DO_RETORNO[item.retorno]
+                      )}
+                      style={{ width: `${item.pct}%` }}
+                      title={`${item.rotulo}: ${item.pct}% (${item.n})`}
+                    />
+                  ) : null
+                )}
+              </div>
+              {/* O rótulo acima já lê o valor; o número grande é para os olhos. */}
+              <div
+                aria-hidden="true"
+                className="flex shrink-0 flex-col items-end leading-tight"
+              >
+                <span className="text-3xl font-semibold tabular-nums">
+                  {contratou?.pct ?? 0}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  contrataram
+                </span>
+              </div>
             </div>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <ul className="flex flex-wrap gap-2 text-xs">
               {retorno.itens.map((item) => (
                 <li
                   key={item.retorno}
-                  className="flex items-center gap-1.5"
+                  className="inline-flex h-5 items-center gap-1.5 rounded-full border px-2"
                 >
                   <span
                     aria-hidden
-                    className={`size-2.5 rounded-full ${TOM_DO_RETORNO[item.retorno]}`}
+                    className={cn(
+                      'size-2.5 rounded-sm',
+                      TOM_DO_RETORNO[item.retorno]
+                    )}
                   />
-                  {item.rotulo}
+                  <span className="text-muted-foreground">{item.rotulo}</span>
                   <span className="font-medium tabular-nums">
                     {item.pct ?? 0}%
                   </span>
                 </li>
               ))}
             </ul>
+            {retorno.motivos.some((motivo) => motivo.n > 0) ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">Por que não contratou</p>
+                {/* A barra é só desenho; o % escrito ao lado é o equivalente. */}
+                <ol
+                  aria-label="Motivos de não contratação, do mais citado ao menos citado"
+                  className="flex flex-col gap-1.5"
+                >
+                  {retorno.motivos.map((motivo, indice) => {
+                    const destaque = indice === 0 && motivo.n > 0;
+                    return (
+                      <li
+                        key={motivo.motivo}
+                        className="grid grid-cols-[minmax(0,14rem)_1fr_3rem] items-center gap-3 text-sm"
+                      >
+                        <span
+                          className={cn('truncate', destaque && 'font-medium')}
+                        >
+                          {motivo.rotulo}
+                          <span className="sr-only">:</span>
+                        </span>
+                        <div
+                          aria-hidden="true"
+                          className="h-2 overflow-hidden rounded-full bg-muted/70"
+                        >
+                          <div
+                            className={cn(
+                              'h-full rounded-full',
+                              destaque
+                                ? LADO.empresa.preenchimento
+                                : PREENCHIMENTO_EMPRESA_CLARO
+                            )}
+                            style={{
+                              width: `${(100 * motivo.n) / maiorMotivo}%`
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            'text-right tabular-nums',
+                            destaque && 'font-semibold'
+                          )}
+                        >
+                          {motivo.pct === null ? (
+                            <ValorOculto />
+                          ) : (
+                            `${motivo.pct}%`
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            ) : null}
             {retorno.motivoMaisCitado ? (
               <p className="text-sm">
                 Motivo mais citado quando não contrata:{' '}
@@ -1058,22 +1182,55 @@ function Traco({ texto }: { texto: string }) {
   );
 }
 
-/** Um dos três números da coorte. */
+/**
+ * Um dos três números da coorte, com uma barra verde do quanto ficou (a
+ * base, "Contratados", é a barra cheia em cinza). Sem taxa, o trilho fica
+ * vazio.
+ */
 function NumeroDaCoorte({
   rotulo,
   valor,
-  apoio
+  apoio,
+  pct,
+  base = false
 }: {
   rotulo: string;
   valor: React.ReactNode;
   apoio: string;
+  pct: number | null;
+  /** A base da coorte: barra cheia em cinza, só para dar a régua. */
+  base?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <span className="text-sm text-muted-foreground">{rotulo}</span>
-      <span className="text-2xl font-semibold tabular-nums">{valor}</span>
+      <span className="text-3xl font-semibold tabular-nums">{valor}</span>
+      <div
+        aria-hidden="true"
+        className="h-2 overflow-hidden rounded-full bg-muted/70"
+      >
+        <div
+          className={cn(
+            'h-full rounded-full',
+            base
+              ? 'bg-[hsl(var(--estado-neutro-fg)/0.45)]'
+              : PREENCHIMENTO_DE_ESTADO.combina
+          )}
+          style={{ width: `${pct ?? 0}%` }}
+        />
+      </div>
       <span className="text-xs text-muted-foreground">{apoio}</span>
     </div>
+  );
+}
+
+/** A seta entre os números: o funil da coorte, da esquerda para a direita. */
+function SetaDaCoorte() {
+  return (
+    <ChevronRight
+      aria-hidden="true"
+      className="mt-9 size-5 shrink-0 text-muted-foreground/70"
+    />
   );
 }
 
@@ -1141,8 +1298,10 @@ function PermanenciaCard() {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-start gap-3">
           <NumeroDaCoorte
+            base
+            pct={coorte && !coorte.oculto ? 100 : null}
             rotulo="Contratados"
             valor={
               coorte ? (
@@ -1157,12 +1316,16 @@ function PermanenciaCard() {
             }
             apoio="que a empresa devolveu"
           />
+          <SetaDaCoorte />
           <NumeroDaCoorte
+            pct={coorte && !coorte.oculto ? coorte.ficaram30Pct : null}
             rotulo="Ficaram 30 dias"
             valor={trinta.valor}
             apoio={trinta.apoio}
           />
+          <SetaDaCoorte />
           <NumeroDaCoorte
+            pct={coorte && !coorte.oculto ? coorte.ficaram90Pct : null}
             rotulo="Ficaram 90 dias"
             valor={noventa.valor}
             apoio={noventa.apoio}

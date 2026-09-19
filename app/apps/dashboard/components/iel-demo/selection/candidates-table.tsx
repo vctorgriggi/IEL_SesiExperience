@@ -15,6 +15,7 @@ import {
   Search
 } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import { Checkbox } from '@workspace/ui/shadcn/checkbox';
@@ -27,7 +28,6 @@ import {
 } from '@workspace/ui/shadcn/dropdown-menu';
 import { Input } from '@workspace/ui/shadcn/input';
 import { Label } from '@workspace/ui/shadcn/label';
-import { Progress } from '@workspace/ui/shadcn/progress';
 import {
   Select,
   SelectContent,
@@ -52,6 +52,12 @@ import {
   TooltipTrigger
 } from '@workspace/ui/shadcn/tooltip';
 
+import {
+  barraDaAderencia,
+  LADO,
+  textoDaAderencia,
+  TRILHO
+} from '../metricas/cores';
 import { CandidateStateBadge } from './candidate-state-badge';
 
 /** As quatro leituras da mesma lista. Sugeridos é a que abre. */
@@ -483,11 +489,21 @@ export function CandidatesTable({
                     {colunas.combina ? (
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Progress
+                          <div
                             aria-hidden="true"
-                            value={total ?? 0}
-                            className="h-2 w-28 bg-muted"
-                          />
+                            className={cn(
+                              'h-2.5 w-28 overflow-hidden rounded-full',
+                              TRILHO.trilha
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                'h-full rounded-full',
+                                barraDaAderencia(total)
+                              )}
+                              style={{ width: `${total ?? 0}%` }}
+                            />
+                          </div>
                           {total === null ? (
                             <span className="tabular-nums">
                               <span aria-hidden="true">—</span>
@@ -496,7 +512,12 @@ export function CandidatesTable({
                               </span>
                             </span>
                           ) : (
-                            <span className="tabular-nums">
+                            <span
+                              className={cn(
+                                'font-semibold tabular-nums',
+                                textoDaAderencia(total)
+                              )}
+                            >
                               {Math.round(total)}%
                               <span className="sr-only">
                                 {' '}
@@ -509,19 +530,36 @@ export function CandidatesTable({
                     ) : null}
                     {colunas.requisitos ? (
                       <TableCell className="text-right tabular-nums">
-                        {entry.technicalMatch === null ? (
-                          <>
-                            <span aria-hidden="true">—</span>
-                            <span className="sr-only">
-                              Sem percentual de requisitos
+                        <div className="flex items-center justify-end gap-2">
+                          <div
+                            aria-hidden="true"
+                            className={cn(
+                              'h-1.5 w-14 overflow-hidden rounded-full',
+                              TRILHO.trilha
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                'h-full rounded-full',
+                                LADO.empresa.preenchimento
+                              )}
+                              style={{ width: `${entry.technicalMatch ?? 0}%` }}
+                            />
+                          </div>
+                          {entry.technicalMatch === null ? (
+                            <span>
+                              <span aria-hidden="true">—</span>
+                              <span className="sr-only">
+                                Sem percentual de requisitos
+                              </span>
                             </span>
-                          </>
-                        ) : (
-                          <>
-                            {entry.technicalMatch}%
-                            <span className="sr-only"> dos requisitos</span>
-                          </>
-                        )}
+                          ) : (
+                            <span className="w-9">
+                              {entry.technicalMatch}%
+                              <span className="sr-only"> dos requisitos</span>
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     ) : null}
                     {colunas.estado ? (

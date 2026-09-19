@@ -24,8 +24,10 @@ import {
 } from '@workspace/ui/shadcn/select';
 
 /**
- * Entrada da importação na tela "De onde vem".
+ * Entrada da importação manual, no detalhe do Empregare em Integrações.
  *
+ * É o plano B: o Empregare sincroniza sozinho todo dia às 06:00, e a planilha
+ * serve quando a sincronização falha ou para uma vaga que ainda não está lá.
  * A planilha é sempre de uma vaga, então a vaga é escolhida aqui: sem ela, a
  * tela de importação não teria com o que comparar cada linha.
  */
@@ -37,12 +39,12 @@ export function ImportEntry() {
   if (vagas.length === 0) return null;
 
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
-        <CardTitle>Importar planilha do Empregare</CardTitle>
+        <CardTitle>Importar planilha manualmente</CardTitle>
         <CardDescription>
-          O arquivo é lido no seu navegador. Quando a Empregare liberar a API,
-          os mesmos dados chegam sozinhos.
+          Use se a sincronização falhar ou para uma vaga que ainda não está no
+          Empregare. O arquivo é lido no seu navegador.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -70,7 +72,10 @@ export function ImportEntry() {
             </SelectContent>
           </Select>
         </div>
-        <Button asChild>
+        <Button
+          asChild
+          variant="outline"
+        >
           <Link href={routes.dashboard.iel.jobs.byId(vagaId).import}>
             Importar planilha
           </Link>

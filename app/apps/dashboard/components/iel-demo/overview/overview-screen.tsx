@@ -15,9 +15,26 @@ import {
 import { DEMO_REFERENCE_DATE } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
-import { ArrowRight, Check, CircleAlert, Clock, RefreshCw } from 'lucide-react';
+import {
+  ArrowRight,
+  Briefcase,
+  Building2,
+  Check,
+  CircleAlert,
+  Clock,
+  Hourglass,
+  Inbox,
+  MessageCircleQuestion,
+  MessageSquareText,
+  RefreshCw,
+  Reply,
+  Send,
+  ShieldCheck,
+  type LucideIcon
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
@@ -43,6 +60,7 @@ import {
 import { RodapeDaTabela, usePaginacao } from '../jobs/table-pagination';
 import { usePageHeader } from '../layout/page-header-context';
 import { ManagerOverview } from '../manager/manager-overview';
+import { ICONE_TINGIDO, LADO } from '../metricas/cores';
 import { formatarNumero } from '../metricas/formato';
 import { Funil } from '../metricas/funil';
 import { KpiCard } from '../metricas/kpi-card';
@@ -57,6 +75,23 @@ import {
 } from './pendencias';
 
 const ROTA_DO_BI = routes.dashboard.iel.bi;
+
+/**
+ * Ícone tingido de cada grupo da fila: o tom diz o tipo de coisa antes do
+ * texto. Laranja pede atenção, cinza está parado à espera de alguém, azul é
+ * do lado da empresa, verde é pronto para seguir e verde-azulado é resposta
+ * de pessoa.
+ */
+const ICONE_DO_GRUPO: Record<
+  TipoDePendencia,
+  { Icone: LucideIcon; tom: string }
+> = {
+  respostas: { Icone: Inbox, tom: ICONE_TINGIDO.pessoa },
+  perguntas: { Icone: MessageCircleQuestion, tom: ICONE_TINGIDO.atencao },
+  envio: { Icone: Send, tom: ICONE_TINGIDO.combina },
+  questionario: { Icone: Hourglass, tom: ICONE_TINGIDO.neutro },
+  cultura: { Icone: Building2, tom: ICONE_TINGIDO.empresa }
+};
 
 /** Pendências em grupos, na ordem em que chegam (já ordenadas por urgência). */
 function agrupar(
@@ -168,10 +203,26 @@ export function OverviewScreen() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard kpi={kpis.vagasAtivas} />
-        <KpiCard kpi={kpis.respostaQuestionario} />
-        <KpiCard kpi={kpis.retornoEmpresas} />
-        <KpiCard kpi={kpis.permanencia90} />
+        <KpiCard
+          kpi={kpis.vagasAtivas}
+          icone={Briefcase}
+          tom="empresa"
+        />
+        <KpiCard
+          kpi={kpis.respostaQuestionario}
+          icone={MessageSquareText}
+          tom="pessoa"
+        />
+        <KpiCard
+          kpi={kpis.retornoEmpresas}
+          icone={Reply}
+          tom="empresa"
+        />
+        <KpiCard
+          kpi={kpis.permanencia90}
+          icone={ShieldCheck}
+          tom="combina"
+        />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -237,9 +288,9 @@ export function OverviewScreen() {
                           <TableHead
                             scope="colgroup"
                             colSpan={2}
-                            className="h-auto pt-4 text-xs font-medium text-muted-foreground"
+                            className="h-auto pt-5 pb-2.5 text-xs font-medium text-muted-foreground"
                           >
-                            {TIPO_DE_PENDENCIA_LABEL[grupo.tipo]}
+                            <GrupoDaFila tipo={grupo.tipo} />
                           </TableHead>
                         </TableRow>
                         {grupo.itens.map((pendencia) => (
@@ -337,17 +388,50 @@ export function OverviewScreen() {
   );
 }
 
-/** Uma das pontas: rótulo, % e a barra, com a base em texto pequeno. */
+/** Nome do grupo da fila com o ícone tingido no tom do tipo. */
+function GrupoDaFila({ tipo }: { tipo: TipoDePendencia }) {
+  const { Icone, tom } = ICONE_DO_GRUPO[tipo];
+  return (
+    <span className="flex items-center gap-2">
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex size-5 shrink-0 items-center justify-center rounded',
+          tom
+        )}
+      >
+        <Icone className="size-3" />
+      </span>
+      {TIPO_DE_PENDENCIA_LABEL[tipo]}
+    </span>
+  );
+}
+
+/**
+ * Uma das pontas: rótulo, % grande e a barra no tom do lado (empresa em
+ * azul, candidato em verde-azulado), com a base em texto pequeno.
+ */
 function Ponta({ kpi }: { kpi: Kpi }) {
   const id = `ponta-${kpi.id}`;
+  const lado =
+    kpi.id === 'empresas-perfil-completo' ? LADO.empresa : LADO.pessoa;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2 text-sm">
-        <span id={id}>{kpi.rotulo}</span>
+        <span
+          id={id}
+          className="flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+            className={cn('size-2 shrink-0 rounded-full', lado.preenchimento)}
+          />
+          {kpi.rotulo}
+        </span>
         {/* A barra logo abaixo já lê o valor com o rótulo. */}
         <span
           aria-hidden="true"
-          className="font-medium tabular-nums"
+          className="text-2xl font-semibold tabular-nums"
         >
           {kpi.valor === null ? '—' : `${kpi.valor}%`}
         </span>
@@ -356,7 +440,13 @@ function Ponta({ kpi }: { kpi: Kpi }) {
       <Progress
         aria-labelledby={id}
         value={kpi.valor}
-        className="h-1.5"
+        className={cn(
+          'h-3 bg-muted/70',
+          lado === LADO.empresa
+            ? '[&>[data-slot=progress-indicator]]:bg-[hsl(var(--data-empresa))]'
+            : '[&>[data-slot=progress-indicator]]:bg-[hsl(var(--data-pessoa))]',
+          '[&>[data-slot=progress-indicator]]:rounded-full'
+        )}
       />
       <span className="text-xs text-muted-foreground tabular-nums">
         {kpi.id === 'empresas-perfil-completo'

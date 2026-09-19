@@ -33,8 +33,9 @@ import {
   type FitReadingEntry
 } from '@/features/iel-demo/state/selectors';
 import type { Application, Job, Talent } from '@/features/iel-demo/types';
-import { Check, CircleAlert, Lightbulb, X } from 'lucide-react';
+import { Check, CircleAlert, CircleDashed, Lightbulb, X } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import {
   Card,
@@ -44,7 +45,6 @@ import {
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
-import { Progress } from '@workspace/ui/shadcn/progress';
 import {
   Table,
   TableBody,
@@ -61,6 +61,16 @@ import {
   TabsTrigger
 } from '@workspace/ui/shadcn/tabs';
 
+import {
+  BADGE_DE_ESTADO,
+  barraDaAderencia,
+  corDaAderencia,
+  LADO,
+  TEXTO_DE_ESTADO,
+  textoDaAderencia,
+  TRILHO,
+  type EstadoDeCor
+} from '../metricas/cores';
 import { formatarData } from '../shared/datas';
 
 /**
@@ -95,39 +105,53 @@ function posicao(valor: number): number {
 /**
  * O trilho de um ponto do dia a dia.
  *
- * Um quadrado marca onde a empresa está, em média; um círculo marca onde a
- * pessoa está. Lado nenhum vira zero quando falta: o marcador simplesmente
- * não aparece, e o que sobra no trilho é o silêncio, visível.
+ * Um quadrado azul marca onde a empresa está, em média; um círculo
+ * verde-azulado marca onde a pessoa está. Entre os dois, uma faixa clara diz a
+ * distância: verde quando estão perto, vermelha quando estão longe. Lado
+ * nenhum vira zero quando falta: o marcador simplesmente não aparece, e o que
+ * sobra no trilho é o silêncio, visível.
  */
 function Trilho({ entry }: { entry: AdherenceAxisEntry | null }) {
   const empresa = entry?.companyMean ?? null;
   const pessoa = entry?.candidateValue ?? null;
   const cinza = empresa === null || pessoa === null;
+  const perto = (entry?.adherence ?? 0) >= ADHERENCE_THRESHOLD;
 
   return (
     <div
       aria-hidden="true"
-      className="relative mr-6 h-1 rounded-full bg-border"
+      className={cn('relative mr-6 h-1.5 rounded-full', TRILHO.trilha)}
     >
+      {empresa === null || pessoa === null ? null : (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'absolute -top-0.5 h-2.5 rounded-full',
+            perto ? TRILHO.perto : TRILHO.longe
+          )}
+          style={{
+            left: `${Math.min(posicao(empresa), posicao(pessoa))}%`,
+            width: `${Math.abs(posicao(empresa) - posicao(pessoa))}%`
+          }}
+        />
+      )}
       {empresa === null ? null : (
         <span
           aria-hidden="true"
-          className={
-            cinza
-              ? 'absolute -top-1 size-3 -translate-x-1/2 rounded-xs bg-muted-foreground/50'
-              : 'absolute -top-1 size-3 -translate-x-1/2 rounded-xs bg-foreground'
-          }
+          className={cn(
+            'absolute -top-1 size-3.5 -translate-x-1/2 rounded-xs',
+            cinza ? 'bg-muted-foreground/50' : LADO.empresa.preenchimento
+          )}
           style={{ left: `${posicao(empresa)}%` }}
         />
       )}
       {pessoa === null ? null : (
         <span
           aria-hidden="true"
-          className={
-            cinza
-              ? 'absolute -top-1 size-3 -translate-x-1/2 rounded-full border-2 border-muted-foreground/60 bg-background'
-              : 'absolute -top-1 size-3 -translate-x-1/2 rounded-full border-2 border-foreground bg-background'
-          }
+          className={cn(
+            'absolute -top-1 size-3.5 -translate-x-1/2 rounded-full border-[3px] bg-background',
+            cinza ? 'border-muted-foreground/60' : LADO.pessoa.borda
+          )}
           style={{ left: `${posicao(pessoa)}%` }}
         />
       )}
@@ -188,22 +212,29 @@ function estadoDoPonto(entry: AdherenceAxisEntry): EstadoDeLeitura {
   return (entry.adherence ?? 0) >= ADHERENCE_THRESHOLD ? 'combina' : 'difere';
 }
 
+const TOM_DO_PONTO: Record<EstadoDeLeitura, EstadoDeCor> = {
+  combina: 'combina',
+  difere: 'difere',
+  faltando: 'atencao',
+  'sem-resposta': 'neutro'
+};
+
 function EstadoDoPonto({ estado }: { estado: EstadoDeLeitura }) {
-  const icone =
-    estado === 'combina' ? (
-      <Check className="text-green-600 dark:text-green-500" />
-    ) : estado === 'difere' ? (
-      <X className="text-destructive" />
-    ) : (
-      <CircleAlert className="text-[hsl(var(--brand-accent))]" />
-    );
+  const Icone =
+    estado === 'combina'
+      ? Check
+      : estado === 'difere'
+        ? X
+        : estado === 'faltando'
+          ? CircleAlert
+          : CircleDashed;
 
   return (
     <Badge
       variant="outline"
-      className="px-1.5 text-muted-foreground"
+      className={cn('px-1.5', BADGE_DE_ESTADO[TOM_DO_PONTO[estado]])}
     >
-      {icone}
+      <Icone aria-hidden="true" />
       {COPY.estado(estado)}
     </Badge>
   );
@@ -263,7 +294,12 @@ export function FitCards({
       <Card>
         <CardHeader>
           <CardDescription>{COPY.fit.label}</CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
+          <CardTitle
+            className={cn(
+              'text-3xl font-semibold tracking-tight tabular-nums',
+              percentual === null ? undefined : textoDaAderencia(percentual)
+            )}
+          >
             {percentual === null ? (
               <>
                 <span aria-hidden="true">—</span>
@@ -275,11 +311,14 @@ export function FitCards({
           </CardTitle>
           {percentual === null ? null : (
             <CardAction>
-              <Badge variant="outline">
+              <Badge
+                variant="outline"
+                className={BADGE_DE_ESTADO[corDaAderencia(percentual)]}
+              >
                 {percentual >= ADHERENCE_THRESHOLD ? (
-                  <Check className="text-green-600 dark:text-green-500" />
+                  <Check aria-hidden="true" />
                 ) : (
-                  <X className="text-destructive" />
+                  <X aria-hidden="true" />
                 )}
                 {percentual >= ADHERENCE_THRESHOLD ? 'acima' : 'abaixo'} de{' '}
                 {ADHERENCE_THRESHOLD}%
@@ -288,18 +327,38 @@ export function FitCards({
           )}
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
-          <div className="relative">
-            {/* O número acima já diz o valor: a barra é só desenho. */}
-            <Progress
-              aria-hidden="true"
-              value={percentual ?? 0}
-              className="h-1.5 bg-muted"
-            />
+          {/* O número acima já diz o valor: a barra é só desenho. */}
+          <div
+            aria-hidden="true"
+            className="relative"
+          >
+            <div
+              className={cn(
+                'h-2.5 overflow-hidden rounded-full',
+                TRILHO.trilha
+              )}
+            >
+              <div
+                className={cn(
+                  'h-full rounded-full',
+                  barraDaAderencia(percentual)
+                )}
+                style={{ width: `${percentual ?? 0}%` }}
+              />
+            </div>
             <span
-              aria-hidden="true"
-              className="absolute -top-[3px] h-3 w-px bg-[hsl(var(--brand-accent))]"
+              className={cn('absolute -top-1 h-[18px] w-0.5', TRILHO.minimo)}
               style={{ left: `${ADHERENCE_THRESHOLD}%` }}
             />
+            <span
+              className={cn(
+                'relative mt-1 block w-fit -translate-x-1/2 text-[11px] font-medium',
+                TEXTO_DE_ESTADO.atencao
+              )}
+              style={{ left: `${ADHERENCE_THRESHOLD}%` }}
+            >
+              mínimo {ADHERENCE_THRESHOLD}%
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
             {percentual === null
@@ -331,11 +390,15 @@ export function FitCards({
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
-          <Progress
+          <div
             aria-hidden="true"
-            value={technicalMatch ?? 0}
-            className="h-1.5 bg-muted *:data-[slot=progress-indicator]:bg-muted-foreground"
-          />
+            className={cn('h-2.5 overflow-hidden rounded-full', TRILHO.trilha)}
+          >
+            <div
+              className={cn('h-full rounded-full', LADO.empresa.preenchimento)}
+              style={{ width: `${technicalMatch ?? 0}%` }}
+            />
+          </div>
           <p className="text-xs text-muted-foreground">
             {rank === null
               ? 'sem posição nesta vaga'
@@ -417,7 +480,26 @@ export function TalentFitView({
                     scope="col"
                     className="w-[200px]"
                   >
-                    <span aria-hidden="true">Empresa ■ · {primeiroNome} ●</span>
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <span
+                        className={cn(
+                          'size-2.5 rounded-xs',
+                          LADO.empresa.preenchimento
+                        )}
+                      />
+                      Empresa
+                      <span className="text-muted-foreground">·</span>
+                      <span
+                        className={cn(
+                          'size-2.5 rounded-full border-2 bg-background',
+                          LADO.pessoa.borda
+                        )}
+                      />
+                      {primeiroNome}
+                    </span>
                     <span className="sr-only">
                       Posição da empresa e de {primeiroNome}
                     </span>

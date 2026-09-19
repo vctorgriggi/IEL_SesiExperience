@@ -1,10 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  CRITERION_STATE_META,
-  getCriterionAnalysis
-} from '@/features/iel-demo/analysis/criterion-states';
+import { getCriterionAnalysis } from '@/features/iel-demo/analysis/criterion-states';
 import { FIT_AXES } from '@/features/iel-demo/analysis/fit-axes';
 import { COPY } from '@/features/iel-demo/copy';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -20,7 +17,7 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { routes } from '@workspace/routes';
 import { Alert, toast } from '@workspace/ui';
-import { Badge } from '@workspace/ui/shadcn/badge';
+import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
   Table,
@@ -32,6 +29,13 @@ import {
 } from '@workspace/ui/shadcn/table';
 
 import { usePageHeader } from '../layout/page-header-context';
+import {
+  barraDaAderencia,
+  LADO,
+  textoDaAderencia,
+  TRILHO
+} from '../metricas/cores';
+import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 import { CandidateStateBadge } from './candidate-state-badge';
 
 /**
@@ -132,13 +136,16 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
             <TableRow>
               <TableCell className="font-medium">{COPY.fit.label}</TableCell>
               {entradas.map((entry) => (
-                <TableCell
-                  key={entry.application.id}
-                  className="text-base font-semibold tabular-nums"
-                >
-                  {entry.adherence.total === null
-                    ? '—'
-                    : `${Math.round(entry.adherence.total)}%`}
+                <TableCell key={entry.application.id}>
+                  <BarraComNumero
+                    valor={entry.adherence.total}
+                    barra={barraDaAderencia(entry.adherence.total)}
+                    texto={cn(
+                      'text-base font-semibold',
+                      textoDaAderencia(entry.adherence.total)
+                    )}
+                    grossa
+                  />
                 </TableCell>
               ))}
             </TableRow>
@@ -148,13 +155,11 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
                 {COPY.technical.label}
               </TableCell>
               {entradas.map((entry) => (
-                <TableCell
-                  key={entry.application.id}
-                  className="tabular-nums"
-                >
-                  {entry.technicalMatch === null
-                    ? '—'
-                    : `${entry.technicalMatch}%`}
+                <TableCell key={entry.application.id}>
+                  <BarraComNumero
+                    valor={entry.technicalMatch}
+                    barra={LADO.empresa.preenchimento}
+                  />
                 </TableCell>
               ))}
             </TableRow>
@@ -207,12 +212,7 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
                   );
                   return (
                     <TableCell key={entry.application.id}>
-                      <Badge
-                        variant="outline"
-                        className="px-1.5 text-muted-foreground"
-                      >
-                        {CRITERION_STATE_META[analise.state].label}
-                      </Badge>
+                      <CriterionStateHeadline state={analise.state} />
                     </TableCell>
                   );
                 })}
@@ -247,6 +247,40 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+/** Número com a barra ao lado: a mesma leitura da tabela da vaga. */
+function BarraComNumero({
+  valor,
+  barra,
+  texto,
+  grossa = false
+}: {
+  valor: number | null;
+  barra: string;
+  texto?: string;
+  grossa?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        aria-hidden="true"
+        className={cn(
+          'w-24 overflow-hidden rounded-full',
+          grossa ? 'h-2.5' : 'h-1.5',
+          TRILHO.trilha
+        )}
+      >
+        <div
+          className={cn('h-full rounded-full', barra)}
+          style={{ width: `${valor ?? 0}%` }}
+        />
+      </div>
+      <span className={cn('tabular-nums', texto)}>
+        {valor === null ? '—' : `${Math.round(valor)}%`}
+      </span>
     </div>
   );
 }

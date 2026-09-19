@@ -17,10 +17,20 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { CultureRespondentInvite } from '@/features/iel-demo/types';
-import { Eye, EyeOff, MoreVertical, Plus, Trash2 } from 'lucide-react';
+import {
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  Eye,
+  EyeOff,
+  MoreVertical,
+  Plus,
+  Trash2
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
@@ -49,6 +59,7 @@ import {
 } from '@workspace/ui/shadcn/table';
 
 import { SimularEnvioDialog } from '../chat/simular-envio-dialog';
+import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
 
 /**
  * Quem foi convidado e quem ainda falta (M2).
@@ -85,6 +96,31 @@ const STATUS_LABEL: Record<CultureInviteStatus, string> = {
   aberto: 'Aguardando',
   expirado: 'Prazo vencido'
 };
+
+const STATUS_TOM: Record<CultureInviteStatus, EstadoDeCor> = {
+  respondido: 'combina',
+  aberto: 'neutro',
+  expirado: 'atencao'
+};
+
+const STATUS_ICONE: Record<CultureInviteStatus, typeof CircleCheck> = {
+  respondido: CircleCheck,
+  aberto: Clock,
+  expirado: CircleAlert
+};
+
+function StatusBadge({ status }: { status: CultureInviteStatus }) {
+  const Icone = STATUS_ICONE[status];
+  return (
+    <Badge
+      variant="outline"
+      className={cn('px-1.5', BADGE_DE_ESTADO[STATUS_TOM[status]])}
+    >
+      <Icone aria-hidden="true" />
+      {STATUS_LABEL[status]}
+    </Badge>
+  );
+}
 
 /** "davi.rezende@cerrado.example.com" vira "d•••@cerrado.example.com". */
 function maskEmail(email: string): string {
@@ -277,8 +313,8 @@ export function CultureSampleTable({ companyId }: { companyId: string }) {
                       {ROLE_LABEL[invite.role]}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {STATUS_LABEL[getCultureInviteStatus(invite)]}
+                  <TableCell>
+                    <StatusBadge status={getCultureInviteStatus(invite)} />
                   </TableCell>
                   <TableCell className="text-right">
                     <InviteActions
