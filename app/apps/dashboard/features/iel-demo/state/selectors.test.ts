@@ -54,7 +54,7 @@ describe('resumo de vaga e motivo de ação', () => {
     expect(initialSummary.applicationsCount).toBe(4);
     expect(initialSummary.openClarificationsCount).toBe(1);
     expect(initialSummary.actionReason).toContain(
-      '1 solicitação(ões) de esclarecimento sem resposta'
+      '1 solicitação de esclarecimento sem resposta'
     );
 
     const answered = demoReducer(state, {
@@ -66,7 +66,7 @@ describe('resumo de vaga e motivo de ação', () => {
     });
 
     expect(getJobSummary(answered, job).actionReason).toContain(
-      '1 resposta(s) aguardando incorporação'
+      '1 resposta aguardando incorporação'
     );
   });
 
@@ -77,7 +77,7 @@ describe('resumo de vaga e motivo de ação', () => {
 
     expect(summary.openClarificationsCount).toBe(0);
     expect(summary.actionReason).toContain(
-      '3 candidatura(s) com critérios sem informação'
+      '3 candidaturas com critérios sem informação'
     );
     expect(summary.company?.name).toBe('Oficina Pantanal');
   });

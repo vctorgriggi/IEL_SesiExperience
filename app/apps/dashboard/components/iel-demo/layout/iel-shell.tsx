@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { DEMO_PERSONAS } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getOpenClarifications,
@@ -22,8 +23,6 @@ import { HugeiconsIcon } from '@hugeicons/react';
 
 import { routes } from '@workspace/routes';
 import { Button, cn, Dialog, FilterNativeSelect, toast } from '@workspace/ui';
-
-import { DemoDataBadge } from '../shared/ui';
 
 type NavItem = {
   href: string;
@@ -86,6 +85,17 @@ function useNavItems(): NavItem[] {
   ];
 }
 
+function useIsActive() {
+  const pathname = usePathname();
+  return (href: string) =>
+    pathname === href ||
+    (href !== routes.dashboard.iel.index && pathname.startsWith(href));
+}
+
+/**
+ * Faixa de controle da demonstração. Fica deliberadamente fora da navegação
+ * do produto: é andaime de apresentação, não funcionalidade.
+ */
 function DemoBar() {
   const { state, dispatch, persona, resetDemo } = useIelDemo();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -93,25 +103,31 @@ function DemoBar() {
   const iel = routes.dashboard.iel;
 
   return (
-    <div className="border-b border-dashed border-border bg-muted/60">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-4 py-2 text-xs md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <DemoDataBadge />
-          <span className="text-muted-foreground">
-            Ambiente de demonstração: nenhuma mensagem é enviada e nenhum
-            sistema externo é alterado.
+    <div className="border-b border-border bg-foreground/[0.03]">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-2 px-5 py-2">
+        <p className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full bg-warning"
+          />
+          <span className="font-medium text-foreground">
+            Dados fictícios — demonstração.
           </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+          <span className="hidden truncate sm:inline">
+            Nenhuma mensagem é enviada e nenhum sistema externo é alterado.
+          </span>
+        </p>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <label
             htmlFor="demo-persona"
-            className="font-medium text-foreground"
+            className="text-xs text-muted-foreground"
           >
-            Visualizar como — demonstração
+            Visualizar como
           </label>
           <FilterNativeSelect
             id="demo-persona"
-            className="h-8 w-60 text-xs"
+            className="h-7 w-56 text-xs"
             value={persona.id}
             onValueChange={(value) => {
               dispatch({ type: 'set-persona', personaId: value });
@@ -129,19 +145,27 @@ function DemoBar() {
               </option>
             ))}
           </FilterNativeSelect>
+          <span
+            aria-hidden="true"
+            className="hidden h-4 w-px bg-border sm:block"
+          />
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 px-2 text-xs"
+            aria-label="Roteiro da demonstração"
             onClick={() => setShowScript(true)}
           >
-            Roteiro da demonstração
+            Roteiro
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
+            className="h-7 px-2 text-xs"
+            aria-label="Reiniciar demonstração"
             onClick={() => setConfirmReset(true)}
           >
-            Reiniciar demonstração
+            Reiniciar
           </Button>
         </div>
       </div>
@@ -278,82 +302,192 @@ function DemoBar() {
         </ol>
         <p className="mt-4 text-xs text-muted-foreground">
           Estado atual: {state.clarifications.length} solicitações registradas,{' '}
-          {state.referrals.length} encaminhamento(s).
+          {plural(state.referrals.length, 'encaminhamento', 'encaminhamentos')}.
         </p>
       </Dialog>
     </div>
   );
 }
 
-/** Casca da Central IEL: barra de demonstração, navegação e conteúdo. */
-export function IelShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const navItems = useNavItems();
+function BrandMark() {
+  return (
+    <Link
+      href={routes.dashboard.iel.index}
+      className="flex items-center gap-2.5 rounded-[var(--control-radius)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+    >
+      <span
+        aria-hidden="true"
+        className="grid size-9 shrink-0 place-items-center rounded-[var(--control-radius)] bg-sidebar-primary text-[13px] font-bold tracking-tight text-sidebar-primary-foreground"
+      >
+        IEL
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold leading-tight text-sidebar-foreground">
+          Central de Seleção
+        </span>
+        <span className="block truncate text-[11px] leading-tight text-sidebar-foreground/60">
+          Centro de Empregabilidade
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function NavBadge({ value, muted }: { value: number; muted?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'ml-auto min-w-5 shrink-0 rounded-[var(--radius-pill)] px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums',
+        muted
+          ? 'bg-sidebar-foreground/15 text-sidebar-foreground'
+          : 'bg-sidebar-primary text-sidebar-primary-foreground'
+      )}
+    >
+      {value}
+    </span>
+  );
+}
+
+function Sidebar({ items }: { items: NavItem[] }) {
+  const isActive = useIsActive();
   const { persona } = useIelDemo();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <DemoBar />
-      <div className="border-b border-border bg-card">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Central de Seleção e Compatibilidade IEL
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      <div className="px-4 py-4">
+        <BrandMark />
+      </div>
+
+      <nav
+        aria-label="Navegação principal"
+        className="flex-1 overflow-y-auto px-3 pb-4"
+      >
+        <ul className="space-y-0.5">
+          {items.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-2.5 rounded-[var(--control-radius)] px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                    active
+                      ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                      : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
+                  )}
+                >
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={17}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                  <span className="truncate">{item.label}</span>
+                  {item.badge ? (
+                    <NavBadge
+                      value={item.badge}
+                      muted={active}
+                    />
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div
+        className="border-t border-sidebar-border px-4 py-3"
+        title={persona.description}
+      >
+        <p className="text-[11px] font-medium text-sidebar-foreground/80">
+          {persona.label}
+        </p>
+        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-sidebar-foreground/50">
+          {persona.description}
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+function MobileNav({ items }: { items: NavItem[] }) {
+  const isActive = useIsActive();
+
+  return (
+    <div className="border-b border-sidebar-border bg-sidebar lg:hidden">
+      <div className="px-4 py-3">
+        <BrandMark />
+      </div>
+      <nav
+        aria-label="Navegação principal"
+        className="overflow-x-auto px-2 pb-2"
+      >
+        <ul className="flex w-max gap-1">
+          {items.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-2 whitespace-nowrap rounded-[var(--control-radius)] px-3 py-1.5 text-sm transition-colors',
+                    active
+                      ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                      : 'text-sidebar-foreground/75'
+                  )}
+                >
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={16}
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                  {item.badge ? (
+                    <NavBadge
+                      value={item.badge}
+                      muted={active}
+                    />
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
+/** Casca da Central IEL: faixa de demonstração, navegação e conteúdo. */
+export function IelShell({ children }: { children: ReactNode }) {
+  const navItems = useNavItems();
+
+  return (
+    <div
+      data-iel-theme=""
+      className="min-h-dvh bg-background text-foreground"
+    >
+      <MobileNav items={navItems} />
+      <div className="flex">
+        <Sidebar items={navItems} />
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+          <DemoBar />
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-6">
+            {children}
+          </main>
+          <footer className="mt-auto border-t border-border px-5 py-4">
+            <p className="mx-auto max-w-[1600px] text-[11px] leading-relaxed text-muted-foreground">
+              Protótipo de demonstração do IEL. Empresas, pessoas e avaliações
+              são fictícias. Integrações com sistemas de recrutamento e
+              avaliação seriam conectadas depois: aqui elas aparecem como fontes
+              simuladas.
             </p>
-            <p className="text-xs text-muted-foreground">
-              {persona.kind === 'analista'
-                ? 'Reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada.'
-                : persona.description}
-            </p>
-          </div>
-          <nav aria-label="Navegação principal">
-            <ul className="flex flex-wrap gap-1">
-              {navItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== routes.dashboard.iel.index &&
-                    pathname.startsWith(item.href));
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={cn(
-                        'inline-flex items-center gap-2 rounded-[var(--control-radius)] px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-                        isActive
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      )}
-                    >
-                      <HugeiconsIcon
-                        icon={item.icon}
-                        size={16}
-                        aria-hidden="true"
-                      />
-                      {item.label}
-                      {item.badge ? (
-                        <span className="rounded-[var(--radius-pill)] bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
-                          {item.badge}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          </footer>
         </div>
       </div>
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6">
-        {children}
-      </main>
-      <footer className="border-t border-border bg-card px-4 py-3">
-        <p className="mx-auto max-w-[1600px] text-[11px] text-muted-foreground">
-          Protótipo de demonstração do IEL. Empresas, pessoas e avaliações são
-          fictícias. Integrações com sistemas de recrutamento e avaliação seriam
-          conectadas depois: aqui elas aparecem como fontes simuladas.
-        </p>
-      </footer>
     </div>
   );
 }

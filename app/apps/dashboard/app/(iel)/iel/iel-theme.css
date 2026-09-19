@@ -1,0 +1,106 @@
+/*
+ * Paleta da Central IEL.
+ *
+ * O tema padrão do Arki é monocromático âmbar: `--success`, `--warning` e
+ * `--info` apontam todos para tons de `--chart-*` laranja. Isso funciona num
+ * SaaS genérico, mas quebra esta aplicação, onde a leitura depende de
+ * distinguir "alinhamento identificado" de "ponto a esclarecer" e de
+ * "divergência identificada" num relance.
+ *
+ * Aqui os tokens são redefinidos com um azul institucional (no espírito da
+ * identidade do Sistema Indústria) como cor de marca e uma escala semântica
+ * de verde/âmbar/vermelho/cinza para os estados. O escopo é o atributo
+ * `data-iel-theme`, então nada disso vaza para as rotas autenticadas do
+ * produto.
+ *
+ * Os estados nunca dependem só de cor: cada um carrega ícone e rótulo
+ * textual. A cor é reforço, não é o canal principal.
+ */
+
+[data-iel-theme] {
+  /* Marca institucional. */
+  --primary: 207 100% 24%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 207 88% 38%;
+
+  /* Superfícies levemente frias, para o azul não parecer deslocado. */
+  --background: 210 33% 98%;
+  --foreground: 213 30% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 30% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 30% 15%;
+  --secondary: 210 25% 95%;
+  --secondary-foreground: 213 25% 27%;
+  --muted: 210 30% 96%;
+  --muted-foreground: 215 16% 42%;
+  --accent: 207 85% 95%;
+  --accent-foreground: 207 100% 24%;
+  --border: 214 22% 89%;
+  --border-strong: 214 20% 80%;
+  --input: 214 22% 86%;
+
+  /* Escala semântica dos estados de critério. */
+  --success: 153 58% 30%;
+  --success-foreground: 0 0% 100%;
+  --warning: 34 94% 42%;
+  --warning-foreground: 0 0% 100%;
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --info: 205 85% 38%;
+  --info-foreground: 0 0% 100%;
+
+  /* Série categórica: matizes distintos, não degradês da mesma cor. */
+  --chart-1: 207 90% 32%;
+  --chart-2: 189 82% 32%;
+  --chart-3: 153 58% 34%;
+  --chart-4: 34 94% 46%;
+  --chart-5: 268 42% 50%;
+
+  --sidebar: 212 42% 16%;
+  --sidebar-foreground: 210 28% 88%;
+  --sidebar-primary: 207 88% 46%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 212 38% 24%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 212 34% 26%;
+  --sidebar-ring: 207 88% 46%;
+
+  /* Cantos um pouco mais secos que o padrão do starter. */
+  --card-radius: 0.75rem;
+  --control-radius: 0.5rem;
+}
+
+[data-iel-theme].dark,
+.dark [data-iel-theme] {
+  --primary: 207 85% 55%;
+  --primary-foreground: 213 45% 11%;
+  --ring: 207 85% 55%;
+
+  --background: 213 35% 10%;
+  --foreground: 210 25% 93%;
+  --card: 213 32% 13%;
+  --card-foreground: 210 25% 93%;
+  --popover: 213 32% 13%;
+  --popover-foreground: 210 25% 93%;
+  --secondary: 213 26% 19%;
+  --secondary-foreground: 210 25% 93%;
+  --muted: 213 26% 17%;
+  --muted-foreground: 213 14% 66%;
+  --accent: 213 30% 22%;
+  --accent-foreground: 207 85% 72%;
+  --border: 213 22% 24%;
+  --border-strong: 213 20% 34%;
+  --input: 213 22% 26%;
+
+  --success: 153 48% 46%;
+  --warning: 36 88% 56%;
+  --destructive: 0 70% 60%;
+  --info: 205 80% 58%;
+
+  --chart-1: 207 85% 58%;
+  --chart-2: 189 72% 48%;
+  --chart-3: 153 48% 48%;
+  --chart-4: 36 88% 58%;
+  --chart-5: 268 60% 68%;
+}

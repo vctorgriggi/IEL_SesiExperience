@@ -11,6 +11,7 @@ import {
   DEMO_PERSONAS,
   DEMO_TALENTS
 } from '../fixtures';
+import { plural } from '../format';
 import type {
   Application,
   Clarification,
@@ -281,13 +282,16 @@ export function getJobSummary(state: DemoState, job: Job): JobSummary {
 
   let actionReason: string | null = null;
   if (answered > 0) {
-    actionReason = `${answered} resposta(s) aguardando incorporação na análise`;
+    actionReason = `${plural(answered, 'resposta aguardando', 'respostas aguardando')} incorporação na análise`;
   } else if (open > 0) {
-    actionReason = `${open} solicitação(ões) de esclarecimento sem resposta`;
+    actionReason = `${plural(open, 'solicitação', 'solicitações')} de esclarecimento sem resposta`;
   } else if (missingInfo > 0) {
-    actionReason = `${missingInfo} candidatura(s) com critérios sem informação`;
+    actionReason = `${plural(missingInfo, 'candidatura', 'candidaturas')} com critérios sem informação`;
   } else if (readyToRefer > 0) {
-    actionReason = `${readyToRefer} candidatura(s) prontas para encaminhar`;
+    actionReason =
+      readyToRefer === 1
+        ? '1 candidatura pronta para encaminhar'
+        : `${readyToRefer} candidaturas prontas para encaminhar`;
   }
 
   return {

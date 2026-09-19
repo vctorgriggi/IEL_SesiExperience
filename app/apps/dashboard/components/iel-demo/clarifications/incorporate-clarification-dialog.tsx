@@ -5,6 +5,7 @@ import {
   CRITERION_STATE_META,
   getCriterionAnalysis
 } from '@/features/iel-demo/analysis/criterion-states';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import type { IncorporationDecision } from '@/features/iel-demo/state/reducer';
 import {
@@ -92,11 +93,11 @@ export function IncorporateClarificationDialog({
               });
               onHide();
               toast.success(
-                `Análise atualizada em ${applied.length} critério(s). A origem da mudança ficou registrada.`
+                `Análise atualizada em ${plural(applied.length, 'critério', 'critérios')}. A origem da mudança ficou registrada.`
               );
             }}
           >
-            Incorporar em {applied.length} critério(s)
+            Incorporar em {plural(applied.length, 'critério', 'critérios')}
           </Button>
         </>
       }

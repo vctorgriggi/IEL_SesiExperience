@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DEMO_COMPANIES } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplicationsByJob,
@@ -38,7 +39,7 @@ export function CompaniesScreen() {
       <IelPageHeader
         eyebrow="Empresas atendidas na base demo"
         title="Empresas"
-        description="A descrição institucional é separada das condições concretas de cada equipe. As empresas já existem na base: o protótipo não tem cadastro."
+        description="Descrição institucional e condições concretas de cada equipe."
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -64,13 +65,13 @@ export function CompaniesScreen() {
                   {company.institutionalDescription}
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  <Chip>{jobs.length} vaga(s)</Chip>
-                  <Chip>{teams.length} equipe(s)</Chip>
+                  <Chip>{plural(jobs.length, 'vaga', 'vagas')}</Chip>
+                  <Chip>{plural(teams.length, 'equipe', 'equipes')}</Chip>
                   <Chip
                     tone={pendingConditions.length > 0 ? 'atencao' : 'positivo'}
                   >
                     {pendingConditions.length > 0
-                      ? `${pendingConditions.length} condição(ões) a confirmar`
+                      ? `${plural(pendingConditions.length, 'condição', 'condições')} a confirmar`
                       : 'Condições confirmadas'}
                   </Chip>
                 </div>
@@ -288,7 +289,11 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                       <Chip>{applications.length} candidaturas</Chip>
                       {clarifications.length > 0 ? (
                         <Chip tone="atencao">
-                          {clarifications.length} pendência(s)
+                          {plural(
+                            clarifications.length,
+                            'pendência',
+                            'pendências'
+                          )}
                         </Chip>
                       ) : null}
                     </div>

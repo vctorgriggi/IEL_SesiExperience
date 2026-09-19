@@ -47,7 +47,7 @@ export function ManagerOverview() {
       <IelPageHeader
         eyebrow={`${company.sector} · ${company.location}`}
         title={`${company.name} — painel da empresa`}
-        description="Você vê as suas vagas, os perfis que o IEL compartilhou e as perguntas dirigidas à sua equipe. A base completa do IEL e outras empresas não aparecem aqui."
+        description="Suas vagas, os perfis que o IEL encaminhou e as perguntas dirigidas à sua equipe."
       />
 
       <section className="grid gap-4 sm:grid-cols-3">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DEMO_SYNC_EVENTS } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { applySyncEventPayload } from '@/features/iel-demo/state/reducer';
 import { getApplication, getTalent } from '@/features/iel-demo/state/selectors';
@@ -40,7 +41,7 @@ export function DataSourcesScreen() {
       <IelPageHeader
         eyebrow="Integração simulada"
         title="Fontes de dados"
-        description="O protótipo mostra de onde cada tipo de informação viria. Nenhuma credencial é usada e nenhuma conexão real é aberta."
+        description="De onde vem cada tipo de informação, com a última atualização recebida."
       />
 
       <Alert variant="default">
@@ -241,7 +242,7 @@ export function DataSourcesScreen() {
         <p className="text-xs text-muted-foreground">
           Base local: {totals.talents} talentos, {totals.applications}{' '}
           candidaturas, {totals.clarifications} solicitações e{' '}
-          {totals.referrals} encaminhamento(s).
+          {plural(totals.referrals, 'encaminhamento', 'encaminhamentos')}.
         </p>
       </Card>
     </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   CLARIFICATION_STATE_LABEL,
@@ -37,7 +38,13 @@ import {
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import { CriterionStateLegend } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
-import { Chip, formatDate, formatDateTime, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  formatDate,
+  formatDateTime,
+  IelPageHeader,
+  InfoHint
+} from '../shared/ui';
 import { AssistantPanel } from './assistant-panel';
 import { CandidatesMatrix } from './candidates-matrix';
 
@@ -152,10 +159,12 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
           <Chip tone="info">{JOB_STAGE_LABEL[job.stage]}</Chip>
           <Chip>{job.workShift}</Chip>
           <Chip>{job.location}</Chip>
-          <Chip>{applications.length} candidaturas</Chip>
+          <Chip>
+            {plural(applications.length, 'candidatura', 'candidaturas')}
+          </Chip>
           <Chip tone={answered.length > 0 ? 'atencao' : 'neutro'}>
             {answered.length > 0
-              ? `${answered.length} resposta(s) para incorporar`
+              ? `${plural(answered.length, 'resposta', 'respostas')} para incorporar`
               : 'Nenhuma resposta pendente'}
           </Chip>
           <span className="text-xs text-muted-foreground">
@@ -276,13 +285,20 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
               />
             </Card>
 
-            <Card padding="sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
               <CriterionStateLegend />
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                O asterisco (*) marca requisitos obrigatórios. Um requisito não
-                atendido é sinalizado, não elimina automaticamente.
+              <span
+                aria-hidden="true"
+                className="hidden h-3 w-px bg-border sm:block"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-semibold">*</span> requisito obrigatório
+                <InfoHint
+                  className="ml-1"
+                  label="Um requisito obrigatório não atendido é sinalizado para decisão do analista. A candidatura não é eliminada automaticamente."
+                />
               </p>
-            </Card>
+            </div>
 
             <AssistantPanel
               job={job}

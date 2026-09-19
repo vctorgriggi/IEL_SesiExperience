@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DEMO_TALENTS } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplicationsByTalent,
@@ -69,7 +70,7 @@ export function TalentsScreen() {
       <IelPageHeader
         eyebrow="Perfis autorizados na base demo"
         title="Talentos"
-        description="Cada pessoa aparece uma única vez. As candidaturas são vínculos desse perfil com vagas específicas."
+        description="Uma linha por pessoa. As candidaturas são vínculos desse perfil com vagas."
       />
 
       <Card padding="sm">
@@ -161,7 +162,12 @@ export function TalentsScreen() {
                         </span>
                       ) : (
                         <Chip tone="info">
-                          {assessments.length} resultado(s) de origem
+                          {plural(
+                            assessments.length,
+                            'resultado',
+                            'resultados'
+                          )}{' '}
+                          de origem
                         </Chip>
                       )}
                     </TableCell>

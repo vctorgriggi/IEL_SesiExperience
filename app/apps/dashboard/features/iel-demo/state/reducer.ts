@@ -1,4 +1,5 @@
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
+import { plural } from '../format';
 import type {
   Clarification,
   ClarificationEffect,
@@ -593,7 +594,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           at: action.at,
           actor: 'Analista IEL',
           action: 'Encaminhamento registrado',
-          description: `${referral.items.length} perfil(is) compartilhado(s) com a empresa na vaga ${action.input.jobId}. Atualização externa não enviada — demonstração.`,
+          description: `${plural(referral.items.length, 'perfil compartilhado', 'perfis compartilhados')} com a empresa na vaga ${action.input.jobId}. Atualização externa não enviada — demonstração.`,
           entityRef: id
         })
       };

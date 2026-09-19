@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { buildReferralDraft } from '@/features/iel-demo/analysis/assistant';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
@@ -66,7 +67,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
         <IelPageHeader
           eyebrow={`${company?.name} · ${job.title}`}
           title="Preparação do encaminhamento"
-          description="Reúna candidatos de uma única vaga, revise os resumos e registre o encaminhamento."
+          description="Reúna candidatos de uma vaga, revise os resumos e registre o encaminhamento."
           actions={
             <Link href={iel.jobs.byId(job.id).index}>
               <Button variant="outline">Voltar para a mesa de seleção</Button>
@@ -85,7 +86,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
           {existingReferral ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Esta vaga já tem um encaminhamento registrado com{' '}
-              {existingReferral.items.length} perfil(is).{' '}
+              {plural(existingReferral.items.length, 'perfil', 'perfis')}.{' '}
               <Link
                 className="underline"
                 href={iel.referrals.byId(existingReferral.id)}
@@ -120,7 +121,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
       <IelPageHeader
         eyebrow={`${company?.name} · ${job.title}`}
         title="Preparação do encaminhamento"
-        description="Revise o que a empresa vai receber. Notas internas e dados de outras empresas ficam fora por padrão."
+        description="Revise o que a empresa vai receber."
         actions={
           <Link href={iel.jobs.byId(job.id).index}>
             <Button variant="outline">Voltar para a mesa de seleção</Button>
@@ -128,7 +129,9 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
         }
       >
         <div className="flex flex-wrap items-center gap-2">
-          <Chip tone="info">{selected.length} perfil(is) na lista</Chip>
+          <Chip tone="info">
+            {plural(selected.length, 'perfil', 'perfis')} na lista
+          </Chip>
           {existingReferral ? (
             <Chip tone="atencao">
               Já existe encaminhamento registrado nesta vaga

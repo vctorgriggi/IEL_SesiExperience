@@ -18,7 +18,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
   test('percorre a jornada completa da demonstração', async ({ page }) => {
     // Cena 1 — a visão geral aponta onde agir.
     await expect(
-      page.getByRole('heading', { name: 'Onde o analista precisa agir hoje' })
+      page.getByRole('heading', { name: 'Visão geral', exact: true })
     ).toBeVisible();
     await expect(
       page.getByText('Dados fictícios — demonstração').first()

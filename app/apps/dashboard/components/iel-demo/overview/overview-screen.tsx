@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { DIMENSION_META } from '@/features/iel-demo/analysis/criterion-states';
 import { DEMO_COMPANIES } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
-  getCompany,
   getCoverageByDimension,
   getJob,
   getJobSummary,
@@ -33,12 +33,18 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  FilterNativeSelect,
-  MetricCard
+  FilterNativeSelect
 } from '@workspace/ui';
 
 import { ManagerOverview } from '../manager/manager-overview';
-import { BarList, Chip, formatDateTime, IelPageHeader } from '../shared/ui';
+import {
+  BarList,
+  Chip,
+  formatDateTime,
+  IelPageHeader,
+  InfoHint,
+  StatCard
+} from '../shared/ui';
 
 export function OverviewScreen() {
   const { state, dispatch, persona } = useIelDemo();
@@ -76,9 +82,9 @@ export function OverviewScreen() {
   return (
     <div className="space-y-6">
       <IelPageHeader
-        eyebrow="IEL — Centro de Empregabilidade"
-        title="Onde o analista precisa agir hoje"
-        description="Indicadores calculados a partir da base fictícia: vagas abertas, candidaturas em análise, solicitações pendentes e encaminhamentos aguardando retorno da empresa."
+        eyebrow="IEL · Centro de Empregabilidade"
+        title="Visão geral"
+        description={`Base demo: ${DEMO_COMPANIES.length} empresas, ${getVisibleJobs(state).length} vagas, ${new Set(state.applications.map((application) => application.talentId)).size} talentos únicos e ${state.applications.length} candidaturas.`}
         actions={
           <>
             <label
@@ -133,45 +139,47 @@ export function OverviewScreen() {
 
       <section
         aria-label="Indicadores"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <MetricCard
-          title="Vagas abertas"
+        <StatCard
+          label="Vagas abertas"
           value={metrics.openJobs}
           icon={
             <HugeiconsIcon
               icon={Briefcase01Icon}
-              size={16}
+              size={15}
             />
           }
         />
-        <MetricCard
-          title="Candidaturas em análise"
+        <StatCard
+          label="Candidaturas em análise"
           value={metrics.applicationsInAnalysis}
           icon={
             <HugeiconsIcon
               icon={UserGroupIcon}
-              size={16}
+              size={15}
             />
           }
         />
-        <MetricCard
-          title="Solicitações em aberto"
+        <StatCard
+          label="Solicitações em aberto"
           value={metrics.openClarifications}
+          hint="Perguntas enviadas a gestores ou candidatos que ainda não voltaram."
           icon={
             <HugeiconsIcon
               icon={Message01Icon}
-              size={16}
+              size={15}
             />
           }
         />
-        <MetricCard
-          title="Encaminhamentos aguardando retorno"
+        <StatCard
+          label="Aguardando retorno da empresa"
           value={metrics.referralsAwaitingReturn}
+          hint="Encaminhamentos já registrados, sem resposta do gestor."
           icon={
             <HugeiconsIcon
               icon={SentIcon}
-              size={16}
+              size={15}
             />
           }
         />
@@ -180,12 +188,10 @@ export function OverviewScreen() {
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="flex items-center gap-1.5 text-base">
               Vagas que precisam de ação
+              <InfoHint label="O motivo vem do estado atual da análise de cada vaga, não de uma lista fixa." />
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              O motivo vem do estado atual da análise, não de uma lista fixa.
-            </p>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
             {jobsNeedingAction.length === 0 ? (
@@ -213,7 +219,13 @@ export function OverviewScreen() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <Chip>{summary.applicationsCount} candidaturas</Chip>
+                      <Chip>
+                        {plural(
+                          summary.applicationsCount,
+                          'candidatura',
+                          'candidaturas'
+                        )}
+                      </Chip>
                       <Link href={iel.jobs.byId(summary.job.id).index}>
                         <Button size="sm">Abrir seleção</Button>
                       </Link>
@@ -227,11 +239,10 @@ export function OverviewScreen() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Candidaturas por etapa</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Etapa oficial recebida do sistema de recrutamento. Clique para ver
-              os registros.
-            </p>
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              Candidaturas por etapa
+              <InfoHint label="Etapa oficial recebida do sistema de recrutamento de origem. Clique numa barra para ver os registros." />
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
             <BarList
@@ -277,26 +288,26 @@ export function OverviewScreen() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Cobertura de informações por dimensão
+            <CardTitle className="flex items-center gap-1.5 text-base">
+              Cobertura de informações
+              <InfoHint label="Quantos critérios têm dados suficientes nas candidaturas visíveis. Mede informação disponível, não chance de sucesso nem qualidade da pessoa." />
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Mede quantos critérios têm dados suficientes nas candidaturas
-              visíveis. Não é chance de sucesso nem nota de qualidade.
-            </p>
           </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+          <CardContent className="space-y-3 pt-4">
             {coverage.map((entry) => (
               <div
                 key={entry.dimension}
                 className="space-y-1"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="flex items-center gap-1.5 text-sm text-foreground">
                     {DIMENSION_META[entry.dimension].label}
+                    <InfoHint
+                      label={DIMENSION_META[entry.dimension].description}
+                    />
                   </p>
-                  <p className="text-sm text-foreground">
-                    {entry.withInformation} de {entry.total} critérios
+                  <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                    {entry.withInformation}/{entry.total}
                   </p>
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-[var(--radius-pill)] bg-muted">
@@ -307,9 +318,6 @@ export function OverviewScreen() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {DIMENSION_META[entry.dimension].description}
-                </p>
               </div>
             ))}
           </CardContent>
@@ -317,10 +325,7 @@ export function OverviewScreen() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Atividades recentes</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Eventos reais do estado local desta demonstração.
-            </p>
+            <CardTitle className="text-base">Atividade recente</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <ul className="space-y-3">
@@ -342,16 +347,6 @@ export function OverviewScreen() {
           </CardContent>
         </Card>
       </div>
-
-      <Card padding="sm">
-        <p className="text-xs text-muted-foreground">
-          Base atual: {DEMO_COMPANIES.length} empresas,{' '}
-          {getVisibleJobs(state).length} vagas,{' '}
-          {new Set(state.applications.map((a) => a.talentId)).size} talentos
-          únicos e {state.applications.length} candidaturas.{' '}
-          {getCompany('EMP-01')?.name} e as demais empresas são fictícias.
-        </p>
-      </Card>
     </div>
   );
 }

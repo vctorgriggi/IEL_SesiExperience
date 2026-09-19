@@ -8,6 +8,7 @@ import {
   getCoverage,
   getCriterionAnalysis
 } from '@/features/iel-demo/analysis/criterion-states';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   EXTERNAL_STAGE_LABEL,
@@ -153,7 +154,8 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
           <Chip>{talent.city}</Chip>
           <Chip>{talent.email}</Chip>
           <Chip tone="info">
-            {applications.length} candidatura(s) na base demo
+            {plural(applications.length, 'candidatura', 'candidaturas')} na base
+            demo
           </Chip>
           <span className="text-xs text-muted-foreground">
             Perfil único: a pessoa não é duplicada quando participa de mais de

@@ -1,7 +1,95 @@
 import type { ReactNode } from 'react';
 import type { CoverageSummary } from '@/features/iel-demo/analysis/criterion-states';
+import { InformationCircleIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 
 import { cn } from '@workspace/ui';
+
+/**
+ * Definição de um termo, disponível sem ocupar uma linha de texto.
+ *
+ * O domínio tem distinções que precisam estar ao alcance (cobertura não é
+ * afinidade, etapa de origem não é etapa do IEL), mas escrever cada uma
+ * delas como parágrafo abaixo do título transforma a tela num manual.
+ */
+export function InfoHint({
+  label,
+  className
+}: {
+  label: string;
+  className?: string;
+}) {
+  return (
+    <span
+      role="note"
+      tabIndex={0}
+      title={label}
+      aria-label={label}
+      className={cn(
+        'inline-flex cursor-help align-middle text-muted-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground',
+        className
+      )}
+    >
+      <HugeiconsIcon
+        icon={InformationCircleIcon}
+        size={14}
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+/** Título de bloco: uma linha, com a definição atrás de um ícone. */
+export function SectionTitle({
+  children,
+  hint,
+  className
+}: {
+  children: ReactNode;
+  hint?: string;
+  className?: string;
+}) {
+  return (
+    <h2
+      className={cn(
+        'flex items-center gap-1.5 text-sm font-semibold text-foreground',
+        className
+      )}
+    >
+      {children}
+      {hint ? <InfoHint label={hint} /> : null}
+    </h2>
+  );
+}
+
+/** Indicador numérico compacto. */
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon,
+  href
+}: {
+  label: string;
+  value: number | string;
+  hint?: string;
+  icon?: ReactNode;
+  href?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        {icon}
+        <span className="text-xs font-medium">{label}</span>
+        {hint ? <InfoHint label={hint} /> : null}
+      </div>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+        {value}
+      </p>
+      {href}
+    </div>
+  );
+}
 
 /**
  * Cobertura informacional. Mede quantos critérios têm dados suficientes — não

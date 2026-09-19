@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
@@ -61,7 +62,7 @@ export function ReferralsScreen() {
         title={
           persona.kind === 'gestor' ? 'Perfis encaminhados' : 'Encaminhamentos'
         }
-        description="Cada encaminhamento guarda um snapshot das informações compartilhadas no momento do registro."
+        description="Cada registro guarda um retrato das informações no momento do encaminhamento."
       />
 
       {referrals.length === 0 ? (
@@ -100,7 +101,9 @@ export function ReferralsScreen() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Chip>{referral.items.length} perfil(is)</Chip>
+                      <Chip>
+                        {plural(referral.items.length, 'perfil', 'perfis')}
+                      </Chip>
                       {pending > 0 ? (
                         <Chip tone="atencao">{pending} aguardando retorno</Chip>
                       ) : (

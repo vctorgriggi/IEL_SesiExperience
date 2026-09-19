@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
 import { IelDemoProvider } from '@/features/iel-demo/state/demo-provider';
 
+import './iel-theme.css';
+
 export const metadata: Metadata = {
   title: 'Central de Seleção IEL — demonstração',
   description:

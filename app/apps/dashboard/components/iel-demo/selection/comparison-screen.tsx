@@ -83,7 +83,7 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
       <IelPageHeader
         eyebrow={`Comparação no contexto de ${job.title}`}
         title="Comparação entre candidatos"
-        description="Os critérios são os da vaga. Cada célula abre a evidência que sustenta o estado — não existe ranking universal de pessoas."
+        description="Os mesmos critérios da vaga. Cada célula abre a evidência que sustenta o estado."
         actions={
           <Link href={iel.jobs.byId(job.id).index}>
             <Button variant="outline">Voltar para a mesa de seleção</Button>

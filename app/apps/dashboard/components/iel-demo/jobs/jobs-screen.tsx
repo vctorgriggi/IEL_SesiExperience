@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DEMO_COMPANIES } from '@/features/iel-demo/fixtures';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getJobSummary,
@@ -136,7 +137,11 @@ export function JobsScreen() {
                 ) : null}
                 {summary.answeredClarificationsCount > 0 ? (
                   <Chip tone="info">
-                    {summary.answeredClarificationsCount} respondida(s)
+                    {plural(
+                      summary.answeredClarificationsCount,
+                      'respondida',
+                      'respondidas'
+                    )}
                   </Chip>
                 ) : null}
               </div>
@@ -182,11 +187,10 @@ export function JobsScreen() {
       <IelPageHeader
         eyebrow={
           persona.kind === 'gestor'
-            ? `${persona.label} — apenas as vagas da própria empresa`
+            ? `${persona.label} · apenas as vagas da própria empresa`
             : 'Processos das empresas atendidas'
         }
-        title="Qual processo vou trabalhar?"
-        description="A ação principal é abrir a mesa de seleção. Cada registro informa sua origem e a última atualização simulada."
+        title="Vagas"
       />
 
       <Card

@@ -85,7 +85,7 @@ export function ClarificationsScreen() {
             : 'Solicitações e esclarecimentos'
         }
         title={persona.kind === 'gestor' ? 'Perguntas recebidas' : 'Pendências'}
-        description="Cada solicitação registra destinatário, motivo, critério afetado e o que será compartilhado. O envio é simulado: a experiência do destinatário abre aqui mesmo."
+        description="O envio é simulado: a experiência do destinatário abre aqui mesmo."
         actions={
           persona.kind === 'analista' ? (
             <>
@@ -186,33 +186,56 @@ export function ClarificationsScreen() {
                           </span>
                         </div>
 
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-foreground">
-                            Para: {clarification.recipient.name} —{' '}
-                            {clarification.recipient.role}
-                          </p>
-                          <p className="text-sm text-foreground">
-                            “{clarification.question}”
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Motivo: {clarification.reason}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Será compartilhado: {clarification.sharedInfo}
-                          </p>
-                          {talent ? (
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
                             <p className="text-xs text-muted-foreground">
-                              Candidatura afetada:{' '}
-                              <Link
-                                className="underline decoration-dotted"
-                                href={iel.talents
-                                  .byId(talent.id)
-                                  .inJob(clarification.jobId)}
-                              >
-                                {talent.name}
-                              </Link>
+                              Para{' '}
+                              <span className="font-medium text-foreground">
+                                {clarification.recipient.name}
+                              </span>{' '}
+                              · {clarification.recipient.role}
                             </p>
-                          ) : null}
+                            <blockquote className="border-l-2 border-border pl-3 text-sm leading-relaxed text-foreground">
+                              {clarification.question}
+                            </blockquote>
+                          </div>
+
+                          <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Por que estamos perguntando
+                              </dt>
+                              <dd className="mt-0.5 text-xs leading-relaxed text-foreground/80">
+                                {clarification.reason}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                O destinatário verá
+                              </dt>
+                              <dd className="mt-0.5 text-xs leading-relaxed text-foreground/80">
+                                {clarification.sharedInfo}
+                              </dd>
+                            </div>
+                            {talent ? (
+                              <div>
+                                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Candidatura afetada
+                                </dt>
+                                <dd className="mt-0.5 text-xs">
+                                  <Link
+                                    className="font-medium text-primary underline-offset-2 hover:underline"
+                                    href={iel.talents
+                                      .byId(talent.id)
+                                      .inJob(clarification.jobId)}
+                                  >
+                                    {talent.name}
+                                  </Link>
+                                </dd>
+                              </div>
+                            ) : null}
+                          </dl>
+
                           <p className="text-[11px] text-muted-foreground">
                             Criada em {formatDateTime(clarification.createdAt)}
                             {clarification.answeredAt

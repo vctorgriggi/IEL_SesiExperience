@@ -16,7 +16,6 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import type {
   Application,
-  CriterionState,
   Dimension,
   Job,
   JobCriterion
@@ -35,16 +34,13 @@ import {
   TableRow
 } from '@workspace/ui';
 
-import { CriterionStateBadge } from '../shared/criterion-state-badge';
+import {
+  CriterionStateDot,
+  CriterionStateHeadline
+} from '../shared/criterion-state-badge';
 import { Chip, CoverageMeter } from '../shared/ui';
 
-const stateMarkerClass: Record<CriterionState, string> = {
-  alinhamento: 'border-success/40 bg-success/10 text-success',
-  'a-esclarecer': 'border-warning/40 bg-warning/10 text-warning',
-  divergencia: 'border-destructive/40 bg-destructive/10 text-destructive',
-  'sem-informacao': 'border-border bg-muted text-muted-foreground',
-  'nao-se-aplica': 'border-dashed border-border text-muted-foreground'
-};
+const DIMENSIONS: Dimension[] = ['tecnica', 'profissional', 'organizacional'];
 
 type CandidatesMatrixProps = {
   job: Job;
@@ -58,6 +54,11 @@ type CandidatesMatrixProps = {
   onAddToReferralList: (applicationId: string) => void;
 };
 
+/**
+ * Uma dimensão para uma candidatura: o estado que resume a leitura, seguido
+ * dos critérios que o sustentam. Os critérios são uma lista discreta — a cor
+ * aparece só no marcador, então a célula não vira um bloco saturado.
+ */
 function DimensionCell({
   job,
   application,
@@ -88,39 +89,45 @@ function DimensionCell({
   }
 
   return (
-    <div className="space-y-2">
-      <CriterionStateBadge
-        state={summary.headline}
-        size="sm"
-      />
-      <ul className="flex flex-wrap gap-1">
+    <div className="space-y-1.5">
+      <CriterionStateHeadline state={summary.headline} />
+      <ul className="-mx-1.5 space-y-px">
         {summary.criteria.map(({ criterion, analysis }) => {
           const isActive =
             activeCriterion?.applicationId === application.id &&
             activeCriterion?.criterionId === criterion.id;
           const meta = CRITERION_STATE_META[analysis.state];
+
           return (
             <li key={criterion.id}>
               <button
                 type="button"
                 onClick={() => onOpenCriterion(application.id, criterion)}
-                title={`${criterion.label}: ${meta.label}. ${analysis.note} (clique para ver as evidências)`}
+                aria-label={`${criterion.label}: ${meta.label}. Ver evidências.`}
+                title={`${criterion.label} — ${meta.label}. ${analysis.note}`}
                 className={cn(
-                  'inline-flex max-w-44 items-center gap-1 rounded-[var(--control-radius)] border px-1.5 py-0.5 text-[11px] transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-                  stateMarkerClass[analysis.state],
-                  isActive && 'ring-2 ring-ring/50'
+                  'flex w-full items-center gap-1.5 rounded-[var(--control-radius)] px-1.5 py-0.5 text-left text-[11px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                  isActive && 'bg-accent'
                 )}
               >
-                <span aria-hidden="true">{meta.marker}</span>
-                <span className="truncate">{criterion.label}</span>
+                <CriterionStateDot state={analysis.state} />
+                <span className="truncate text-foreground/80">
+                  {criterion.label}
+                </span>
                 {criterion.required ? (
-                  <span
-                    className="font-semibold"
+                  <abbr
                     title="Requisito obrigatório"
+                    className="shrink-0 font-semibold text-muted-foreground no-underline"
                   >
                     *
-                  </span>
+                  </abbr>
                 ) : null}
+                <span
+                  aria-hidden="true"
+                  className="ml-auto shrink-0 pl-1 font-medium text-muted-foreground"
+                >
+                  {meta.marker}
+                </span>
               </button>
             </li>
           );
@@ -160,45 +167,31 @@ export function CandidatesMatrix({
   }
 
   return (
-    <div className="max-h-[70vh] overflow-auto">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-card">
           <TableRow>
             <TableHead
               scope="col"
-              className="sticky left-0 z-20 min-w-64 bg-card"
+              className="min-w-[17rem]"
             >
               Candidato e etapa
             </TableHead>
-            {(['tecnica', 'profissional', 'organizacional'] as Dimension[]).map(
-              (dimension) => (
-                <TableHead
-                  key={dimension}
-                  scope="col"
-                  className="min-w-64"
-                  title={DIMENSION_META[dimension].description}
-                >
-                  {DIMENSION_META[dimension].label}
-                </TableHead>
-              )
-            )}
+            {DIMENSIONS.map((dimension) => (
+              <TableHead
+                key={dimension}
+                scope="col"
+                className="min-w-[12.5rem]"
+                title={DIMENSION_META[dimension].description}
+              >
+                {DIMENSION_META[dimension].label}
+              </TableHead>
+            ))}
             <TableHead
               scope="col"
-              className="min-w-48"
+              className="min-w-[13rem]"
             >
-              Cobertura
-            </TableHead>
-            <TableHead
-              scope="col"
-              className="min-w-44"
-            >
-              Pendências
-            </TableHead>
-            <TableHead
-              scope="col"
-              className="min-w-56"
-            >
-              Ações
+              Cobertura e pendências
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -220,27 +213,30 @@ export function CandidatesMatrix({
                 key={application.id}
                 data-state={isSelected ? 'selected' : undefined}
               >
-                <TableCell className="sticky left-0 z-10 bg-card align-top">
-                  <div className="flex items-start gap-3">
+                <TableCell className="align-top">
+                  <div className="flex items-start gap-2.5">
                     <Checkbox
                       inputId={`compare-${application.id}`}
                       checked={isSelected}
                       disabled={selectionDisabled}
                       onCheckedChange={() => onToggleComparison(application.id)}
                       aria-label={`Selecionar ${talent?.name} para comparação`}
-                      className="mt-1"
+                      className="mt-0.5"
                     />
-                    <div className="min-w-0">
-                      <label
-                        htmlFor={`compare-${application.id}`}
-                        className="block cursor-pointer text-sm font-medium text-foreground"
-                      >
-                        {talent?.name}
-                      </label>
-                      <p className="text-xs text-muted-foreground">
-                        {talent?.headline}
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="min-w-0 space-y-1.5">
+                      <div>
+                        <label
+                          htmlFor={`compare-${application.id}`}
+                          className="block cursor-pointer text-sm font-semibold text-foreground"
+                        >
+                          {talent?.name}
+                        </label>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                          {talent?.headline}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1">
                         <Chip>
                           {EXTERNAL_STAGE_LABEL[application.externalStage]}
                         </Chip>
@@ -250,13 +246,34 @@ export function CandidatesMatrix({
                           </Chip>
                         ) : null}
                       </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
+                        <Link
+                          href={iel.talents
+                            .byId(application.talentId)
+                            .inJob(job.id)}
+                          aria-label="Ver perfil consolidado"
+                          className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          Ver perfil
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isInReferralList}
+                          onClick={() => onAddToReferralList(application.id)}
+                          className="h-auto p-0 text-xs font-medium text-primary hover:bg-transparent hover:underline disabled:text-muted-foreground disabled:no-underline"
+                        >
+                          {isInReferralList
+                            ? 'Já está na lista'
+                            : 'Adicionar à lista'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </TableCell>
 
-                {(
-                  ['tecnica', 'profissional', 'organizacional'] as Dimension[]
-                ).map((dimension) => (
+                {DIMENSIONS.map((dimension) => (
                   <TableCell
                     key={dimension}
                     className="align-top"
@@ -272,61 +289,32 @@ export function CandidatesMatrix({
                 ))}
 
                 <TableCell className="align-top">
-                  <CoverageMeter coverage={coverage} />
-                </TableCell>
-
-                <TableCell className="align-top">
-                  {clarifications.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      Nenhuma solicitação
-                    </span>
-                  ) : (
-                    <ul className="space-y-1">
-                      {clarifications.map((clarification) => (
-                        <li key={clarification.id}>
-                          <Link
-                            href={iel.clarifications.index}
-                            className="text-xs underline decoration-dotted"
-                          >
-                            {clarification.state === 'respondida'
-                              ? 'Resposta aguardando incorporação'
-                              : clarification.state === 'incorporada'
-                                ? 'Resposta incorporada'
-                                : clarification.state === 'rascunho'
-                                  ? 'Rascunho de solicitação'
-                                  : 'Solicitação sem resposta'}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </TableCell>
-
-                <TableCell className="align-top">
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href={iel.talents
-                        .byId(application.talentId)
-                        .inJob(job.id)}
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full"
-                      >
-                        Ver perfil consolidado
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant={isInReferralList ? 'ghost' : 'default'}
-                      disabled={isInReferralList}
-                      onClick={() => onAddToReferralList(application.id)}
-                    >
-                      {isInReferralList
-                        ? 'Já está na lista'
-                        : 'Adicionar à lista'}
-                    </Button>
+                  <div className="space-y-2">
+                    <CoverageMeter coverage={coverage} />
+                    {clarifications.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        Sem solicitações abertas
+                      </p>
+                    ) : (
+                      <ul className="space-y-0.5">
+                        {clarifications.map((clarification) => (
+                          <li key={clarification.id}>
+                            <Link
+                              href={iel.clarifications.index}
+                              className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                            >
+                              {clarification.state === 'respondida'
+                                ? 'Resposta aguardando incorporação'
+                                : clarification.state === 'incorporada'
+                                  ? 'Resposta incorporada'
+                                  : clarification.state === 'rascunho'
+                                    ? 'Rascunho de solicitação'
+                                    : 'Solicitação sem resposta'}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

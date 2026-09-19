@@ -1,4 +1,5 @@
 import { findClarificationTemplate } from '../fixtures';
+import { plural } from '../format';
 import {
   getApplication,
   getEvidencesByIds,
@@ -138,7 +139,7 @@ export function summarizeSelection(
   );
 
   const paragraphs = [
-    `Seleção de ${applications.length} candidatura(s) na vaga ${job.title}.`,
+    `Seleção de ${plural(applications.length, 'candidatura', 'candidaturas')} na vaga ${job.title}.`,
     ...described.map((entry) => entry.sentence)
   ];
 
