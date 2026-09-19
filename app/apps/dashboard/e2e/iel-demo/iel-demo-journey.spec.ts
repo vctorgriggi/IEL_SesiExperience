@@ -1,4 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * O menu de quem apresenta.
+ *
+ * A faixa de demonstração virou o rodapé da barra lateral: é de lá que se
+ * troca o recorte de dados e se reinicia a base.
+ */
+async function abrirMenuDaPersona(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /· demonstração/ }).click();
+}
+
+async function verComo(page: Page, persona: string): Promise<void> {
+  await abrirMenuDaPersona(page);
+  await page.getByRole('menuitemradio', { name: persona }).click();
+  // O menu fecha depois que o estado muda; esperar aqui evita navegar antes
+  // de o recorte novo chegar ao localStorage.
+  await expect(page.getByRole('menu')).toBeHidden();
+}
 
 /**
  * Percurso principal da Central de Seleção IEL (protótipo).
@@ -23,17 +41,15 @@ test.describe('Central de Seleção IEL — demonstração', () => {
         exact: true
       })
     ).toBeVisible();
-    await expect(page.getByText('Dados fictícios').first()).toBeVisible();
-    // A tela é uma fila de trabalho: o que precisa continuar visível é a
-    // lista do que resolver agora, não o tamanho da base.
     await expect(
-      page.getByRole('heading', { name: 'Para resolver agora' })
+      page.getByRole('link', { name: /Centro de Empregos/ })
     ).toBeVisible();
-
+    // A tela é uma fila de trabalho: cada cartão é uma coisa a resolver, com
+    // o verbo que a resolve.
     await page
-      .getByRole('listitem')
+      .locator('[data-slot="card"]')
       .filter({ hasText: 'Assistente de Logística' })
-      .getByRole('button', { name: 'Abrir a vaga' })
+      .getByRole('link', { name: 'Abrir a vaga' })
       .first()
       .click();
 
@@ -107,9 +123,10 @@ test.describe('Central de Seleção IEL — demonstração', () => {
       /Quem poderá orientar a pessoa nas primeiras atividades/
     );
     await dialog.getByRole('button', { name: 'Enviar solicitação' }).click();
+    await expect(dialog).toBeHidden();
 
     // A experiência do destinatário responde com o texto preparado.
-    await page.getByRole('link', { name: 'Perguntas pendentes' }).click();
+    await page.goto('/iel/pendencias');
     const request = page
       .getByRole('listitem')
       .filter({ hasText: 'Quem poderá orientar a pessoa' })
@@ -145,6 +162,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     await incorporateDialog
       .getByRole('button', { name: /Incorporar em 4 critério/ })
       .click();
+    await expect(incorporateDialog).toBeHidden();
 
     // A análise de Ana muda para divergência, sem rejeição automática.
     await page.goto('/iel/vagas/VAG-01');
@@ -182,10 +200,11 @@ test.describe('Central de Seleção IEL — demonstração', () => {
       .first()
       .getByRole('button', { name: 'Incorporar à análise' })
       .click();
-    await page
-      .getByRole('dialog')
+    const availabilityDialog = page.getByRole('dialog');
+    await availabilityDialog
       .getByRole('button', { name: /Incorporar em 1 critério/ })
       .click();
+    await expect(availabilityDialog).toBeHidden();
 
     // Cena 6 — preparar e registrar o encaminhamento da vaga 2.
     await page.goto('/iel/vagas/VAG-02');
@@ -225,8 +244,8 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     ).toBeVisible();
 
     // Cena 7 — a empresa vê apenas o conteúdo compartilhado e registra interesse.
-    await page.selectOption('#demo-persona', 'gestor-emp-02');
-    await page.getByRole('link', { name: /Perfis encaminhados/ }).click();
+    await verComo(page, 'Gestor — Horizonte Alimentos');
+    await page.goto('/iel/encaminhamentos');
     await page.getByRole('button', { name: 'Abrir lista encaminhada' }).click();
     await expect(page.getByText('Ana Ribeiro').first()).toBeVisible();
     await expect(
@@ -238,7 +257,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     ).toBeVisible();
 
     // O IEL vê o retorno no histórico da vaga.
-    await page.selectOption('#demo-persona', 'analista-iel');
+    await verComo(page, 'Analista IEL');
     await page.goto('/iel/vagas/VAG-02');
     await page.getByRole('tab', { name: 'Histórico' }).click();
     await expect(
@@ -253,7 +272,10 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     ).toBeVisible();
 
     // Reiniciar restaura a base inicial.
-    await page.getByRole('button', { name: 'Reiniciar demonstração' }).click();
+    await abrirMenuDaPersona(page);
+    await page
+      .getByRole('menuitem', { name: 'Reiniciar demonstração' })
+      .click();
     await page.getByRole('button', { name: 'Reiniciar agora' }).click();
     await page.goto('/iel/pendencias');
     // As duas solicitações iniciais voltam; a criada na demonstração desaparece.

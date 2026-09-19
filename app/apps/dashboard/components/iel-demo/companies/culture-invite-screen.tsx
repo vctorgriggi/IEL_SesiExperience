@@ -11,17 +11,22 @@ import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getInviteByToken } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
-import { Button, Checkbox, cn } from '@workspace/ui';
-
-import { formatDate } from '../shared/ui';
+import { cn } from '@workspace/ui/lib/utils';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import { Card, CardContent } from '@workspace/ui/shadcn/card';
+import { Checkbox } from '@workspace/ui/shadcn/checkbox';
+import { Label } from '@workspace/ui/shadcn/label';
+import { Progress } from '@workspace/ui/shadcn/progress';
+import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 /**
  * A tela de quem trabalha na empresa e recebeu o link (M2 + M7).
  *
  * Responde uma pergunta — "como é trabalhar aqui?" — em cinco telas, uma
  * pergunta por vez, sem login. Quem abre isto é um colaborador operacional no
- * celular, no intervalo do turno: os alvos são grandes, o texto é curto e não
- * há nada para configurar.
+ * celular, no intervalo do turno: uma pergunta por vez, alternativas de 60px,
+ * um botão só e nada para configurar. A tela cabe em 390px sem rolagem.
  *
  * ## O que a tela não mostra (PRODUTO.md §5)
  *
@@ -47,16 +52,9 @@ type Answers = Partial<Record<FitAxisId, CultureOptionId>>;
 
 const TOTAL_QUESTIONS = CULTURE_QUESTIONS.length;
 
-/** Bloco do texto de aceite: um rótulo curto e o parágrafo, sem juridiquês. */
-function ConsentItem({ label, children }: { label: string; children: string }) {
-  return (
-    <div>
-      <p className="iel-eyebrow">{label}</p>
-      <p className="mt-1 text-base leading-relaxed text-foreground">
-        {children}
-      </p>
-    </div>
-  );
+/** "15/09": o prazo como a frase do rodapé o diz. */
+function shortDate(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
 /** Tela sem formulário: o link já foi usado, venceu ou não existe. */
@@ -65,17 +63,19 @@ function InviteNotice({
   children
 }: {
   title: string;
-  children: string;
+  children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-      <h2 className="iel-display text-[1.125rem] leading-snug text-foreground">
-        {title}
-      </h2>
-      <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-        {children}
-      </p>
-    </section>
+    <Card>
+      <CardContent className="flex flex-col gap-2">
+        <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+          {title}
+        </h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {children}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -104,20 +104,25 @@ export function CultureInviteScreen({ token }: { token: string }) {
     setFinished(true);
   };
 
+  const rodape = invite
+    ? `Suas respostas entram só na média da empresa. Ninguém vê a sua resposta individual. Link válido até ${shortDate(invite.expiresAt)}.`
+    : 'Suas respostas entram só na média da empresa. Ninguém vê a sua resposta individual.';
+
   return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      <header className="space-y-2 border-b border-border pb-4">
-        <p className="iel-eyebrow">Consulta aos colaboradores</p>
-        <h1 className="iel-display text-[1.375rem] leading-tight text-foreground">
-          Como é trabalhar aqui?
-        </h1>
+    // A casca por link já imprime o quadrado "IEL"; aqui fica o resto da
+    // linha de topo — o que a pessoa está respondendo e para quem.
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-6 px-1 py-6">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">Consulta à equipe</span>
         {invite ? (
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {invite.firstName}, são 5 perguntas sobre o dia a dia na{' '}
-            {invite.companyName}. Responda até {formatDate(invite.expiresAt)}.
-          </p>
+          <Badge
+            variant="outline"
+            className="text-muted-foreground"
+          >
+            {invite.companyName}
+          </Badge>
         ) : null}
-      </header>
+      </div>
 
       {!invite ? (
         <InviteNotice title="Link não encontrado">
@@ -125,79 +130,77 @@ export function CultureInviteScreen({ token }: { token: string }) {
           você recebeu por e-mail.
         </InviteNotice>
       ) : finished || invite.status === 'respondido' ? (
-        <section className="rounded-[var(--card-radius)] border border-success/40 bg-success/[0.06] p-5">
-          <h2 className="iel-display text-[1.125rem] leading-snug text-foreground">
-            Resposta registrada
-          </h2>
-          <p className="mt-2 text-base leading-relaxed text-foreground">
-            Você não precisa fazer mais nada. Obrigado.
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Sua resposta entra na média da empresa. Ninguém vê o que você
-            respondeu, nem a sua gestão.
-          </p>
-        </section>
+        <InviteNotice title="Resposta registrada">
+          Você não precisa fazer mais nada, obrigado. Sua resposta entra na
+          média da empresa: ninguém vê o que você respondeu, nem a sua gestão.
+        </InviteNotice>
       ) : invite.status === 'expirado' ? (
         <InviteNotice title="Este link venceu">
           O prazo para responder era de 3 dias e já passou. Peça um link novo a
           quem enviou o convite.
         </InviteNotice>
       ) : step.kind === 'consent' ? (
-        <section
-          aria-labelledby="consent-title"
-          className="space-y-5"
-        >
-          <h2
-            id="consent-title"
-            className="iel-display text-[1.125rem] leading-snug text-foreground"
-          >
-            Antes de começar
-          </h2>
-
-          <div className="space-y-4 rounded-[var(--card-radius)] border border-border bg-card p-4">
-            <ConsentItem label="Para quê">
-              Suas respostas entram na média que descreve como se trabalha na
-              empresa. Ela é comparada com o que cada candidato procura.
-            </ConsentItem>
-            <ConsentItem label="O que é coletado">
-              Só o seu nome e o seu e-mail corporativo, que já estavam no
-              convite. Nada sobre você fora do trabalho.
-            </ConsentItem>
-            <ConsentItem label="Quem vê">
-              A empresa vê a média de todo mundo. Ninguém vê o que você
-              respondeu, nem a sua gestão.
-            </ConsentItem>
-            <ConsentItem label="Por quanto tempo">
-              O link vale 3 dias e serve uma vez só. Depois disso ele não abre
-              mais.
-            </ConsentItem>
+        <section className="flex flex-1 flex-col gap-6">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+              Como é trabalhar aqui?
+            </h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {invite.firstName}, são 5 perguntas sobre o dia a dia na{' '}
+              {invite.companyName}. Leva até 5 minutos.
+            </p>
           </div>
 
-          <label
+          <Card>
+            <CardContent className="flex flex-col gap-3 text-sm leading-relaxed">
+              <p>
+                <span className="font-medium">Para quê.</span> Suas respostas
+                entram na média que descreve como se trabalha na empresa, que é
+                comparada com o que cada candidato procura.
+              </p>
+              <p>
+                <span className="font-medium">O que é coletado.</span> Só o seu
+                nome e o seu e-mail corporativo, que já estavam no convite.
+              </p>
+              <p>
+                <span className="font-medium">Quem vê.</span> A empresa vê a
+                média de todo mundo. Ninguém vê a sua resposta, nem a sua
+                gestão.
+              </p>
+              <p>
+                <span className="font-medium">Por quanto tempo.</span> O link
+                vale 3 dias e serve uma vez só.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Label
             htmlFor="culture-consent"
-            className="flex min-h-12 cursor-pointer items-start gap-3 rounded-[var(--control-radius)] border border-border p-3 text-base leading-relaxed text-foreground"
+            className="flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium"
           >
             <Checkbox
-              inputId="culture-consent"
-              className="mt-1 size-5"
+              id="culture-consent"
+              className="size-[18px]"
               checked={accepted}
-              onCheckedChange={setAccepted}
+              onCheckedChange={(checked) => setAccepted(checked === true)}
             />
             Li e aceito
-          </label>
+          </Label>
 
-          <Button
-            className="min-h-12 w-full text-base"
-            disabled={!accepted}
-            onClick={() => setStep({ kind: 'question', index: 0 })}
-          >
-            Começar
-          </Button>
-
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Versão do aceite: {CULTURE_CONSENT_VERSION}. Sem o aceite o
-            questionário não abre.
-          </p>
+          <div className="mt-auto flex flex-col gap-3">
+            <Button
+              size="lg"
+              className="h-12 w-full text-[15px]"
+              disabled={!accepted}
+              onClick={() => setStep({ kind: 'question', index: 0 })}
+            >
+              Começar
+            </Button>
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+              Versão do aceite: {CULTURE_CONSENT_VERSION}. Sem o aceite o
+              questionário não abre.
+            </p>
+          </div>
         </section>
       ) : (
         (() => {
@@ -207,99 +210,69 @@ export function CultureInviteScreen({ token }: { token: string }) {
           const isLast = step.index === TOTAL_QUESTIONS - 1;
 
           return (
-            <section
-              aria-labelledby="question-title"
-              className="space-y-5"
-            >
-              <div className="space-y-2">
-                <p
-                  className="iel-eyebrow"
-                  aria-live="polite"
-                >
-                  {step.index + 1} de {TOTAL_QUESTIONS}
-                </p>
-                <span
-                  aria-hidden="true"
-                  className="block h-1 w-full overflow-hidden rounded-[var(--radius-pill)] bg-muted"
-                >
-                  <span
-                    className="block h-full rounded-[var(--radius-pill)] bg-primary"
-                    style={{
-                      width: `${((step.index + 1) / TOTAL_QUESTIONS) * 100}%`
-                    }}
-                  />
-                </span>
-                <h2
-                  id="question-title"
-                  className="iel-display text-[1.125rem] leading-snug text-foreground"
-                >
+            <section className="flex flex-1 flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between text-[13px] text-muted-foreground">
+                  <span aria-live="polite">
+                    Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
+                  </span>
+                  <span>Oi, {invite.firstName} · até 5 min</span>
+                </div>
+                <Progress
+                  className="h-1.5 bg-muted"
+                  value={((step.index + 1) / TOTAL_QUESTIONS) * 100}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
                   {question.prompt}
-                </h2>
+                </h1>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Responda pelo que acontece hoje, não pelo que deveria
-                  acontecer.
+                  Responda pelo que acontece de verdade no seu setor, não pelo
+                  que deveria acontecer.
                 </p>
               </div>
 
-              <div
-                role="radiogroup"
-                aria-labelledby="question-title"
-                className="space-y-3"
+              <RadioGroup
+                className="gap-2.5"
+                value={chosen ?? ''}
+                onValueChange={(value) =>
+                  setAnswers((current) => ({
+                    ...current,
+                    [question.axisId]: value
+                  }))
+                }
               >
                 {question.options.map((option) => {
                   const selected = chosen === option.id;
+                  const id = `${question.axisId}-${option.id}`;
                   return (
-                    <button
+                    <Label
                       key={option.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() =>
-                        setAnswers((current) => ({
-                          ...current,
-                          [question.axisId]: option.id
-                        }))
-                      }
+                      htmlFor={id}
                       className={cn(
-                        'flex min-h-12 w-full items-center gap-3 rounded-[var(--card-radius)] border p-4 text-left text-base leading-relaxed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                        'flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-snug transition-colors',
                         selected
-                          ? 'border-primary bg-accent/60 text-foreground'
-                          : 'border-border bg-card text-foreground hover:bg-muted'
+                          ? 'border-foreground bg-muted/50 ring-1 ring-foreground'
+                          : 'hover:bg-muted/40'
                       )}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'grid size-5 shrink-0 place-items-center rounded-full border-2',
-                          selected ? 'border-primary' : 'border-border-strong'
-                        )}
-                      >
-                        {selected ? (
-                          <span className="size-2.5 rounded-full bg-primary" />
-                        ) : null}
-                      </span>
-                      {option.label}
-                    </button>
+                      <RadioGroupItem
+                        id={id}
+                        value={option.id}
+                        className="size-[18px]"
+                      />
+                      <span className="whitespace-normal">{option.label}</span>
+                    </Label>
                   );
                 })}
-              </div>
+              </RadioGroup>
 
-              <div className="flex gap-3">
+              <div className="mt-auto flex flex-col gap-3">
                 <Button
-                  className="min-h-12 flex-1 text-base"
-                  variant="outline"
-                  onClick={() =>
-                    setStep(
-                      step.index === 0
-                        ? { kind: 'consent' }
-                        : { kind: 'question', index: step.index - 1 }
-                    )
-                  }
-                >
-                  Voltar
-                </Button>
-                <Button
-                  className="min-h-12 flex-1 text-base"
+                  size="lg"
+                  className="h-12 w-full text-[15px]"
                   disabled={chosen === undefined}
                   onClick={() => {
                     if (isLast) {
@@ -311,6 +284,22 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 >
                   {isLast ? 'Enviar respostas' : 'Próxima'}
                 </Button>
+                <button
+                  type="button"
+                  className="text-center text-[13px] text-muted-foreground underline underline-offset-4"
+                  onClick={() =>
+                    setStep(
+                      step.index === 0
+                        ? { kind: 'consent' }
+                        : { kind: 'question', index: step.index - 1 }
+                    )
+                  }
+                >
+                  Voltar
+                </button>
+                <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                  {rodape}
+                </p>
               </div>
             </section>
           );

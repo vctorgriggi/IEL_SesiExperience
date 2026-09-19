@@ -76,7 +76,7 @@ export function NavJobs() {
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Vagas abertas</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-xs">Vagas abertas</SidebarGroupLabel>
       <SidebarMenu>
         {companies.map((company) => {
           const companyJobs = jobs.filter(
@@ -109,7 +109,7 @@ export function NavJobs() {
                         className="ml-auto gap-1 font-normal tabular-nums text-muted-foreground"
                         title="A consulta aos colaboradores ainda não sustenta o perfil da empresa."
                       >
-                        <AlertCircle className="text-amber-600" />
+                        <AlertCircle className="text-[hsl(var(--brand-accent))]" />
                         {amostra.answered}/{amostra.total}
                       </Badge>
                     )}
@@ -130,9 +130,17 @@ export function NavJobs() {
                             asChild
                             isActive={pathname === href}
                           >
+                            {/*
+                             * O contador é o dado da linha e não pode
+                             * encolher: a regra do bloco corta o último filho
+                             * com reticências, e "0/5" virava "0..". Quem
+                             * cede espaço é o nome da vaga.
+                             */}
                             <Link href={href}>
-                              <span className="truncate">{job.title}</span>
-                              <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                              <span className="min-w-0 flex-1 truncate">
+                                {job.title}
+                              </span>
+                              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                                 {marcados}/{REFERRAL_LIMIT}
                               </span>
                             </Link>

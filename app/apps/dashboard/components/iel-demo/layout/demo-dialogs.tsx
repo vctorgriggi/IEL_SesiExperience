@@ -1,9 +1,18 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
+import { getReportTokenForJob } from '@/features/iel-demo/state/selectors';
+import {
+  BuildingIcon,
+  EyeOffIcon,
+  PercentIcon,
+  RulerIcon,
+  ScaleIcon,
+  UsersIcon,
+  type LucideIcon
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import {
@@ -20,10 +29,60 @@ import {
   TabsTrigger
 } from '@workspace/ui/shadcn/tabs';
 
+/** Um lugar só para as rotas do roteiro: a lista abaixo é declarada fora do componente. */
+const ROTAS = routes.dashboard.iel;
+
 type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
+
+/**
+ * O método em seis frases.
+ *
+ * Uma frase por ponto é uma restrição, não um estilo: quem abre este diálogo
+ * está no meio de uma conversa com o cliente e precisa poder ler em voz alta.
+ * As três primeiras explicam de onde vem o número; as três últimas são as
+ * ressalvas que impedem alguém de lê-lo como nota de pessoa.
+ */
+const COMO_FUNCIONA: { icone: LucideIcon; titulo: string; frase: string }[] = [
+  {
+    icone: PercentIcon,
+    titulo: 'O percentual é sobre a empresa, não sobre a vaga.',
+    frase:
+      'Ele compara o que a empresa pratica no dia a dia com o que a pessoa procura; os requisitos técnicos são a outra coluna e vêm prontos do sistema de vagas.'
+  },
+  {
+    icone: UsersIcon,
+    titulo: 'Como a empresa trabalha é a média de quem trabalha nela.',
+    frase:
+      'São respostas de colaboradores de áreas e níveis diferentes — não a opinião de uma pessoa do RH.'
+  },
+  {
+    icone: RulerIcon,
+    titulo: 'Ponto com pouca resposta fica em aberto e não entra na conta.',
+    frase:
+      'E quando gestão e equipe respondem diferente, a divergência aparece ao lado da média em vez de sumir dentro dela.'
+  },
+  {
+    icone: ScaleIcon,
+    titulo: 'O mínimo é 35%, e quem decide é uma pessoa.',
+    frase:
+      'Abaixo disso a pessoa fica marcada e continua visível: o corte organiza a leitura do analista e não descarta ninguém sozinho.'
+  },
+  {
+    icone: EyeOffIcon,
+    titulo: 'Não é teste psicológico e não produz nota.',
+    frase:
+      'São cinco perguntas sobre preferências de trabalho — nada de personalidade, saúde, família, religião ou opinião.'
+  },
+  {
+    icone: BuildingIcon,
+    titulo: 'O candidato não vê o nome da empresa.',
+    frase:
+      'Antes da entrevista ele vê atividade, localidade, segmento e turno; o nome só aparece quando a empresa o chama.'
+  }
+];
 
 /**
  * O método, explicado uma vez para o produto inteiro.
@@ -43,69 +102,25 @@ export function ComoFuncionaDialog({ open, onOpenChange }: DialogProps) {
           <DialogDescription>O método, em seis pontos.</DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto text-sm leading-relaxed text-muted-foreground">
-          <div>
-            <p className="font-medium text-foreground">
-              O percentual é sobre a empresa, não sobre a vaga.
-            </p>
-            <p>
-              Ele compara o que a empresa pratica no dia a dia com o que a
-              pessoa procura, em cinco pontos. Os requisitos técnicos da vaga
-              são a outra coluna, e vêm prontos do sistema de vagas.
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-foreground">
-              Como a empresa trabalha é a média de quem trabalha nela.
-            </p>
-            <p>
-              Não é a resposta de uma pessoa do RH: é a média das respostas de
-              colaboradores de áreas e níveis diferentes. Quando a equipe
-              responde pouco, o ponto fica em aberto e não entra na conta.
-              Quando gestão e equipe respondem diferente, a diferença aparece ao
-              lado da média.
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-foreground">
-              O mínimo é 35%, e quem decide é uma pessoa.
-            </p>
-            <p>
-              Abaixo disso a pessoa não é considerada compatível, mas continua
-              visível e marcada: o corte é do IEL, serve para organizar a
-              leitura e não descarta ninguém sozinho.
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-foreground">
-              Não é teste psicológico e não produz nota.
-            </p>
-            <p>
-              São cinco perguntas sobre preferências de trabalho no cotidiano.
-              Nada de personalidade, saúde, família, religião ou opinião. O
-              número não prevê desempenho nem qualifica ninguém.
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-foreground">
-              Os resumos são montados por regra fixa.
-            </p>
-            <p>
-              Nenhuma etapa do caminho depende de serviço cobrado por candidato.
-              Inteligência artificial paga existe como camada opcional,
-              desligada por padrão, e nunca no caminho principal.
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-foreground">
-              O candidato não vê o nome da empresa.
-            </p>
-            <p>
-              Antes da entrevista ele vê atividade, localidade, segmento e
-              turno. O nome só aparece quando a empresa o chama.
-            </p>
-          </div>
-        </div>
+        <ul className="max-h-[60vh] space-y-3 overflow-y-auto text-sm leading-relaxed">
+          {COMO_FUNCIONA.map((ponto) => (
+            <li
+              key={ponto.titulo}
+              className="flex gap-3"
+            >
+              <ponto.icone
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              />
+              <span>
+                <span className="font-medium text-foreground">
+                  {ponto.titulo}
+                </span>{' '}
+                <span className="text-muted-foreground">{ponto.frase}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </DialogContent>
     </Dialog>
   );
@@ -114,7 +129,6 @@ export function ComoFuncionaDialog({ open, onOpenChange }: DialogProps) {
 /** Roteiro da demonstração: a jornada completa e o recorte de três minutos. */
 export function RoteiroDialog({ open, onOpenChange }: DialogProps) {
   const { state } = useIelDemo();
-  const iel = routes.dashboard.iel;
   const fechar = () => onOpenChange(false);
 
   return (
@@ -135,105 +149,15 @@ export function RoteiroDialog({ open, onOpenChange }: DialogProps) {
           className="max-h-[60vh] overflow-y-auto"
         >
           <TabsList>
-            <TabsTrigger value="completo">Completo — 7 passos</TabsTrigger>
-            <TabsTrigger value="curto">Curto — 3 minutos</TabsTrigger>
+            <TabsTrigger value="completo">Completo — 8 passos</TabsTrigger>
+            <TabsTrigger value="curto">Curto — 4 paradas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="completo">
-            <ol className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <span className="font-medium text-foreground">
-                  1. Encontrar o processo que precisa de atenção.
-                </span>{' '}
-                <Link
-                  className="underline"
-                  href={iel.index}
-                  onClick={fechar}
-                >
-                  Visão geral
-                </Link>{' '}
-                → vaga Assistente de Logística.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  2. Ver a integração dos dados.
-                </span>{' '}
-                <Link
-                  className="underline"
-                  href={iel.jobs.byId('VAG-01').index}
-                  onClick={fechar}
-                >
-                  Mesa de seleção da vaga 1
-                </Link>{' '}
-                → abrir Ana Ribeiro e clicar numa conclusão para ver a
-                evidência.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  3. Comparar.
-                </span>{' '}
-                Selecionar Ana e Bruno na matriz e abrir{' '}
-                <Link
-                  className="underline"
-                  href={iel.jobs.byId('VAG-01').comparison}
-                  onClick={fechar}
-                >
-                  comparação
-                </Link>
-                .
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  4. Esclarecer com a pessoa certa.
-                </span>{' '}
-                Criar a pergunta ao gestor sobre apoio inicial, abrir a
-                experiência do destinatário em{' '}
-                <Link
-                  className="underline"
-                  href={iel.clarifications.index}
-                  onClick={fechar}
-                >
-                  Perguntas pendentes
-                </Link>{' '}
-                e incorporar a resposta.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  5. Mesmo perfil, outra leitura.
-                </span>{' '}
-                Abrir{' '}
-                <Link
-                  className="underline"
-                  href={iel.jobs.byId('VAG-02').index}
-                  onClick={fechar}
-                >
-                  a vaga 2
-                </Link>{' '}
-                e ver Ana com contexto organizacional diferente; esclarecer a
-                disponibilidade pendente.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  6. Preparar e registrar o encaminhamento.
-                </span>{' '}
-                Adicionar Ana à lista da vaga 2 e registrar em{' '}
-                <Link
-                  className="underline"
-                  href={iel.jobs.byId('VAG-02').referral}
-                  onClick={fechar}
-                >
-                  preparação do encaminhamento
-                </Link>
-                .
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  7. Ver a resposta da empresa.
-                </span>{' '}
-                Trocar a persona para “Gestor — Horizonte Alimentos”, registrar
-                “Quero entrevistar” e voltar como analista para ver o histórico.
-              </li>
-            </ol>
+            <RoteiroEmPassos
+              passos={PASSOS_COMPLETOS}
+              onNavigate={fechar}
+            />
           </TabsContent>
 
           <TabsContent value="curto">
@@ -250,55 +174,72 @@ export function RoteiroDialog({ open, onOpenChange }: DialogProps) {
   );
 }
 
-/**
- * Recorte de três minutos.
- *
- * O briefing pede uma versão curta para apresentar, e avisa que os passos
- * abreviados precisam ter estado válido — nada de pular validação para
- * encurtar. Por isso o caminho é o mesmo da jornada completa; o que muda é
- * quais paradas se mostra.
- */
-function RoteiroCurto({ onNavigate }: { onNavigate: () => void }) {
-  const iel = routes.dashboard.iel;
+type Passo = { texto: string; href?: string; rotulo?: string };
 
-  const steps: { text: ReactNode; href?: string }[] = [
-    {
-      text: 'Abrir a mesa de seleção da vaga com 90 candidaturas.',
-      href: iel.jobs.byId('VAG-01').index
-    },
-    {
-      text: 'Filtrar por “Requisito obrigatório sem informação”: a triagem que substitui abrir perfil por perfil.'
-    },
-    {
-      text: 'Selecionar Ana e Bruno e abrir a comparação.',
-      href: iel.jobs.byId('VAG-01').comparison
-    },
-    {
-      text: 'Clicar numa conclusão e mostrar a evidência, com a fonte de onde veio.'
-    },
-    {
-      text: 'Esclarecer o apoio inicial com o gestor e incorporar a resposta.',
-      href: iel.clarifications.index
-    },
-    {
-      text: 'Abrir Ana na vaga 2: mesmo perfil, contexto da empresa diferente, leitura diferente.',
-      href: iel.jobs.byId('VAG-02').index
-    },
-    {
-      text: 'Responder o fit como candidata (Ana, vaga 2): aceite, cinco perguntas no celular, sem login e sem o nome da empresa.',
-      href: iel.applications.byId('CAND-05').fit
-    },
-    {
-      text: 'Registrar o encaminhamento e ver a trajetória dela entre os dois processos.',
-      href: iel.jobs.byId('VAG-02').referral
-    }
-  ];
+/** A jornada inteira, do que chega à central ao que a empresa responde. */
+const PASSOS_COMPLETOS: Passo[] = [
+  {
+    texto:
+      'Importar a planilha de exemplo na vaga de Assistente de Logística: o analista confere pessoa por pessoa antes de gravar.',
+    href: ROTAS.jobs.byId('VAG-01').import,
+    rotulo: 'importar'
+  },
+  {
+    texto:
+      'Abrir a vaga e ler o ranking: requisitos técnicos e aderência lado a lado, quem ficou abaixo do corte marcado e visível.',
+    href: ROTAS.jobs.byId('VAG-01').index,
+    rotulo: 'abrir a vaga'
+  },
+  {
+    texto:
+      'Responder como colaborador da empresa pelo link do celular: cinco perguntas, sem login, sem ver colegas nem contagem.',
+    href: ROTAS.cultureInvite.byToken('418c781c386bb301'),
+    rotulo: 'responder'
+  },
+  {
+    texto:
+      'Responder o fit como candidata: aceite, cinco perguntas e nenhuma menção ao nome da empresa.',
+    href: ROTAS.applications.byId('CAND-05').fit,
+    rotulo: 'responder'
+  },
+  {
+    texto:
+      'Perguntar ao gestor o que falta, abrir a experiência de quem recebe e incorporar a resposta à análise.',
+    href: ROTAS.clarifications.index,
+    rotulo: 'perguntas'
+  },
+  {
+    texto:
+      'Mesmo perfil, outra leitura: Ana na vaga 2, com o contexto organizacional daquela empresa.',
+    href: ROTAS.jobs.byId('VAG-02').index,
+    rotulo: 'vaga 2'
+  },
+  {
+    texto: 'Marcar quem vai e registrar o encaminhamento.',
+    href: ROTAS.jobs.byId('VAG-02').referral,
+    rotulo: 'encaminhar'
+  },
+  {
+    texto:
+      'Ver o relatório que a empresa recebe: só quem foi enviado, com a aderência por ponto e sem nota interna nenhuma.',
+    href: ROTAS.report.byToken(getReportTokenForJob('VAG-02')),
+    rotulo: 'ver o relatório'
+  }
+];
 
+/** Os passos, numerados, com o link de cada parada. */
+function RoteiroEmPassos({
+  passos,
+  onNavigate
+}: {
+  passos: Passo[];
+  onNavigate: () => void;
+}) {
   return (
-    <ol className="space-y-2.5 text-sm text-muted-foreground">
-      {steps.map((step, index) => (
+    <ol className="flex flex-col gap-2.5 text-sm text-muted-foreground">
+      {passos.map((passo, index) => (
         <li
-          key={index}
+          key={passo.texto}
           className="flex gap-2.5"
         >
           <span
@@ -308,16 +249,16 @@ function RoteiroCurto({ onNavigate }: { onNavigate: () => void }) {
             {index + 1}
           </span>
           <span>
-            {step.text}
-            {step.href ? (
+            {passo.texto}
+            {passo.href ? (
               <>
                 {' '}
                 <Link
                   className="font-medium text-foreground underline underline-offset-2"
-                  href={step.href}
+                  href={passo.href}
                   onClick={onNavigate}
                 >
-                  abrir
+                  {passo.rotulo ?? 'abrir'}
                 </Link>
               </>
             ) : null}
@@ -325,5 +266,48 @@ function RoteiroCurto({ onNavigate }: { onNavigate: () => void }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+/** Os oito passos cortados para três minutos de apresentação. */
+const PASSOS_CURTOS: Passo[] = [
+  {
+    texto: 'Importar a planilha de exemplo: 90 candidaturas entram conferidas.',
+    href: ROTAS.jobs.byId('VAG-01').import,
+    rotulo: 'importar'
+  },
+  {
+    texto:
+      'Abrir a vaga e ler o ranking: técnico e aderência lado a lado, com o corte de 35% marcado.',
+    href: ROTAS.jobs.byId('VAG-01').index,
+    rotulo: 'abrir a vaga'
+  },
+  {
+    texto:
+      'Responder pelo celular como candidata: aceite, cinco perguntas, nenhum nome de empresa.',
+    href: ROTAS.applications.byId('CAND-05').fit,
+    rotulo: 'responder'
+  },
+  {
+    texto: 'Ver o relatório que a empresa recebe e encerrar por ele.',
+    href: ROTAS.report.byToken(getReportTokenForJob('VAG-02')),
+    rotulo: 'ver o relatório'
+  }
+];
+
+/**
+ * Recorte de três minutos.
+ *
+ * O briefing pede uma versão curta para apresentar, e avisa que os passos
+ * abreviados precisam ter estado válido — nada de pular validação para
+ * encurtar. Por isso o caminho é o mesmo da jornada completa; o que muda é
+ * quais paradas se mostra.
+ */
+function RoteiroCurto({ onNavigate }: { onNavigate: () => void }) {
+  return (
+    <RoteiroEmPassos
+      passos={PASSOS_CURTOS}
+      onNavigate={onNavigate}
+    />
   );
 }

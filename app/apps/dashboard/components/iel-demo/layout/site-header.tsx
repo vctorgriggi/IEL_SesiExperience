@@ -57,26 +57,50 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <Breadcrumb>
-          <BreadcrumbList>
-            {trilha.map((crumb, index) => (
-              <Fragment key={`${crumb.label}-${index}`}>
-                {index > 0 ? <BreadcrumbSeparator /> : null}
-                <BreadcrumbItem>
-                  {crumb.href && index < trilha.length - 1 ? (
-                    <BreadcrumbLink asChild>
-                      <Link href={crumb.href}>{crumb.label}</Link>
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              </Fragment>
-            ))}
+        <Breadcrumb className="min-w-0 flex-1">
+          {/*
+           * Em 390px o caminho não pode quebrar em três linhas e empurrar o
+           * título: a lista fica numa linha só, os degraus do meio somem no
+           * celular (o último já diz onde se está) e o degrau atual corta com
+           * reticências em vez de embrulhar.
+           */}
+          <BreadcrumbList className="min-w-0 flex-nowrap">
+            {trilha.map((crumb, index) => {
+              const ultimo = index === trilha.length - 1;
+              return (
+                <Fragment key={`${crumb.label}-${index}`}>
+                  {index > 0 ? (
+                    <BreadcrumbSeparator className="hidden sm:block" />
+                  ) : null}
+                  <BreadcrumbItem
+                    className={
+                      ultimo ? 'min-w-0' : 'hidden min-w-0 sm:inline-flex'
+                    }
+                  >
+                    {crumb.href && !ultimo ? (
+                      <BreadcrumbLink asChild>
+                        <Link
+                          href={crumb.href}
+                          className="truncate"
+                        >
+                          {crumb.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="truncate">
+                        {crumb.label}
+                      </BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                </Fragment>
+              );
+            })}
           </BreadcrumbList>
         </Breadcrumb>
         {actions ? (
-          <div className="ml-auto flex items-center gap-2">{actions}</div>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {actions}
+          </div>
         ) : null}
       </div>
     </header>

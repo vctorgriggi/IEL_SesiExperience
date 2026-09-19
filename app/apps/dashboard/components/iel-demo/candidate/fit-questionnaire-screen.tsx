@@ -1,27 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   CANDIDATE_CONSENT_TEXT,
   CANDIDATE_CONSENT_VERSION,
-  CANDIDATE_FIT_QUESTIONS
+  CANDIDATE_FIT_QUESTIONS,
+  type CandidateFitOption
 } from '@/features/iel-demo/analysis/candidate-questionnaire';
 import type { CultureOptionValue } from '@/features/iel-demo/analysis/culture';
 import type { FitAxisId } from '@/features/iel-demo/analysis/fit-axes';
-import { AXIS_LABEL } from '@/features/iel-demo/copy';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
   getCandidateJobView,
   getFitResponse,
+  getFitStatus,
   getTalent
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
+import { CircleCheckIcon, ClockIcon } from 'lucide-react';
 
-import { Alert, Button, Checkbox, cn } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+import { Checkbox } from '@workspace/ui/shadcn/checkbox';
+import { Label } from '@workspace/ui/shadcn/label';
+import { Progress } from '@workspace/ui/shadcn/progress';
+import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 import { TalentTransparency } from '../clarifications/talent-transparency';
-import { Chip } from '../shared/ui';
 
 /**
  * Questionário de fit do candidato, com o aceite que o abre (M3 + M7).
@@ -36,50 +49,62 @@ import { Chip } from '../shared/ui';
  * inequívoco.
  *
  * O texto apresentado é o de `CANDIDATE_CONSENT_TEXT` e cobre o que o art. 9º
- * manda informar: "O titular tem direito ao acesso facilitado às informações
- * sobre o tratamento de seus dados, que deverão ser disponibilizadas de forma
- * clara, adequada e ostensiva acerca de, entre outras características
- * previstas em regulamentação para o atendimento do princípio do livre
- * acesso: I - finalidade específica do tratamento; II - forma e duração do
- * tratamento (...); V - informações acerca do uso compartilhado de dados pelo
- * controlador e a finalidade; (...) VII - direitos do titular, com menção
- * explícita aos direitos contidos no art. 18 desta Lei". Esta tela apresenta
- * esse texto; não o reescreve, porque a versão aceita é gravada junto da
- * resposta e precisa ser a mesma que a pessoa leu.
+ * manda informar de forma "clara, adequada e ostensiva": finalidade, o que se
+ * coleta, quem vê, por quanto tempo e quais são os direitos do titular. Os
+ * três primeiros itens ficam no cartão, em letra de leitura; prazo e direitos
+ * vêm logo abaixo, na mesma tela e antes do aceite — nenhum deles é omitido.
  *
  * ## O que a tela não mostra
  *
- * **Nunca o nome da empresa.** R5, dito duas vezes na reunião: antes da
- * entrevista o candidato vê atividade, localidade, segmento e turno. Todo o
- * cabeçalho sai de `getCandidateJobView`, que é um tipo fechado de quatro
- * campos justamente para que nenhum outro caminho deixe o nome escapar. Há um
- * teste e2e que falha se ele aparecer.
+ * O nome da empresa não aparece em lugar nenhum (R5). O cabeçalho sai de
+ * `getCandidateJobView`, que é um tipo fechado de quatro campos — atividade,
+ * localidade, segmento e turno —, e o rodapé diz isso em voz alta para a
+ * pessoa não ficar procurando. Também não aparecem o percentual de aderência,
+ * o ranking nem qualquer outro candidato: o candidato responde, não se avalia.
  *
- * ## Desenho
+ * ## Forma
  *
- * Coluna única e estreita, uma pergunta por vez, alvos grandes: o público é
- * operacional, responde pelo celular e tem baixo letramento digital. A casca
- * do produto permanece porque a demonstração é conduzida de dentro dela; o
- * conteúdo é que se estreita.
+ * Uma pergunta por tela, alvos de 48px, corpo de 15px. O público é operacional
+ * e com baixo letramento digital: o que não é a pergunta atual, o botão de
+ * seguir ou o de voltar não está na tela.
  */
-
-/** Um passo do fluxo: o aceite, as cinco perguntas, a confirmação. */
-type Step = { kind: 'consent' } | { kind: 'question'; index: number };
-
-type Answers = Partial<Record<FitAxisId, CultureOptionValue>>;
 
 const TOTAL_QUESTIONS = CANDIDATE_FIT_QUESTIONS.length;
 
-/** Bloco do texto de aceite: um rótulo curto e o parágrafo, sem juridiquês. */
-function ConsentItem({ label, children }: { label: string; children: string }) {
-  return (
-    <div>
-      <p className="iel-eyebrow">{label}</p>
-      <p className="mt-1 text-base leading-relaxed text-foreground">
-        {children}
-      </p>
-    </div>
-  );
+type Step =
+  | { kind: 'consent' }
+  | { kind: 'question'; index: number }
+  | { kind: 'done' };
+
+type Answers = Partial<Record<FitAxisId, CandidateFitOption>>;
+
+/**
+ * As cinco respostas completas, ou `null` enquanto faltar alguma.
+ *
+ * Os eixos são escritos um a um de propósito: é o que deixa o TypeScript
+ * provar que o objeto entregue ao `dispatch` tem as cinco chaves, sem
+ * conversão de tipo escondendo um questionário respondido pela metade.
+ */
+function respostasCompletas(
+  answers: Answers
+): Record<FitAxisId, CultureOptionValue> | null {
+  const apoio = answers['apoio-inicial'];
+  const autonomia = answers.autonomia;
+  const comunicacao = answers['comunicacao-prioridades'];
+  const ritmo = answers['ritmo-turno'];
+  const aprendizado = answers.aprendizado;
+
+  if (!apoio || !autonomia || !comunicacao || !ritmo || !aprendizado) {
+    return null;
+  }
+
+  return {
+    'apoio-inicial': apoio.value,
+    autonomia: autonomia.value,
+    'comunicacao-prioridades': comunicacao.value,
+    'ritmo-turno': ritmo.value,
+    aprendizado: aprendizado.value
+  };
 }
 
 export function FitQuestionnaireScreen({
@@ -90,14 +115,15 @@ export function FitQuestionnaireScreen({
   const { state, dispatch } = useIelDemo();
   const existing = getFitResponse(state, applicationId);
 
-  const [step, setStep] = useState<Step>({ kind: 'consent' });
-  const [accepted, setAccepted] = useState(false);
-  const [answers, setAnswers] = useState<Answers>({});
   // Quem já respondeu abre direto na confirmação. "Responder novamente" é
   // permitido porque a ação é idempotente por candidatura: uma pessoa tem
   // uma resposta, não duas.
-  const [finished, setFinished] = useState(existing !== null);
-  const [showTransparency, setShowTransparency] = useState(false);
+  const [step, setStep] = useState<Step>(
+    existing ? { kind: 'done' } : { kind: 'consent' }
+  );
+  const [accepted, setAccepted] = useState(false);
+  const [answers, setAnswers] = useState<Answers>({});
+  const [ignoredDeadline, setIgnoredDeadline] = useState(false);
 
   const application = getApplication(state, applicationId);
   const jobView = getCandidateJobView(state, applicationId);
@@ -105,277 +131,329 @@ export function FitQuestionnaireScreen({
 
   if (!application || !jobView) {
     return (
-      <Alert variant="destructive">
-        Candidatura não encontrada nesta base de demonstração.
-      </Alert>
+      <CandidateFrame badge={null}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Link inválido</CardTitle>
+            <CardDescription>
+              Este link não corresponde a nenhuma candidatura. Confira a
+              mensagem que você recebeu.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </CandidateFrame>
     );
   }
+
+  const badge = (
+    <Badge
+      variant="outline"
+      className="font-medium text-muted-foreground"
+    >
+      Vaga de {jobView.activity}
+    </Badge>
+  );
+
+  const expired =
+    getFitStatus(state, application) === 'expirado' &&
+    !existing &&
+    !ignoredDeadline;
 
   const restart = () => {
     setAnswers({});
     setAccepted(false);
     setStep({ kind: 'consent' });
-    setFinished(false);
-    setShowTransparency(false);
   };
 
   const submit = () => {
-    const complete = CANDIDATE_FIT_QUESTIONS.every(
-      (question) => answers[question.axisId] !== undefined
-    );
-    if (!complete) return;
+    const completas = respostasCompletas(answers);
+    if (!completas) return;
 
     dispatch({
       type: 'answer-fit-questionnaire',
       applicationId,
-      answers: answers as Record<FitAxisId, CultureOptionValue>,
+      answers: completas,
       consentVersion: CANDIDATE_CONSENT_VERSION,
       at: nowIso()
     });
-    setFinished(true);
+    setStep({ kind: 'done' });
   };
 
-  return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      {/*
-        Cabeçalho da vaga como o candidato pode vê-la: atividade, localidade,
-        segmento e turno. Nada além disso sai de `getCandidateJobView`.
-      */}
-      <header className="space-y-2 border-b border-border pb-4">
-        <p className="iel-eyebrow">Questionário da vaga</p>
-        <h1 className="iel-display text-[1.375rem] leading-tight text-foreground">
-          Como você prefere trabalhar?
-        </h1>
-        <p className="text-sm font-medium text-foreground">
-          Vaga de {jobView.activity}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Chip>{jobView.location}</Chip>
-          <Chip>{jobView.sector}</Chip>
-          <Chip>{jobView.shift}</Chip>
-        </div>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          São 5 perguntas, sem resposta certa. O nome da empresa aparece para
-          você só a partir da entrevista.
-        </p>
-      </header>
+  if (expired) {
+    return (
+      <CandidateFrame badge={badge}>
+        <Card>
+          <CardHeader>
+            <ClockIcon
+              aria-hidden="true"
+              className="size-6 text-muted-foreground"
+            />
+            <CardTitle className="text-[18px]">
+              O prazo para responder terminou
+            </CardTitle>
+            <CardDescription className="leading-relaxed">
+              O questionário desta vaga ficava aberto por dois dias. O IEL
+              continua com o seu currículo: se a vaga voltar a precisar de
+              respostas, você recebe um novo link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 w-full"
+              onClick={() => setIgnoredDeadline(true)}
+            >
+              Responder mesmo assim
+            </Button>
+          </CardContent>
+        </Card>
+      </CandidateFrame>
+    );
+  }
 
-      {finished ? (
-        <div className="space-y-5">
-          <div className="rounded-[var(--card-radius)] border border-success/40 bg-success/[0.06] p-5">
-            <h2 className="iel-display text-[1.125rem] leading-snug text-foreground">
-              Respostas registradas
-            </h2>
-            <p className="mt-2 text-base leading-relaxed text-foreground">
+  if (step.kind === 'done') {
+    return (
+      <CandidateFrame badge={badge}>
+        <Card>
+          <CardHeader>
+            <CircleCheckIcon
+              aria-hidden="true"
+              className="size-7 text-foreground"
+            />
+            <CardTitle className="text-[22px] tracking-tight">Pronto</CardTitle>
+            <CardDescription className="text-[15px] leading-relaxed">
               Você não precisa fazer mais nada agora.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              O IEL compara o que você respondeu com o jeito de trabalhar da
+              empresa desta vaga. Se o seu currículo for enviado, a empresa vê o
+              resultado por ponto — nunca as suas respostas uma a uma.
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              O IEL vai usar suas respostas só nesta vaga, para ver o quanto
-              você combina com o jeito de trabalhar da empresa. Se o seu
-              currículo for enviado, a empresa vê esse resultado por ponto —
-              nunca as suas respostas uma a uma.
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Se quiser mudar alguma resposta, pode responder de novo: fica
+            <p>
+              Se a empresa quiser conversar, o contato vem por quem já fala com
+              você. Quiser mudar alguma resposta, é só responder de novo: fica
               valendo a última.
             </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-3">
-            <Button
-              className="min-h-12 w-full text-base"
-              variant="outline"
-              aria-expanded={showTransparency}
-              onClick={() => setShowTransparency((value) => !value)}
-            >
-              Ver o que está registrado sobre você
-            </Button>
-            <Button
-              className="min-h-12 w-full text-base"
-              variant="ghost"
-              onClick={restart}
-            >
-              Responder novamente
-            </Button>
-          </div>
+        {talent ? <TalentTransparency talentId={talent.id} /> : null}
 
-          {showTransparency && talent ? (
-            <TalentTransparency talentId={talent.id} />
-          ) : null}
-        </div>
-      ) : step.kind === 'consent' ? (
-        <section
-          aria-labelledby="consent-title"
-          className="space-y-5"
-        >
-          <h2
-            id="consent-title"
-            className="iel-display text-[1.125rem] leading-snug text-foreground"
+        <div className="mt-auto pt-2">
+          <Button
+            variant="ghost"
+            size="lg"
+            className="h-11 w-full"
+            onClick={restart}
           >
-            {CANDIDATE_CONSENT_TEXT.title}
-          </h2>
+            Responder novamente
+          </Button>
+        </div>
+      </CandidateFrame>
+    );
+  }
 
-          <div className="space-y-4 rounded-[var(--card-radius)] border border-border bg-card p-4">
+  if (step.kind === 'consent') {
+    return (
+      <CandidateFrame badge={badge}>
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+            {CANDIDATE_CONSENT_TEXT.title}
+          </h1>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            São 5 perguntas sobre como você prefere trabalhar. Leva cerca de 5
+            minutos e não existe resposta certa.
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="flex flex-col gap-4">
             <ConsentItem label="Para quê">
               {CANDIDATE_CONSENT_TEXT.purpose}
             </ConsentItem>
-            <ConsentItem label="O que é coletado">
+            <ConsentItem label="O que coletamos">
               {CANDIDATE_CONSENT_TEXT.collected}
             </ConsentItem>
             <ConsentItem label="Quem vê">
               {CANDIDATE_CONSENT_TEXT.whoSees}
             </ConsentItem>
-            <ConsentItem label="Por quanto tempo">
-              {CANDIDATE_CONSENT_TEXT.retention}
-            </ConsentItem>
-            <ConsentItem label="Seus direitos">
-              {CANDIDATE_CONSENT_TEXT.rights}
-            </ConsentItem>
-          </div>
+          </CardContent>
+        </Card>
 
-          <label
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {CANDIDATE_CONSENT_TEXT.retention} {CANDIDATE_CONSENT_TEXT.rights}
+        </p>
+
+        <div className="mt-auto flex flex-col gap-3 pt-4">
+          <Label
             htmlFor="fit-consent"
-            className="flex min-h-12 cursor-pointer items-start gap-3 rounded-[var(--control-radius)] border border-border p-3 text-base leading-relaxed text-foreground"
+            className="flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium"
           >
             <Checkbox
-              inputId="fit-consent"
-              className="mt-1 size-5"
+              id="fit-consent"
+              className="size-5"
               checked={accepted}
-              onCheckedChange={setAccepted}
+              onCheckedChange={(value) => setAccepted(value === true)}
             />
             Li e aceito
-          </label>
-
+          </Label>
           <Button
-            className="min-h-12 w-full text-base"
+            size="lg"
+            className="h-12 w-full text-[15px]"
             disabled={!accepted}
             onClick={() => setStep({ kind: 'question', index: 0 })}
           >
             Começar
           </Button>
-
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Versão do aceite: {CANDIDATE_CONSENT_TEXT.version}. Sem o aceite o
-            questionário não abre.
+          <p className="text-center text-xs leading-relaxed text-muted-foreground">
+            Sem o aceite o questionário não abre. Versão do texto:{' '}
+            {CANDIDATE_CONSENT_TEXT.version}.
           </p>
-        </section>
-      ) : (
-        (() => {
-          const question = CANDIDATE_FIT_QUESTIONS[step.index];
-          if (!question) return null;
-          const chosen = answers[question.axisId];
-          const isLast = step.index === TOTAL_QUESTIONS - 1;
+        </div>
+      </CandidateFrame>
+    );
+  }
 
+  const question = CANDIDATE_FIT_QUESTIONS[step.index];
+  if (!question) return null;
+
+  const chosen = answers[question.axisId];
+  const isLast = step.index === TOTAL_QUESTIONS - 1;
+
+  return (
+    <CandidateFrame badge={badge}>
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between text-[13px] text-muted-foreground">
+          <span aria-live="polite">
+            Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
+          </span>
+          <span>cerca de 1 min</span>
+        </div>
+        <Progress
+          className="h-1.5 bg-muted"
+          value={((step.index + 1) / TOTAL_QUESTIONS) * 100}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-[22px] font-semibold leading-[1.25] tracking-tight">
+          {question.prompt}
+        </h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {question.hint}
+        </p>
+      </div>
+
+      <RadioGroup
+        className="gap-2.5"
+        value={chosen?.id ?? ''}
+        onValueChange={(value) => {
+          const option = question.options.find((entry) => entry.id === value);
+          if (!option) return;
+          setAnswers((current) => ({ ...current, [question.axisId]: option }));
+        }}
+      >
+        {question.options.map((option) => {
+          const selected = chosen?.id === option.id;
           return (
-            <section
-              aria-labelledby="question-title"
-              className="space-y-5"
+            <Label
+              key={option.id}
+              htmlFor={`${question.axisId}-${option.id}`}
+              data-selected={selected ? '' : undefined}
+              className="flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-[1.35] data-[selected]:border-foreground data-[selected]:bg-muted/50 data-[selected]:ring-1 data-[selected]:ring-foreground"
             >
-              <div className="space-y-2">
-                <p
-                  className="iel-eyebrow"
-                  aria-live="polite"
-                >
-                  {step.index + 1} de {TOTAL_QUESTIONS} ·{' '}
-                  {AXIS_LABEL[question.axisId]}
-                </p>
-                <span
-                  aria-hidden="true"
-                  className="block h-1 w-full overflow-hidden rounded-[var(--radius-pill)] bg-muted"
-                >
-                  <span
-                    className="block h-full rounded-[var(--radius-pill)] bg-primary"
-                    style={{
-                      width: `${((step.index + 1) / TOTAL_QUESTIONS) * 100}%`
-                    }}
-                  />
-                </span>
-                <h2
-                  id="question-title"
-                  className="iel-display text-[1.125rem] leading-snug text-foreground"
-                >
-                  {question.prompt}
-                </h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {question.hint}
-                </p>
-              </div>
-
-              <div
-                role="radiogroup"
-                aria-labelledby="question-title"
-                className="space-y-3"
-              >
-                {question.options.map((option) => {
-                  const selected = chosen === option.value;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() =>
-                        setAnswers((current) => ({
-                          ...current,
-                          [question.axisId]: option.value
-                        }))
-                      }
-                      className={cn(
-                        'flex min-h-12 w-full items-center gap-3 rounded-[var(--card-radius)] border p-4 text-left text-base leading-relaxed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-                        selected
-                          ? 'border-primary bg-accent/60 text-foreground'
-                          : 'border-border bg-card text-foreground hover:bg-muted'
-                      )}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'grid size-5 shrink-0 place-items-center rounded-full border-2',
-                          selected ? 'border-primary' : 'border-border-strong'
-                        )}
-                      >
-                        {selected ? (
-                          <span className="size-2.5 rounded-full bg-primary" />
-                        ) : null}
-                      </span>
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  className="min-h-12 flex-1 text-base"
-                  variant="outline"
-                  onClick={() =>
-                    setStep(
-                      step.index === 0
-                        ? { kind: 'consent' }
-                        : { kind: 'question', index: step.index - 1 }
-                    )
-                  }
-                >
-                  Voltar
-                </Button>
-                <Button
-                  className="min-h-12 flex-1 text-base"
-                  disabled={chosen === undefined}
-                  onClick={() => {
-                    if (isLast) {
-                      submit();
-                      return;
-                    }
-                    setStep({ kind: 'question', index: step.index + 1 });
-                  }}
-                >
-                  {isLast ? 'Enviar respostas' : 'Próxima'}
-                </Button>
-              </div>
-            </section>
+              <RadioGroupItem
+                id={`${question.axisId}-${option.id}`}
+                className="size-[18px]"
+                value={option.id}
+              />
+              <span>{option.label}</span>
+            </Label>
           );
-        })()
-      )}
+        })}
+      </RadioGroup>
+
+      <div className="mt-auto flex flex-col gap-2.5 pt-4">
+        <Button
+          size="lg"
+          className="h-12 w-full text-[15px]"
+          disabled={!chosen}
+          onClick={() => {
+            if (isLast) {
+              submit();
+              return;
+            }
+            setStep({ kind: 'question', index: step.index + 1 });
+          }}
+        >
+          {isLast ? 'Enviar respostas' : 'Próxima'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="lg"
+          className="h-11 w-full text-muted-foreground"
+          onClick={() =>
+            setStep(
+              step.index === 0
+                ? { kind: 'consent' }
+                : { kind: 'question', index: step.index - 1 }
+            )
+          }
+        >
+          Voltar
+        </Button>
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          Suas respostas valem só para esta vaga. O nome da empresa você conhece
+          na entrevista.
+        </p>
+      </div>
+    </CandidateFrame>
+  );
+}
+
+/**
+ * A moldura de todas as telas do candidato.
+ *
+ * O quadrado "IEL" já vem da casca por link (`layout/iel-shell.tsx`), então
+ * aqui fica só o nome do serviço e a etiqueta da vaga — que é o único jeito
+ * de a pessoa saber a que candidatura o link se refere sem descobrir a
+ * empresa (R5).
+ */
+function CandidateFrame({
+  badge,
+  children
+}: {
+  badge: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-6 px-1 pt-2">
+      {/*
+       * Quem é o remetente já está no cabeçalho da casca (Mind RH · IEL ·
+       * Centro de Empregos). Repetir aqui gastava a primeira linha da tela
+       * com uma informação que o candidato acabou de ler; o que sobra é a
+       * vaga, que é o contexto que ele precisa.
+       */}
+      <div className="flex items-center justify-end gap-2">{badge}</div>
+      {children}
+    </div>
+  );
+}
+
+function ConsentItem({
+  label,
+  children
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="text-sm leading-relaxed text-foreground">{children}</p>
     </div>
   );
 }

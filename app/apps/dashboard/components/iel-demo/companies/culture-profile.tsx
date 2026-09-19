@@ -1,332 +1,96 @@
 'use client';
 
+import { useState } from 'react';
 import {
   CULTURE_RESPONDENT_LABEL,
   CULTURE_SCALE_MAX,
   CULTURE_SCALE_MIN,
   getCultureOptionValue,
-  MIN_TEAM_RESPONSES,
   type CultureRespondent
 } from '@/features/iel-demo/analysis/culture';
-import { CULTURE_INVITE_DEADLINE_DAYS } from '@/features/iel-demo/analysis/culture-invites';
 import { COPY, type EstadoDeLeitura } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  getCompany,
+  AXIS_WEIGHT_LABEL,
+  getAxisWeights,
   getCompanyCultureProfile,
-  getCultureInvites,
   getCultureReading,
   getCultureSampleProgress,
+  getJob,
   type CompanyCultureAxisProfile,
   type CultureAxisReading,
   type CultureSampleProgress
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-
-import { Button, cn, FilterNativeSelect, toast } from '@workspace/ui';
-
 import {
-  Hero,
-  HowItWorks,
-  InfoHint,
-  Panel,
-  PanelHeader,
-  SourceDot,
-  SummaryRow,
-  type HeroFigures
-} from '../shared/ui';
-import { CollapsibleSection } from '../talents/collapsible-section';
+  AlertCircle,
+  ChevronDown,
+  CircleCheck,
+  CircleDashed,
+  X
+} from 'lucide-react';
 
-/** Proposta da análise: pré-preenchida, com o trecho que a sustenta. */
-function SuggestionBlock({
-  entry,
-  companyId
-}: {
-  entry: CultureAxisReading;
-  companyId: string;
-}) {
-  const { dispatch } = useIelDemo();
-  const suggestion = entry.pendingSuggestion;
-  if (!suggestion) return null;
-
-  return (
-    <div className="rounded-[var(--control-radius)] border border-dashed border-info/40 bg-info/[0.04] p-3">
-      <p className="text-sm font-medium text-foreground">
-        {COPY.axis(entry.question.axisId)}
-      </p>
-
-      <p className="mt-1.5 text-sm text-foreground">
-        Sugestão:{' '}
-        {entry.question.options.find(
-          (option) => option.id === suggestion.optionId
-        )?.label ?? suggestion.optionId}
-      </p>
-
-      <p className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-        <SourceDot sourceId={suggestion.sourceId} />
-        vem de: {suggestion.sourceLabel}
-        <InfoHint
-          label={`Trecho que sustenta a sugestão: “${suggestion.excerpt}”`}
-        />
-      </p>
-
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => {
-            dispatch({
-              type: 'answer-culture',
-              companyId,
-              axisId: entry.question.axisId,
-              optionId: suggestion.optionId,
-              at: nowIso()
-            });
-            toast.success('Resposta confirmada pela empresa.');
-          }}
-        >
-          Confirmar
-        </Button>
-
-        <label
-          className="sr-only"
-          htmlFor={`correct-${entry.question.axisId}`}
-        >
-          Corrigir a sugestão de {COPY.axis(entry.question.axisId)}
-        </label>
-        <FilterNativeSelect
-          id={`correct-${entry.question.axisId}`}
-          className="h-8 w-64 text-xs"
-          value=""
-          onValueChange={(value) => {
-            if (!value) return;
-            dispatch({
-              type: 'answer-culture',
-              companyId,
-              axisId: entry.question.axisId,
-              optionId: value,
-              at: nowIso()
-            });
-            toast.info('Resposta corrigida pela empresa.');
-          }}
-        >
-          <option value="">Corrigir para…</option>
-          {entry.question.options
-            .filter((option) => option.id !== suggestion.optionId)
-            .map((option) => (
-              <option
-                key={option.id}
-                value={option.id}
-              >
-                {option.label}
-              </option>
-            ))}
-        </FilterNativeSelect>
-      </div>
-    </div>
-  );
-}
-
-/** A média como a tela escreve: uma casa decimal, vírgula. */
-function formatMean(value: number): string {
-  return value.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  });
-}
-
-/** Marcador de um papel no trilho do ponto. */
-const RESPONDENT_MARK: Record<CultureRespondent, string> = {
-  gestao: 'rounded-[3px] bg-chart-2',
-  rh: 'rounded-[3px] bg-chart-3',
-  equipe: 'rounded-full bg-chart-1'
-};
+import { toast } from '@workspace/ui';
+import { cn } from '@workspace/ui/lib/utils';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@workspace/ui/shadcn/collapsible';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@workspace/ui/shadcn/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@workspace/ui/shadcn/tooltip';
 
 /**
- * O ponto como instrumento, não como lista.
+ * Como a empresa trabalha, em cinco linhas de tabela.
  *
- * Cada papel que respondeu ocupa a sua posição no trilho, entre os dois
- * polos que a própria empresa respondeu — e a distância entre gestão e
- * equipe passa a ser uma coisa que se vê. A dispersão da equipe é desenhada
- * como um rastro em volta do marcador: proporcional a quantas respostas
- * ficaram fora da alternativa mais votada. Uma equipe rachada e uma equipe
- * unânime deixam de ter o mesmo desenho.
+ * Uma linha por ponto do dia a dia, e em cada linha três coisas: o que a
+ * equipe diz (a alternativa que a média descreve), o trilho em que gestão,
+ * equipe e média ocupam posições diferentes, e quantas respostas sustentam
+ * aquilo. A dispersão da equipe é a faixa clara em volta do marcador — uma
+ * equipe rachada e uma equipe unânime deixam de ter o mesmo desenho.
  *
- * Vive no detalhe da linha, não na primeira dobra: quem abre a tela precisa
- * saber quantas respostas chegaram, e só depois de onde vem cada uma.
+ * A mesma tabela serve a tela da empresa e a aba "Como a empresa trabalha" da
+ * vaga; com `jobId`, cada ponto ganha o peso que aquela vaga declarou, porque
+ * é esse peso que muda o percentual que a mesa de seleção mostra ao lado.
  */
-function AxisTrack({
-  entry,
-  profile
-}: {
-  entry: CultureAxisReading;
-  /** O ponto como média: o que o motor de aderência de fato compara. */
-  profile: CompanyCultureAxisProfile | undefined;
-}) {
-  const low = entry.question.options.find(
-    (option) => option.value === CULTURE_SCALE_MIN
-  );
-  const high = entry.question.options.find(
-    (option) => option.value === CULTURE_SCALE_MAX
-  );
 
-  const marks = entry.voices
-    .map((voice) => ({
-      voice,
-      value: getCultureOptionValue(entry.question.axisId, voice.optionId)
-    }))
-    .filter(
-      (
-        mark
-      ): mark is { voice: (typeof entry.voices)[number]; value: 1 | 2 | 3 } =>
-        mark.value !== null
-    );
-
-  const percentOf = (value: number) =>
-    ((value - CULTURE_SCALE_MIN) / (CULTURE_SCALE_MAX - CULTURE_SCALE_MIN)) *
-    100;
-
-  const description =
-    marks.length === 0
-      ? `${entry.question.prompt} Ninguém respondeu ainda.`
-      : `${entry.question.prompt} ${marks
-          .map(
-            (mark) =>
-              `${CULTURE_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
-          )
-          .join('. ')}.`;
-
-  /*
-    Média do ponto.
-
-    "O fit cultural é a média do que a empresa entende" (00:41:44) — e é essa
-    média, não a resposta da gestão, que o motor de aderência compara com a do
-    candidato. Desenhá-la aqui é o que torna a leitura conferível contra o
-    percentual da outra tela.
-
-    Quando faltam respostas (`ready` falso), não há losango: abaixo do mínimo
-    de respostas da equipe, uma média seria o retrato de duas pessoas
-    apresentado como "a empresa".
-  */
-  const meanValue = profile?.ready ? (profile.mean ?? null) : null;
-
-  return (
-    <div
-      role="img"
-      aria-label={description}
-      className="mt-1 flex items-center gap-2.5"
-    >
-      <p className="hidden w-[9rem] shrink-0 text-right text-[11px] leading-snug text-muted-foreground md:block">
-        {low?.label}
-      </p>
-
-      <div className="relative h-10 min-w-0 flex-1">
-        <div className="absolute inset-y-0 left-3 right-3">
-          <span
-            aria-hidden="true"
-            className={cn(
-              'absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-[var(--radius-pill)]',
-              entry.state === 'divergente' ? 'bg-destructive/20' : 'bg-muted'
-            )}
-          />
-          {entry.question.options.map((option) => (
-            <span
-              key={option.id}
-              aria-hidden="true"
-              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/20"
-              style={{ left: `${percentOf(option.value)}%` }}
-            />
-          ))}
-
-          {/* Corda entre gestão e equipe: a diferença, desenhada. */}
-          {marks.length > 1
-            ? (() => {
-                const values = marks.map((mark) => percentOf(mark.value));
-                const start = Math.min(...values);
-                const end = Math.max(...values);
-                if (start === end) return null;
-                return (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-foreground/25"
-                    style={{ left: `${start}%`, width: `${end - start}%` }}
-                  />
-                );
-              })()
-            : null}
-
-          {marks.length === 0 ? (
-            <span className="absolute inset-0 flex items-center justify-center text-[11px] text-muted-foreground">
-              ninguém respondeu
-            </span>
-          ) : null}
-
-          {marks.map((mark) => {
-            // Dispersão: quanto da consulta ficou fora da alternativa mais
-            // votada. Só a equipe tem consulta agregada.
-            const spread =
-              mark.voice.respondent === 'equipe' && mark.voice.total > 0
-                ? 1 - mark.voice.count / mark.voice.total
-                : 0;
-
-            return (
-              <span
-                key={mark.voice.respondent}
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${percentOf(mark.value)}%` }}
-              >
-                {spread > 0 ? (
-                  <span
-                    aria-hidden="true"
-                    title={`${Math.round(spread * 100)}% da equipe respondeu outra alternativa`}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-chart-1/20"
-                    style={{
-                      width: `${14 + spread * 40}px`,
-                      height: `${14 + spread * 40}px`
-                    }}
-                  />
-                ) : null}
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'relative block size-3.5 ring-2 ring-card',
-                    RESPONDENT_MARK[mark.voice.respondent]
-                  )}
-                />
-              </span>
-            );
-          })}
-
-          {meanValue !== null ? (
-            <span
-              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${percentOf(meanValue)}%` }}
-            >
-              <span
-                aria-hidden="true"
-                title={`Média da empresa neste ponto: ${formatMean(meanValue)}`}
-                className="block size-3 rotate-45 bg-foreground/75 ring-2 ring-card"
-              />
-            </span>
-          ) : null}
-        </div>
-      </div>
-
-      <p className="hidden w-[9rem] shrink-0 text-[11px] leading-snug text-muted-foreground md:block">
-        {high?.label}
-      </p>
-    </div>
-  );
-}
+/** Marcador de cada papel no trilho. Quadrado para gestão, círculo para equipe. */
+const RESPONDENT_MARK: Record<CultureRespondent, string> = {
+  gestao: 'rounded-[3px] bg-foreground',
+  rh: 'rounded-[3px] bg-muted-foreground',
+  equipe: 'rounded-full bg-foreground'
+};
 
 /**
  * O estado da linha, em palavra comum.
  *
- * Só três coisas interessam a quem lê: a equipe respondeu o bastante e
- * gestão e equipe dizem a mesma coisa (combina), dizem coisas diferentes
- * (difere), ou ainda não há respostas que bastem (faltando). O quarto estado
- * — ninguém respondeu — continua separado porque silêncio não é o mesmo que
- * amostra insuficiente, e o glossário tem palavra para ele.
+ * Quatro estados e nada além: a equipe respondeu o bastante e as leituras
+ * coincidem (combina), gestão e equipe dizem coisas diferentes (difere),
+ * faltam respostas, ou ninguém respondeu. Silêncio não é amostra
+ * insuficiente, e o glossário tem palavra para cada um.
  */
 function readRowState(
   entry: CultureAxisReading,
@@ -336,6 +100,34 @@ function readRowState(
   if (entry.state === 'divergente') return 'difere';
   if (profile?.ready && entry.state === 'convergente') return 'combina';
   return 'faltando';
+}
+
+const ESTADO_ICON: Record<EstadoDeLeitura, typeof CircleCheck> = {
+  combina: CircleCheck,
+  difere: X,
+  faltando: AlertCircle,
+  'sem-resposta': CircleDashed
+};
+
+/** Cor semântica só no ícone, como manda a diretriz visual. */
+const ESTADO_ICON_COLOR: Record<EstadoDeLeitura, string> = {
+  combina: 'text-success',
+  difere: 'text-destructive',
+  faltando: 'text-warning',
+  'sem-resposta': 'text-muted-foreground'
+};
+
+function EstadoBadge({ estado }: { estado: EstadoDeLeitura }) {
+  const Icon = ESTADO_ICON[estado];
+  return (
+    <Badge
+      variant="outline"
+      className="gap-1.5 font-normal"
+    >
+      <Icon className={cn('size-3', ESTADO_ICON_COLOR[estado])} />
+      {COPY.estado(estado)}
+    </Badge>
+  );
 }
 
 /** A alternativa que a média descreve: a mais próxima do valor médio. */
@@ -356,279 +148,376 @@ function meanOptionLabel(
 }
 
 /**
- * Uma frase por linha: o que a equipe diz e quantos responderam.
+ * O trilho do ponto: gestão ■, equipe ● e a média ◆ entre os dois polos.
  *
- * O denominador é o tamanho da amostra convidada, e o numerador conta só as
- * respostas de **equipe** — as mesmas que decidem se o ponto fecha. Somar a
- * gestão aqui faria a linha dizer "8 de 10" numa consulta em que sete pessoas
- * responderam, e o número deixaria de bater com o do herói.
+ * A média só aparece quando o perfil fecha naquele ponto. Abaixo do mínimo de
+ * respostas da equipe, uma média seria o retrato de duas pessoas apresentado
+ * como "a empresa".
  */
-function rowSummary(
+function AxisTrack({
+  entry,
+  profile
+}: {
+  entry: CultureAxisReading;
+  profile: CompanyCultureAxisProfile | undefined;
+}) {
+  const marks = entry.voices
+    .map((voice) => ({
+      voice,
+      value: getCultureOptionValue(entry.question.axisId, voice.optionId)
+    }))
+    .filter(
+      (
+        mark
+      ): mark is { voice: (typeof entry.voices)[number]; value: 1 | 2 | 3 } =>
+        mark.value !== null
+    );
+
+  const percentOf = (value: number) =>
+    ((value - CULTURE_SCALE_MIN) / (CULTURE_SCALE_MAX - CULTURE_SCALE_MIN)) *
+    100;
+
+  const mean = profile?.ready ? (profile.mean ?? null) : null;
+
+  const descricao =
+    marks.length === 0
+      ? 'Ninguém respondeu este ponto.'
+      : marks
+          .map(
+            (mark) =>
+              `${CULTURE_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
+          )
+          .join('. ');
+
+  return (
+    <div
+      role="img"
+      aria-label={descricao}
+      className="relative h-4 w-full min-w-[120px]"
+    >
+      {/* Os marcadores vivem numa faixa recuada: no 0% e no 100% metade do
+          quadrado ficaria fora da coluna. */}
+      <div className="absolute inset-x-2 inset-y-0">
+        <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted" />
+
+        {marks.map((mark) => {
+          // Dispersão: quanto da consulta ficou fora da alternativa mais votada.
+          // Só a equipe responde em conjunto, então só ela tem faixa.
+          const spread =
+            mark.voice.respondent === 'equipe' && mark.voice.total > 0
+              ? 1 - mark.voice.count / mark.voice.total
+              : 0;
+
+          return (
+            <span
+              key={mark.voice.respondent}
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${percentOf(mark.value)}%` }}
+            >
+              {spread > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-1/2 top-1/2 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/20"
+                  style={{ width: `${16 + spread * 44}px` }}
+                />
+              ) : null}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'relative block size-3 ring-2 ring-background',
+                  RESPONDENT_MARK[mark.voice.respondent]
+                )}
+              />
+            </span>
+          );
+        })}
+
+        {mean !== null ? (
+          <span
+            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${percentOf(mean)}%` }}
+          >
+            <span
+              aria-hidden="true"
+              className="block size-3 rotate-45 bg-foreground/70 ring-2 ring-background"
+            />
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** "7 de 10 responderam": só respostas de equipe, as que fecham o ponto. */
+function respondentsLabel(
   entry: CultureAxisReading,
-  profile: CompanyCultureAxisProfile | undefined,
   progress: CultureSampleProgress
 ): string {
   const equipe = entry.voices.find((voice) => voice.respondent === 'equipe');
   const respondidas = equipe?.total ?? 0;
   const total = Math.max(progress.total, respondidas);
-  const mean = profile?.ready ? (profile.mean ?? null) : null;
-
-  if (mean === null) return COPY.missingAnswers(respondidas, total);
-
-  const label = meanOptionLabel(entry, mean);
-  return `A equipe diz: ${label ?? '—'}. ${respondidas} de ${total} responderam.`;
+  return `${respondidas} de ${total} responderam`;
 }
 
-/** O prazo como número do herói: uma contagem, não uma data. */
-function deadlineFigure(progress: CultureSampleProgress): {
-  value: string;
-  tone: 'default' | 'atencao';
-} {
-  const days = progress.daysLeft;
-  if (days === null) return { value: 'sem prazo', tone: 'default' };
-  if (progress.overdue) {
-    const atraso = Math.abs(days);
-    return {
-      value: `vencido há ${plural(atraso, 'dia', 'dias')}`,
-      tone: 'atencao'
-    };
-  }
-  if (days <= 0) return { value: 'vence hoje', tone: 'atencao' };
-  return {
-    value: `em ${plural(days, 'dia', 'dias')}`,
-    tone: days <= 1 ? 'atencao' : 'default'
-  };
+/** Proposta da análise: pré-preenchida, com o trecho que a sustenta. */
+function SuggestionRow({
+  entry,
+  companyId
+}: {
+  entry: CultureAxisReading;
+  companyId: string;
+}) {
+  const { dispatch } = useIelDemo();
+  const suggestion = entry.pendingSuggestion;
+  if (!suggestion) return null;
+
+  const sugerida = entry.question.options.find(
+    (option) => option.id === suggestion.optionId
+  );
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="text-sm font-medium">
+          {COPY.axis(entry.question.axisId)}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {sugerida?.label ?? suggestion.optionId}
+        </p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger className="text-left text-xs text-muted-foreground underline underline-offset-4">
+              vem de: {suggestion.sourceLabel}
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              “{suggestion.excerpt}”
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          onClick={() => {
+            dispatch({
+              type: 'answer-culture',
+              companyId,
+              axisId: entry.question.axisId,
+              optionId: suggestion.optionId,
+              at: nowIso()
+            });
+            toast.success('Resposta confirmada pela empresa.');
+          }}
+        >
+          Confirmar
+        </Button>
+        <Select
+          value=""
+          onValueChange={(value) => {
+            if (!value) return;
+            dispatch({
+              type: 'answer-culture',
+              companyId,
+              axisId: entry.question.axisId,
+              optionId: value,
+              at: nowIso()
+            });
+            toast.info('Resposta corrigida pela empresa.');
+          }}
+        >
+          <SelectTrigger
+            size="sm"
+            className="w-[15rem]"
+            aria-label={`Corrigir ${COPY.axis(entry.question.axisId)}`}
+          >
+            <SelectValue placeholder="Corrigir para…" />
+          </SelectTrigger>
+          <SelectContent>
+            {entry.question.options
+              .filter((option) => option.id !== suggestion.optionId)
+              .map((option) => (
+                <SelectItem
+                  key={option.id}
+                  value={option.id}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
+/** Legenda do trilho: sem ela os três marcadores são três pontinhos. */
+function TrackLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-[2px] bg-foreground" />
+        gestão
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full bg-foreground" />
+        equipe
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rotate-45 bg-foreground/70" />
+        média
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-2.5 w-5 rounded-full bg-muted-foreground/20" />
+        dispersão da equipe
+      </span>
+    </div>
+  );
 }
 
 /**
- * Como se trabalha nesta empresa?
+ * Os cinco pontos do dia a dia da empresa, como tabela.
  *
- * A tela tinha cinco blocos de texto por ponto do dia a dia, um trilho
- * sempre aberto e a palavra "traçado" em todo lugar. Quem abria não sabia
- * dizer o que tinha de fazer. Agora abre com um número — quantas respostas
- * chegaram, de quantas foram pedidas — e um verbo: cobrar quem falta. Os
- * cinco pontos viraram cinco linhas de uma frase, e o instrumento (trilho,
- * dispersão, média) mudou para o detalhe de cada uma.
+ * Reutilizada pela tela da vaga: `jobId` acrescenta o peso que aquela vaga
+ * declarou para cada ponto — é o peso que explica por que dois candidatos com
+ * as mesmas respostas têm percentuais diferentes em vagas diferentes.
  */
-export function CultureProfile({
+export function CompanyCultureTable({
   companyId,
-  onInvite
+  jobId
 }: {
   companyId: string;
-  /**
-   * Abre o formulário de convite, que vive na seção da amostra.
-   *
-   * `null` quando quem olha é a empresa: convidar e cobrar a amostra são
-   * trabalho da analista do IEL, e o gestor vê só a leitura da própria
-   * empresa (PRODUTO.md §5.1).
-   */
-  onInvite: (() => void) | null;
+  jobId?: string;
 }) {
-  const { state, dispatch } = useIelDemo();
-  const company = getCompany(companyId);
+  const { state, persona } = useIelDemo();
+  const [sugestoesAbertas, setSugestoesAbertas] = useState(false);
+
   const reading = getCultureReading(state, companyId);
   const profile = getCompanyCultureProfile(state, companyId);
   const progress = getCultureSampleProgress(state, companyId);
-  const invites = getCultureInvites(state, companyId);
 
-  const emAberto = invites.filter((invite) => !invite.answeredAt);
-  const suficientes = profile.filter(
-    (axis) => axis.ready && axis.mean !== null
-  ).length;
+  const job = jobId ? getJob(jobId) : null;
+  const weights = job ? getAxisWeights(state, job) : null;
+
   const sugestoes = reading.filter((entry) => entry.pendingSuggestion !== null);
-  const prazo = deadlineFigure(progress);
-
-  const figures: HeroFigures = [
-    {
-      label: 'Responderam',
-      value: `${progress.answered} de ${progress.total}`,
-      tone: progress.ready ? 'default' : 'atencao'
-    },
-    { label: 'Prazo', value: prazo.value, tone: prazo.tone },
-    {
-      label: 'Pontos com resposta suficiente',
-      value: `${suficientes}/${profile.length}`
-    }
-  ];
-
-  const cobrar = () => {
-    for (const invite of emAberto) {
-      dispatch({
-        type: 'resend-culture-invite',
-        inviteId: invite.id,
-        at: nowIso()
-      });
-    }
-    toast.success(
-      `${plural(emAberto.length, 'link reenviado', 'links reenviados')}, com mais ${CULTURE_INVITE_DEADLINE_DAYS} dias de prazo.`
-    );
-  };
+  // Confirmar ou corrigir uma sugestão é responder pela empresa: quem faz isso
+  // é o analista com o gestor ao lado, não a tela que o candidato abre.
+  const podeResponder = persona.kind !== 'candidato';
 
   return (
-    <div className="space-y-6">
-      <Hero
-        eyebrow={
-          company ? `${company.sector} · ${company.location}` : undefined
-        }
-        title={company?.name ?? companyId}
-        description="Como se trabalha aqui, segundo quem trabalha aqui."
-        figures={figures}
-        actions={
-          onInvite === null ? null : (
-            <>
-              {emAberto.length > 0 ? (
-                <Button
-                  size="large"
-                  onClick={cobrar}
-                >
-                  Cobrar quem falta ({emAberto.length})
-                </Button>
-              ) : null}
-              <Button
-                size={emAberto.length > 0 ? 'medium' : 'large'}
-                variant={emAberto.length > 0 ? 'outline' : 'default'}
-                onClick={onInvite}
-              >
-                Convidar colaboradores
-              </Button>
-            </>
-          )
-        }
-      />
+    <div className="flex flex-col gap-4">
+      {sugestoes.length > 0 && podeResponder ? (
+        <Collapsible
+          open={sugestoesAbertas}
+          onOpenChange={setSugestoesAbertas}
+          className="rounded-lg border"
+        >
+          <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 p-3 text-left">
+            <span className="text-sm font-medium">
+              {plural(
+                sugestoes.length,
+                'sugestão para confirmar',
+                'sugestões para confirmar'
+              )}
+            </span>
+            <ChevronDown
+              className={cn(
+                'size-4 shrink-0 text-muted-foreground transition-transform',
+                sugestoesAbertas && 'rotate-180'
+              )}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2 border-t p-3">
+            <p className="text-xs text-muted-foreground">
+              Montadas a partir de texto que a empresa já escreveu. Não valem
+              como resposta até alguém confirmar.
+            </p>
+            {sugestoes.map((entry) => (
+              <SuggestionRow
+                key={entry.question.axisId}
+                entry={entry}
+                companyId={companyId}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      ) : null}
 
-      <Panel
-        elevation={1}
-        padding="none"
-        className="overflow-hidden"
-      >
-        <div className="px-5 pb-3 pt-4">
-          <PanelHeader
-            title="Como a empresa trabalha — os 5 pontos"
-            hint={COPY.axes.hint}
-            meta="Uma linha por ponto. Abra a linha para ver de onde vem a resposta."
-          />
-        </div>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow>
+              <TableHead className="w-[14rem]">Ponto do dia a dia</TableHead>
+              <TableHead>A equipe diz</TableHead>
+              <TableHead className="w-[9rem]">Leitura</TableHead>
+              <TableHead className="w-[10rem]">Respostas</TableHead>
+              <TableHead className="w-[12rem]">Estado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reading.map((entry) => {
+              const axisProfile = profile.find(
+                (axis) => axis.axisId === entry.question.axisId
+              );
+              const mean = axisProfile?.ready
+                ? (axisProfile.mean ?? null)
+                : null;
+              const peso = weights?.[entry.question.axisId];
 
-        {sugestoes.length > 0 ? (
-          <div className="border-t border-border px-5 py-4">
-            <CollapsibleSection
-              title={`${plural(sugestoes.length, 'sugestão para confirmar', 'sugestões para confirmar')}`}
-              meta="Montadas a partir de texto que a empresa já escreveu. Não valem como resposta até alguém confirmar."
-            >
-              <div className="space-y-3">
-                {sugestoes.map((entry) => (
-                  <SuggestionBlock
-                    key={entry.question.axisId}
-                    entry={entry}
-                    companyId={companyId}
-                  />
-                ))}
-              </div>
-            </CollapsibleSection>
-          </div>
-        ) : null}
-
-        <ul className="border-t border-border px-4 pb-2">
-          {reading.map((entry) => {
-            const axisProfile = profile.find(
-              (axis) => axis.axisId === entry.question.axisId
-            );
-
-            return (
-              <li key={entry.question.axisId}>
-                <SummaryRow
-                  title={COPY.axis(entry.question.axisId)}
-                  status={readRowState(entry, axisProfile)}
-                  summary={rowSummary(entry, axisProfile, progress)}
-                >
-                  <div className="space-y-3">
-                    <p className="iel-prose text-xs leading-relaxed text-muted-foreground">
-                      {entry.question.prompt}
-                    </p>
-
+              return (
+                <TableRow key={entry.question.axisId}>
+                  <TableCell className="align-middle">
+                    <span className="font-medium">
+                      {COPY.axis(entry.question.axisId)}
+                    </span>
+                    {peso ? (
+                      <span className="block text-xs text-muted-foreground">
+                        {AXIS_WEIGHT_LABEL[peso]} nesta vaga
+                      </span>
+                    ) : null}
+                  </TableCell>
+                  {/*
+                   * Um travessão não diz de quem é a falta. Abaixo do mínimo
+                   * de respostas a célula escreve o motivo: a consulta existe,
+                   * só ainda não sustenta uma leitura da equipe.
+                   */}
+                  <TableCell className="align-middle text-muted-foreground">
+                    {(mean === null ? null : meanOptionLabel(entry, mean)) ??
+                      'sem respostas suficientes'}
+                  </TableCell>
+                  <TableCell className="align-middle">
                     <AxisTrack
                       entry={entry}
                       profile={axisProfile}
                     />
-
-                    {/* Os polos não cabem nas pontas em telas estreitas. */}
-                    <p className="flex justify-between gap-3 text-[11px] leading-snug text-muted-foreground md:hidden">
-                      <span className="min-w-0">
-                        {
-                          entry.question.options.find(
-                            (option) => option.value === CULTURE_SCALE_MIN
-                          )?.label
-                        }
-                      </span>
-                      <span className="min-w-0 text-right">
-                        {
-                          entry.question.options.find(
-                            (option) => option.value === CULTURE_SCALE_MAX
-                          )?.label
-                        }
-                      </span>
-                    </p>
-
-                    {entry.voices.length > 0 ? (
-                      <ul className="flex flex-wrap gap-x-5 gap-y-1">
-                        {entry.voices.map((voice) => (
-                          <li
-                            key={voice.respondent}
-                            className="flex items-baseline gap-1.5 text-xs"
-                          >
-                            <span
-                              aria-hidden="true"
-                              className={cn(
-                                'size-2 shrink-0 translate-y-px',
-                                RESPONDENT_MARK[voice.respondent]
-                              )}
-                            />
-                            <span className="text-muted-foreground">
-                              {CULTURE_RESPONDENT_LABEL[voice.respondent]}
-                            </span>
-                            <span className="text-foreground/85">
-                              {voice.optionLabel}
-                            </span>
-                            {voice.respondent === 'equipe' ? (
-                              <span className="tabular-nums text-muted-foreground">
-                                {voice.count} de {voice.total} respostas
-                              </span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                </SummaryRow>
-              </li>
-            );
-          })}
-        </ul>
-      </Panel>
-
-      <HowItWorks title="Como o perfil da empresa é formado">
-        <p>
-          O perfil é a <strong>média</strong> das respostas da amostra de
-          colaboradores, e não a resposta de uma pessoa. É essa média que o
-          cálculo de “{COPY.fit.label.toLowerCase()}” compara com o que o
-          candidato procura.
-        </p>
-        <p>
-          Um ponto só fecha com pelo menos {MIN_TEAM_RESPONSES} respostas da
-          equipe. Abaixo disso a tela diz que faltam respostas, em vez de tratar
-          duas pessoas como “a equipe”. O RH sozinho não responde pela empresa.
-        </p>
-        <p>
-          Cada pessoa convidada recebe um link próprio, sem login, válido por{' '}
-          {CULTURE_INVITE_DEADLINE_DAYS} dias. Guardamos só nome e e-mail
-          corporativo; as respostas entram agregadas e a empresa nunca vê quem
-          respondeu o quê.
-        </p>
-        <p>
-          Não é teste de personalidade e não produz nota: as perguntas descrevem
-          prática de trabalho, e um extremo não é melhor que o outro.
-        </p>
-      </HowItWorks>
+                  </TableCell>
+                  <TableCell className="align-middle tabular-nums text-muted-foreground">
+                    {respondentsLabel(entry, progress)}
+                  </TableCell>
+                  <TableCell className="align-middle">
+                    <EstadoBadge estado={readRowState(entry, axisProfile)} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+          {/*
+           * A legenda do trilho fica no rodapé da tabela, uma vez: ela
+           * explica uma coluna, e repetir os três símbolos em cada linha
+           * ocuparia mais espaço do que o dado que eles marcam.
+           */}
+          <TableFooter className="bg-transparent">
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                colSpan={5}
+                className="py-2"
+              >
+                <TrackLegend />
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
     </div>
   );
 }

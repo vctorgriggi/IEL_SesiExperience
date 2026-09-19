@@ -7,31 +7,38 @@ import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { applySyncEventPayload } from '@/features/iel-demo/state/reducer';
 import { getApplication, getTalent } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
+import { CircleAlertIcon, CircleCheckIcon } from 'lucide-react';
 
+import { toast } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
 import {
-  Alert,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-  toast
-} from '@workspace/ui';
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
 import { ImportEntry } from '../import/import-entry';
-import {
-  Chip,
-  formatDateTime,
-  IelPageHeader,
-  Panel,
-  PanelHeader
-} from '../shared/ui';
+import { usePageHeader } from '../layout/page-header-context';
+import { formatarDataHora } from '../shared/datas';
 
+/**
+ * De onde vem cada informação, e o que fazer quando ela para de vir.
+ *
+ * A tela responde duas perguntas do analista: "esse dado é de quando?" e "por
+ * que essa fonte está em silêncio?". Por isso a tabela traz a última
+ * atualização ao lado do estado, e a falha simulada preserva o que já havia
+ * chegado — uma fonte indisponível deixa o dado velho visível e rotulado, em
+ * vez de apagá-lo.
+ */
 export function DataSourcesScreen() {
   const { state, dispatch } = useIelDemo();
   const [lastResult, setLastResult] = useState<string | null>(null);
+
+  usePageHeader({ breadcrumb: [{ label: 'De onde vem' }] });
 
   const totals = {
     talents: new Set(
@@ -43,68 +50,79 @@ export function DataSourcesScreen() {
   };
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow="Integração simulada"
-        title="Fontes de dados"
-        description="De onde vem cada tipo de informação, com a última atualização recebida."
-      />
-
-      <Alert variant="default">
-        Em produção, o fluxo seria: sistema de recrutamento → dados autorizados
-        de vagas e candidaturas → central do IEL → análise e encaminhamento →
-        retorno ao processo original, quando suportado. Cada conector depende de
-        permissões próprias e ainda não está confirmado para o IEL.
-      </Alert>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">De onde vem</h1>
+        <p className="text-sm text-muted-foreground">
+          Cada tipo de informação com a sua origem e a última atualização
+          recebida. Nenhum sistema externo é consultado nesta demonstração.
+        </p>
+      </div>
 
       <ImportEntry />
 
-      <Panel padding="none">
-        <div className="overflow-x-auto">
+      <div className="flex flex-col gap-4">
+        <h2 className="text-base font-medium">Fontes</h2>
+        <div className="overflow-hidden rounded-lg border">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead scope="col">Fonte</TableHead>
                 <TableHead scope="col">Tipo de informação</TableHead>
-                <TableHead scope="col">Registros recebidos</TableHead>
+                <TableHead scope="col">Registros</TableHead>
                 <TableHead scope="col">Última atualização</TableHead>
-                <TableHead scope="col">Situação</TableHead>
-                <TableHead scope="col" />
+                <TableHead scope="col">Estado</TableHead>
+                <TableHead
+                  scope="col"
+                  className="text-right"
+                >
+                  Ação
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {state.dataSources.map((source) => (
                 <TableRow key={source.id}>
                   <TableCell className="align-top">
-                    <p className="text-sm font-medium text-foreground">
-                      {source.name}
-                    </p>
-                    <p className="max-w-96 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">{source.name}</p>
+                    <p className="max-w-[40ch] whitespace-normal text-xs text-muted-foreground">
                       {source.description}
                     </p>
                   </TableCell>
-                  <TableCell className="align-top text-sm text-muted-foreground">
+                  <TableCell className="align-top text-muted-foreground">
                     {source.kind}
                   </TableCell>
-                  <TableCell className="align-top text-sm text-foreground">
+                  <TableCell className="align-top tabular-nums text-foreground">
                     {source.receivedRecords}
                   </TableCell>
-                  <TableCell className="align-top text-xs text-muted-foreground">
-                    {formatDateTime(source.lastSyncAt)}
+                  <TableCell className="align-top tabular-nums text-muted-foreground">
+                    {formatarDataHora(source.lastSyncAt)}
                   </TableCell>
                   <TableCell className="align-top">
                     {source.status === 'ativa' ? (
-                      <Chip tone="positivo">Respondendo</Chip>
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground"
+                      >
+                        <CircleCheckIcon className="text-success" />
+                        Respondendo
+                      </Badge>
                     ) : (
-                      <div className="space-y-1">
-                        <Chip tone="conflito">Indisponível</Chip>
-                        <p className="max-w-64 text-[11px] text-muted-foreground">
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
+                          <CircleAlertIcon className="text-warning" />
+                          Indisponível
+                        </Badge>
+                        <p className="max-w-[32ch] whitespace-normal text-xs text-muted-foreground">
                           {source.lastError}
                         </p>
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="align-top">
+                  <TableCell className="align-top text-right">
                     {source.status === 'ativa' ? (
                       <Button
                         size="sm"
@@ -148,110 +166,132 @@ export function DataSourcesScreen() {
             </TableBody>
           </Table>
         </div>
-      </Panel>
+      </div>
 
-      <Panel className="flex flex-col gap-3">
-        <PanelHeader
-          eyebrow="Simulação"
-          title="Recebimento de atualização simulada"
-          hint="Evento fixo. Receber o mesmo evento novamente não duplica candidatura nem talento: a idempotência é verificada pelo identificador do evento."
-        />
-        <ul className="space-y-3">
-          {DEMO_SYNC_EVENTS.map((event) => {
-            const alreadyApplied = state.appliedSyncEventIds.includes(event.id);
-            const application = getApplication(
-              state,
-              event.payload.applicationId
-            );
-            const talent = getTalent(event.payload.talentId);
-            const sourceUnavailable =
-              state.dataSources.find((source) => source.id === event.sourceId)
-                ?.status === 'indisponivel';
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-base font-medium">Atualização simulada</h2>
+          <p className="text-sm text-muted-foreground">
+            Evento fixo. Receber o mesmo evento duas vezes não duplica
+            candidatura nem talento: a idempotência é verificada pelo
+            identificador do evento.
+          </p>
+        </div>
 
-            return (
-              <li
-                key={event.id}
-                className="space-y-2 rounded-[var(--control-radius)] border border-border p-3"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">
-                    {event.title}
-                  </p>
-                  {alreadyApplied ? (
-                    <Chip tone="positivo">Já aplicado</Chip>
-                  ) : (
-                    <Chip tone="atencao">Não aplicado</Chip>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {event.description}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Estado atual da candidatura: {talent?.name} ·{' '}
-                  {application?.externalStage}
-                </p>
-                <Button
-                  size="sm"
-                  disabled={sourceUnavailable}
-                  onClick={() => {
-                    const next = applySyncEventPayload(state, event, nowIso());
-                    dispatch({ type: 'hydrate', state: next });
-                    setLastResult(
-                      alreadyApplied
-                        ? `Evento ${event.id} já havia sido aplicado: nada foi duplicado (${totals.applications} candidaturas, ${totals.talents} talentos antes e depois).`
-                        : `Evento ${event.id} aplicado: a candidatura foi atualizada sem criar registros novos.`
-                    );
-                    toast.success(
-                      alreadyApplied
-                        ? 'Evento repetido: nenhum registro duplicado.'
-                        : 'Atualização aplicada à base local.'
-                    );
-                  }}
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead scope="col">Evento</TableHead>
+                <TableHead scope="col">Candidatura</TableHead>
+                <TableHead scope="col">Estado</TableHead>
+                <TableHead
+                  scope="col"
+                  className="text-right"
                 >
-                  Simular recebimento de atualização
-                </Button>
-                {sourceUnavailable ? (
-                  <p className="text-[11px] text-destructive">
-                    A fonte está indisponível. Restabeleça antes de receber
-                    atualizações.
-                  </p>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-        {lastResult ? <Alert variant="info">{lastResult}</Alert> : null}
-      </Panel>
+                  Ação
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {DEMO_SYNC_EVENTS.map((event) => {
+                const alreadyApplied = state.appliedSyncEventIds.includes(
+                  event.id
+                );
+                const application = getApplication(
+                  state,
+                  event.payload.applicationId
+                );
+                const talent = getTalent(event.payload.talentId);
+                const sourceUnavailable =
+                  state.dataSources.find(
+                    (source) => source.id === event.sourceId
+                  )?.status === 'indisponivel';
 
-      <Panel className="flex flex-col gap-2">
-        <PanelHeader
-          eyebrow="Limites da demonstração"
-          title="O que é simulado nesta demonstração"
-        />
-        <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-          <li>
-            Os quatro conjuntos de dados acima: nenhum sistema externo é
-            consultado.
-          </li>
-          <li>
-            O envio de esclarecimentos: nenhum e-mail, WhatsApp ou notificação
-            sai do ambiente.
-          </li>
-          <li>
-            O retorno ao sistema de origem: registramos localmente e rotulamos
-            como “Atualização externa não enviada — demonstração”.
-          </li>
-          <li>
-            A análise assistida: os textos são montados a partir dos registros
-            selecionados, sem chamada a modelo de linguagem.
-          </li>
-        </ul>
+                return (
+                  <TableRow key={event.id}>
+                    <TableCell className="align-top">
+                      <p className="font-medium text-foreground">
+                        {event.title}
+                      </p>
+                      <p className="max-w-[44ch] whitespace-normal text-xs text-muted-foreground">
+                        {event.description}
+                      </p>
+                    </TableCell>
+                    <TableCell className="whitespace-normal align-top text-muted-foreground">
+                      {talent?.name} · {application?.externalStage}
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground"
+                      >
+                        {alreadyApplied ? 'Já aplicado' : 'Não aplicado'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="align-top text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={sourceUnavailable}
+                        onClick={() => {
+                          const next = applySyncEventPayload(
+                            state,
+                            event,
+                            nowIso()
+                          );
+                          dispatch({ type: 'hydrate', state: next });
+                          setLastResult(
+                            alreadyApplied
+                              ? `Evento ${event.id} já havia sido aplicado: nada foi duplicado (${totals.applications} candidaturas, ${totals.talents} talentos antes e depois).`
+                              : `Evento ${event.id} aplicado: a candidatura foi atualizada sem criar registros novos.`
+                          );
+                          toast.success(
+                            alreadyApplied
+                              ? 'Evento repetido: nenhum registro duplicado.'
+                              : 'Atualização aplicada à base local.'
+                          );
+                        }}
+                      >
+                        Simular recebimento
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {lastResult ? (
+          <p className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
+            {lastResult}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2 border-t pt-4">
+        <h2 className="text-base font-medium">
+          O que é simulado nesta demonstração
+        </h2>
+        <p className="max-w-[80ch] text-sm text-muted-foreground">
+          Em produção o caminho seria sistema de recrutamento → dados
+          autorizados de vagas e candidaturas → central do IEL → análise e
+          encaminhamento → retorno ao processo de origem. Cada conector depende
+          de permissões próprias e nenhum está confirmado para o IEL.
+        </p>
+        <p className="max-w-[80ch] text-sm text-muted-foreground">
+          As quatro fontes acima: nenhum sistema externo é consultado. O envio
+          de perguntas: nenhum e-mail ou mensagem sai do ambiente. O retorno ao
+          sistema de origem: fica registrado localmente e rotulado como não
+          enviado.
+        </p>
         <p className="text-xs text-muted-foreground">
           Base local: {totals.talents} talentos, {totals.applications}{' '}
-          candidaturas, {totals.clarifications} solicitações e{' '}
+          candidaturas, {totals.clarifications} perguntas e{' '}
           {plural(totals.referrals, 'encaminhamento', 'encaminhamentos')}.
         </p>
-      </Panel>
+      </div>
     </div>
   );
 }

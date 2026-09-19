@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type {
   ImportPlan,
   ImportPlanEntry
@@ -8,19 +8,36 @@ import type {
 import { plural } from '@/features/iel-demo/format';
 import { getTalent } from '@/features/iel-demo/state/selectors';
 import type { DemoState } from '@/features/iel-demo/types';
+import { CircleAlert } from 'lucide-react';
 
-import { Button } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
-import { Panel, PanelHeader } from '../shared/ui';
 import { GrupoDeDecisao, type EstadoDaImportacao } from './decision-group';
 
-const LINHAS_VISIVEIS = 5;
-
-const DESCARTADA = 'descartado pelo filtro do Empregare — entra no resgate';
+const DESCARTADA = 'descartado pelo filtro — entra no resgate';
 
 type Linha = {
   id: string;
-  texto: string;
+  pessoa: string;
+  detalhe: string;
   descartada: boolean;
 };
 
@@ -29,6 +46,9 @@ type Grupo = {
   titulo: string;
   estado: EstadoDaImportacao;
   resumo?: string;
+  /** Cabeçalho da primeira coluna: "Pessoa" ou "Linha", conforme o grupo. */
+  colunaPessoa: string;
+  colunaDetalhe: string;
   linhas: Linha[];
 };
 
@@ -47,11 +67,12 @@ function percentual(valor: number | null): string {
 function montarLinhas(
   entradas: ImportPlanEntry[],
   state: DemoState,
-  texto: (entrada: ImportPlanEntry, nome: string) => string
+  detalhe: (entrada: ImportPlanEntry) => string
 ): Linha[] {
   return entradas.map((entrada) => ({
     id: `${entrada.line}`,
-    texto: texto(entrada, nomeDaPessoa(entrada, state)),
+    pessoa: nomeDaPessoa(entrada, state),
+    detalhe: detalhe(entrada),
     descartada: entrada.discarded
   }));
 }
@@ -73,11 +94,10 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
       titulo: plural(novosTalentos.length, 'pessoa nova', 'pessoas novas'),
       estado: 'entram',
       resumo: 'Ninguém com esse e-mail estava na base.',
-      linhas: montarLinhas(
-        novosTalentos,
-        state,
-        (entrada, nome) =>
-          `${nome} — ${percentual(entrada.technicalMatch)} nos requisitos da vaga`
+      colunaPessoa: 'Pessoa',
+      colunaDetalhe: 'Requisitos da vaga',
+      linhas: montarLinhas(novosTalentos, state, (entrada) =>
+        percentual(entrada.technicalMatch)
       )
     });
   }
@@ -92,11 +112,10 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
       ),
       estado: 'entram',
       resumo: 'Entram nesta vaga sem virar cadastro novo.',
-      linhas: montarLinhas(
-        novasCandidaturas,
-        state,
-        (entrada, nome) =>
-          `${nome} — ${percentual(entrada.technicalMatch)} nos requisitos da vaga`
+      colunaPessoa: 'Pessoa',
+      colunaDetalhe: 'Requisitos da vaga',
+      linhas: montarLinhas(novasCandidaturas, state, (entrada) =>
+        percentual(entrada.technicalMatch)
       )
     });
   }
@@ -114,11 +133,13 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
       resumo: primeira
         ? `${nomeDaPessoa(primeira, state)}: ${percentual(primeira.previousTechnicalMatch)} → ${percentual(primeira.technicalMatch)}.`
         : undefined,
+      colunaPessoa: 'Pessoa',
+      colunaDetalhe: 'Antes → depois',
       linhas: montarLinhas(
         atualizadas,
         state,
-        (entrada, nome) =>
-          `${nome} — ${percentual(entrada.previousTechnicalMatch)} → ${percentual(entrada.technicalMatch)}`
+        (entrada) =>
+          `${percentual(entrada.previousTechnicalMatch)} → ${percentual(entrada.technicalMatch)}`
       )
     });
   }
@@ -133,7 +154,11 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
       ),
       estado: 'sem-mudanca',
       resumo: 'Mesmo percentual de antes: nada muda.',
-      linhas: montarLinhas(ignoradas, state, (_entrada, nome) => nome)
+      colunaPessoa: 'Pessoa',
+      colunaDetalhe: 'Requisitos da vaga',
+      linhas: montarLinhas(ignoradas, state, (entrada) =>
+        percentual(entrada.technicalMatch)
+      )
     });
   }
 
@@ -143,9 +168,12 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
       titulo: plural(plano.errors.length, 'linha com erro', 'linhas com erro'),
       estado: 'com-erro',
       resumo: 'Ficam de fora. O resto da planilha entra normalmente.',
+      colunaPessoa: 'Onde',
+      colunaDetalhe: 'Motivo',
       linhas: plano.errors.map((erro, indice) => ({
         id: `${erro.line}-${erro.column}-${indice}`,
-        texto: `Linha ${erro.line}, coluna ${erro.column} — ${erro.reason}`,
+        pessoa: `Linha ${erro.line}, coluna ${erro.column}`,
+        detalhe: erro.reason,
         descartada: false
       }))
     });
@@ -154,35 +182,77 @@ function montarGrupos(plano: ImportPlan, state: DemoState): Grupo[] {
   return grupos;
 }
 
-function ListaDoGrupo({ linhas }: { linhas: Linha[] }) {
-  const [verTodas, setVerTodas] = useState(false);
-  const visiveis = verTodas ? linhas : linhas.slice(0, LINHAS_VISIVEIS);
-
+function TabelaDoGrupo({ grupo }: { grupo: Grupo }) {
   return (
-    <div className="space-y-2">
-      <ul className="space-y-1.5">
-        {visiveis.map((linha) => (
-          <li
-            key={linha.id}
-            className="iel-prose text-sm text-foreground"
-          >
-            {linha.texto}
-            {linha.descartada ? (
-              <span className="block text-xs text-warning">{DESCARTADA}</span>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      {linhas.length > visiveis.length ? (
-        <button
-          type="button"
-          onClick={() => setVerTodas(true)}
-          className="iel-interactive text-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          Ver todas as {linhas.length}
-        </button>
-      ) : null}
+    <div className="overflow-hidden rounded-lg border">
+      <Table>
+        <TableHeader className="bg-muted/50">
+          <TableRow>
+            <TableHead scope="col">{grupo.colunaPessoa}</TableHead>
+            <TableHead scope="col">{grupo.colunaDetalhe}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {grupo.linhas.map((linha) => (
+            <TableRow key={linha.id}>
+              <TableCell className="whitespace-normal font-medium text-foreground">
+                {linha.pessoa}
+                {linha.descartada ? (
+                  <Badge
+                    variant="outline"
+                    className="ml-2 gap-1 font-normal text-muted-foreground"
+                  >
+                    <CircleAlert className="size-3 text-[hsl(var(--brand-accent))]" />
+                    {DESCARTADA}
+                  </Badge>
+                ) : null}
+              </TableCell>
+              <TableCell className="whitespace-normal tabular-nums text-muted-foreground">
+                {linha.detalhe}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
+  );
+}
+
+/** Um dos três números do topo, no formato de section card do block. */
+function CartaoDeNumero({
+  rotulo,
+  valor,
+  etiqueta,
+  destaque,
+  apoio
+}: {
+  rotulo: string;
+  valor: number;
+  etiqueta: string;
+  destaque: string;
+  apoio: ReactNode;
+}) {
+  return (
+    <Card className="@container/card bg-gradient-to-t from-primary/5 to-card shadow-xs">
+      <CardHeader>
+        <CardDescription>{rotulo}</CardDescription>
+        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          {valor}
+        </CardTitle>
+        <CardAction>
+          <Badge
+            variant="outline"
+            className="text-muted-foreground"
+          >
+            {etiqueta}
+          </Badge>
+        </CardAction>
+      </CardHeader>
+      <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <div className="line-clamp-1 font-medium">{destaque}</div>
+        <div className="text-muted-foreground">{apoio}</div>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -190,7 +260,9 @@ function ListaDoGrupo({ linhas }: { linhas: Linha[] }) {
  * Passo 2: o que vai acontecer, antes de acontecer.
  *
  * O plano já está decidido linha a linha; esta tela só o conta em voz alta e
- * espera a confirmação. Nada é gravado enquanto o analista não confirma.
+ * espera a confirmação. Nada é gravado enquanto o analista não confirma — por
+ * isso os três números no topo e a tabela por decisão logo abaixo: quem
+ * confirma precisa poder abrir cada grupo e ver os nomes, não só o total.
  */
 export function ReviewStep({
   plano,
@@ -207,57 +279,89 @@ export function ReviewStep({
   onTrocarArquivo: () => void;
 }) {
   const grupos = montarGrupos(plano, state);
+  const novos = plano.counts['novo-talento'] + plano.counts['nova-candidatura'];
+  const foraDaConta = plano.counts.ignorada + plano.errors.length;
+  const descartados = plano.entries.filter(
+    (entrada) => entrada.discarded
+  ).length;
 
   return (
-    <Panel
-      elevation={1}
-      className="space-y-4"
-    >
-      <PanelHeader
-        eyebrow="Passo 2"
-        title="O que vai entrar"
-        meta={
-          jaImportada
-            ? 'Esta planilha já foi importada nesta vaga: confirmar não muda nada.'
-            : undefined
-        }
-      />
-
-      {grupos.length === 0 ? (
-        <p className="iel-prose text-sm text-muted-foreground">
-          A planilha não trouxe nenhuma linha para esta vaga. Confira se o
-          arquivo é o da vaga certa.
-        </p>
-      ) : (
-        <div>
-          {grupos.map((grupo) => (
-            <GrupoDeDecisao
-              key={grupo.id}
-              titulo={grupo.titulo}
-              estado={grupo.estado}
-              resumo={grupo.resumo}
-            >
-              <ListaDoGrupo linhas={grupo.linhas} />
-            </GrupoDeDecisao>
-          ))}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
-        <Button
-          size="large"
-          onClick={onConfirmar}
-        >
-          Confirmar importação
-        </Button>
-        <Button
-          variant="outline"
-          size="large"
-          onClick={onTrocarArquivo}
-        >
-          Escolher outro arquivo
-        </Button>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <CartaoDeNumero
+          rotulo="Registros novos"
+          valor={novos}
+          etiqueta="entram"
+          destaque="Pessoas e candidaturas que a planilha traz"
+          apoio={
+            descartados > 0
+              ? `${plural(descartados, 'pessoa vem descartada', 'pessoas vêm descartadas')} pelo filtro da Empregare`
+              : 'Nenhuma vem descartada pelo filtro'
+          }
+        />
+        <CartaoDeNumero
+          rotulo="Atualizados"
+          valor={plano.counts['match-atualizado']}
+          etiqueta="mudam"
+          destaque="Já estavam aqui com outro percentual"
+          apoio="O valor anterior fica no histórico da vaga"
+        />
+        <CartaoDeNumero
+          rotulo="Ficam de fora"
+          valor={foraDaConta}
+          etiqueta={plano.errors.length > 0 ? 'com erro' : 'sem mudança'}
+          destaque="Sem mudança ou com erro na linha"
+          apoio={
+            plano.errors.length > 0
+              ? `${plural(plano.errors.length, 'linha não pôde ser lida', 'linhas não puderam ser lidas')}`
+              : 'Nenhuma linha com erro'
+          }
+        />
       </div>
-    </Panel>
+
+      <Card>
+        <CardHeader>
+          <CardDescription>Passo 2</CardDescription>
+          <CardTitle>O que vai entrar</CardTitle>
+          <CardDescription>
+            {jaImportada
+              ? 'Esta planilha já foi importada nesta vaga: confirmar não muda nada.'
+              : 'Nada é gravado até você confirmar. Abra um grupo para ver os nomes.'}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          {grupos.length === 0 ? (
+            <p className="max-w-[80ch] text-sm text-muted-foreground">
+              A planilha não trouxe nenhuma linha para esta vaga. Confira se o
+              arquivo é o da vaga certa.
+            </p>
+          ) : (
+            <div className="border-t">
+              {grupos.map((grupo) => (
+                <GrupoDeDecisao
+                  key={grupo.id}
+                  titulo={grupo.titulo}
+                  estado={grupo.estado}
+                  resumo={grupo.resumo}
+                >
+                  <TabelaDoGrupo grupo={grupo} />
+                </GrupoDeDecisao>
+              ))}
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter className="gap-2">
+          <Button onClick={onConfirmar}>Confirmar importação</Button>
+          <Button
+            variant="outline"
+            onClick={onTrocarArquivo}
+          >
+            Escolher outro arquivo
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

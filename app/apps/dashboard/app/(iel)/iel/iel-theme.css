@@ -1,12 +1,19 @@
 /*
- * Tema da Central IEL: shadcn, base zinc.
+ * Tema do Mind RH (Central IEL): estrutura shadcn, paleta do manual de marca.
  *
  * A diretriz aprovada é "componentes de fábrica, sem estilo próprio por
- * cima". Isto aqui é só a paleta: os mesmos tokens que o shadcn gera para a
- * base zinc, escopados na área do protótipo para não tocar no tema âmbar do
- * restante do produto. Nenhuma classe utilitária nova, nenhuma escala de
- * elevação própria, nenhum gradiente de fundo — estrutura vem de borda e
- * espaço, e o corpo é 14px, como no kit.
+ * cima". Isto aqui é só a paleta: os tokens que o shadcn espera, preenchidos
+ * com as cores do manual da Madvic (docs/marca/Madvic_Manual_de_Marca.pdf):
+ *
+ *   azul-noite #12182B  → foreground, primary, sidebar-primary
+ *   marfim     #F4F1EA  → sidebar, muted, secondary, accent
+ *   areia      #E9E5DB  → border, input, sidebar-accent
+ *   ardósia    #5B6072  → muted-foreground (textos de apoio e legendas)
+ *   laranja    #FF5A36  → ring e `--brand-accent`, só como ponto de atenção
+ *
+ * Escopado na área do protótipo para não tocar no tema âmbar do restante do
+ * produto. Nenhuma classe utilitária nova, nenhuma escala de elevação
+ * própria, nenhum gradiente de fundo — estrutura vem de borda e espaço.
  *
  * Diálogos, drawers e toasts são renderizados em portais no fim do `body`;
  * por isso o escopo cobre o `body` enquanto uma tela do IEL estiver montada.
@@ -15,39 +22,43 @@
 body:has([data-iel-theme]),
 [data-iel-theme] {
   --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --foreground: 226 41% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 226 41% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --popover-foreground: 226 41% 12%;
+  --primary: 226 41% 12%;
+  --primary-foreground: 42 31% 94%;
+  --secondary: 42 31% 94%;
+  --secondary-foreground: 226 41% 12%;
+  --muted: 42 31% 94%;
+  --muted-foreground: 227 11% 40%;
+  --accent: 42 31% 94%;
+  --accent-foreground: 226 41% 12%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  --border: 43 24% 89%;
+  --input: 43 24% 89%;
+  --ring: 11 100% 61%;
 
-  --chart-1: 240 5.9% 10%;
-  --chart-2: 240 4% 46%;
-  --chart-3: 240 5% 65%;
-  --chart-4: 240 5% 84%;
-  --chart-5: 240 6% 90%;
+  /* Laranja da marca: haste da logo, marca do 35%, ponto de atenção. */
+  --brand-accent: 11 100% 61%;
+  --brand-accent-foreground: 0 0% 100%;
 
-  --sidebar: 0 0% 98%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 240 5.9% 10%;
+  --chart-1: 226 41% 12%;
+  --chart-2: 227 11% 40%;
+  --chart-3: 11 100% 61%;
+  --chart-4: 43 24% 89%;
+  --chart-5: 42 31% 94%;
+
+  --sidebar: 42 31% 94%;
+  --sidebar-foreground: 226 41% 12%;
+  --sidebar-primary: 226 41% 12%;
+  --sidebar-primary-foreground: 42 31% 94%;
+  --sidebar-accent: 43 24% 89%;
+  --sidebar-accent-foreground: 226 41% 12%;
+  --sidebar-border: 43 24% 89%;
+  --sidebar-ring: 11 100% 61%;
 
   /*
    * Estado. O kit do Arki aponta `--success`/`--warning`/`--info` para a
@@ -56,11 +67,11 @@ body:has([data-iel-theme]),
    */
   --success: 142 71% 35%;
   --success-foreground: 0 0% 98%;
-  --warning: 38 92% 44%;
-  --warning-foreground: 0 0% 98%;
-  --info: 240 5.9% 10%;
+  --warning: 11 100% 61%;
+  --warning-foreground: 0 0% 100%;
+  --info: 227 11% 40%;
   --info-foreground: 0 0% 98%;
-  --border-strong: 240 5.9% 84%;
+  --border-strong: 43 20% 80%;
 
   --radius: 0.625rem;
 
@@ -68,12 +79,16 @@ body:has([data-iel-theme]),
 }
 
 /*
- * Corpo em 14px e a família do protótipo. O `body` recebe a regra porque os
- * portais vivem fora da árvore da tela.
+ * Corpo em 14px e a família do manual (Red Hat Display). O manual pede
+ * interface em Medium (500) e títulos em Bold (700); o peso do corpo entra
+ * aqui e os títulos continuam com as classes `font-semibold`/`font-bold`
+ * dos componentes. O `body` recebe a regra porque os portais vivem fora da
+ * árvore da tela.
  */
 body:has([data-iel-theme]) {
   font-family: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.875rem;
+  font-weight: 500;
   background-color: hsl(var(--background));
   background-image: none;
 }

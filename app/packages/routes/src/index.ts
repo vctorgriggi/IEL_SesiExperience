@@ -151,6 +151,18 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byToken: (token: string) =>
           resolve(`/iel/consulta/${encodeSegment(token)}`)
       },
+      /**
+       * Relatório que a empresa recebe com os currículos enviados (S3).
+       *
+       * Mesma natureza do link do colaborador: sem login, com o token opaco
+       * no lugar do id da vaga. O que a página abre é o recorte do que já foi
+       * enviado àquela empresa — nunca outros candidatos, nunca resposta
+       * individual de colaborador (PRODUTO.md §5.1).
+       */
+      report: {
+        byToken: (token: string) =>
+          resolve(`/iel/relatorio/${encodeSegment(token)}`)
+      },
       clarifications: {
         index: resolve('/iel/pendencias'),
         respond: (clarificationId: string) =>

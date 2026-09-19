@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -56,7 +57,7 @@ import { NavUser } from './nav-user';
  * candidato recebem link, e essas telas ficam fora desta casca.
  */
 export function AppSidebar() {
-  const { state } = useIelDemo();
+  const { state, persona } = useIelDemo();
   const pathname = usePathname();
   const iel = routes.dashboard.iel;
 
@@ -75,21 +76,42 @@ export function AppSidebar() {
     [state]
   );
 
-  const principais = [
-    {
-      href: iel.index,
-      label: 'Hoje',
-      icon: Inbox,
-      badge: pendencias > 0 ? pendencias : null
-    },
-    {
-      href: iel.companies.index,
-      label: 'Empresas',
-      icon: Building2,
-      badge: null
-    },
-    { href: iel.talents.index, label: 'Pessoas', icon: Users, badge: null }
-  ];
+  /*
+   * O gestor entra pela mesma casca, mas não faz o trabalho da analista:
+   * importar planilha, varrer a fila do dia e navegar pela base de pessoas
+   * são tarefas do IEL. Deixar esses destinos no menu dele seria oferecer
+   * portas para o recorte de outras empresas (PRODUTO.md §5) — o único lugar
+   * que faz sentido para ele é a própria empresa.
+   */
+  const eGestor = persona.kind === 'gestor';
+  const empresaDoGestor = persona.companyId;
+
+  const principais = eGestor
+    ? [
+        {
+          href: empresaDoGestor
+            ? iel.companies.byId(empresaDoGestor)
+            : iel.companies.index,
+          label: 'Minha empresa',
+          icon: Building2,
+          badge: null
+        }
+      ]
+    : [
+        {
+          href: iel.index,
+          label: 'Hoje',
+          icon: Inbox,
+          badge: pendencias > 0 ? pendencias : null
+        },
+        {
+          href: iel.companies.index,
+          label: 'Empresas',
+          icon: Building2,
+          badge: null
+        },
+        { href: iel.talents.index, label: 'Pessoas', icon: Users, badge: null }
+      ];
 
   return (
     <Sidebar
@@ -99,23 +121,33 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
+            {/*
+             * Recolhida, a barra encolhe o botão para 32px de largura mas
+             * mantém a altura de `size="lg"`; sem tirar o respiro e sem
+             * travar a proporção, o símbolo esticava e a ligadura virava um
+             * oval. A imagem carrega a própria medida — 32 por 32, quadrada —
+             * e não herda nada do botão.
+             */}
             <SidebarMenuButton
               size="lg"
               asChild
+              className="group-data-[collapsible=icon]:[padding:0]!"
             >
               <Link href={iel.index}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-[11px] font-semibold text-sidebar-primary-foreground">
-                  IEL
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
-                    Centro de Empregos
-                  </span>
+                <Image
+                  src="/marca/simbolo.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="aspect-square size-8 min-w-8 shrink-0 rounded-lg object-cover"
+                />
+                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                  <span className="truncate font-medium">Mind RH</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    Mato Grosso
+                    IEL · Centro de Empregos
                   </span>
                 </div>
-                <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
+                <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -125,34 +157,36 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent className="flex flex-col gap-2">
-            <SidebarMenu>
-              <SidebarMenuItem className="flex items-center gap-2">
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Importar planilha"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-                >
-                  <Link
-                    href={
-                      primeiraVaga
-                        ? iel.jobs.byId(primeiraVaga.id).import
-                        : iel.jobs.index
-                    }
+            {eGestor ? null : (
+              <SidebarMenu>
+                <SidebarMenuItem className="flex items-center gap-2">
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Importar planilha"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
                   >
-                    <CirclePlus />
-                    <span>Importar planilha</span>
-                  </Link>
-                </SidebarMenuButton>
-                <SidebarMenuButton
-                  onClick={() => setBusca(true)}
-                  aria-label="Buscar (⌘K)"
-                  title="Buscar (⌘K)"
-                  className="size-8 shrink-0 justify-center border bg-background group-data-[collapsible=icon]:hidden"
-                >
-                  <Search />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+                    <Link
+                      href={
+                        primeiraVaga
+                          ? iel.jobs.byId(primeiraVaga.id).import
+                          : iel.jobs.index
+                      }
+                    >
+                      <CirclePlus />
+                      <span>Importar planilha</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  <SidebarMenuButton
+                    onClick={() => setBusca(true)}
+                    aria-label="Buscar (⌘K)"
+                    title="Buscar (⌘K)"
+                    className="size-8 shrink-0 justify-center border bg-background group-data-[collapsible=icon]:hidden"
+                  >
+                    <Search />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            )}
 
             <SidebarMenu>
               {principais.map((item) => (

@@ -12,27 +12,62 @@ import type { CultureInvitePerson } from '@/features/iel-demo/state/reducer';
 import {
   DEMO_REFERENCE_DATE,
   getCultureInvites,
-  getCultureSampleProgress,
   type CultureInviteStatus
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { CultureRespondentInvite } from '@/features/iel-demo/types';
+import { MoreVertical, Plus, Trash2 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
-import { Button, cn, FilterNativeSelect, Input, toast } from '@workspace/ui';
+import { toast } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@workspace/ui/shadcn/dropdown-menu';
+import { Input } from '@workspace/ui/shadcn/input';
+import { Label } from '@workspace/ui/shadcn/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@workspace/ui/shadcn/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
-import { Chip, InfoHint, Panel, PanelHeader } from '../shared/ui';
+/**
+ * Quem foi convidado e quem ainda falta (M2).
+ *
+ * Esta lista é da analista do IEL. A empresa não a vê — PRODUTO.md §5.2 diz
+ * que quem responde sobre o próprio ambiente de trabalho não pode ficar
+ * identificado para a gestão, e uma linha com "respondeu em 08/09" ao lado do
+ * nome é exatamente essa identificação.
+ *
+ * O que aparece aqui é operação do convite (nome, área, papel, estado), nunca
+ * resposta: não há como saber, desta tela, o que qualquer pessoa respondeu.
+ */
 
-/** Papel de quem responde, na palavra curta que cabe numa linha de lista. */
+/** Papel de quem responde, na palavra curta que cabe numa célula. */
 const ROLE_LABEL: Record<CultureInviteRole, string> = {
   gestao: 'Gestão',
   rh: 'RH',
   equipe: 'Equipe'
 };
 
-const ITENS_VISIVEIS = 5;
+const ROLE_OPTIONS: CultureInviteRole[] = ['equipe', 'gestao', 'rh'];
 
-/** "DD/MM": a data como a linha de lista a diz, sem o ano corrente. */
+/** "DD/MM": a data como a linha a diz, sem o ano corrente. */
 function shortDate(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
@@ -49,72 +84,68 @@ function inviteStatus(invite: CultureRespondentInvite): CultureInviteStatus {
   return DEMO_REFERENCE_DATE > invite.expiresAt ? 'expirado' : 'aberto';
 }
 
-/** Uma linha em branco do formulário de convite. */
-function emptyRow(area: string): CultureInvitePerson {
-  return { name: '', corporateEmail: '', role: 'equipe', area };
+function statusLabel(invite: CultureRespondentInvite): string {
+  const status = inviteStatus(invite);
+  if (status === 'respondido') {
+    return `Respondeu em ${shortDate(invite.answeredAt ?? '')}`;
+  }
+  if (status === 'expirado') return `Venceu em ${shortDate(invite.expiresAt)}`;
+  return `Aguardando · vence em ${shortDate(invite.expiresAt)}`;
 }
 
-/** Uma pessoa convidada: quem é, em que estado está e o que fazer com ela. */
-function InviteRow({ invite }: { invite: CultureRespondentInvite }) {
+/** Uma linha em branco do formulário de convite. */
+function emptyRow(): CultureInvitePerson {
+  return { name: '', corporateEmail: '', role: 'equipe', area: '' };
+}
+
+/** Endereço absoluto do link, para a pessoa colar num e-mail. */
+function inviteUrl(token: string): string {
+  const path = routes.dashboard.iel.cultureInvite.byToken(token);
+  return typeof window === 'undefined'
+    ? path
+    : `${window.location.origin}${path}`;
+}
+
+/** Menu da linha: o que dá para fazer com um convite já enviado. */
+function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
   const { dispatch } = useIelDemo();
   const [linkVisivel, setLinkVisivel] = useState<string | null>(null);
-  const status = inviteStatus(invite);
-
-  const estado =
-    status === 'respondido'
-      ? `respondeu em ${shortDate(invite.answeredAt ?? '')}`
-      : status === 'expirado'
-        ? 'prazo vencido'
-        : `aguardando · vence em ${shortDate(invite.expiresAt)}`;
-
-  const url = routes.dashboard.iel.cultureInvite.byToken(invite.token);
-  const absoluteUrl =
-    typeof window === 'undefined' ? url : `${window.location.origin}${url}`;
+  const respondido = inviteStatus(invite) === 'respondido';
 
   const copiar = async () => {
+    const url = inviteUrl(invite.token);
     try {
-      await navigator.clipboard.writeText(absoluteUrl);
+      await navigator.clipboard.writeText(url);
       toast.success('Link copiado.');
     } catch {
       // Sem permissão de área de transferência (ou sem HTTPS): mostrar o
       // endereço é o que permite copiar à mão, em vez de um erro sem saída.
-      setLinkVisivel(absoluteUrl);
-      toast.info('Não deu para copiar. O link está logo abaixo.');
+      setLinkVisivel(url);
+      toast.info('Não deu para copiar. O link está na linha.');
     }
   };
 
   return (
-    <li className="flex flex-col gap-2 border-b border-border px-1 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{invite.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {invite.area} · {ROLE_LABEL[invite.role]}
-        </p>
-        <p
-          className={cn(
-            'mt-0.5 text-xs',
-            status === 'respondido'
-              ? 'text-success'
-              : status === 'expirado'
-                ? 'text-destructive'
-                : 'text-warning'
-          )}
-        >
-          {estado}
-        </p>
-        {linkVisivel ? (
-          <p className="mt-1 break-all text-[11px] text-muted-foreground">
-            {linkVisivel}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {status !== 'respondido' ? (
+    <div className="flex items-center justify-end gap-2">
+      {linkVisivel ? (
+        <span className="max-w-[16rem] truncate text-xs text-muted-foreground">
+          {linkVisivel}
+        </span>
+      ) : null}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Ações do convite de ${invite.name}`}
+          >
+            <MoreVertical />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            disabled={respondido}
+            onSelect={() => {
               dispatch({
                 type: 'resend-culture-invite',
                 inviteId: invite.id,
@@ -126,56 +157,99 @@ function InviteRow({ invite }: { invite: CultureRespondentInvite }) {
             }}
           >
             Reenviar link
-          </Button>
-        ) : null}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={copiar}
-        >
-          Copiar link
-        </Button>
-      </div>
-    </li>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void copiar()}>
+            Copiar link
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+/** A amostra convidada, uma pessoa por linha. */
+export function CultureSampleTable({ companyId }: { companyId: string }) {
+  const { state } = useIelDemo();
+  const invites = getCultureInvites(state, companyId);
+
+  if (invites.length === 0) {
+    return (
+      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        Ninguém foi convidado ainda. Sem respostas da equipe o perfil da empresa
+        não fecha e a vaga fica sem base de comparação.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader className="bg-muted/50">
+          <TableRow>
+            <TableHead>Pessoa</TableHead>
+            <TableHead className="w-[12rem]">Área</TableHead>
+            <TableHead className="w-[7rem]">Papel</TableHead>
+            <TableHead className="w-[14rem]">Estado</TableHead>
+            <TableHead className="w-[6rem] text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {invites.map((invite) => (
+            <TableRow key={invite.id}>
+              <TableCell className="font-medium">{invite.name}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {invite.area}
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary">{ROLE_LABEL[invite.role]}</Badge>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {statusLabel(invite)}
+              </TableCell>
+              <TableCell className="text-right">
+                <InviteActions invite={invite} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
 /**
- * Quem foi convidado e quem ainda falta (M2).
+ * O formulário de convite, que mora no painel lateral.
  *
- * Esta seção é da analista do IEL: ela cadastra a amostra, acompanha quem
- * respondeu e cobra quem não respondeu. A empresa não a vê — PRODUTO.md §5.2
- * diz que quem responde sobre o próprio ambiente de trabalho não pode ficar
- * identificado para a gestão, e uma lista com "respondeu em 08/09" ao lado do
- * nome é exatamente essa identificação.
- *
- * O que aparece aqui é operação do convite (nome, área, papel, estado), nunca
- * resposta: não há como saber, desta tela, o que qualquer pessoa respondeu.
+ * Várias linhas de uma vez porque a amostra é cadastrada de uma vez: a
+ * analista tem a lista da empresa na mão e não vai abrir o painel seis vezes.
+ * O quadro da área serve só para a dica de quantas pessoas convidar (R2) e
+ * não é gravado — é conta de tela, não dado da empresa.
  */
-export function CultureSampleSection({
+export function CultureInviteForm({
   companyId,
-  formOpen,
-  onFormOpenChange
+  onDone
 }: {
   companyId: string;
-  /** O formulário é aberto pelo botão do herói, que vive em outro bloco. */
-  formOpen: boolean;
-  onFormOpenChange: (open: boolean) => void;
+  onDone: () => void;
 }) {
-  const { state, dispatch } = useIelDemo();
-  const invites = getCultureInvites(state, companyId);
-  const progress = getCultureSampleProgress(state, companyId);
-
-  const [verTodos, setVerTodos] = useState(false);
+  const { dispatch } = useIelDemo();
   const [headcount, setHeadcount] = useState('30');
-  const [linhas, setLinhas] = useState<CultureInvitePerson[]>([emptyRow('')]);
+  const [linhas, setLinhas] = useState<CultureInvitePerson[]>([
+    emptyRow(),
+    emptyRow(),
+    emptyRow()
+  ]);
 
-  const visiveis = verTodos ? invites : invites.slice(0, ITENS_VISIVEIS);
   const sugerido = getSuggestedSampleSize(Number.parseInt(headcount, 10));
-
   const preenchidas = linhas.filter(
-    (linha) => linha.name.trim().length > 0 && linha.corporateEmail.trim()
+    (linha) =>
+      linha.name.trim().length > 0 && linha.corporateEmail.trim().length > 0
   );
+
+  const atualizar = (index: number, patch: Partial<CultureInvitePerson>) =>
+    setLinhas((atual) =>
+      atual.map((linha, i) => (i === index ? { ...linha, ...patch } : linha))
+    );
 
   const enviar = () => {
     if (preenchidas.length === 0) return;
@@ -185,191 +259,136 @@ export function CultureSampleSection({
       people: preenchidas,
       at: nowIso()
     });
-    setLinhas([emptyRow('')]);
-    onFormOpenChange(false);
+    setLinhas([emptyRow(), emptyRow(), emptyRow()]);
+    onDone();
     toast.success(
       `${plural(preenchidas.length, 'convite enviado', 'convites enviados')}. Cada pessoa recebe um link próprio, sem login.`
     );
   };
 
-  const atualizar = (index: number, patch: Partial<CultureInvitePerson>) =>
-    setLinhas((atual) =>
-      atual.map((linha, i) => (i === index ? { ...linha, ...patch } : linha))
-    );
-
   return (
-    <Panel
-      elevation={1}
-      padding="none"
-      className="overflow-hidden"
-    >
-      <div className="px-5 pb-3 pt-4">
-        <PanelHeader
-          title="Quem foi convidado"
-          hint="Nome e e-mail corporativo, e mais nada. O link não carrega dado pessoal."
-          meta={`${progress.answered} de ${progress.total} responderam. A empresa vê a média, nunca quem respondeu o quê.`}
-          actions={
-            <Button
-              size="sm"
-              variant={formOpen ? 'ghost' : 'outline'}
-              aria-expanded={formOpen}
-              aria-controls="formulario-convite"
-              onClick={() => onFormOpenChange(!formOpen)}
-            >
-              {formOpen ? 'Fechar' : 'Convidar colaboradores'}
-            </Button>
-          }
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="headcount">Quantas pessoas há na área da vaga?</Label>
+        <Input
+          id="headcount"
+          inputMode="numeric"
+          className="w-28"
+          value={headcount}
+          onChange={(event) => setHeadcount(event.target.value)}
         />
-      </div>
-
-      {formOpen ? (
-        <div
-          id="formulario-convite"
-          className="border-t border-border bg-muted/30 px-5 py-4"
-        >
-          <p className="iel-prose text-xs leading-relaxed text-muted-foreground">
-            Para{' '}
-            {plural(
-              Math.max(Number.parseInt(headcount, 10) || 0, 0),
-              'pessoa',
-              'pessoas'
-            )}
-            , sugerimos {sugerido}{' '}
-            {sugerido === 1 ? 'respondente' : 'respondentes'}: quem trabalha na
-            área da vaga e em áreas próximas.
-            <InfoHint
-              className="ml-1"
-              label={`Cerca de 20% do quadro da área, entre 3 e 10 pessoas. Abaixo de 3 respostas da equipe o perfil não fecha; acima de 10 a consulta pesa demais para o prazo de ${CULTURE_INVITE_DEADLINE_DAYS} dias.`}
-            />
-          </p>
-
-          <div className="mt-3 max-w-[16rem]">
-            <Input
-              label="Quantas pessoas trabalham na área"
-              inputMode="numeric"
-              value={headcount}
-              onChange={(event) => setHeadcount(event.target.value)}
-            />
-          </div>
-
-          <ul className="mt-4 space-y-3">
-            {linhas.map((linha, index) => (
-              <li
-                key={index}
-                className="grid gap-2 rounded-[var(--control-radius)] border border-border bg-card p-3 sm:grid-cols-2"
-              >
-                <Input
-                  label="Nome"
-                  value={linha.name}
-                  onChange={(event) =>
-                    atualizar(index, { name: event.target.value })
-                  }
-                />
-                <Input
-                  label="E-mail corporativo"
-                  type="email"
-                  value={linha.corporateEmail}
-                  onChange={(event) =>
-                    atualizar(index, { corporateEmail: event.target.value })
-                  }
-                />
-                <Input
-                  label="Área"
-                  value={linha.area}
-                  onChange={(event) =>
-                    atualizar(index, { area: event.target.value })
-                  }
-                />
-                <div className="space-y-2">
-                  <label
-                    className="block text-sm font-medium leading-none text-foreground"
-                    htmlFor={`papel-${index}`}
-                  >
-                    Papel
-                  </label>
-                  <FilterNativeSelect
-                    id={`papel-${index}`}
-                    value={linha.role}
-                    onValueChange={(value) =>
-                      atualizar(index, { role: value as CultureInviteRole })
-                    }
-                  >
-                    {(Object.keys(ROLE_LABEL) as CultureInviteRole[]).map(
-                      (role) => (
-                        <option
-                          key={role}
-                          value={role}
-                        >
-                          {ROLE_LABEL[role]}
-                        </option>
-                      )
-                    )}
-                  </FilterNativeSelect>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setLinhas((atual) => [
-                  ...atual,
-                  emptyRow(atual[atual.length - 1]?.area ?? '')
-                ])
-              }
-            >
-              Mais uma pessoa
-            </Button>
-            <Button
-              size="sm"
-              disabled={preenchidas.length === 0}
-              onClick={enviar}
-            >
-              Enviar convites ({preenchidas.length})
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {invites.length === 0 ? (
-        <p className="iel-prose border-t border-border px-5 py-5 text-sm text-muted-foreground">
-          Ninguém foi convidado ainda. Sem amostra, o perfil da empresa não se
-          forma.
+        <p className="text-xs text-muted-foreground">
+          Convide cerca de {sugerido} {sugerido === 1 ? 'pessoa' : 'pessoas'} da
+          área e das áreas conexas. Cada uma recebe um link próprio, sem login,
+          válido por {CULTURE_INVITE_DEADLINE_DAYS} dias.
         </p>
-      ) : (
-        <>
-          <ul className="border-t border-border px-4">
-            {visiveis.map((invite) => (
-              <InviteRow
-                key={invite.id}
-                invite={invite}
-              />
-            ))}
-          </ul>
-          {invites.length > ITENS_VISIVEIS ? (
-            <div className="border-t border-border px-5 py-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setVerTodos((atual) => !atual)}
-              >
-                {verTodos
-                  ? 'Ver menos'
-                  : `Ver todos (${plural(invites.length, 'pessoa', 'pessoas', { includeCount: false })} — ${invites.length})`}
-              </Button>
-            </div>
-          ) : null}
-        </>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
-        <Chip>Link sem login</Chip>
-        <Chip>Vale {CULTURE_INVITE_DEADLINE_DAYS} dias</Chip>
-        <Chip>Uma resposta por pessoa</Chip>
       </div>
-    </Panel>
+
+      <div className="flex flex-col gap-4">
+        {linhas.map((linha, index) => (
+          <div
+            // A posição é a identidade da linha: nome e e-mail começam vazios
+            // e mudam a cada tecla, então não servem de chave.
+            key={index}
+            className="flex flex-col gap-2 rounded-lg border p-3"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                Pessoa {index + 1}
+              </span>
+              {linhas.length > 1 ? (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Remover pessoa ${index + 1}`}
+                  onClick={() =>
+                    setLinhas((atual) => atual.filter((_, i) => i !== index))
+                  }
+                >
+                  <Trash2 />
+                </Button>
+              ) : null}
+            </div>
+
+            <Input
+              aria-label={`Nome da pessoa ${index + 1}`}
+              placeholder="Nome"
+              value={linha.name}
+              onChange={(event) =>
+                atualizar(index, { name: event.target.value })
+              }
+            />
+            <Input
+              aria-label={`E-mail corporativo da pessoa ${index + 1}`}
+              type="email"
+              placeholder="E-mail corporativo"
+              value={linha.corporateEmail}
+              onChange={(event) =>
+                atualizar(index, { corporateEmail: event.target.value })
+              }
+            />
+            <div className="flex gap-2">
+              <Input
+                aria-label={`Área da pessoa ${index + 1}`}
+                placeholder="Área"
+                value={linha.area}
+                onChange={(event) =>
+                  atualizar(index, { area: event.target.value })
+                }
+              />
+              <Select
+                value={linha.role}
+                onValueChange={(value) =>
+                  atualizar(index, { role: value as CultureInviteRole })
+                }
+              >
+                <SelectTrigger
+                  className="w-32"
+                  aria-label={`Papel da pessoa ${index + 1}`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((role) => (
+                    <SelectItem
+                      key={role}
+                      value={role}
+                    >
+                      {ROLE_LABEL[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ))}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() => setLinhas((atual) => [...atual, emptyRow()])}
+        >
+          <Plus />
+          Acrescentar pessoa
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          disabled={preenchidas.length === 0}
+          onClick={enviar}
+        >
+          Enviar{' '}
+          {preenchidas.length > 0
+            ? plural(preenchidas.length, 'convite', 'convites')
+            : 'convites'}
+        </Button>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Guardamos só nome e e-mail corporativo. As respostas entram agregadas
+          na média da empresa: nem a gestão vê quem respondeu o quê.
+        </p>
+      </div>
+    </div>
   );
 }

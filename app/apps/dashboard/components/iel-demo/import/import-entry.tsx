@@ -6,9 +6,22 @@ import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getVisibleJobs } from '@/features/iel-demo/state/selectors';
 
 import { routes } from '@workspace/routes';
-import { Button, FilterNativeSelect } from '@workspace/ui';
-
-import { Panel, PanelHeader } from '../shared/ui';
+import { Button } from '@workspace/ui/shadcn/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+import { Label } from '@workspace/ui/shadcn/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@workspace/ui/shadcn/select';
 
 /**
  * Entrada da importação na tela "De onde vem".
@@ -24,41 +37,45 @@ export function ImportEntry() {
   if (vagas.length === 0) return null;
 
   return (
-    <Panel className="space-y-4">
-      <PanelHeader
-        eyebrow="Entrada de hoje"
-        title="Importar planilha do Empregare"
-        hint="O arquivo é lido no seu navegador. Quando a Empregare liberar a API, os mesmos dados chegam sozinhos."
-        meta="Escolha a vaga da planilha exportada."
-      />
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label
-          className="sr-only"
-          htmlFor="importar-vaga"
-        >
-          Vaga da planilha
-        </label>
-        <FilterNativeSelect
-          id="importar-vaga"
-          className="sm:w-72"
-          value={vagaId}
-          onValueChange={setVagaId}
-        >
-          {vagas.map((vaga) => (
-            <option
-              key={vaga.id}
-              value={vaga.id}
+    <Card>
+      <CardHeader>
+        <CardTitle>Importar planilha do Empregare</CardTitle>
+        <CardDescription>
+          O arquivo é lido no seu navegador. Quando a Empregare liberar a API,
+          os mesmos dados chegam sozinhos.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="space-y-1.5">
+          <Label htmlFor="importar-vaga">Vaga da planilha</Label>
+          <Select
+            value={vagaId}
+            onValueChange={setVagaId}
+          >
+            <SelectTrigger
+              id="importar-vaga"
+              className="sm:w-72"
             >
-              {vaga.title}
-            </option>
-          ))}
-        </FilterNativeSelect>
-        <Link href={routes.dashboard.iel.jobs.byId(vagaId).import}>
-          <Button className="w-full sm:w-auto">
-            Importar planilha do Empregare
-          </Button>
-        </Link>
-      </div>
-    </Panel>
+              <SelectValue placeholder="Escolha a vaga" />
+            </SelectTrigger>
+            <SelectContent>
+              {vagas.map((vaga) => (
+                <SelectItem
+                  key={vaga.id}
+                  value={vaga.id}
+                >
+                  {vaga.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button asChild>
+          <Link href={routes.dashboard.iel.jobs.byId(vagaId).import}>
+            Importar planilha
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

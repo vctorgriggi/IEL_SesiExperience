@@ -17,139 +17,251 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { ReferralItem } from '@/features/iel-demo/types';
+import {
+  CircleAlertIcon,
+  CircleCheckIcon,
+  CircleDashedIcon,
+  SearchIcon
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, Textarea, toast } from '@workspace/ui';
-
+import { Alert, Textarea, toast } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
 import {
-  Chip,
-  formatDateTime,
-  IelPageHeader,
-  Panel,
-  PanelHeader
-} from '../shared/ui';
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+import { Input } from '@workspace/ui/shadcn/input';
+import { Label } from '@workspace/ui/shadcn/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
-function decisionChip(item: ReferralItem) {
+import { usePageHeader } from '../layout/page-header-context';
+import { formatarDataHora } from '../shared/datas';
+import { ReferralReportLink } from './report-link';
+
+/**
+ * O retorno da empresa, escrito ao lado do ícone.
+ *
+ * Cor não é o único canal: quem não distingue verde de laranja continua
+ * lendo a palavra que decide se ainda falta alguém responder.
+ */
+function DecisaoDaEmpresa({ item }: { item: ReferralItem }) {
   if (item.managerDecision === 'quero-entrevistar') {
-    return <Chip tone="positivo">Empresa quer entrevistar</Chip>;
+    return (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground"
+      >
+        <CircleCheckIcon className="text-success" />
+        Empresa quer entrevistar
+      </Badge>
+    );
   }
   if (item.managerDecision === 'nao-avancar') {
-    return <Chip tone="conflito">Empresa não vai avançar</Chip>;
+    return (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground"
+      >
+        <CircleDashedIcon />
+        Empresa não vai avançar
+      </Badge>
+    );
   }
-  return <Chip tone="atencao">Aguardando retorno da empresa</Chip>;
+  return (
+    <Badge
+      variant="outline"
+      className="text-muted-foreground"
+    >
+      <CircleAlertIcon className="text-[hsl(var(--brand-accent))]" />
+      Aguardando retorno da empresa
+    </Badge>
+  );
 }
 
+/**
+ * Enviados: o que já saiu do IEL para as empresas.
+ *
+ * Uma lista, não um painel. A pergunta que traz o analista aqui é "de qual
+ * empresa eu ainda não tive retorno?", e a coluna de estado responde isso
+ * antes de qualquer clique. O detalhe — evidências, justificativas, retorno
+ * por pessoa — abre no encaminhamento.
+ */
 export function ReferralsScreen() {
   const { state, persona } = useIelDemo();
+  const [busca, setBusca] = useState('');
   const iel = routes.dashboard.iel;
+  const isManager = persona.kind === 'gestor';
 
-  const referrals =
-    persona.kind === 'gestor' && persona.companyId
+  usePageHeader({ breadcrumb: [{ label: 'Enviados' }] });
+
+  const referrals = (
+    isManager && persona.companyId
       ? getReferralsByCompany(state, persona.companyId)
-      : getRegisteredReferrals(state);
+      : getRegisteredReferrals(state)
+  ).filter((referral) => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return true;
+    const job = getJob(referral.jobId);
+    const company = getCompany(referral.companyId);
+    return (
+      (job?.title.toLowerCase().includes(termo) ?? false) ||
+      (company?.name.toLowerCase().includes(termo) ?? false)
+    );
+  });
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={
-          persona.kind === 'gestor'
-            ? `${persona.label} — apenas os perfis compartilhados com a sua empresa`
-            : 'Encaminhamentos registrados'
-        }
-        title={
-          persona.kind === 'gestor' ? 'Perfis encaminhados' : 'Encaminhamentos'
-        }
-        description="Cada registro guarda um retrato das informações no momento do encaminhamento."
-      />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          {isManager ? 'Perfis encaminhados' : 'Enviados'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isManager
+            ? 'Apenas os perfis compartilhados com a sua empresa.'
+            : 'Cada envio guarda um retrato das informações no momento em que saiu.'}
+        </p>
+      </div>
 
-      {referrals.length === 0 ? (
-        <Panel padding="lg">
-          <PanelHeader
-            eyebrow="Sem resultados"
-            title="Nenhum encaminhamento registrado"
-          />
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            {persona.kind === 'gestor'
-              ? 'Quando o IEL compartilhar perfis para uma vaga da sua empresa, eles aparecem aqui com as evidências autorizadas.'
-              : 'Prepare um encaminhamento a partir da lista de uma vaga para registrar o compartilhamento com a empresa.'}
-          </p>
-        </Panel>
-      ) : (
-        <ul className="space-y-4">
-          {referrals.map((referral) => {
-            const job = getJob(referral.jobId);
-            const company = getCompany(referral.companyId);
-            const pending = referral.items.filter(
-              (item) => item.managerDecision === 'pendente'
-            ).length;
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="relative w-full max-w-xs">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              aria-label="Buscar vaga ou empresa"
+              placeholder="Buscar vaga ou empresa"
+              className="h-8 pl-8"
+              value={busca}
+              onChange={(evento) => setBusca(evento.target.value)}
+            />
+          </div>
+        </div>
 
-            return (
-              <li key={referral.id}>
-                <Panel className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold text-foreground">
-                        {job?.title} — {company?.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {referral.id} · registrado em{' '}
-                        {referral.createdAt
-                          ? formatDateTime(referral.createdAt)
-                          : '—'}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Chip>
-                        {plural(referral.items.length, 'perfil', 'perfis')}
-                      </Chip>
-                      {pending > 0 ? (
-                        <Chip tone="atencao">{pending} aguardando retorno</Chip>
-                      ) : (
-                        <Chip tone="positivo">Retornos registrados</Chip>
-                      )}
-                    </div>
-                  </div>
-                  <ul className="space-y-1">
-                    {referral.items.map((item) => {
+        {referrals.length === 0 ? (
+          <div className="rounded-lg border p-6">
+            <p className="text-sm text-muted-foreground">
+              {isManager
+                ? 'Quando o IEL compartilhar perfis para uma vaga da sua empresa, eles aparecem aqui com as evidências autorizadas.'
+                : 'Nenhum envio ainda. O envio nasce da lista de uma vaga, depois de marcar quem vai.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead scope="col">Vaga</TableHead>
+                  <TableHead scope="col">Quem foi</TableHead>
+                  <TableHead scope="col">Retorno da empresa</TableHead>
+                  <TableHead scope="col">Enviado em</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Ação
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {referrals.map((referral) => {
+                  const job = getJob(referral.jobId);
+                  const company = getCompany(referral.companyId);
+                  const pending = referral.items.filter(
+                    (item) => item.managerDecision === 'pendente'
+                  ).length;
+                  const nomes = referral.items
+                    .map((item) => {
                       const application = getApplication(
                         state,
                         item.applicationId
                       );
-                      const talent = application
-                        ? getTalent(application.talentId)
+                      return application
+                        ? getTalent(application.talentId)?.name
                         : null;
-                      return (
-                        <li
-                          key={item.applicationId}
-                          className="flex flex-wrap items-center gap-2 text-sm"
-                        >
-                          <span className="text-foreground">
-                            {talent?.name}
-                          </span>
-                          {decisionChip(item)}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <Link href={iel.referrals.byId(referral.id)}>
-                    <Button size="sm">
-                      {persona.kind === 'gestor'
-                        ? 'Abrir lista encaminhada'
-                        : 'Ver encaminhamento e retornos'}
-                    </Button>
-                  </Link>
-                </Panel>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    })
+                    .filter((nome): nome is string => Boolean(nome));
 
-      <Alert variant="default">
-        “Quero entrevistar” registra a intenção da empresa e atualiza o
-        histórico. Nenhuma reunião é agendada e nenhuma contratação é
-        automatizada nesta demonstração.
-      </Alert>
+                  return (
+                    <TableRow key={referral.id}>
+                      <TableCell className="max-w-[32ch] whitespace-normal align-top">
+                        <Link
+                          className="font-medium text-foreground underline underline-offset-2"
+                          href={iel.referrals.byId(referral.id)}
+                        >
+                          {job?.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {company?.name} · {referral.id}
+                        </p>
+                      </TableCell>
+                      <TableCell className="max-w-[32ch] whitespace-normal align-top">
+                        <span className="text-foreground">
+                          {nomes.join(', ')}
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          {plural(referral.items.length, 'perfil', 'perfis')}
+                        </p>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
+                          {pending > 0 ? (
+                            <CircleAlertIcon className="text-[hsl(var(--brand-accent))]" />
+                          ) : (
+                            <CircleCheckIcon className="text-success" />
+                          )}
+                          {pending > 0
+                            ? `${pending} aguardando`
+                            : 'Retornos registrados'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="align-top tabular-nums text-muted-foreground">
+                        {referral.createdAt
+                          ? formatarDataHora(referral.createdAt)
+                          : '—'}
+                      </TableCell>
+                      <TableCell className="align-top text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                        >
+                          <Link href={iel.referrals.byId(referral.id)}>
+                            {isManager ? 'Abrir lista' : 'Ver retornos'}
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground">
+          “Quero entrevistar” registra a intenção da empresa e atualiza o
+          histórico. Nenhuma reunião é agendada e nenhuma contratação é
+          automatizada nesta demonstração.
+        </p>
+      </div>
     </div>
   );
 }
@@ -160,13 +272,33 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
   const iel = routes.dashboard.iel;
 
   const referral = getReferral(state, referralId);
+  const job = referral ? getJob(referral.jobId) : null;
+  const company = referral ? getCompany(referral.companyId) : null;
+  const isManager = persona.kind === 'gestor';
+
+  /*
+    O caminho é publicado antes das saídas antecipadas: `usePageHeader` é um
+    hook, e o encaminhamento inexistente não pode mudar a ordem das chamadas.
+  */
+  usePageHeader({
+    breadcrumb: [
+      { label: 'Enviados', href: iel.referrals.index },
+      { label: job?.title ?? referralId }
+    ],
+    actions: (
+      <Button
+        variant="outline"
+        size="sm"
+        asChild
+      >
+        <Link href={iel.referrals.index}>Voltar</Link>
+      </Button>
+    )
+  });
 
   if (!referral || referral.state !== 'registrado') {
     return <Alert variant="destructive">Encaminhamento não encontrado.</Alert>;
   }
-
-  const job = getJob(referral.jobId);
-  const company = getCompany(referral.companyId);
 
   if (
     persona.kind === 'gestor' &&
@@ -188,33 +320,28 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
     );
   }
 
-  const isManager = persona.kind === 'gestor';
-
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={`${company?.name} · ${job?.title}`}
-        title={
-          isManager
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          {isManager
             ? 'Perfis compartilhados pelo IEL'
-            : `Encaminhamento ${referral.id}`
-        }
-        description={referral.message}
-        actions={
-          <Link href={iel.referrals.index}>
-            <Button variant="outline">Voltar</Button>
-          </Link>
-        }
-      >
+            : `Encaminhamento ${referral.id}`}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {company?.name} · {job?.title} — {referral.message}
+        </p>
         <p className="text-xs text-muted-foreground">
-          Snapshot registrado em{' '}
-          {referral.createdAt ? formatDateTime(referral.createdAt) : '—'}. Notas
-          internas do IEL e dados de outras empresas não fazem parte deste
+          Retrato registrado em{' '}
+          {referral.createdAt ? formatarDataHora(referral.createdAt) : '—'}.
+          Notas internas do IEL e dados de outras empresas não fazem parte deste
           conteúdo.
         </p>
-      </IelPageHeader>
+      </div>
 
-      <ul className="space-y-4">
+      {!isManager ? <ReferralReportLink jobId={referral.jobId} /> : null}
+
+      <ul className="flex flex-col gap-4">
         {referral.items.map((item) => {
           const application = getApplication(state, item.applicationId);
           const talent = application ? getTalent(application.talentId) : null;
@@ -223,25 +350,27 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
 
           return (
             <li key={item.applicationId}>
-              <Panel className="flex flex-col gap-3">
-                <PanelHeader
-                  eyebrow="Perfil compartilhado"
-                  title={talent?.name}
-                  meta={item.summary}
-                  actions={
-                    <div className="flex flex-wrap gap-2">
-                      {decisionChip(item)}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{talent?.name}</CardTitle>
+                  <CardDescription>{item.summary}</CardDescription>
+                  <CardAction>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <DecisaoDaEmpresa item={item} />
                       {application ? (
-                        <Chip>
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
                           {REFERRAL_STAGE_LABEL[application.referralStage]}
-                        </Chip>
+                        </Badge>
                       ) : null}
                     </div>
-                  }
-                />
-                <div className="space-y-3">
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Justificativa do IEL
                     </p>
                     <p className="text-sm text-foreground">
@@ -251,7 +380,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
 
                   <div className="grid gap-3 lg:grid-cols-2">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Pontos de atenção
                       </p>
                       {item.attentionPoints.length === 0 ? (
@@ -267,7 +396,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Perguntas sugeridas para a entrevista
                       </p>
                       {item.suggestedQuestions.length === 0 ? (
@@ -285,7 +414,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                   </div>
 
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Evidências compartilhadas ({evidences.length})
                     </p>
                     <ul className="space-y-1 text-sm text-muted-foreground">
@@ -298,27 +427,24 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                   </div>
 
                   {item.managerNote ? (
-                    <div className="rounded-[var(--control-radius)] border border-border bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="rounded-md border bg-muted/50 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Retorno da empresa
                       </p>
                       <p className="text-sm text-foreground">
                         {item.managerNote}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {item.decidedAt ? formatDateTime(item.decidedAt) : ''}
+                        {item.decidedAt ? formatarDataHora(item.decidedAt) : ''}
                       </p>
                     </div>
                   ) : null}
 
                   {isManager && item.managerDecision === 'pendente' ? (
-                    <div className="space-y-2 border-t border-border pt-3">
-                      <label
-                        htmlFor={`manager-note-${item.applicationId}`}
-                        className="block text-sm font-medium text-foreground"
-                      >
+                    <div className="flex flex-col gap-2 border-t pt-3">
+                      <Label htmlFor={`manager-note-${item.applicationId}`}>
                         Observação operacional (obrigatória para “Não avançar”)
-                      </label>
+                      </Label>
                       <Textarea
                         id={`manager-note-${item.applicationId}`}
                         rows={2}
@@ -393,25 +519,28 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                   ) : null}
 
                   {!isManager ? (
-                    <Link
-                      href={
-                        application
-                          ? iel.talents
-                              .byId(application.talentId)
-                              .inJob(referral.jobId)
-                          : iel.talents.index
-                      }
-                    >
+                    <div>
                       <Button
                         size="sm"
                         variant="outline"
+                        asChild
                       >
-                        Abrir perfil completo (visão IEL)
+                        <Link
+                          href={
+                            application
+                              ? iel.talents
+                                  .byId(application.talentId)
+                                  .inJob(referral.jobId)
+                              : iel.talents.index
+                          }
+                        >
+                          Abrir perfil completo (visão IEL)
+                        </Link>
                       </Button>
-                    </Link>
+                    </div>
                   ) : null}
-                </div>
-              </Panel>
+                </CardContent>
+              </Card>
             </li>
           );
         })}
@@ -424,8 +553,6 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
           empresas não são exibidas.
         </Alert>
       ) : null}
-
-      {null}
     </div>
   );
 }

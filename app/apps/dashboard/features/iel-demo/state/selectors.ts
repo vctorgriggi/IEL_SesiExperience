@@ -25,6 +25,14 @@ import {
 } from '../analysis/culture-invites';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
+  buildReportToken,
+  findMostDivergentAxis,
+  formatExperienceSpan,
+  initialsOf,
+  readAxisMatch,
+  type ReportAxisMatch
+} from '../analysis/referral-report';
+import {
   ALL_COMPANIES,
   ALL_JOBS,
   ALL_TALENTS,
@@ -1847,4 +1855,136 @@ export function getImportHistory(
     .filter((record) => record.jobId === jobId)
     .slice()
     .reverse();
+}
+
+/* ------------------------------------------------------------------ *
+ * Relatório da empresa por link (S3)
+ * ------------------------------------------------------------------ */
+
+/** Uma pessoa enviada, como a empresa pode vê-la. */
+export type ReferralReportPerson = {
+  /** Posição na remessa, a partir de 1. Ordena por quanto combina. */
+  position: number;
+  name: string;
+  initials: string;
+  headline: string;
+  city: string;
+  /** "3 anos de experiência", ou `null` quando o currículo não permite dizer. */
+  experienceSpan: string | null;
+  /** Resumo congelado no momento do envio, nunca o que foi escrito depois. */
+  summary: string;
+  attentionPoints: string[];
+  suggestedQuestions: string[];
+  /** Percentual total de aderência. `null` sem base dos dois lados. */
+  adherenceTotal: number | null;
+  byAxis: { axisId: FitAxisId; match: ReportAxisMatch }[];
+  technicalMatch: number | null;
+};
+
+export type ReferralReport = {
+  company: Company;
+  job: Job;
+  sentAt: string | null;
+  sentBy: string;
+  people: ReferralReportPerson[];
+  sampleProgress: CultureSampleProgress;
+  /** Quantos candidatos daquela vaga responderam o questionário de fit. */
+  evaluatedCount: number;
+  mostDivergentAxis: FitAxisId | null;
+};
+
+/** Quem assina o envio na página da empresa. */
+const REPORT_SENDER = 'Analista IEL';
+
+/** O endereço do relatório daquela vaga, para copiar e enviar à empresa. */
+export function getReportTokenForJob(jobId: string): string {
+  return buildReportToken(jobId);
+}
+
+/**
+ * O relatório de uma vaga, resolvido pelo token do link (S3).
+ *
+ * Monta o recorte **mínimo** que a empresa pode ver: as pessoas registradas
+ * naquele encaminhamento, a aderência delas por ponto em faixa, o agregado da
+ * consulta à equipe e nada mais. Outros candidatos da vaga não entram, resposta
+ * individual de colaborador não entra e a alternativa que o candidato marcou
+ * não entra (PRODUTO.md §5.1).
+ *
+ * Devolve `null` quando o token não corresponde a nenhuma vaga com
+ * encaminhamento registrado — inclusive quando a vaga existe mas nada foi
+ * enviado ainda: sem envio não há o que a empresa possa abrir.
+ */
+export function getReferralReport(
+  state: DemoState,
+  token: string
+): ReferralReport | null {
+  const job = ALL_JOBS.find((entry) => buildReportToken(entry.id) === token);
+  if (!job) return null;
+
+  const company = getCompany(job.companyId);
+  if (!company) return null;
+
+  const referral = state.referrals.find(
+    (entry) => entry.jobId === job.id && entry.state === 'registrado'
+  );
+  if (!referral) return null;
+
+  const people = referral.items
+    .map((item) => {
+      const application = getApplication(state, item.applicationId);
+      const talent = application
+        ? getTalent(application.talentId, state)
+        : null;
+      if (!application || !talent) return null;
+
+      const adherence = getAdherence(state, application.id);
+
+      return {
+        name: talent.name,
+        initials: initialsOf(talent.name),
+        headline: talent.headline,
+        city: talent.city,
+        experienceSpan: formatExperienceSpan(
+          talent.experiences.map((experience) => experience.period)
+        ),
+        summary: item.summary,
+        attentionPoints: item.attentionPoints,
+        suggestedQuestions: item.suggestedQuestions,
+        adherenceTotal: adherence?.total ?? null,
+        byAxis: (adherence?.byAxis ?? []).map((entry) => ({
+          axisId: entry.axisId,
+          match: readAxisMatch(entry.adherence)
+        })),
+        technicalMatch: application.technicalMatch ?? null
+      };
+    })
+    .filter((person): person is Omit<ReferralReportPerson, 'position'> =>
+      Boolean(person)
+    )
+    // A ordem é a do quanto combina, como a página promete no texto de
+    // abertura. Quem não tem medida vai para o fim, nunca para o zero.
+    .sort((left, right) => {
+      if (left.adherenceTotal === right.adherenceTotal) {
+        return (right.technicalMatch ?? -1) - (left.technicalMatch ?? -1);
+      }
+      if (left.adherenceTotal === null) return 1;
+      if (right.adherenceTotal === null) return -1;
+      return right.adherenceTotal - left.adherenceTotal;
+    })
+    .map((person, index) => ({ ...person, position: index + 1 }));
+
+  const evaluatedCount = getApplicationsByJob(state, job.id).filter(
+    (application) => getFitStatus(state, application) === 'respondido'
+  ).length;
+
+  return {
+    company,
+    job,
+    sentAt: referral.createdAt,
+    sentBy: REPORT_SENDER,
+    people,
+    sampleProgress: getCultureSampleProgress(state, company.id),
+    evaluatedCount,
+    mostDivergentAxis: findMostDivergentAxis(people)
+  };
 }
