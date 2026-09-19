@@ -319,7 +319,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
       onValueChange={setAbaVaga}
       className="@container/vaga gap-6"
     >
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-tight">{job.title}</h1>
           <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">

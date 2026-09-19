@@ -172,7 +172,7 @@ export function CandidatosScreen() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           kpi={kpis.taxaAbertura}
           icone={MailOpen}
@@ -202,15 +202,20 @@ export function CandidatosScreen() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="shadow-xs">
+      {/* Os dois cartões com a mesma altura: o funil e a lista de abandono
+          ocupam a altura toda, com as linhas distribuídas, e o rodapé de cada
+          um fica colado embaixo. */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-2">
+        <Card className="h-full shadow-xs">
           <CardHeader>
-            <CardTitle>Funil da comunicação</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Funil da comunicação
+            </CardTitle>
             <CardDescription>
               Do convite enviado ao questionário concluído
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-1 flex-col gap-4">
             <Tabs
               value={abaValida}
               onValueChange={(valor) => {
@@ -245,7 +250,7 @@ export function CandidatosScreen() {
               }`}
             />
           </CardContent>
-          <CardFooter className="text-sm text-muted-foreground">
+          <CardFooter className="mt-auto text-sm text-muted-foreground">
             Quem abre e não conclui recebe um lembrete em 24 horas.
           </CardFooter>
         </Card>
@@ -259,7 +264,9 @@ export function CandidatosScreen() {
 
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle>Privacidade por padrão</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Privacidade por padrão
+          </CardTitle>
           <CardDescription>
             O que a analista vê de cada candidato
           </CardDescription>
@@ -359,20 +366,22 @@ function OndeOCandidatoPara({
   const escala = Math.max(1, ...pontos.map((p) => p.pct ?? 0));
 
   return (
-    <Card className="shadow-xs">
+    <Card className="h-full shadow-xs">
       <CardHeader>
-        <CardTitle>Onde o candidato para</CardTitle>
+        <CardTitle className="text-base font-semibold">
+          Onde o candidato para
+        </CardTitle>
         <CardDescription>
           {oculto
             ? 'Menos de 5 aberturas neste recorte'
             : `Abandono sobre quem abriu o convite (${formatarNumero(abertos)})`}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col">
         {/* A barra é só desenho; o % escrito ao lado é o equivalente. */}
         <ol
           aria-label="Abandono no aceite e em cada pergunta"
-          className="flex flex-col gap-3"
+          className="flex flex-1 flex-col justify-between gap-3"
         >
           {pontos.map((ponto) => {
             const [titulo, rotulo] = ponto.rotulo.split(' · ');
@@ -429,7 +438,7 @@ function OndeOCandidatoPara({
           })}
         </ol>
       </CardContent>
-      <CardFooter className="text-sm text-muted-foreground">
+      <CardFooter className="mt-auto text-sm text-muted-foreground">
         {maior
           ? fraseDoAbandono(maior)
           : oculto

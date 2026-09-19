@@ -30,7 +30,7 @@ export type Pendencia = {
   urgencia: number;
 };
 
-export const PENDENCIAS_VISIVEIS = 5;
+export const PENDENCIAS_VISIVEIS = 10;
 
 /**
  * O tipo agrupa a fila na tela. Com milhares de vagas, uma lista corrida de

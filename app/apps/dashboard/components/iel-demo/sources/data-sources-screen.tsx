@@ -29,7 +29,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
@@ -77,7 +76,9 @@ export function DataSourcesScreen() {
 
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle>Como os dados circulam</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Como os dados circulam
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
@@ -109,55 +110,69 @@ export function DataSourcesScreen() {
         </CardContent>
       </Card>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-        <Card className="shadow-xs">
-          <CardHeader>
-            <CardTitle>Conexões</CardTitle>
-            <CardDescription>Clique para ver o detalhe</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-1 px-3">
-            {integracoes.map((integracao) => {
-              const meta = CONEXAO[integracao.id];
-              const ativa = integracao.id === aberta;
-              return (
-                <button
-                  key={integracao.id}
-                  type="button"
-                  aria-pressed={ativa}
-                  onClick={() => setAberta(integracao.id)}
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    ativa && 'bg-muted'
-                  )}
-                >
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium">{meta.nome}</span>
-                      <EstadoBadge estado={integracao.estado} />
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {integracao.detalhe}
-                    </span>
-                  </span>
-                  <ChevronRight
-                    aria-hidden
-                    className="size-4 shrink-0 text-muted-foreground"
-                  />
-                </button>
-              );
-            })}
-          </CardContent>
-          <CardFooter className="text-xs text-muted-foreground">
+      {/*
+       * As conexões numa linha de três cartões iguais, e o detalhe da que
+       * estiver aberta em largura cheia logo abaixo. Com a lista numa coluna
+       * estreita ao lado do detalhe, a coluna da lista acabava na metade e
+       * deixava um vão do tamanho do log de sincronizações.
+       */}
+      <section
+        aria-labelledby="conexoes-titulo"
+        className="flex flex-col gap-3"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2
+            id="conexoes-titulo"
+            className="text-base font-semibold"
+          >
+            Conexões{' '}
+            <span className="text-sm font-normal text-muted-foreground">
+              · Clique para ver o detalhe
+            </span>
+          </h2>
+          <p className="text-xs text-muted-foreground">
             Toda conexão nasce no modo mais restrito. Campo novo só entra se
             alguém do IEL ligar.
-          </CardFooter>
-        </Card>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          {aberta === 'empregare' ? <DetalheEmpregare /> : null}
-          {aberta === 'email' ? <DetalheEmail /> : null}
-          {aberta === 'whatsapp' ? <DetalheWhatsapp /> : null}
+          </p>
         </div>
+        <div className="grid items-stretch gap-4 md:grid-cols-3">
+          {integracoes.map((integracao) => {
+            const meta = CONEXAO[integracao.id];
+            const ativa = integracao.id === aberta;
+            return (
+              <button
+                key={integracao.id}
+                type="button"
+                aria-pressed={ativa}
+                onClick={() => setAberta(integracao.id)}
+                className={cn(
+                  'flex h-full w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left shadow-xs outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  ativa && 'border-foreground/20 bg-muted'
+                )}
+              >
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{meta.nome}</span>
+                    <EstadoBadge estado={integracao.estado} />
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {integracao.detalhe}
+                  </span>
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="flex min-w-0 flex-col gap-4">
+        {aberta === 'empregare' ? <DetalheEmpregare /> : null}
+        {aberta === 'email' ? <DetalheEmail /> : null}
+        {aberta === 'whatsapp' ? <DetalheWhatsapp /> : null}
       </div>
     </div>
   );
@@ -270,16 +285,18 @@ function DetalheEmpregare() {
     <>
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle>Empregare</CardTitle>
+          <CardTitle className="text-base font-semibold">Empregare</CardTitle>
           <CardDescription>
             Continua sendo a base de vagas e candidaturas. O Mind RH só lê o que
             precisa para dizer quem combina com a empresa.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="flex flex-col gap-3">
+        {/* Em largura cheia, a lista do que entra vira duas colunas: numa só,
+            ela ficava o dobro da altura do "Como sincroniza" ao lado. */}
+        <CardContent className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="flex flex-col gap-3 xl:col-span-2">
             <Rotulo>O que entra</Rotulo>
-            <ul className="flex flex-col gap-2">
+            <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {CAMPOS_EMPREGARE.map((item) => (
                 <li
                   key={item.campo}
@@ -334,7 +351,7 @@ function DetalheEmpregare() {
 
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle className="flex items-center gap-1">
+          <CardTitle className="flex items-center gap-1 text-base font-semibold">
             Últimas sincronizações
             <MarcadorHistorico />
           </CardTitle>
@@ -463,7 +480,9 @@ function DetalheEmail() {
     <>
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle>Provedor de e-mail</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Provedor de e-mail
+          </CardTitle>
           <CardDescription>
             Todo e-mail sai em nome do IEL · Centro de Empregos, dizendo quem
             envia e para quê. O link é único por pessoa e abre sem login.
@@ -501,7 +520,7 @@ function DetalheEmail() {
 
       <Card className="shadow-xs">
         <CardHeader>
-          <CardTitle className="flex items-center gap-1">
+          <CardTitle className="flex items-center gap-1 text-base font-semibold">
             Entrega nos últimos 30 dias
             <MarcadorHistorico />
           </CardTitle>
@@ -603,7 +622,9 @@ function DetalheWhatsapp() {
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <CardTitle>WhatsApp Business</CardTitle>
+        <CardTitle className="text-base font-semibold">
+          WhatsApp Business
+        </CardTitle>
         <CardDescription>
           Pensado para o candidato operacional, que abre WhatsApp e quase nunca
           abre e-mail. As mensagens são as mesmas do e-mail, em versão curta.

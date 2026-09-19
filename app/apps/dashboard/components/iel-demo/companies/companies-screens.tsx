@@ -595,9 +595,22 @@ export function CompaniesScreen() {
         </div>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <RetornoDasEmpresasCard periodo={periodo} />
-        <PermanenciaCard />
+      {/*
+       * Retorno (7/12) e permanência (5/12) na mesma linha, com a mesma
+       * altura; a quebra por setor desce para uma linha própria, em largura
+       * cheia: dentro do cartão do retorno ela deixava a permanência com um
+       * vão enorme embaixo.
+       */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-12">
+        <RetornoDasEmpresasCard
+          periodo={periodo}
+          className="lg:col-span-7"
+        />
+        <PermanenciaCard className="lg:col-span-5" />
+        <RetornoPorSetorCard
+          periodo={periodo}
+          className="lg:col-span-12"
+        />
       </div>
     </div>
   );
@@ -930,7 +943,13 @@ const PREENCHIMENTO_EMPRESA_CLARO = PREENCHIMENTO_CLARO.empresa;
  * ou sem resposta, sobre as remessas do período, com o motivo do "não" e a
  * quebra por setor. Setor com menos de 5 remessas mostra "—".
  */
-function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
+function RetornoDasEmpresasCard({
+  periodo,
+  className
+}: {
+  periodo: Periodo;
+  className?: string;
+}) {
   const retorno = useMemo(
     () => getRetornoDasEmpresas(periodo, 'setor'),
     [periodo]
@@ -938,14 +957,11 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
   const segundo = retorno.motivos[1];
   const contratou = retorno.itens.find((item) => item.retorno === 'contratou');
   const maiorMotivo = Math.max(1, ...retorno.motivos.map((m) => m.n));
-  // Setores pequenos não viram linha de "—": juntam-se numa frase só.
-  const setoresVisiveis = retorno.grupos.filter((grupo) => !grupo.oculto);
-  const setoresOcultos = retorno.grupos.length - setoresVisiveis.length;
 
   return (
-    <Card>
+    <Card className={cn('h-full', className)}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1 text-base font-medium">
+        <CardTitle className="flex items-center gap-1 text-base font-semibold">
           Retorno das empresas <MarcadorHistorico />
         </CardTitle>
         <CardDescription>
@@ -953,7 +969,7 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
           {plural(retorno.n, 'remessa enviada', 'remessas enviadas')}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-1 flex-col gap-4">
         {retorno.oculto ? (
           <p className="text-sm text-muted-foreground">
             Menos de 5 remessas no período: oculto para proteger quem respondeu.
@@ -1016,12 +1032,12 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
               ))}
             </ul>
             {retorno.motivos.some((motivo) => motivo.n > 0) ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-1 flex-col gap-2">
                 <p className="text-sm font-medium">Por que não contratou</p>
                 {/* A barra é só desenho; o % escrito ao lado é o equivalente. */}
                 <ol
                   aria-label="Motivos de não contratação, do mais citado ao menos citado"
-                  className="flex flex-col gap-1.5"
+                  className="flex flex-1 flex-col justify-around gap-1.5"
                 >
                   {retorno.motivos.map((motivo, indice) => {
                     const destaque = indice === 0 && motivo.n > 0;
@@ -1091,7 +1107,41 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
             ) : null}
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
 
+/**
+ * A quebra do retorno por setor, em linha própria e largura cheia. Setor com
+ * menos de 5 remessas não vira linha de "—": juntam-se numa frase só.
+ */
+function RetornoPorSetorCard({
+  periodo,
+  className
+}: {
+  periodo: Periodo;
+  className?: string;
+}) {
+  const retorno = useMemo(
+    () => getRetornoDasEmpresas(periodo, 'setor'),
+    [periodo]
+  );
+  const setoresVisiveis = retorno.grupos.filter((grupo) => !grupo.oculto);
+  const setoresOcultos = retorno.grupos.length - setoresVisiveis.length;
+  if (retorno.oculto || retorno.grupos.length === 0) return null;
+
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1 text-base font-semibold">
+          Retorno por setor <MarcadorHistorico />
+        </CardTitle>
+        <CardDescription>
+          {PERIODO_LABEL[periodo]} · em percentual das remessas de cada setor
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {setoresVisiveis.length > 0 ? (
           <div className="overflow-x-auto rounded-lg border">
             <Table>
@@ -1202,9 +1252,11 @@ function NumeroDaCoorte({
   base?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-sm text-muted-foreground">{rotulo}</span>
-      <span className="text-3xl font-semibold tabular-nums">{valor}</span>
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm text-muted-foreground">{rotulo}</span>
+        <span className="text-3xl font-semibold tabular-nums">{valor}</span>
+      </div>
       <div
         aria-hidden="true"
         className="h-2 overflow-hidden rounded-full bg-muted/70"
@@ -1224,22 +1276,12 @@ function NumeroDaCoorte({
   );
 }
 
-/** A seta entre os números: o funil da coorte, da esquerda para a direita. */
-function SetaDaCoorte() {
-  return (
-    <ChevronRight
-      aria-hidden="true"
-      className="mt-9 size-5 shrink-0 text-muted-foreground/70"
-    />
-  );
-}
-
 /**
  * "Quem foi contratado ficou?" — por coorte de contratação, aos 30 e aos 90
  * dias. Coorte ainda correndo mostra "em apuração"; coorte com menos de 5
  * contratados, "—".
  */
-function PermanenciaCard() {
+function PermanenciaCard({ className }: { className?: string }) {
   const coortes = useMemo(() => getPermanenciaPorCoorte(), []);
   const [mes, setMes] = useState(() => coortePadrao(coortes));
   const coorte = coortes.find((c) => c.mes === mes);
@@ -1266,20 +1308,30 @@ function PermanenciaCard() {
   const noventa = taxa(coorte?.ficaram90Pct ?? null, coorte?.apurados90 ?? 0);
 
   return (
-    <Card>
+    <Card className={cn('h-full', className)}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1 text-base font-medium">
+        <CardTitle className="flex items-center gap-1 text-base font-semibold">
           Permanência aos 30 e 90 dias <MarcadorHistorico />
         </CardTitle>
         <CardDescription>Por mês de contratação</CardDescription>
-        <CardAction>
+      </CardHeader>
+      {/*
+       * Os três números um embaixo do outro, do contratado ao que ficou 90
+       * dias, distribuídos na altura do cartão: ao lado do retorno, que é
+       * alto, a fileira de três deixava um vão embaixo.
+       */}
+      {/* O mês fica no conteúdo, e não no canto do cabeçalho: ali ele
+          espremia o título em duas linhas e o cabeçalho ficava mais alto que
+          o do retorno, ao lado. */}
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <div>
           <Select
             value={mes}
             onValueChange={setMes}
           >
             <SelectTrigger
               size="sm"
-              className="w-[210px]"
+              className="w-auto"
               aria-label="Mês de contratação"
             >
               <SelectValue />
@@ -1295,10 +1347,8 @@ function PermanenciaCard() {
               ))}
             </SelectContent>
           </Select>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-start gap-3">
+        </div>
+        <div className="flex flex-1 flex-col justify-around gap-5">
           <NumeroDaCoorte
             base
             pct={coorte && !coorte.oculto ? 100 : null}
@@ -1316,14 +1366,12 @@ function PermanenciaCard() {
             }
             apoio="que a empresa devolveu"
           />
-          <SetaDaCoorte />
           <NumeroDaCoorte
             pct={coorte && !coorte.oculto ? coorte.ficaram30Pct : null}
             rotulo="Ficaram 30 dias"
             valor={trinta.valor}
             apoio={trinta.apoio}
           />
-          <SetaDaCoorte />
           <NumeroDaCoorte
             pct={coorte && !coorte.oculto ? coorte.ficaram90Pct : null}
             rotulo="Ficaram 90 dias"
