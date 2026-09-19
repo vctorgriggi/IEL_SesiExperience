@@ -1,0 +1,205 @@
+import type { Company, DataSource, Team } from '../types';
+
+/**
+ * Data de referência da base demo. Todas as informações fictícias usam datas
+ * fixas para que a interface não mude de conteúdo entre renderizações.
+ */
+export const DEMO_REFERENCE_DATE = '2026-09-14';
+
+export const DEMO_DATA_SOURCES: DataSource[] = [
+  {
+    id: 'FONTE-EMPREGARE',
+    name: 'Empregare — demonstração',
+    kind: 'Sistema de recrutamento',
+    description:
+      'Vagas, candidaturas e experiências declaradas no currículo. No protótipo os registros são fictícios e chegam por um evento simulado.',
+    lastSyncAt: '2026-09-13T18:20:00.000Z',
+    receivedRecords: 21,
+    status: 'ativa',
+    lastError: null
+  },
+  {
+    id: 'FONTE-AVALIACAO',
+    name: 'Avaliação externa — demonstração',
+    kind: 'Avaliação de aderência',
+    description:
+      'Resultados de avaliações já realizadas em processos anteriores. A escala, o método e a data de origem são preservados: nada é convertido em nota global.',
+    lastSyncAt: '2026-08-02T12:00:00.000Z',
+    receivedRecords: 1,
+    status: 'ativa',
+    lastError: null
+  },
+  {
+    id: 'FONTE-EMPRESA',
+    name: 'Contexto da empresa — demonstração',
+    kind: 'Informações da empresa e da equipe',
+    description:
+      'Atividades, rotina e condições de trabalho informadas pela empresa. Cada condição indica se foi confirmada pelo gestor ou apenas descrita na vaga.',
+    lastSyncAt: '2026-08-30T14:10:00.000Z',
+    receivedRecords: 9,
+    status: 'ativa',
+    lastError: null
+  },
+  {
+    id: 'FONTE-IEL',
+    name: 'Registro IEL — demonstração',
+    kind: 'Registro interno de análise',
+    description:
+      'Expectativas coletadas em atendimento, anotações de análise, esclarecimentos e encaminhamentos. É a única fonte que o protótipo altera localmente.',
+    lastSyncAt: '2026-09-14T08:05:00.000Z',
+    receivedRecords: 12,
+    status: 'ativa',
+    lastError: null
+  }
+];
+
+export const DEMO_COMPANIES: Company[] = [
+  {
+    id: 'EMP-01',
+    name: 'Cerrado Distribuição',
+    sector: 'Distribuição e logística',
+    location: 'Goiânia, GO',
+    institutionalDescription:
+      'A empresa se descreve como colaborativa, com metas diárias de expedição e comunicação direta entre as equipes.',
+    contactName: 'Marina Duarte',
+    contactEmail: 'marina.duarte@example.com',
+    sourceId: 'FONTE-EMPRESA',
+    updatedAt: '2026-08-28'
+  },
+  {
+    id: 'EMP-02',
+    name: 'Horizonte Alimentos',
+    sector: 'Indústria de alimentos',
+    location: 'Anápolis, GO',
+    institutionalDescription:
+      'A empresa se descreve como formal nos processos, com procedimentos escritos para movimentação de materiais.',
+    contactName: 'Rafael Nogueira',
+    contactEmail: 'rafael.nogueira@example.com',
+    sourceId: 'FONTE-EMPRESA',
+    updatedAt: '2026-08-30'
+  },
+  {
+    id: 'EMP-03',
+    name: 'Oficina Pantanal',
+    sector: 'Manutenção automotiva',
+    location: 'Campo Grande, MS',
+    institutionalDescription:
+      'A empresa se descreve como enxuta, com equipe pequena e divisão informal de tarefas administrativas.',
+    contactName: 'Sônia Prado',
+    contactEmail: 'sonia.prado@example.com',
+    sourceId: 'FONTE-EMPRESA',
+    updatedAt: '2026-08-12'
+  }
+];
+
+export const DEMO_TEAMS: Team[] = [
+  {
+    id: 'EQ-01',
+    companyId: 'EMP-01',
+    name: 'Expedição — turno da tarde',
+    routine:
+      'Conferência de cargas, separação de pedidos e registro de saídas entre 13h e 22h.',
+    managerName: 'Marina Duarte',
+    managerEmail: 'marina.duarte@example.com',
+    conditions: [
+      {
+        id: 'COND-01',
+        label: 'Apoio nas primeiras atividades',
+        value: 'Ainda não informado pela empresa.',
+        status: 'a-confirmar',
+        origin: 'Contexto da empresa — demonstração',
+        updatedAt: '2026-08-28'
+      },
+      {
+        id: 'COND-02',
+        label: 'Sobreposição entre turnos',
+        value:
+          'Pouca sobreposição: o turno da tarde inicia quando a equipe da manhã está encerrando.',
+        status: 'da-descricao',
+        origin: 'Descrição da vaga (Empregare — demonstração)',
+        updatedAt: '2026-09-02'
+      },
+      {
+        id: 'COND-03',
+        label: 'Comunicação de prioridades',
+        value: 'Checklist impresso entregue no início do turno.',
+        status: 'da-descricao',
+        origin: 'Descrição da vaga (Empregare — demonstração)',
+        updatedAt: '2026-09-02'
+      },
+      {
+        id: 'COND-04',
+        label: 'Autonomia esperada',
+        value:
+          'A rotina é executada sem supervisão direta durante a maior parte do turno.',
+        status: 'da-descricao',
+        origin: 'Descrição da vaga (Empregare — demonstração)',
+        updatedAt: '2026-09-02'
+      }
+    ]
+  },
+  {
+    id: 'EQ-02',
+    companyId: 'EMP-02',
+    name: 'Apoio administrativo ao estoque',
+    routine:
+      'Controle de entradas e saídas de materiais, apoio a inventários e conferência de notas, das 8h às 17h.',
+    managerName: 'Rafael Nogueira',
+    managerEmail: 'rafael.nogueira@example.com',
+    conditions: [
+      {
+        id: 'COND-05',
+        label: 'Apoio nas primeiras atividades',
+        value:
+          'Colega de referência acompanha a pessoa nas primeiras quatro semanas.',
+        status: 'confirmado',
+        origin: 'Contexto da empresa — confirmado pelo gestor',
+        updatedAt: '2026-08-30'
+      },
+      {
+        id: 'COND-06',
+        label: 'Revisão de prioridades',
+        value: 'Reunião semanal de prioridades com o gestor da área.',
+        status: 'confirmado',
+        origin: 'Contexto da empresa — confirmado pelo gestor',
+        updatedAt: '2026-08-30'
+      },
+      {
+        id: 'COND-07',
+        label: 'Registro de movimentações',
+        value: 'Planilha compartilhada somada ao sistema interno de estoque.',
+        status: 'confirmado',
+        origin: 'Contexto da empresa — confirmado pelo gestor',
+        updatedAt: '2026-08-30'
+      }
+    ]
+  },
+  {
+    id: 'EQ-03',
+    companyId: 'EMP-03',
+    name: 'Administrativo da oficina',
+    routine:
+      'Organização de documentos, atendimento telefônico e apoio a orçamentos, das 8h às 18h.',
+    managerName: 'Sônia Prado',
+    managerEmail: 'sonia.prado@example.com',
+    conditions: [
+      {
+        id: 'COND-08',
+        label: 'Atividades detalhadas',
+        value:
+          'Documentação parcial: as atividades aparecem apenas em linhas gerais.',
+        status: 'a-confirmar',
+        origin: 'Descrição da vaga (Empregare — demonstração)',
+        updatedAt: '2026-08-12'
+      },
+      {
+        id: 'COND-09',
+        label: 'Apoio nas primeiras atividades',
+        value: 'Não informado pela empresa.',
+        status: 'a-confirmar',
+        origin: 'Contexto da empresa — demonstração',
+        updatedAt: '2026-08-12'
+      }
+    ]
+  }
+];

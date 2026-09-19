@@ -78,6 +78,55 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
       organization: resolve('/onboarding/organization')
     },
     select: (slug: string) => resolve(`/select/${encodeSegment(slug)}`),
+    /**
+     * Central de Seleção IEL — protótipo de demonstração.
+     *
+     * Área isolada, com dados fictícios e estado local: não compartilha rotas,
+     * sessão ou banco com a área autenticada do produto.
+     */
+    iel: {
+      index: resolve('/iel'),
+      jobs: {
+        index: resolve('/iel/vagas'),
+        byId: (jobId: string) => {
+          const encodedJobId = encodeSegment(jobId);
+          const jobBase = `/iel/vagas/${encodedJobId}`;
+          return {
+            index: resolve(jobBase),
+            comparison: resolve(`${jobBase}/comparar`),
+            referral: resolve(`${jobBase}/encaminhamento`)
+          };
+        }
+      },
+      talents: {
+        index: resolve('/iel/talentos'),
+        byId: (talentId: string) => {
+          const talentBase = `/iel/talentos/${encodeSegment(talentId)}`;
+          return {
+            index: resolve(talentBase),
+            /** Perfil lido no contexto de uma vaga específica. */
+            inJob: (jobId: string) =>
+              resolve(`${talentBase}?vaga=${encodeSegment(jobId)}`)
+          };
+        }
+      },
+      companies: {
+        index: resolve('/iel/empresas'),
+        byId: (companyId: string) =>
+          resolve(`/iel/empresas/${encodeSegment(companyId)}`)
+      },
+      clarifications: {
+        index: resolve('/iel/pendencias'),
+        respond: (clarificationId: string) =>
+          resolve(`/iel/pendencias/${encodeSegment(clarificationId)}/responder`)
+      },
+      referrals: {
+        index: resolve('/iel/encaminhamentos'),
+        byId: (referralId: string) =>
+          resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
+      },
+      dataSources: resolve('/iel/fontes-de-dados')
+    },
     openEvents: {
       bySlug: (slug: string) => {
         const encodedSlug = encodeSegment(slug);

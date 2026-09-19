@@ -6,6 +6,9 @@ export const RESERVED_FIRST_SEGMENTS = new Set([
   'calendar',
   'events',
   'home',
+  // Protótipo da Central de Seleção IEL: rota pública de demonstração, não é
+  // slug de organização.
+  'iel',
   'invitations',
   'invite',
   'map',
