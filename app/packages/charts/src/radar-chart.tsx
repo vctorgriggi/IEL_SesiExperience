@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, type HTMLAttributes } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -9,7 +10,6 @@ import {
   RadarChart as RechartsRadarChart,
   ResponsiveContainer
 } from 'recharts';
-import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from './lib/utils';
 
@@ -35,10 +35,15 @@ export type RadarChartSeries = {
   strokeDasharray?: string;
 };
 
+/**
+ * `null` num valor abre o polígono naquele eixo, de propósito: onde falta
+ * medida não existe ponto, e o mínimo da escala desenharia um recuo que
+ * ninguém mediu.
+ */
 export type RadarChartPoint = {
   /** Rótulo do eixo, exibido em volta do polígono. */
   axis: string;
-} & Record<string, string | number>;
+} & Record<string, string | number | null>;
 
 export type RadarChartProps = HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof radarChartVariants> & {
@@ -46,6 +51,8 @@ export type RadarChartProps = HTMLAttributes<HTMLDivElement> &
     series: RadarChartSeries[];
     /** Extremos da escala. Fixos por quem usa: o gráfico não os infere. */
     domain?: [number, number];
+    /** Raio do polígono dentro da área, em % — margem para os rótulos. */
+    outerRadius?: string;
     gridStroke?: string;
     axisFill?: string;
   };
@@ -66,6 +73,7 @@ const RadarChart = forwardRef<HTMLDivElement, RadarChartProps>(
       data,
       series,
       domain = [0, 3],
+      outerRadius = '72%',
       gridStroke = 'hsl(var(--border))',
       axisFill = 'hsl(var(--muted-foreground))',
       ...props
@@ -83,7 +91,7 @@ const RadarChart = forwardRef<HTMLDivElement, RadarChartProps>(
       >
         <RechartsRadarChart
           data={data}
-          outerRadius="72%"
+          outerRadius={outerRadius}
         >
           <PolarGrid stroke={gridStroke} />
           <PolarAngleAxis
@@ -105,6 +113,12 @@ const RadarChart = forwardRef<HTMLDivElement, RadarChartProps>(
               strokeDasharray={entry.strokeDasharray}
               fill={entry.color}
               fillOpacity={entry.fillOpacity ?? 0.12}
+              /*
+               * Eixo medido entre dois eixos sem medida não vira linha: a
+               * série fica sem vizinho para ligar. O ponto é a única marca
+               * que sobra, e sem ele o valor sumiria do gráfico.
+               */
+              dot={{ fill: entry.color, r: 3, strokeWidth: 0 }}
               isAnimationActive={false}
             />
           ))}

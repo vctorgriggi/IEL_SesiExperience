@@ -45,7 +45,8 @@ data de **Última atualização** no cabeçalho.
 | 18  | [Consulta ao colaborador](18-consulta-ao-colaborador.md)           | `/iel/consulta/[token]`             | Colaborador, sem login         |
 | 19  | [Importação de planilha](19-importacao-de-planilha.md)             | `/iel/vagas/[jobId]/importar`       | Analista IEL                   |
 | 20  | [Relatório para a empresa](20-relatorio-para-a-empresa.md)         | `/iel/relatorio/[token]`            | Empresa, sem login             |
-| 21  | [Entrada da equipe](21-entrada-da-equipe.md)                       | `/iel/entrar`                       | Equipe do IEL                  |
+| 21  | [Análise de aderência](21-analise-de-aderencia.md)                 | `/iel/analise-de-aderencia`         | Analista IEL, Gestor           |
+| 22  | [Entrada da equipe](22-entrada-da-equipe.md)                       | `/iel/entrar`                       | Equipe do IEL                  |
 
 ## Modelo para uma tela nova
 

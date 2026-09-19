@@ -142,6 +142,13 @@ export function JobScreen({ jobId }: { jobId: string }) {
         <Button
           variant="ghost"
           size="sm"
+          asChild
+        >
+          <Link href={iel.adherence.byJob(job.id)}>Ver aderência</Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           asChild={comparison.length >= 2}
           disabled={comparison.length < 2}
         >

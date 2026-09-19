@@ -47,6 +47,8 @@ Atende **M5**.
 
 ## Ações do usuário
 
+- Ver aderência — abre a [Análise de aderência](21-analise-de-aderencia.md) já nesta vaga. Leitura,
+  sem ação de reducer.
 - Marcar candidatura para comparação — `toggle-comparison` (limite `COMPARISON_LIMIT`).
 - Adicionar à lista de encaminhamento — `add-to-referral-list` (limite `REFERRAL_LIMIT`, cinco).
 - Remover da lista — `remove-from-referral-list`.
@@ -84,3 +86,4 @@ Entra em: [Comparação](05-comparacao.md), [Perfil do talento](08-perfil-do-tal
 - 2026-09-19 — reescrita para a interface Mind RH: `selection-desk.tsx` deu lugar a `job-screen.tsx`,
   com tabela de quatro leituras, cartões de pendência e aba de resgate. A matriz por critério, o
   painel de evidência e a leitura assistida em painel saíram da tela.
+- 2026-09-19 — o cabeçalho ganhou "Ver aderência", que leva à análise de aderência já nesta vaga.

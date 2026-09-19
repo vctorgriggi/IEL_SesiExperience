@@ -23,6 +23,7 @@ import {
   Briefcase,
   Building2,
   ChartColumn,
+  ChartNoAxesColumnIncreasing,
   ChevronsUpDown,
   ClipboardList,
   HelpCircle,
@@ -255,6 +256,12 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               'Empresas',
               Building2,
               pathname.startsWith(iel.companies.index)
+            ),
+            item(
+              iel.adherence.index,
+              'Análise de aderência',
+              ChartNoAxesColumnIncreasing,
+              pathname.startsWith(iel.adherence.index)
             )
           ]
         },
