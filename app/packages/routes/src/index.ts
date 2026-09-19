@@ -185,6 +185,16 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
+      /**
+       * Análise de aderência: tela própria, com a vaga escolhida dentro dela.
+       * A medida é sempre de uma pessoa numa vaga, mas quem chega pelo menu
+       * ainda não escolheu qual — por isso a vaga é parâmetro, e não caminho.
+       */
+      adherence: {
+        index: resolve('/iel/analise-de-aderencia'),
+        byJob: (jobId: string) =>
+          resolve(`/iel/analise-de-aderencia?vaga=${encodeSegment(jobId)}`)
+      },
       /** Mapa de cultura: empresas e candidatos no mesmo plano. */
       cultureMap: resolve('/iel/mapa-de-cultura'),
       /** Integrações: o que entra, o que sai e o que fica de fora. */

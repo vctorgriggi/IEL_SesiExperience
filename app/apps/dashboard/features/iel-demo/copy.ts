@@ -82,6 +82,21 @@ export const AXIS_LABEL: Record<FitAxisId, string> = Object.fromEntries(
   FIT_AXES.map((axis) => [axis.id, axis.label])
 ) as Record<FitAxisId, string>;
 
+/**
+ * O mesmo ponto em duas ou três palavras.
+ *
+ * Só para onde o espaço é do desenho, e não do texto: em volta do radar, um
+ * rótulo de cinco palavras ou é cortado ou encolhe o polígono. O nome
+ * inteiro continua ao lado, na lista que acompanha o gráfico.
+ */
+export const AXIS_SHORT_LABEL: Record<FitAxisId, string> = {
+  'apoio-inicial': 'Apoio no início',
+  autonomia: 'Quem organiza',
+  'comunicacao-prioridades': 'Tarefas do dia',
+  'ritmo-turno': 'Horário e turno',
+  aprendizado: 'O que se aprende'
+};
+
 export const COPY = {
   fit: {
     label: 'Combina com a empresa',
