@@ -195,10 +195,8 @@ body:has([data-iel-theme]) {
 
 /* Faixa de navegação: clara, colada ao topo, separada por régua. */
 [data-iel-theme] .iel-ink {
-  background: hsl(var(--sidebar) / 0.96);
+  background: hsl(var(--sidebar));
   color: hsl(var(--sidebar-foreground));
-  backdrop-filter: saturate(160%) blur(10px);
-  -webkit-backdrop-filter: saturate(160%) blur(10px);
 }
 
 /* Texto com o gradiente da marca. */
