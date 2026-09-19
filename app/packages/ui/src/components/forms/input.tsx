@@ -58,7 +58,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             'border-input placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40',
             leftIcon && 'pl-10',
             rightIcon && 'pr-10',
-            hasError && 'border-destructive/60 focus-visible:ring-destructive/30',
+            hasError &&
+              'border-destructive/60 focus-visible:ring-destructive/30',
             'disabled:cursor-not-allowed disabled:opacity-60',
             className
           )}

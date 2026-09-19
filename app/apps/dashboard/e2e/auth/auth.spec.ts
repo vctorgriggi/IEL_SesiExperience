@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
-import {
-  hasE2ECredentials,
-  signInWithE2ECredentials
-} from '../helpers/auth';
+
+import { hasE2ECredentials, signInWithE2ECredentials } from '../helpers/auth';
 
 test.describe('Auth — Sign-in', () => {
   test('exibe formulário de login com email, senha e botão Entrar', async ({
@@ -15,7 +13,9 @@ test.describe('Auth — Sign-in', () => {
     await expect(page.getByRole('button', { name: /entrar/i })).toBeVisible();
   });
 
-  test('exibe link para "Esqueceu a senha?" e para cadastro', async ({ page }) => {
+  test('exibe link para "Esqueceu a senha?" e para cadastro', async ({
+    page
+  }) => {
     await page.goto('/auth/sign-in');
 
     await expect(
@@ -41,7 +41,10 @@ test.describe('Auth — Sign-in', () => {
       .locator('input[type="email"]')
       .first()
       .fill('invalid-user@example.com');
-    await page.locator('input[type="password"]').first().fill('invalid-password');
+    await page
+      .locator('input[type="password"]')
+      .first()
+      .fill('invalid-password');
     await page.getByRole('button', { name: /entrar/i }).click();
 
     await expect(page).toHaveURL(/\/auth\/(sign-in|error)/);

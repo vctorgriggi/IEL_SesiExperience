@@ -66,7 +66,7 @@ export function CardMetric({
         ) : null}
       </div>
 
-      {(trend || helperText) ? (
+      {trend || helperText ? (
         <div className="mt-3 flex items-center justify-between gap-2 text-xs">
           {trend ? (
             <span

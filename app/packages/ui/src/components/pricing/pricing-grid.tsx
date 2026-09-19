@@ -1,8 +1,8 @@
 'use client';
 
-import NumberFlow from '@number-flow/react';
 import { CheckmarkBadge04Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import NumberFlow from '@number-flow/react';
 
 import { cn } from '../../lib/utils';
 import { Button } from '../actions/button';
@@ -264,12 +264,7 @@ export function PricingGrid({
         <div className="mb-8">{switcher}</div>
       )}
 
-      <div
-        className={cn(
-          'justify-center flex',
-          cardsContainerClassName
-        )}
-      >
+      <div className={cn('justify-center flex', cardsContainerClassName)}>
         {plans.map((plan) => (
           <PlanCard
             key={plan.id}

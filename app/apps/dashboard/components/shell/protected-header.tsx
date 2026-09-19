@@ -1,10 +1,9 @@
 'use client';
 
+import { PageBreadcrumb, useBreadcrumb } from '@/components/layout/breadcrumb';
 import { SidebarMobileTrigger } from '@/components/layout/sidebar';
 
 import { ThemeToggle } from '@workspace/ui';
-
-import { PageBreadcrumb, useBreadcrumb } from '@/components/layout/breadcrumb';
 
 type ProtectedHeaderProps = {
   sidebarOpen: boolean;

@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  forwardRef,
-  type ButtonHTMLAttributes,
-  type ReactNode
-} from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 import { cn } from '../../lib/utils';
 
@@ -28,10 +24,7 @@ type ButtonSeverity =
   | 'contrast'
   | 'help';
 
-type ButtonProps = Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'children'
-> & {
+type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   children?: ReactNode;
   icon?: ReactNode;
   iconPos?: 'left' | 'right';
@@ -97,7 +90,13 @@ function resolveMode({
 
 function renderIcon(icon: ReactNode): ReactNode {
   if (icon == null) return null;
-  if (typeof icon === 'string') return <i className={icon} aria-hidden="true" />;
+  if (typeof icon === 'string')
+    return (
+      <i
+        className={icon}
+        aria-hidden="true"
+      />
+    );
   return icon;
 }
 

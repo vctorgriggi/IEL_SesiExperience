@@ -10,10 +10,7 @@ export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  function Textarea(
-    { className, error, helperText, id, ...props },
-    ref
-  ) {
+  function Textarea({ className, error, helperText, id, ...props }, ref) {
     const reactId = useId().replace(/:/g, '');
     const textareaId = id ?? `textarea-${reactId}`;
     const hasError = !!error;
@@ -29,7 +26,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={cn(
             'w-full min-h-20 resize-y rounded-(--control-radius) border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors',
             'border-input placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40',
-            hasError && 'border-destructive/60 focus-visible:ring-destructive/30',
+            hasError &&
+              'border-destructive/60 focus-visible:ring-destructive/30',
             'disabled:cursor-not-allowed disabled:opacity-60',
             className
           )}

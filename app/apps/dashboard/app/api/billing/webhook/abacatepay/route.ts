@@ -1,11 +1,10 @@
+import { settleAiCreditFromAbacatePay } from '@workspace/ai';
 import {
   BillingError,
   processAbacatePayWebhook,
   verifyAndParseAbacatePayWebhook
 } from '@workspace/billing';
 import { db } from '@workspace/database';
-
-import { settleAiCreditFromAbacatePay } from '@workspace/ai';
 
 /** Header AbacatePay envia com a assinatura HMAC-SHA256 (hex). Conferir em docs.abacatepay.com se diferente. */
 const SIGNATURE_HEADER = 'x-signature';

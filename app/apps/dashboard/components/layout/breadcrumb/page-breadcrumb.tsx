@@ -21,7 +21,10 @@ export function PageBreadcrumb({ items, className }: PageBreadcrumbProps) {
   return (
     <nav
       aria-label="Navegação (breadcrumb)"
-      className={cn('flex min-w-0 items-center gap-1 overflow-hidden text-sm', className)}
+      className={cn(
+        'flex min-w-0 items-center gap-1 overflow-hidden text-sm',
+        className
+      )}
     >
       <ol className="flex min-w-0 list-none items-center gap-1 overflow-hidden p-0">
         {items.map((item, index) => {

@@ -80,7 +80,10 @@ export function PopupMenu({
   );
 
   return (
-    <div ref={containerRef} className={cn('relative', className)}>
+    <div
+      ref={containerRef}
+      className={cn('relative', className)}
+    >
       {trigger({ toggle, id, open })}
 
       {open && (
@@ -115,7 +118,10 @@ export function PopupMenu({
 
               if (item.template) {
                 return (
-                  <li key={item.label ?? index} role="none">
+                  <li
+                    key={item.label ?? index}
+                    role="none"
+                  >
                     <button
                       type="button"
                       role="menuitem"
@@ -134,12 +140,17 @@ export function PopupMenu({
                   {item.icon && (
                     <span className="text-muted-foreground">{item.icon}</span>
                   )}
-                  <span className="truncate text-sm leading-5">{item.label}</span>
+                  <span className="truncate text-sm leading-5">
+                    {item.label}
+                  </span>
                 </>
               );
 
               return (
-                <li key={item.label ?? index} role="none">
+                <li
+                  key={item.label ?? index}
+                  role="none"
+                >
                   {item.url ? (
                     <a
                       role="menuitem"

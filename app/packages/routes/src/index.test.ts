@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { api, routeUrls, routes } from './index';
+import { api, routes, routeUrls } from './index';
 
 describe('@workspace/routes', () => {
   it('builds dashboard org paths without placeholders', () => {
@@ -8,9 +8,15 @@ describe('@workspace/routes', () => {
 
     expect(orgRoutes.index).toBe('/acme%20team');
     expect(orgRoutes.events.index).toBe('/acme%20team/events');
-    expect(orgRoutes.events.byId('evt/1').index).toBe('/acme%20team/events/evt%2F1');
-    expect(orgRoutes.events.byId('evt/1').tickets).toBe('/acme%20team/events/evt%2F1/tickets');
-    expect(orgRoutes.checkin.byId('abc 123').index).toBe('/acme%20team/checkin/abc%20123');
+    expect(orgRoutes.events.byId('evt/1').index).toBe(
+      '/acme%20team/events/evt%2F1'
+    );
+    expect(orgRoutes.events.byId('evt/1').tickets).toBe(
+      '/acme%20team/events/evt%2F1/tickets'
+    );
+    expect(orgRoutes.checkin.byId('abc 123').index).toBe(
+      '/acme%20team/checkin/abc%20123'
+    );
   });
 
   it('builds auth and invitation tokenized routes', () => {

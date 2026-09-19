@@ -75,7 +75,10 @@ export {
 
 export { MetricCard } from './components/dashboard/metric-card';
 export { CardMetric } from './components/dashboard/card-metric';
-export type { CardMetricProps, CardMetricTrend } from './components/dashboard/card-metric';
+export type {
+  CardMetricProps,
+  CardMetricTrend
+} from './components/dashboard/card-metric';
 export { PricingGrid } from './components/pricing';
 export type {
   BillingInterval,

@@ -1,16 +1,14 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  type ParticipantListItem
-} from '@/features/events/client/events-client';
 import {
   cancelEventRegistration,
   checkInEventRegistration,
   resendEventRegistrationEmail
 } from '@/features/events/actions';
+import { type ParticipantListItem } from '@/features/events/client/events-client';
 import { getErrorMessage } from '@/lib/get-error-message';
 import { runSafeAction } from '@/lib/run-safe-action';
 import {
@@ -118,12 +116,9 @@ export function AttendeesTable({
     [refresh]
   );
 
-  const handleCancel = useCallback(
-    (reg: ParticipantListItem) => {
-      setCancelTarget(reg);
-    },
-    []
-  );
+  const handleCancel = useCallback((reg: ParticipantListItem) => {
+    setCancelTarget(reg);
+  }, []);
 
   const confirmCancel = useCallback(async () => {
     if (!cancelTarget) return;
@@ -386,8 +381,8 @@ export function AttendeesTable({
             Mostrando{' '}
             <span className="font-medium text-foreground">{start}</span>–
             <span className="font-medium text-foreground">{end}</span> de{' '}
-            <span className="font-medium text-foreground">{total}</span>{' '}
-            inscriç{total === 1 ? 'ão' : 'ões'}
+            <span className="font-medium text-foreground">{total}</span> inscriç
+            {total === 1 ? 'ão' : 'ões'}
           </p>
           <nav
             className="flex items-center gap-1"

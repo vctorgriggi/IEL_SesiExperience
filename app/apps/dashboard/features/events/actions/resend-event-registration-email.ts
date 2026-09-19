@@ -12,9 +12,8 @@ import {
   events,
   userTable
 } from '@workspace/database';
-import { routeUrls } from '@workspace/routes';
-
 import { EmailProvider } from '@workspace/email/provider';
+import { routeUrls } from '@workspace/routes';
 
 import { registrationByIdSchema } from '../schemas/registration-by-id-schema';
 
@@ -86,9 +85,9 @@ export const resendEventRegistrationEmail = authOrganizationActionClient
         .where(eq(eventRegistrations.id, registrationId));
     }
 
-    const baseConfirmationUrl = routeUrls.dashboard.openEvents
-      .bySlug(row.eventSlug)
-      .confirmation;
+    const baseConfirmationUrl = routeUrls.dashboard.openEvents.bySlug(
+      row.eventSlug
+    ).confirmation;
     const confirmationUrl = new URL(baseConfirmationUrl);
     confirmationUrl.searchParams.set('code', code);
 

@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
-import {
-  hasE2ECredentials,
-  signInWithE2ECredentials
-} from '../helpers/auth';
+
+import { hasE2ECredentials, signInWithE2ECredentials } from '../helpers/auth';
 
 const SAMPLE_ORG_SLUG = 'organizacao-e2e';
 
@@ -99,13 +97,17 @@ test.describe('Events — Smoke autenticado (opcional)', () => {
         )
         .first()
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: /criar evento/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /criar evento/i })
+    ).toBeVisible();
     await expect(
       page.getByRole('link', { name: /voltar para eventos/i })
     ).toHaveAttribute('href', `/${orgSlug}/events`);
   });
 
-  test('página de eventos públicos exibe título e contexto', async ({ page }) => {
+  test('página de eventos públicos exibe título e contexto', async ({
+    page
+  }) => {
     test.skip(
       !hasE2ECredentials(),
       'Defina E2E_AUTH_EMAIL e E2E_AUTH_PASSWORD para rodar testes autenticados.'

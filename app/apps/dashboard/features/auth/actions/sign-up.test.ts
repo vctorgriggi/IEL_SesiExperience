@@ -96,7 +96,9 @@ describe('signUp action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    mockReturnValidationErrors.mockImplementation((_schema, payload) => payload);
+    mockReturnValidationErrors.mockImplementation(
+      (_schema, payload) => payload
+    );
     mockDb.select.mockReturnValue(createSelectChain([]));
     mockDb.insert.mockReturnValue({
       values: vi.fn().mockResolvedValue(undefined)

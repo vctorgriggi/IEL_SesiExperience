@@ -97,9 +97,7 @@ describe('resetPassword action', () => {
 
   it('throws NotFoundError when user account no longer exists', async () => {
     mockDb.select
-      .mockReturnValueOnce(
-        createSelectChain([{ email: 'missing@acme.com' }])
-      )
+      .mockReturnValueOnce(createSelectChain([{ email: 'missing@acme.com' }]))
       .mockReturnValueOnce(createSelectChain([]));
     const resetPassword = await importAction();
 

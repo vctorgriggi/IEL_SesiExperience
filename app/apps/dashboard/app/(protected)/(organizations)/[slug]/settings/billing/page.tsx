@@ -16,7 +16,8 @@ export default async function OrganizationBillingPage() {
   const currentPlan = resolveOrganizationPlanId(ctx.organization);
 
   const activeSubscription =
-    ctx.organization.subscriptions?.find((s) => isActiveSubscription(s)) ?? null;
+    ctx.organization.subscriptions?.find((s) => isActiveSubscription(s)) ??
+    null;
   const hasActiveSubscription = !!activeSubscription;
 
   return (

@@ -2,15 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Provider } from '@workspace/auth/providers.types';
 
-const {
-  mockSignIn,
-  mockGetRedirectAfterSignIn,
-  mockReturnValidationErrors
-} = vi.hoisted(() => ({
-  mockSignIn: vi.fn(),
-  mockGetRedirectAfterSignIn: vi.fn(),
-  mockReturnValidationErrors: vi.fn()
-}));
+const { mockSignIn, mockGetRedirectAfterSignIn, mockReturnValidationErrors } =
+  vi.hoisted(() => ({
+    mockSignIn: vi.fn(),
+    mockGetRedirectAfterSignIn: vi.fn(),
+    mockReturnValidationErrors: vi.fn()
+  }));
 
 function createMockActionClient() {
   return {
@@ -68,7 +65,9 @@ describe('signInWithCredentials action', () => {
     vi.clearAllMocks();
     vi.resetModules();
     mockGetRedirectAfterSignIn.mockResolvedValue('/acme/home');
-    mockReturnValidationErrors.mockImplementation((_schema, payload) => payload);
+    mockReturnValidationErrors.mockImplementation(
+      (_schema, payload) => payload
+    );
   });
 
   it('calls auth signIn with provider credentials and redirect options', async () => {
@@ -87,7 +86,9 @@ describe('signInWithCredentials action', () => {
   });
 
   it('returns validation errors when credentials are invalid', async () => {
-    mockSignIn.mockRejectedValue(new MockCredentialsSignin('invalid_credentials'));
+    mockSignIn.mockRejectedValue(
+      new MockCredentialsSignin('invalid_credentials')
+    );
     const signInWithCredentials = await importAction();
 
     const result = await signInWithCredentials({

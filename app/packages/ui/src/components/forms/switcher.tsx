@@ -1,6 +1,7 @@
 'use client';
 
 import type { KeyboardEvent } from 'react';
+
 import { cn } from '../../lib/utils';
 
 export type SwitcherOption<T extends string = string> = {
@@ -74,7 +75,9 @@ export function Switcher<T extends string = string>({
         onClick={() => onValueChange(left.value)}
         className={cn(
           'relative z-10 inline-flex h-full flex-1 items-center justify-center rounded-xl px-5 text-sm font-semibold tracking-tight transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          !isRight ? 'text-background' : 'text-muted-foreground hover:text-foreground'
+          !isRight
+            ? 'text-background'
+            : 'text-muted-foreground hover:text-foreground'
         )}
       >
         {left.label}
@@ -100,7 +103,9 @@ export function Switcher<T extends string = string>({
         onClick={() => onValueChange(right.value)}
         className={cn(
           'relative z-10 inline-flex h-full flex-1 items-center justify-center rounded-xl px-5 text-sm font-semibold tracking-tight transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          isRight ? 'text-background' : 'text-muted-foreground hover:text-foreground'
+          isRight
+            ? 'text-background'
+            : 'text-muted-foreground hover:text-foreground'
         )}
       >
         {right.label}

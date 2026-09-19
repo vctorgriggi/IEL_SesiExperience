@@ -50,7 +50,9 @@ export function ProtectedLayoutClient({
       <BreadcrumbProvider>
         {!showSidebar ? (
           <div className="flex h-screen flex-col">
-            <main className="flex-1 overflow-auto bg-background">{children}</main>
+            <main className="flex-1 overflow-auto bg-background">
+              {children}
+            </main>
           </div>
         ) : (
           <SidebarStateProvider

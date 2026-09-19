@@ -46,7 +46,9 @@ export const exportEventRegistrationsCsv = authOrganizationActionClient
       .limit(1);
 
     if (!event) {
-      throw new NotFoundError('Evento não encontrado ou você não tem permissão');
+      throw new NotFoundError(
+        'Evento não encontrado ou você não tem permissão'
+      );
     }
 
     const rows = await db

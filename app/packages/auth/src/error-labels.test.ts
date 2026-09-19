@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { authErrorLabels, resolveAuthErrorMessage } from './error-labels';
 import { AuthErrorCode } from './error-codes';
+import { authErrorLabels, resolveAuthErrorMessage } from './error-labels';
 
 vi.mock('next-auth', () => ({
   CredentialsSignin: class extends Error {}

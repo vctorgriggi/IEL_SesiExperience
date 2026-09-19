@@ -109,7 +109,10 @@ export function InputOTP({
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLInputElement>) => {
       event.preventDefault();
-      const pasted = sanitize(event.clipboardData.getData('text'), integerOnly).slice(0, length);
+      const pasted = sanitize(
+        event.clipboardData.getData('text'),
+        integerOnly
+      ).slice(0, length);
       if (!pasted) return;
       onChange(pasted);
       focusSlot(Math.min(pasted.length, length - 1));

@@ -76,7 +76,8 @@ export const Select = forwardRef(function SelectInner<
           aria-describedby={helpId}
           className={cn(
             'h-10 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background pl-3 pr-10 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60',
-            hasError && 'border-destructive/70 focus-visible:ring-destructive/30',
+            hasError &&
+              'border-destructive/70 focus-visible:ring-destructive/30',
             className
           )}
           {...props}

@@ -29,24 +29,31 @@ type CtaOpts = {
   isCheckoutPending: boolean;
 };
 
-function resolveCta(plan: PlanConfig, isCurrent: boolean, opts: CtaOpts): PricingPlanItem['cta'] {
-  if (isCurrent) return {
-    type: 'action',
-    label: 'Continuar com o atual',
-    onClick: opts.onGoHome
-  };
+function resolveCta(
+  plan: PlanConfig,
+  isCurrent: boolean,
+  opts: CtaOpts
+): PricingPlanItem['cta'] {
+  if (isCurrent)
+    return {
+      type: 'action',
+      label: 'Continuar com o atual',
+      onClick: opts.onGoHome
+    };
 
-  if (plan.cta.kind === 'link') return {
-    type: 'link',
-    label: plan.cta.label,
-    href: plan.cta.href ?? routes.dashboard.org(opts.slug).support.index
-  };
+  if (plan.cta.kind === 'link')
+    return {
+      type: 'link',
+      label: plan.cta.label,
+      href: plan.cta.href ?? routes.dashboard.org(opts.slug).support.index
+    };
 
-  if (plan.cta.kind === 'start') return {
-    type: 'action',
-    label: plan.cta.label,
-    onClick: opts.onGoHome
-  };
+  if (plan.cta.kind === 'start')
+    return {
+      type: 'action',
+      label: plan.cta.label,
+      onClick: opts.onGoHome
+    };
 
   return {
     type: 'action',
@@ -73,7 +80,13 @@ function toPricingPlanItems(
       priceLabelYearly: plan.priceSuffixYearly,
       features: plan.features,
       highlighted: plan.featured,
-      icon: <HugeiconsIcon icon={plan.icon} size={32} className={plan.iconClassName} />,
+      icon: (
+        <HugeiconsIcon
+          icon={plan.icon}
+          size={32}
+          className={plan.iconClassName}
+        />
+      ),
       cta: resolveCta(plan, isCurrent, opts),
       isCurrent
     };
@@ -87,7 +100,8 @@ export function ChoosePlanCard({
 }: ChoosePlanCardProps) {
   const router = useRouter();
   const checkout = useCheckout(slug);
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>('monthly');
 
   const handleCheckout = async (productId: PlanId) => {
     try {

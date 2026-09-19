@@ -137,7 +137,9 @@ describe('dashboard layouts', () => {
       await expect(AuthLayout({ children: 'conteudo' })).resolves.toBe(
         routes.dashboard.org('acme').home
       );
-      expect(mockRedirect).toHaveBeenCalledWith(routes.dashboard.org('acme').home);
+      expect(mockRedirect).toHaveBeenCalledWith(
+        routes.dashboard.org('acme').home
+      );
     });
 
     it('keeps authenticated users on change-email routes', async () => {
