@@ -31,10 +31,33 @@ import type { FitAxisId } from './fit-axes';
 
 export type CultureOptionId = string;
 
+/**
+ * Posição da alternativa na escala do eixo. Sempre 1, 2 ou 3.
+ *
+ * É uma escala **ordinal**, não uma nota. A ordem expressa *quanto* de apoio,
+ * de autonomia, de estrutura ou de previsibilidade a alternativa descreve —
+ * nunca "melhor" ou "pior". Uma empresa em que cada um assume a rotina por
+ * conta (1 em apoio inicial) não é pior do que uma com acompanhamento
+ * definido (3): é outra condição de trabalho, e a pessoa que combina com ela
+ * é outra.
+ *
+ * O valor existe por uma razão só: sem uma escala comum aos dois lados não há
+ * distância a medir, e sem distância não há percentual de aderência — que é a
+ * regra de negócio do cliente (R3, M4). Todo eixo usa a mesma amplitude
+ * (mínimo 1, máximo 3) para que um eixo não pese mais que outro por acidente
+ * de escala; o que pondera é o peso declarado pela empresa.
+ */
+export type CultureOptionValue = 1 | 2 | 3;
+
+export const CULTURE_SCALE_MIN: CultureOptionValue = 1;
+export const CULTURE_SCALE_MAX: CultureOptionValue = 3;
+
 export type CultureOption = {
   id: CultureOptionId;
   /** Texto da alternativa, em termos de prática observável. */
   label: string;
+  /** Posição ordinal no eixo. Ver `CultureOptionValue`. */
+  value: CultureOptionValue;
 };
 
 export type CultureQuestion = {
@@ -56,70 +79,109 @@ export const CULTURE_QUESTIONS: CultureQuestion[] = [
   {
     axisId: 'apoio-inicial',
     prompt: 'Como alguém que entra hoje aprende a rotina?',
+    // Escala: quanto de apoio estruturado existe no início. 1 = nenhum.
     options: [
       {
         id: 'acompanhamento-formal',
-        label: 'Há acompanhamento definido nas primeiras semanas'
+        label: 'Há acompanhamento definido nas primeiras semanas',
+        value: 3
       },
       {
         id: 'troca-informal',
-        label: 'Há troca informal com colegas, sem acompanhamento definido'
+        label: 'Há troca informal com colegas, sem acompanhamento definido',
+        value: 2
       },
       {
         id: 'por-conta',
-        label: 'A pessoa assume a rotina por conta desde o início'
+        label: 'A pessoa assume a rotina por conta desde o início',
+        value: 1
       }
     ]
   },
   {
     axisId: 'autonomia',
     prompt: 'Quanto da rotina do dia é decidido por quem executa?',
+    // Escala: quanto de autonomia tem quem executa. 1 = nenhuma.
     options: [
       {
         id: 'rotina-definida',
-        label: 'A rotina chega definida por outra pessoa'
+        label: 'A rotina chega definida por outra pessoa',
+        value: 1
       },
-      { id: 'parcial', label: 'Parte é definida, parte a pessoa organiza' },
+      {
+        id: 'parcial',
+        label: 'Parte é definida, parte a pessoa organiza',
+        value: 2
+      },
       {
         id: 'autonomia-ampla',
-        label: 'Quem executa organiza o próprio trabalho'
+        label: 'Quem executa organiza o próprio trabalho',
+        value: 3
       }
     ]
   },
   {
     axisId: 'comunicacao-prioridades',
     prompt: 'Como as prioridades do dia chegam até a equipe?',
+    // Escala: quanto de estrutura tem a comunicação. 1 = nenhuma, o combinado
+    // vai surgindo no meio do turno.
     options: [
-      { id: 'por-escrito', label: 'Por escrito, em checklist ou sistema' },
-      { id: 'verbal-inicio', label: 'Verbalmente, no início do turno' },
-      { id: 'ao-longo-do-dia', label: 'Ao longo do dia, conforme surgem' }
+      {
+        id: 'por-escrito',
+        label: 'Por escrito, em checklist ou sistema',
+        value: 3
+      },
+      {
+        id: 'verbal-inicio',
+        label: 'Verbalmente, no início do turno',
+        value: 2
+      },
+      {
+        id: 'ao-longo-do-dia',
+        label: 'Ao longo do dia, conforme surgem',
+        value: 1
+      }
     ]
   },
   {
     axisId: 'ritmo-turno',
     prompt: 'O horário praticado varia ao longo da semana?',
+    // Escala: quanto de previsibilidade tem o horário. 1 = nenhuma.
     options: [
-      { id: 'fixo', label: 'Horário fixo, sem variação' },
+      { id: 'fixo', label: 'Horário fixo, sem variação', value: 3 },
       {
         id: 'variacao-prevista',
-        label: 'Varia, mas com escala combinada com antecedência'
+        label: 'Varia, mas com escala combinada com antecedência',
+        value: 2
       },
       {
         id: 'variacao-frequente',
-        label: 'Varia conforme a demanda, com pouca antecedência'
+        label: 'Varia conforme a demanda, com pouca antecedência',
+        value: 1
       }
     ]
   },
   {
     axisId: 'aprendizado',
     prompt: 'O que a empresa espera que a pessoa aprenda nos primeiros meses?',
+    // Escala: quanto de aprendizado a função comporta no início. 1 = nenhum,
+    // espera-se domínio na entrada.
     options: [
-      { id: 'rotina-propria', label: 'A rotina específica da função' },
+      {
+        id: 'rotina-propria',
+        label: 'A rotina específica da função',
+        value: 2
+      },
       {
         id: 'processos-amplos',
-        label: 'A rotina e os processos das áreas vizinhas'
+        label: 'A rotina e os processos das áreas vizinhas',
+        value: 3
       },
-      { id: 'ja-domina', label: 'Espera-se que já domine a rotina ao entrar' }
+      {
+        id: 'ja-domina',
+        label: 'Espera-se que já domine a rotina ao entrar',
+        value: 1
+      }
     ]
   }
 ];
@@ -138,6 +200,23 @@ export function getCultureOptionLabel(
   return (
     question?.options.find((option) => option.id === optionId)?.label ??
     optionId
+  );
+}
+
+/**
+ * Posição ordinal de uma alternativa no eixo.
+ *
+ * Devolve `null` quando a alternativa não existe mais no questionário — trocar
+ * um eixo é mudar o parâmetro do produto, e uma resposta antiga órfã não pode
+ * virar um número inventado no meio do cálculo de aderência.
+ */
+export function getCultureOptionValue(
+  axisId: FitAxisId,
+  optionId: CultureOptionId
+): CultureOptionValue | null {
+  const question = getCultureQuestion(axisId);
+  return (
+    question?.options.find((option) => option.id === optionId)?.value ?? null
   );
 }
 

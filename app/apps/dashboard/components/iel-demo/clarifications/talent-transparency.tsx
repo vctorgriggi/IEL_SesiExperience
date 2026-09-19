@@ -114,14 +114,22 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
               <ul className="mt-1.5 space-y-1.5">
                 {transparency.sharedWith.map((entry, index) => (
                   <li
-                    key={`${entry.companyName}-${index}`}
+                    key={`${entry.jobTitle}-${index}`}
                     className="text-xs text-foreground/85"
                   >
+                    {/* Atividade, localidade e segmento — nunca o nome da
+                        empresa. R5: ele só aparece na entrevista. */}
                     <span className="font-medium text-foreground">
-                      {entry.companyName}
-                    </span>{' '}
-                    · {entry.jobTitle}
+                      {entry.jobView?.activity ?? entry.jobTitle}
+                    </span>
+                    {entry.jobView ? (
+                      <>
+                        {' '}
+                        · {entry.jobView.sector} · {entry.jobView.location}
+                      </>
+                    ) : null}
                     <span className="text-muted-foreground">
+                      {entry.jobView ? ` · ${entry.jobView.shift}` : ''}
                       {entry.sharedAt ? ` · ${formatDate(entry.sharedAt)}` : ''}
                       {' · '}
                       {plural(

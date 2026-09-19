@@ -1,5 +1,9 @@
 import type { DemoState, HistoryEvent, Persona } from '../types';
-import { DEMO_ANALYSIS, DEMO_APPLICATIONS } from './applications';
+import {
+  DEMO_ANALYSIS,
+  DEMO_APPLICATIONS,
+  DEMO_FIT_RESPONSES
+} from './applications';
 import { DEMO_CLARIFICATIONS } from './clarifications';
 import {
   DEMO_COMPANIES,
@@ -13,7 +17,7 @@ import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 3;
+export const DEMO_SCHEMA_VERSION = 4;
 
 const GENERATED = getGeneratedBase();
 
@@ -132,6 +136,10 @@ export function buildInitialDemoState(): DemoState {
     evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
     teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
     cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
+    fitResponses: [
+      ...clone(DEMO_FIT_RESPONSES),
+      ...clone(GENERATED.fitResponses)
+    ],
     axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
@@ -154,7 +162,11 @@ export {
   findClarificationTemplate
 } from './clarifications';
 export type { ClarificationTemplate } from './clarifications';
-export { DEMO_APPLICATIONS, DEMO_ANALYSIS } from './applications';
+export {
+  DEMO_APPLICATIONS,
+  DEMO_ANALYSIS,
+  DEMO_FIT_RESPONSES
+} from './applications';
 export { DEMO_CLARIFICATIONS } from './clarifications';
 export {
   DEMO_COMPANIES,

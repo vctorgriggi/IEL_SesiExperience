@@ -1,4 +1,10 @@
 import {
+  ADHERENCE_THRESHOLD,
+  computeAdherence,
+  type AdherenceResult,
+  type CompanyAxisMeans
+} from '../analysis/adherence';
+import {
   CRITERION_STATE_META,
   getCoverage,
   getCriterionAnalysis,
@@ -7,6 +13,7 @@ import {
 import {
   CULTURE_QUESTIONS,
   getCultureOptionLabel,
+  getCultureOptionValue,
   MIN_TEAM_RESPONSES,
   type CultureOptionId,
   type CultureQuestion,
@@ -27,6 +34,7 @@ import type {
   Application,
   AxisWeight,
   AxisWeightSuggestion,
+  CandidateFitResponse,
   Clarification,
   Company,
   CriterionRef,
@@ -38,6 +46,7 @@ import type {
   Evidence,
   ExternalAssessment,
   ExternalStage,
+  FitStatus,
   Job,
   JobCriterion,
   Persona,
@@ -582,6 +591,9 @@ export function getEvidencesForApplication(
 
 export type CandidateFilter =
   | 'todas'
+  | 'compativel'
+  | 'abaixo-do-corte'
+  | 'fit-pendente'
   | 'lacuna-obrigatoria'
   | 'divergencia'
   | 'a-esclarecer'
@@ -589,6 +601,9 @@ export type CandidateFilter =
 
 export const CANDIDATE_FILTER_LABEL: Record<CandidateFilter, string> = {
   todas: 'Todas as candidaturas',
+  compativel: `Aderência de ${ADHERENCE_THRESHOLD}% ou mais`,
+  'abaixo-do-corte': `Aderência abaixo de ${ADHERENCE_THRESHOLD}%`,
+  'fit-pendente': 'Sem resposta ao questionário de fit',
   'lacuna-obrigatoria': 'Requisito obrigatório sem informação',
   divergencia: 'Com divergência identificada',
   'a-esclarecer': 'Com ponto a esclarecer',
@@ -610,6 +625,28 @@ export function filterApplicationsByAnalysis(
   filter: CandidateFilter
 ): Application[] {
   if (filter === 'todas') return applications;
+
+  // Os três filtros de aderência não dependem da análise por critério: são o
+  // corte de 35% do cliente (R3) aplicado sobre o percentual. Ficam antes
+  // porque a conta é de outra natureza — não olha os critérios da vaga.
+  if (
+    filter === 'compativel' ||
+    filter === 'abaixo-do-corte' ||
+    filter === 'fit-pendente'
+  ) {
+    return applications.filter((application) => {
+      if (filter === 'fit-pendente') {
+        return getFitResponse(state, application.id) === null;
+      }
+      const total = getAdherence(state, application.id)?.total ?? null;
+      // Sem total não há corte: quem não respondeu não é "abaixo do corte",
+      // é sem medida, e cai no filtro próprio.
+      if (total === null) return false;
+      return filter === 'compativel'
+        ? total >= ADHERENCE_THRESHOLD
+        : total < ADHERENCE_THRESHOLD;
+    });
+  }
 
   return applications.filter((application) => {
     const states = job.criteria.map((criterion) => ({
@@ -650,6 +687,9 @@ export function getCandidateFilterCounts(
 ): Record<CandidateFilter, number> {
   const filters: CandidateFilter[] = [
     'todas',
+    'compativel',
+    'abaixo-do-corte',
+    'fit-pendente',
     'lacuna-obrigatoria',
     'divergencia',
     'a-esclarecer',
@@ -1192,8 +1232,19 @@ export function getCultureAttentionPoints(
   );
 }
 
+/**
+ * Um envio do perfil, como o candidato pode vê-lo.
+ *
+ * Sem `companyName`, e não por esquecimento: R5 (00:22:21, 00:38:43) diz que
+ * o nome da empresa não aparece para o candidato antes da entrevista. Antes
+ * este tipo carregava o nome e a devolutiva o exibia — era o item 8.1 da
+ * lista de onde o protótipo contrariava o cliente. O que fica é o que a regra
+ * permite: atividade, localidade, segmento e turno, vindos de
+ * `getCandidateJobView`.
+ */
 export type SharedWithCompany = {
-  companyName: string;
+  /** A vaga como o candidato pode vê-la. Nunca o nome da empresa. */
+  jobView: CandidateJobView | null;
   jobTitle: string;
   sharedAt: string | null;
   /** Quantos registros foram compartilhados naquele encaminhamento. */
@@ -1248,7 +1299,7 @@ export function getTalentTransparency(
       if (!applicationIds.has(item.applicationId)) continue;
       const job = getJob(referral.jobId);
       sharedWith.push({
-        companyName: getCompany(referral.companyId)?.name ?? referral.companyId,
+        jobView: getCandidateJobView(state, item.applicationId),
         jobTitle: job?.title ?? referral.jobId,
         sharedAt: referral.createdAt,
         recordCount: item.sharedEvidenceIds.length
@@ -1266,4 +1317,358 @@ export function getTalentTransparency(
       (evidence) => evidence.visibility === 'interno'
     ).length
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Perfil cultural da empresa como média (M1, R2)
+ * ------------------------------------------------------------------ */
+
+export type CultureDispersion = 'convergente' | 'divergente';
+
+export type CompanyCultureAxisProfile = {
+  axisId: FitAxisId;
+  /** Média ponderada por `count` de todos os papéis. `null` sem resposta. */
+  mean: number | null;
+  /** Quantas pessoas responderam este eixo, somados os papéis. */
+  respondents: number;
+  /** Média de cada papel, para a tela mostrar de onde vem a média geral. */
+  byRole: { gestao?: number; rh?: number; equipe?: number };
+  /** Diagnóstico gestão × equipe. `null` quando não há como comparar. */
+  dispersion: CultureDispersion | null;
+  /** O perfil fecha neste eixo? Falso não é zero: é perfil em aberto. */
+  ready: boolean;
+};
+
+/**
+ * O perfil cultural da empresa, eixo a eixo, como o cliente opera.
+ *
+ * "O fit cultural é a média do que a empresa entende" (00:41:44). O briefing
+ * dizia o contrário — que a média entre quem manda e quem executa apaga o
+ * viés que interessa ver — e nisso o briefing perdeu, mas só em parte: a
+ * média virou o perfil, e a dispersão continua calculada ao lado. Uma coisa
+ * não apaga a outra. A média é o que o motor de aderência compara; a
+ * dispersão é o que o analista leva para a conversa com a empresa.
+ *
+ * A média é ponderada por `count` e junta gestão, RH e equipe no mesmo bolo,
+ * porque é assim que "o que a empresa entende" se forma: cinco pessoas da
+ * equipe pesam cinco vezes mais que a gestora sozinha. Nenhuma resposta
+ * individual é identificável — a equipe entra agregada desde a fixture.
+ *
+ * `ready` é falso enquanto a consulta à equipe não alcança
+ * `MIN_TEAM_RESPONSES`. O documento de produto é explícito: abaixo do mínimo
+ * de respondentes o perfil não fecha e a tela diz isso, em vez de tratar duas
+ * pessoas como "a empresa". Um eixo não pronto não entra no cálculo da
+ * aderência.
+ */
+export function getCompanyCultureProfile(
+  state: DemoState,
+  companyId: string
+): CompanyCultureAxisProfile[] {
+  const answers = state.cultureAnswers.filter(
+    (answer) => answer.companyId === companyId
+  );
+  const reading = getCultureReading(state, companyId);
+
+  return FIT_AXES.map((axis) => {
+    const axisAnswers = answers.filter((answer) => answer.axisId === axis.id);
+
+    let weightedSum = 0;
+    let respondents = 0;
+    const roleTotals: Record<CultureRespondent, { sum: number; n: number }> = {
+      gestao: { sum: 0, n: 0 },
+      rh: { sum: 0, n: 0 },
+      equipe: { sum: 0, n: 0 }
+    };
+
+    for (const answer of axisAnswers) {
+      const value = getCultureOptionValue(axis.id, answer.optionId);
+      // Resposta a uma alternativa que não existe mais no questionário não
+      // entra na média: seria número sem significado no eixo atual.
+      if (value === null) continue;
+      weightedSum += value * answer.count;
+      respondents += answer.count;
+      roleTotals[answer.respondent].sum += value * answer.count;
+      roleTotals[answer.respondent].n += answer.count;
+    }
+
+    const byRole: CompanyCultureAxisProfile['byRole'] = {};
+    for (const role of ['gestao', 'rh', 'equipe'] as CultureRespondent[]) {
+      const entry = roleTotals[role];
+      if (entry.n > 0) byRole[role] = entry.sum / entry.n;
+    }
+
+    const axisReading = reading.find(
+      (entry) => entry.question.axisId === axis.id
+    );
+    const dispersion: CultureDispersion | null =
+      axisReading?.state === 'divergente'
+        ? 'divergente'
+        : axisReading?.state === 'convergente'
+          ? 'convergente'
+          : null;
+
+    return {
+      axisId: axis.id,
+      mean: respondents > 0 ? weightedSum / respondents : null,
+      respondents,
+      byRole,
+      dispersion,
+      ready: roleTotals.equipe.n >= MIN_TEAM_RESPONSES
+    };
+  });
+}
+
+/** Médias por eixo já filtradas pelo que fechou: o que a aderência consome. */
+function toAdherenceProfile(
+  profile: CompanyCultureAxisProfile[]
+): CompanyAxisMeans {
+  const means: CompanyAxisMeans = {};
+  for (const axis of profile) {
+    means[axis.axisId] = axis.ready ? axis.mean : null;
+  }
+  return means;
+}
+
+/* ------------------------------------------------------------------ *
+ * Questionário do candidato (M3, R4, R5)
+ * ------------------------------------------------------------------ */
+
+export type CandidateJobView = {
+  /** A atividade da vaga — o que a pessoa vai fazer. */
+  activity: string;
+  location: string;
+  sector: string;
+  shift: string;
+};
+
+/**
+ * Tudo o que o candidato pode ver sobre a vaga.
+ *
+ * R5, dito duas vezes na reunião (00:22:21, 00:38:43): o nome da empresa não
+ * aparece para o candidato antes da entrevista; ele vê atividade, localidade e
+ * segmento. O turno entra porque é a informação que ele precisa para decidir
+ * se se candidata, e não identifica ninguém.
+ *
+ * Este seletor é a única porta: qualquer superfície do candidato monta o que
+ * mostra a partir daqui. Um `companyName` que escapasse por outro caminho
+ * violaria a regra em silêncio, e é por isso que o retorno é um tipo fechado
+ * de quatro campos, e não a vaga inteira.
+ */
+export function getCandidateJobView(
+  state: DemoState,
+  applicationId: string
+): CandidateJobView | null {
+  const application = getApplication(state, applicationId);
+  if (!application) return null;
+
+  const job = getJob(application.jobId);
+  if (!job) return null;
+
+  const company = getCompany(job.companyId);
+
+  return {
+    activity: job.title,
+    location: job.location,
+    sector: company?.sector ?? 'Segmento não informado',
+    shift: job.workShift
+  };
+}
+
+/** A resposta de fit desta candidatura, se houver. */
+export function getFitResponse(
+  state: DemoState,
+  applicationId: string
+): CandidateFitResponse | null {
+  return (
+    state.fitResponses?.find(
+      (response) => response.applicationId === applicationId
+    ) ?? null
+  );
+}
+
+/**
+ * Prazo do candidato para responder o fit, em dias (R7, 00:45:28).
+ *
+ * "1 a 2 dias para o candidato; quem não responde sai do processo." Fica no
+ * limite superior: cortar antes de 2 dias seria mais severo do que o cliente
+ * descreveu.
+ */
+export const CANDIDATE_FIT_DEADLINE_DAYS = 2;
+
+function daysBetween(fromIso: string, toIso: string): number {
+  const from = Date.parse(`${fromIso.slice(0, 10)}T00:00:00.000Z`);
+  const to = Date.parse(`${toIso.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(from) || Number.isNaN(to)) return 0;
+  return Math.floor((to - from) / 86_400_000);
+}
+
+/**
+ * Situação da resposta desta candidatura.
+ *
+ * Derivada, nunca gravada, e sempre contra a data de referência da base — a
+ * demonstração precisa ser idêntica hoje e amanhã, então nada de relógio.
+ * Quem não respondeu dentro do prazo aparece como `expirado` em vez de sumir:
+ * R7 diz que essa pessoa sai do processo, e sair do processo é uma decisão
+ * do analista, não um desaparecimento silencioso da lista.
+ */
+export function getFitStatus(
+  state: DemoState,
+  application: Application
+): FitStatus {
+  if (getFitResponse(state, application.id)) return 'respondido';
+  return daysBetween(application.appliedAt, DEMO_REFERENCE_DATE) >
+    CANDIDATE_FIT_DEADLINE_DAYS
+    ? 'expirado'
+    : 'pendente';
+}
+
+export const FIT_STATUS_LABEL: Record<FitStatus, string> = {
+  respondido: 'Questionário respondido',
+  pendente: 'Questionário pendente',
+  expirado: 'Prazo do questionário vencido'
+};
+
+/* ------------------------------------------------------------------ *
+ * Aderência (M4, R3)
+ * ------------------------------------------------------------------ */
+
+/**
+ * A aderência desta candidatura, montada a partir do estado.
+ *
+ * Junta os três insumos que a conta precisa: a média da empresa da vaga (só
+ * dos eixos cujo perfil fechou), a resposta do candidato àquela candidatura e
+ * os pesos que a empresa declarou para a vaga. `computeAdherence` faz a
+ * conta; aqui só se resolve de onde vem cada lado.
+ *
+ * Devolve `null` apenas quando a candidatura ou a vaga não existem. Faltando
+ * um dos lados, o resultado vem com `total: null` — que é informação, e
+ * diferente de "não sei do que você está falando".
+ */
+export function getAdherence(
+  state: DemoState,
+  applicationId: string
+): AdherenceResult | null {
+  const application = getApplication(state, applicationId);
+  if (!application) return null;
+
+  const job = getJob(application.jobId);
+  if (!job) return null;
+
+  const profile = getCompanyCultureProfile(state, job.companyId);
+  const response = getFitResponse(state, applicationId);
+
+  return computeAdherence(
+    toAdherenceProfile(profile),
+    response?.answers ?? null,
+    getAxisWeights(state, job)
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Ranking por vaga e limite de encaminhamento (M5, R6)
+ * ------------------------------------------------------------------ */
+
+export type JobRankingEntry = {
+  application: Application;
+  talent: Talent | null;
+  technicalMatch: number | null;
+  adherence: AdherenceResult;
+  /** Posição na vaga, a partir de 1. */
+  rank: number;
+  belowThreshold: boolean;
+  fitStatus: FitStatus;
+};
+
+/**
+ * O ranking da vaga: técnico e aderência lado a lado (M5).
+ *
+ * É a cena do pitch — "o analista abre uma vaga e enxerga o ranking com fit" —
+ * e substitui o Excel que juntava três relatórios à mão. Duas escolhas
+ * merecem registro.
+ *
+ * **Ordena por aderência, não por uma nota combinada.** Somar técnico e
+ * aderência numa medida só exigiria decidir quanto cada um vale, e ninguém
+ * decidiu isso; pior, esconderia o caso que o cliente descreveu como dor
+ * (R10): técnico baixo por filtro mal configurado e aderência alta. As duas
+ * colunas ficam visíveis e o analista cruza.
+ *
+ * **Quem não respondeu vai para o fim, nunca para o zero.** Sem resposta não
+ * há medida; ordenar ausência como se fosse aderência mínima seria punir pelo
+ * silêncio. O desempate é o match técnico, que é a outra informação de fato
+ * disponível.
+ */
+export function getJobRanking(
+  state: DemoState,
+  jobId: string
+): JobRankingEntry[] {
+  const job = getJob(jobId);
+  if (!job) return [];
+
+  return getApplicationsByJob(state, jobId)
+    .map((application) => {
+      const adherence = getAdherence(state, application.id);
+      return {
+        application,
+        talent: getTalent(application.talentId),
+        technicalMatch: application.technicalMatch ?? null,
+        adherence: adherence ?? {
+          byAxis: [],
+          total: null,
+          threshold: ADHERENCE_THRESHOLD,
+          compatible: null,
+          coverage: { answeredAxes: 0, totalAxes: FIT_AXES.length }
+        },
+        fitStatus: getFitStatus(state, application)
+      };
+    })
+    .sort((a, b) => {
+      const left = a.adherence.total;
+      const right = b.adherence.total;
+      if (left !== right) {
+        if (left === null) return 1;
+        if (right === null) return -1;
+        return right - left;
+      }
+      return (b.technicalMatch ?? -1) - (a.technicalMatch ?? -1);
+    })
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+      belowThreshold: entry.adherence.compatible === false
+    }));
+}
+
+/**
+ * Quantos currículos vão por vaga (R6, 00:33:30).
+ *
+ * "Máximo de 5 currículos por vaga. Sem banco de vagas." É limite do processo
+ * do IEL com a indústria, não configuração de tela: a empresa recebe uma
+ * remessa curta que consegue ler, e uma nova remessa só depois da devolutiva
+ * (R9). Por isso o limite vive no reducer, que recusa o sexto e registra a
+ * recusa, e não numa validação de formulário que outro caminho contornaria.
+ */
+export const REFERRAL_LIMIT = 5;
+
+/**
+ * Candidatos que o filtro técnico descartaria e a aderência resgata (S2).
+ *
+ * O cliente descreveu a dor com todas as letras (R10): o filtro técnico do
+ * Empregare configurado errado expurga candidato aderente. Esta lista é
+ * pequena de propósito — ela não reabre a vaga inteira, só mostra quem ficou
+ * abaixo do corte técnico e, ainda assim, respondeu e ficou acima do corte de
+ * aderência. A decisão de reabrir continua sendo do analista.
+ */
+export const RESCUE_TECHNICAL_CEILING = 50;
+
+export function getRescueCandidates(
+  state: DemoState,
+  jobId: string
+): JobRankingEntry[] {
+  return getJobRanking(state, jobId).filter(
+    (entry) =>
+      entry.technicalMatch !== null &&
+      entry.technicalMatch < RESCUE_TECHNICAL_CEILING &&
+      entry.adherence.total !== null &&
+      entry.adherence.total >= ADHERENCE_THRESHOLD
+  );
 }

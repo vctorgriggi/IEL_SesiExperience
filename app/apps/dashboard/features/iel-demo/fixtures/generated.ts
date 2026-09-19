@@ -19,11 +19,14 @@
  * cada apresentação.
  */
 
+import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
+import type { CultureOptionValue } from '../analysis/culture';
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
 import type {
   AnalysisByApplication,
   Application,
   AxisWeight,
+  CandidateFitResponse,
   Company,
   CriterionAnalysis,
   CriterionState,
@@ -359,7 +362,19 @@ export type GeneratedBase = {
   applications: Application[];
   analysis: AnalysisByApplication;
   evidences: Evidence[];
+  fitResponses: CandidateFitResponse[];
 };
+
+/**
+ * Proporção de candidaturas geradas que respondem o questionário de fit.
+ *
+ * R7 diz que quem não responde sai do processo, e o prazo é de 1 a 2 dias.
+ * Taxa de resposta de 100% seria um pano de fundo que mente: a tela do
+ * analista existe justamente para lidar com a fila em que parte das pessoas
+ * não respondeu, e sem esse terço a coluna de aderência nunca mostraria uma
+ * lacuna. O sorteio sai do mesmo gerador semeado — mesma base a cada carga.
+ */
+const FIT_RESPONSE_RATE = 0.7;
 
 /** Quantas candidaturas geradas entram na vaga 1 do roteiro. */
 const EXTRA_ON_SCRIPT_JOB = 86;
@@ -413,6 +428,7 @@ function build(): GeneratedBase {
   const applications: Application[] = [];
   const analysis: AnalysisByApplication = {};
   const evidences: Evidence[] = [];
+  const fitResponses: CandidateFitResponse[] = [];
 
   for (let c = 0; c < GENERATED_COMPANY_COUNT; c += 1) {
     const companyId = `GEN-EMP-${String(c + 1).padStart(2, '0')}`;
@@ -540,12 +556,32 @@ function build(): GeneratedBase {
         EXTERNAL_STAGES[Math.floor(random() * EXTERNAL_STAGES.length)]!,
       analysisStage: random() > 0.7 ? 'em-andamento' : 'nao-iniciada',
       referralStage: 'nao-encaminhada',
+      // Faixa 30..95: a planilha do Empregare não traz zero nem 100 na
+      // prática, e uma faixa larga é o que faz o técnico e a aderência
+      // discordarem em alguns casos — que é o que a mesa precisa mostrar.
+      technicalMatch: 30 + Math.floor(random() * 66),
       externalRef: {
         system: 'Empregare — demonstração',
         account: 'ACC-IEL',
         id: `EMPG-DEMO-APP-${applicationId}`
       }
     });
+
+    if (random() < FIT_RESPONSE_RATE) {
+      const answers = {} as Record<FitAxisId, CultureOptionValue>;
+      for (const axis of FIT_AXES) {
+        answers[axis.id] = (1 + Math.floor(random() * 3)) as CultureOptionValue;
+      }
+      const answeredAt = `${dateBefore(Math.max(dayOffset - 1, 0))}T12:00:00.000Z`;
+      fitResponses.push({
+        applicationId,
+        answers,
+        answeredAt,
+        // O aceite existe também no pano de fundo: uma resposta sem aceite
+        // seria tratamento sem base legal, inclusive em base fictícia.
+        consent: { acceptedAt: answeredAt, version: CANDIDATE_CONSENT_VERSION }
+      });
+    }
 
     const byCriterion: Record<string, CriterionAnalysis> = {};
 
@@ -606,7 +642,16 @@ function build(): GeneratedBase {
     }
   }
 
-  return { companies, teams, jobs, talents, applications, analysis, evidences };
+  return {
+    companies,
+    teams,
+    jobs,
+    talents,
+    applications,
+    analysis,
+    evidences,
+    fitResponses
+  };
 }
 
 let cache: GeneratedBase | null = null;

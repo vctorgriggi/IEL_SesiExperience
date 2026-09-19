@@ -361,10 +361,10 @@ describe('persistência local versionada', () => {
 
     expect(readPersistedState()).toBeNull();
     expect(storage.has(DEMO_STORAGE_KEY)).toBe(false);
-    // Sobe a cada campo novo no estado persistido — aqui, os pesos por eixo
-    // confirmados pela empresa. Estado gravado na versão anterior é
+    // Sobe a cada campo novo no estado persistido — aqui, as respostas do
+    // questionário de fit do candidato. Estado gravado na versão anterior é
     // descartado em vez de remendado.
-    expect(DEMO_SCHEMA_VERSION).toBe(3);
+    expect(DEMO_SCHEMA_VERSION).toBe(4);
   });
 
   it('ignora conteúdo corrompido sem quebrar a demonstração', () => {

@@ -1,9 +1,11 @@
+import type { CultureOptionValue } from '../analysis/culture';
 import type { FitAxisId } from '../analysis/fit-axes';
 import { getFitAxis } from '../analysis/fit-axes';
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
 import { plural } from '../format';
 import type {
   AxisWeight,
+  CandidateFitResponse,
   Clarification,
   ClarificationEffect,
   CriterionState,
@@ -15,6 +17,7 @@ import type {
   Referral,
   ReferralItem
 } from '../types';
+import { REFERRAL_LIMIT } from './selectors';
 
 export type IncorporationDecision = {
   applicationId: string;
@@ -69,6 +72,19 @@ export type DemoAction =
       type: 'remove-from-referral-list';
       jobId: string;
       applicationId: string;
+      at: string;
+    }
+  | {
+      /**
+       * O candidato responde o questionário de fit daquela candidatura e
+       * aceita o uso dos dados (M3, M7, R4). Resposta e aceite entram juntos:
+       * a base legal é o consentimento (LGPD, art. 7º, I), e resposta gravada
+       * sem o aceite que a autoriza seria tratamento sem base.
+       */
+      type: 'answer-fit-questionnaire';
+      applicationId: string;
+      answers: Record<FitAxisId, CultureOptionValue>;
+      consentVersion: string;
       at: string;
     }
   | {
@@ -224,6 +240,23 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       );
       if (!application || application.jobId !== action.jobId) return state;
 
+      // R6 (00:33:30): no máximo 5 currículos por vaga. A recusa entra no
+      // histórico em vez de sumir — o analista precisa saber que a ação não
+      // valeu, e por quê, para trocar alguém da lista em vez de tentar de
+      // novo achando que o clique falhou.
+      if (current.length >= REFERRAL_LIMIT) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: 'Analista IEL',
+            action: 'Limite de 5 currículos por vaga',
+            description: `A candidatura ${action.applicationId} não entrou na lista da vaga ${action.jobId}: a remessa já tem ${REFERRAL_LIMIT} currículos. Para incluir outra pessoa, retire uma da lista.`,
+            entityRef: action.applicationId
+          })
+        };
+      }
+
       return {
         ...state,
         referralList: {
@@ -270,6 +303,50 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           actor: 'Analista IEL',
           action: 'Removido da lista de encaminhamento',
           description: `Candidatura ${action.applicationId} saiu da lista da vaga ${action.jobId}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'answer-fit-questionnaire': {
+      const application = state.applications.find(
+        (entry) => entry.id === action.applicationId
+      );
+      if (!application) return state;
+
+      const responses = state.fitResponses ?? [];
+      const previous = responses.find(
+        (entry) => entry.applicationId === action.applicationId
+      );
+
+      const response: CandidateFitResponse = {
+        applicationId: action.applicationId,
+        answers: action.answers,
+        answeredAt: action.at,
+        consent: { acceptedAt: action.at, version: action.consentVersion }
+      };
+
+      // Idempotente por candidatura: uma pessoa que refaz o questionário tem
+      // uma resposta, não duas. A substituição fica no histórico porque a
+      // aderência muda com ela, e o analista precisa poder explicar por que o
+      // percentual de ontem não é o de hoje.
+      return {
+        ...state,
+        fitResponses: [
+          ...responses.filter(
+            (entry) => entry.applicationId !== action.applicationId
+          ),
+          response
+        ],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Candidato',
+          action: previous
+            ? 'Questionário de fit respondido novamente'
+            : 'Questionário de fit respondido',
+          description: previous
+            ? `A candidatura ${action.applicationId} teve a resposta substituída. Aceite registrado na versão ${action.consentVersion}; a aderência é recalculada sobre a resposta nova.`
+            : `A candidatura ${action.applicationId} respondeu os cinco eixos. Aceite de uso de dados registrado na versão ${action.consentVersion}.`,
           entityRef: action.applicationId
         })
       };
@@ -622,6 +699,33 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       }));
 
       if (items.length === 0) return state;
+
+      // O limite de 5 vale para a remessa, não só para a lista: registrar um
+      // encaminhamento é o caminho que de fato entrega currículos à empresa,
+      // e ele pode ser chamado sem passar pela lista. Contam também os já
+      // encaminhados nesta vaga — a segunda remessa só vem depois da
+      // devolutiva (R9).
+      const alreadySent = alreadyRegistered
+        ? alreadyRegistered.items.length
+        : 0;
+      const newItems = items.filter(
+        (item) =>
+          !alreadyRegistered?.items.some(
+            (existing) => existing.applicationId === item.applicationId
+          )
+      );
+      if (alreadySent + newItems.length > REFERRAL_LIMIT) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: 'Analista IEL',
+            action: 'Limite de 5 currículos por vaga',
+            description: `O encaminhamento da vaga ${action.input.jobId} não foi registrado: seriam ${alreadySent + newItems.length} currículos e o limite é ${REFERRAL_LIMIT}.`,
+            entityRef: action.input.jobId
+          })
+        };
+      }
 
       const id = alreadyRegistered
         ? alreadyRegistered.id

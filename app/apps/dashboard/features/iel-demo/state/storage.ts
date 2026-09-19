@@ -30,6 +30,12 @@ type PersistedState = {
   clarifications: DemoState['clarifications'];
   /** Pesos confirmados pela empresa durante a demonstração. */
   axisWeights: DemoState['axisWeights'];
+  /**
+   * Respostas de fit que não existiam na base inicial, ou que a substituíram.
+   * Delta como o resto: a base gerada traz centenas de respostas idênticas a
+   * cada carga, e gravá-las de novo seria repetir o que já se reconstrói.
+   */
+  changedFitResponses: DemoState['fitResponses'];
   referrals: DemoState['referrals'];
   history: DemoState['history'];
   appliedSyncEventIds: DemoState['appliedSyncEventIds'];
@@ -48,6 +54,7 @@ type Baseline = {
   applications: Map<string, string>;
   analysis: Map<string, string>;
   evidenceIds: Set<string>;
+  fitResponses: Map<string, string>;
 };
 
 let baseline: Baseline | null = null;
@@ -70,7 +77,13 @@ function getBaseline(): Baseline {
         JSON.stringify(entry)
       ])
     ),
-    evidenceIds: new Set(initial.evidences.map((evidence) => evidence.id))
+    evidenceIds: new Set(initial.evidences.map((evidence) => evidence.id)),
+    fitResponses: new Map(
+      (initial.fitResponses ?? []).map((response) => [
+        response.applicationId,
+        JSON.stringify(response)
+      ])
+    )
   };
   return baseline;
 }
@@ -94,6 +107,11 @@ function toPersisted(state: DemoState): PersistedState {
     (evidence) => !base.evidenceIds.has(evidence.id)
   );
 
+  const changedFitResponses = (state.fitResponses ?? []).filter(
+    (response) =>
+      base.fitResponses.get(response.applicationId) !== JSON.stringify(response)
+  );
+
   return {
     schemaVersion: DEMO_SCHEMA_VERSION,
     personaId: state.personaId,
@@ -101,6 +119,7 @@ function toPersisted(state: DemoState): PersistedState {
     teams: state.teams,
     clarifications: state.clarifications,
     axisWeights: state.axisWeights,
+    changedFitResponses,
     referrals: state.referrals,
     history: state.history,
     appliedSyncEventIds: state.appliedSyncEventIds,
@@ -141,7 +160,18 @@ function fromPersisted(persisted: PersistedState): DemoState {
       (application) => overrides.get(application.id) ?? application
     ),
     analysis: { ...state.analysis, ...(persisted.changedAnalysis ?? {}) },
-    evidences: [...state.evidences, ...(persisted.addedEvidences ?? [])]
+    evidences: [...state.evidences, ...(persisted.addedEvidences ?? [])],
+    // A resposta gravada vence a da base: refazer o questionário substitui,
+    // não acumula — o mesmo contrato do reducer.
+    fitResponses: [
+      ...(state.fitResponses ?? []).filter(
+        (response) =>
+          !(persisted.changedFitResponses ?? []).some(
+            (changed) => changed.applicationId === response.applicationId
+          )
+      ),
+      ...(persisted.changedFitResponses ?? [])
+    ]
   };
 }
 
