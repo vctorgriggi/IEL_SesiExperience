@@ -35,6 +35,7 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 import { TalentTransparency } from '../clarifications/talent-transparency';
+import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 
 /**
  * Questionário de fit do candidato, com o aceite que o abre (M3 + M7).
@@ -125,6 +126,12 @@ export function FitQuestionnaireScreen({
   const [answers, setAnswers] = useState<Answers>({});
   const [ignoredDeadline, setIgnoredDeadline] = useState(false);
 
+  // Cada passo troca a tela inteira sem trocar a URL: o título do passo novo
+  // recebe o foco, para o leitor de tela não voltar ao topo da página.
+  const tituloRef = useFocoNoTitulo<HTMLHeadingElement>(
+    `${step.kind === 'question' ? `pergunta-${step.index}` : step.kind}:${ignoredDeadline}`
+  );
+
   const application = getApplication(state, applicationId);
   const jobView = getCandidateJobView(state, applicationId);
   const talent = application ? getTalent(application.talentId) : null;
@@ -134,7 +141,9 @@ export function FitQuestionnaireScreen({
       <CandidateFrame badge={null}>
         <Card>
           <CardHeader>
-            <CardTitle>Link inválido</CardTitle>
+            <CardTitle>
+              <h1>Link inválido</h1>
+            </CardTitle>
             <CardDescription>
               Este link não corresponde a nenhuma candidatura. Confira a
               mensagem que você recebeu.
@@ -189,7 +198,7 @@ export function FitQuestionnaireScreen({
               className="size-6 text-muted-foreground"
             />
             <CardTitle className="text-[18px]">
-              O prazo para responder terminou
+              <h1>O prazo para responder terminou</h1>
             </CardTitle>
             <CardDescription className="leading-relaxed">
               O questionário desta vaga ficava aberto por dois dias. O IEL
@@ -221,7 +230,16 @@ export function FitQuestionnaireScreen({
               aria-hidden="true"
               className="size-7 text-foreground"
             />
-            <CardTitle className="text-[22px] tracking-tight">Pronto</CardTitle>
+            <CardTitle className="text-[22px] tracking-tight">
+              <h1
+                ref={tituloRef}
+                tabIndex={-1}
+                aria-label="Pronto. Suas respostas foram registradas."
+                className="outline-none"
+              >
+                Pronto
+              </h1>
+            </CardTitle>
             <CardDescription className="text-[15px] leading-relaxed">
               Você não precisa fazer mais nada agora.
             </CardDescription>
@@ -246,7 +264,7 @@ export function FitQuestionnaireScreen({
           <Button
             variant="ghost"
             size="lg"
-            className="h-11 w-full"
+            className="h-12 w-full"
             onClick={restart}
           >
             Responder novamente
@@ -260,7 +278,11 @@ export function FitQuestionnaireScreen({
     return (
       <CandidateFrame badge={badge}>
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+          <h1
+            ref={tituloRef}
+            tabIndex={-1}
+            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+          >
             {CANDIDATE_CONSENT_TEXT.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -295,6 +317,7 @@ export function FitQuestionnaireScreen({
             <Checkbox
               id="fit-consent"
               className="size-5"
+              aria-describedby="fit-consent-ajuda"
               checked={accepted}
               onCheckedChange={(value) => setAccepted(value === true)}
             />
@@ -308,7 +331,10 @@ export function FitQuestionnaireScreen({
           >
             Começar
           </Button>
-          <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          <p
+            id="fit-consent-ajuda"
+            className="text-center text-xs leading-relaxed text-muted-foreground"
+          >
             Sem o aceite o questionário não abre. Versão do texto:{' '}
             {CANDIDATE_CONSENT_TEXT.version}.
           </p>
@@ -322,33 +348,53 @@ export function FitQuestionnaireScreen({
 
   const chosen = answers[question.axisId];
   const isLast = step.index === TOTAL_QUESTIONS - 1;
+  const rotuloProgresso = `Pergunta ${step.index + 1} de ${TOTAL_QUESTIONS}`;
+  const valorProgresso = Math.round(((step.index + 1) / TOTAL_QUESTIONS) * 100);
 
   return (
     <CandidateFrame badge={badge}>
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between text-[13px] text-muted-foreground">
-          <span aria-live="polite">
-            Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
-          </span>
+        {/* O número da pergunta é lido no título, que recebe o foco. */}
+        <div
+          className="flex justify-between text-[13px] text-muted-foreground"
+          aria-hidden="true"
+        >
+          <span>{rotuloProgresso}</span>
           <span>cerca de 1 min</span>
         </div>
         <Progress
           className="h-1.5 bg-muted"
-          value={((step.index + 1) / TOTAL_QUESTIONS) * 100}
+          value={valorProgresso}
+          // O `Progress` do kit não repassa `value` ao Radix; sem isto a
+          // barra é lida sem número.
+          aria-valuenow={valorProgresso}
+          aria-label={rotuloProgresso}
+          aria-valuetext={rotuloProgresso}
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-[22px] font-semibold leading-[1.25] tracking-tight">
+        <h1
+          id="fit-pergunta"
+          ref={tituloRef}
+          tabIndex={-1}
+          className="text-[22px] font-semibold leading-[1.25] tracking-tight outline-none"
+        >
+          <span className="sr-only">{rotuloProgresso}: </span>
           {question.prompt}
         </h1>
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p
+          id="fit-pergunta-dica"
+          className="text-sm leading-relaxed text-muted-foreground"
+        >
           {question.hint}
         </p>
       </div>
 
       <RadioGroup
         className="gap-2.5"
+        aria-labelledby="fit-pergunta"
+        aria-describedby="fit-pergunta-dica"
         value={chosen?.id ?? ''}
         onValueChange={(value) => {
           const option = question.options.find((entry) => entry.id === value);
@@ -394,7 +440,7 @@ export function FitQuestionnaireScreen({
         <Button
           variant="ghost"
           size="lg"
-          className="h-11 w-full text-muted-foreground"
+          className="h-12 w-full text-muted-foreground"
           onClick={() =>
             setStep(
               step.index === 0

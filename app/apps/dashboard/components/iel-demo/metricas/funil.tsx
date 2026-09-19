@@ -23,17 +23,25 @@ import { ValorOculto } from './valor-oculto';
  */
 export function Funil({
   etapas,
-  rotuloDaPorcentagem = 'da anterior'
+  rotuloDaPorcentagem = 'da anterior',
+  titulo = 'Funil, etapa por etapa'
 }: {
   etapas: EtapaDeFunil[];
   /** Complemento do % sobre a etapa anterior: "62% da anterior". */
   rotuloDaPorcentagem?: string;
+  /** Nome da lista para o leitor de tela. */
+  titulo?: string;
 }) {
   const primeira = etapas[0];
   const topo = primeira && !primeira.oculto ? primeira.n : 0;
 
   return (
-    <ol className="flex flex-col gap-3">
+    // As barras são só desenho (`aria-hidden`): o equivalente em texto é a
+    // própria lista — rótulo, número e % de cada etapa, lidos em ordem.
+    <ol
+      aria-label={titulo}
+      className="flex flex-col gap-3"
+    >
       {etapas.map((etapa, indice) => {
         const largura =
           topo > 0 && !etapa.oculto
@@ -44,7 +52,10 @@ export function Funil({
             key={etapa.id}
             className="grid grid-cols-[minmax(0,11rem)_1fr_5.75rem] items-center gap-3 text-sm"
           >
-            <span className="truncate">{etapa.rotulo}</span>
+            <span className="truncate">
+              {etapa.rotulo}
+              <span className="sr-only">:</span>
+            </span>
             <div
               className="h-2 overflow-hidden rounded-full bg-muted"
               aria-hidden
@@ -60,9 +71,11 @@ export function Funil({
               </span>
               {indice > 0 ? (
                 <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                  {etapa.oculto || etapa.pctDaAnterior === null
-                    ? '—'
-                    : `${etapa.pctDaAnterior}% ${rotuloDaPorcentagem}`}
+                  {etapa.oculto || etapa.pctDaAnterior === null ? (
+                    <span aria-hidden="true">—</span>
+                  ) : (
+                    `${etapa.pctDaAnterior}% ${rotuloDaPorcentagem}`
+                  )}
                 </span>
               ) : null}
               {etapa.emApuracao && !etapa.oculto ? (

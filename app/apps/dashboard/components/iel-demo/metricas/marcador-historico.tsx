@@ -32,15 +32,22 @@ export function MarcadorHistorico({ className }: { className?: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
+        {/*
+         * O nome vai em texto `sr-only`, não em `aria-label`: num `span` sem
+         * papel o rótulo é ignorado por vários leitores de tela.
+         */}
         <span
           tabIndex={0}
-          aria-label={TEXTO_HISTORICO}
           className={cn(
             'inline-flex shrink-0 items-center text-muted-foreground',
             className
           )}
         >
-          <History className="size-3" />
+          <History
+            aria-hidden="true"
+            className="size-3"
+          />
+          <span className="sr-only">{TEXTO_HISTORICO}</span>
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-64">{TEXTO_HISTORICO}</TooltipContent>

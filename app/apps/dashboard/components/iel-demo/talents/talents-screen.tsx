@@ -14,6 +14,7 @@ import { Label } from '@workspace/ui/shadcn/label';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -101,7 +102,10 @@ export function TalentsScreen() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+          />
           <Label
             htmlFor="buscar-pessoa"
             className="sr-only"
@@ -124,14 +128,33 @@ export function TalentsScreen() {
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Pessoas da base:{' '}
+            {filtradas.length === 1
+              ? '1 pessoa'
+              : `${filtradas.length} pessoas`}
+            , página {paginacao.pagina + 1} de {paginacao.totalPaginas}. Abra o
+            perfil pelo nome.
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead>Pessoa</TableHead>
-              <TableHead className="w-[200px]">Cidade</TableHead>
-              <TableHead className="w-[120px] text-right">
+              <TableHead scope="col">Pessoa</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[200px]"
+              >
+                Cidade
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[120px] text-right"
+              >
                 Candidaturas
               </TableHead>
-              <TableHead className="w-[160px] text-right">
+              <TableHead
+                scope="col"
+                className="w-[160px] text-right"
+              >
                 Última candidatura
               </TableHead>
             </TableRow>
@@ -174,7 +197,14 @@ export function TalentsScreen() {
                       {candidaturas}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {ultima ? formatarData(ultima) : '—'}
+                      {ultima ? (
+                        formatarData(ultima)
+                      ) : (
+                        <>
+                          <span aria-hidden="true">—</span>
+                          <span className="sr-only">Nenhuma</span>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -20,7 +20,12 @@ const redHatDisplay = Red_Hat_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Mind RH — Central de Seleção IEL',
+  // Cada página diz a tarefa no título da aba ("Questionário da vaga · Mind
+  // RH"): é a primeira coisa que o leitor de tela anuncia ao abrir o link.
+  title: {
+    default: 'Mind RH — Central de Seleção IEL',
+    template: '%s · Mind RH'
+  },
   description:
     'Protótipo navegável: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada. Base fictícia.',
   robots: { index: false, follow: false },

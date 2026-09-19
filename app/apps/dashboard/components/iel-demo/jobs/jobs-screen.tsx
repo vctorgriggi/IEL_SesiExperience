@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   CANDIDATE_FIT_DEADLINE_DAYS,
@@ -32,6 +33,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -184,7 +186,10 @@ export function JobsScreen() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            />
             <Label
               htmlFor="buscar-vaga"
               className="sr-only"
@@ -240,18 +245,45 @@ export function JobsScreen() {
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Vagas, aba {JOB_LIST_STATE_LABEL[estado]}:{' '}
+            {plural(daAba.length, 'vaga', 'vagas')}, página{' '}
+            {paginacao.pagina + 1} de {paginacao.totalPaginas}. Abra uma vaga
+            pelo título.
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead>Vaga</TableHead>
-              <TableHead className="w-[180px]">Cidade</TableHead>
-              <TableHead className="w-[120px] text-right">
+              <TableHead scope="col">Vaga</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[180px]"
+              >
+                Cidade
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[120px] text-right"
+              >
                 Candidaturas
               </TableHead>
-              <TableHead className="w-[120px] text-right">
+              <TableHead
+                scope="col"
+                className="w-[120px] text-right"
+              >
                 Compatíveis
               </TableHead>
-              <TableHead className="w-[100px] text-right">Marcados</TableHead>
-              <TableHead className="w-[90px] text-right">Prazo</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[100px] text-right"
+              >
+                Marcados
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[90px] text-right"
+              >
+                Prazo
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -307,12 +339,22 @@ export function JobsScreen() {
                      * sozinho não diz se falta alguém, "2/5" diz.
                      */}
                     <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {linha.marcados}/{REFERRAL_LIMIT}
+                      <span aria-hidden="true">
+                        {linha.marcados}/{REFERRAL_LIMIT}
+                      </span>
+                      <span className="sr-only">
+                        {linha.marcados} de {REFERRAL_LIMIT}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {linha.estado === 'encerrada'
-                        ? '—'
-                        : prazoDaVaga(linha.job.updatedAt)}
+                      {linha.estado === 'encerrada' ? (
+                        <>
+                          <span aria-hidden="true">—</span>
+                          <span className="sr-only">Sem prazo, encerrada</span>
+                        </>
+                      ) : (
+                        prazoDaVaga(linha.job.updatedAt)
+                      )}
                     </TableCell>
                   </TableRow>
                 );

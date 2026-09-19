@@ -1,7 +1,10 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { TalentProfileScreen } from '@/components/iel-demo/talents/talent-profile-screen';
 
 import { Skeleton } from '@workspace/ui';
+
+export const metadata: Metadata = { title: 'Perfil da pessoa' };
 
 type PageProps = {
   params: Promise<{ talentId: string }>;

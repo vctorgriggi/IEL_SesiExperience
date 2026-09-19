@@ -55,6 +55,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -481,13 +482,37 @@ export function CompanyCultureTable({
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Como a empresa trabalha, ponto a ponto: o que a equipe diz, a
+            leitura por grupo, quantas respostas e o estado de cada ponto
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead className="w-[14rem]">Ponto do dia a dia</TableHead>
-              <TableHead>A equipe diz</TableHead>
-              <TableHead className="w-[9rem]">Leitura</TableHead>
-              <TableHead className="w-[10rem]">Respostas</TableHead>
-              <TableHead className="w-[12rem]">Estado</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[14rem]"
+              >
+                Ponto do dia a dia
+              </TableHead>
+              <TableHead scope="col">A equipe diz</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[9rem]"
+              >
+                Leitura
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[10rem]"
+              >
+                Respostas
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[12rem]"
+              >
+                Estado
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

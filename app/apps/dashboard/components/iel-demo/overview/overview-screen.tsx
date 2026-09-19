@@ -33,6 +33,7 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -151,7 +152,10 @@ export function OverviewScreen() {
                 variant="outline"
                 className="gap-1 font-normal text-muted-foreground"
               >
-                <RefreshCw className="size-3" />
+                <RefreshCw
+                  aria-hidden="true"
+                  className="size-3"
+                />
                 {empregare.rotulo} {empregare.detalhe.toLowerCase()}
               </Badge>
             </div>
@@ -207,10 +211,17 @@ export function OverviewScreen() {
             ) : (
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
+                  <TableCaption className="sr-only">
+                    Precisa de você hoje: pendências agrupadas por tipo, da mais
+                    urgente para a menos urgente
+                  </TableCaption>
                   <TableHeader className="bg-muted">
                     <TableRow>
-                      <TableHead>O que fazer</TableHead>
-                      <TableHead className="w-[180px] text-right">
+                      <TableHead scope="col">O que fazer</TableHead>
+                      <TableHead
+                        scope="col"
+                        className="w-[180px] text-right"
+                      >
                         <span className="sr-only">Ação</span>
                       </TableHead>
                     </TableRow>
@@ -219,12 +230,17 @@ export function OverviewScreen() {
                     {agrupar(paginacao.linhas).map((grupo, indice) => (
                       <Fragment key={`${grupo.tipo}-${indice}`}>
                         <TableRow className="hover:bg-transparent">
-                          <TableCell
+                          {/*
+                           * O nome do grupo é cabeçalho das linhas abaixo: em
+                           * `th`, o leitor de tela o anuncia como tal.
+                           */}
+                          <TableHead
+                            scope="colgroup"
                             colSpan={2}
-                            className="pt-4 text-xs font-medium text-muted-foreground"
+                            className="h-auto pt-4 text-xs font-medium text-muted-foreground"
                           >
                             {TIPO_DE_PENDENCIA_LABEL[grupo.tipo]}
-                          </TableCell>
+                          </TableHead>
                         </TableRow>
                         {grupo.itens.map((pendencia) => (
                           <TableRow key={pendencia.id}>
@@ -280,13 +296,16 @@ export function OverviewScreen() {
                   asChild
                 >
                   <Link href={ROTA_DO_BI}>
-                    Ver no BI <ArrowRight />
+                    Ver no BI <ArrowRight aria-hidden="true" />
                   </Link>
                 </Button>
               </CardAction>
             </CardHeader>
             <CardContent>
-              <Funil etapas={funil} />
+              <Funil
+                etapas={funil}
+                titulo={`Funil do período, ${PERIODO_LABEL[periodo]}`}
+              />
             </CardContent>
           </Card>
 
@@ -325,13 +344,18 @@ function Ponta({ kpi }: { kpi: Kpi }) {
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2 text-sm">
         <span id={id}>{kpi.rotulo}</span>
-        <span className="font-medium tabular-nums">
+        {/* A barra logo abaixo já lê o valor com o rótulo. */}
+        <span
+          aria-hidden="true"
+          className="font-medium tabular-nums"
+        >
           {kpi.valor === null ? '—' : `${kpi.valor}%`}
         </span>
       </div>
+      {/* Sem base, a barra fica indeterminada: "0%" seria mentira. */}
       <Progress
         aria-labelledby={id}
-        value={kpi.valor ?? 0}
+        value={kpi.valor}
         className="h-1.5"
       />
       <span className="text-xs text-muted-foreground tabular-nums">
@@ -357,6 +381,7 @@ function Integracao({ integracao }: { integracao: IntegracaoStatus }) {
       title={integracao.detalhe}
     >
       <Icone
+        aria-hidden="true"
         className={
           integracao.estado === 'atencao'
             ? 'size-3 text-[hsl(var(--brand-accent))]'
@@ -365,6 +390,8 @@ function Integracao({ integracao }: { integracao: IntegracaoStatus }) {
       />
       {integracao.rotulo}
       {integracao.estado === 'configurando' ? ' em configuração' : null}
+      {/* O `title` não chega ao toque nem a todo leitor: o estado vai escrito. */}
+      <span className="sr-only">: {integracao.detalhe}</span>
     </span>
   );
 }

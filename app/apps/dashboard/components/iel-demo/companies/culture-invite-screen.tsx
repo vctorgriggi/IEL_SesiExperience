@@ -19,6 +19,8 @@ import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
 import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
+import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
+
 /**
  * A tela de quem trabalha na empresa e recebeu o link (M2 + M7).
  *
@@ -61,15 +63,21 @@ function shortDate(iso: string): string {
 /** Tela sem formulário: o link já foi usado, venceu ou não existe. */
 function InviteNotice({
   title,
+  tituloRef,
   children
 }: {
   title: string;
+  tituloRef?: React.Ref<HTMLHeadingElement>;
   children: React.ReactNode;
 }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-2">
-        <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+        <h1
+          ref={tituloRef}
+          tabIndex={-1}
+          className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+        >
           {title}
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -88,6 +96,17 @@ export function CultureInviteScreen({ token }: { token: string }) {
   const [accepted, setAccepted] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [finished, setFinished] = useState(false);
+
+  // Passo novo, tela nova, mesma URL: o foco vai para o título do passo, para
+  // o leitor de tela anunciar a pergunta (ou "Resposta registrada") em vez de
+  // voltar ao topo da página.
+  const tituloRef = useFocoNoTitulo<HTMLHeadingElement>(
+    finished
+      ? 'fim'
+      : step.kind === 'question'
+        ? `pergunta-${step.index}`
+        : step.kind
+  );
 
   const submit = (final: Answers) => {
     const complete = CULTURE_QUESTIONS.every(
@@ -126,7 +145,10 @@ export function CultureInviteScreen({ token }: { token: string }) {
           você recebeu por e-mail.
         </InviteNotice>
       ) : finished || invite.status === 'respondido' ? (
-        <InviteNotice title="Resposta registrada">
+        <InviteNotice
+          title="Resposta registrada"
+          tituloRef={tituloRef}
+        >
           Você não precisa fazer mais nada, obrigado. Sua resposta entra na
           média da empresa: ninguém vê o que você respondeu, nem a sua gestão.
         </InviteNotice>
@@ -138,7 +160,11 @@ export function CultureInviteScreen({ token }: { token: string }) {
       ) : step.kind === 'consent' ? (
         <section className="flex flex-1 flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+            <h1
+              ref={tituloRef}
+              tabIndex={-1}
+              className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            >
               Como é trabalhar aqui?
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
@@ -177,6 +203,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
           >
             <Checkbox
               id="culture-consent"
+              aria-describedby="culture-consent-ajuda"
               className="size-[18px]"
               checked={accepted}
               onCheckedChange={(checked) => setAccepted(checked === true)}
@@ -193,7 +220,10 @@ export function CultureInviteScreen({ token }: { token: string }) {
             >
               Começar
             </Button>
-            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+            <p
+              id="culture-consent-ajuda"
+              className="text-center text-xs leading-relaxed text-muted-foreground"
+            >
               Versão do aceite: {CULTURE_CONSENT_VERSION}. Sem o aceite o
               questionário não abre.
             </p>
@@ -205,33 +235,54 @@ export function CultureInviteScreen({ token }: { token: string }) {
           if (!question) return null;
           const chosen = answers[question.axisId];
           const isLast = step.index === TOTAL_QUESTIONS - 1;
+          const rotuloProgresso = `Pergunta ${step.index + 1} de ${TOTAL_QUESTIONS}`;
+          const valorProgresso = Math.round(
+            ((step.index + 1) / TOTAL_QUESTIONS) * 100
+          );
 
           return (
             <section className="flex flex-1 flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between text-[13px] text-muted-foreground">
-                  <span aria-live="polite">
-                    Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
-                  </span>
+                {/* O número da pergunta é lido no título, que recebe o foco. */}
+                <div
+                  className="flex justify-between text-[13px] text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  <span>{rotuloProgresso}</span>
                   <span>até 5 min</span>
                 </div>
                 <Progress
                   className="h-1.5 bg-muted"
-                  value={((step.index + 1) / TOTAL_QUESTIONS) * 100}
+                  value={valorProgresso}
+                  // O `Progress` do kit não repassa `value` ao Radix.
+                  aria-valuenow={valorProgresso}
+                  aria-label={rotuloProgresso}
+                  aria-valuetext={rotuloProgresso}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+                <h1
+                  id="consulta-pergunta"
+                  ref={tituloRef}
+                  tabIndex={-1}
+                  className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+                >
+                  <span className="sr-only">{rotuloProgresso}: </span>
                   {question.prompt}
                 </h1>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p
+                  id="consulta-pergunta-dica"
+                  className="text-sm leading-relaxed text-muted-foreground"
+                >
                   Responda pelo que acontece de verdade no seu setor, não pelo
                   que deveria acontecer.
                 </p>
               </div>
 
               <RadioGroup
+                aria-labelledby="consulta-pergunta"
+                aria-describedby="consulta-pergunta-dica"
                 className="gap-2.5"
                 value={chosen ?? ''}
                 onValueChange={(value) =>
@@ -283,7 +334,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 </Button>
                 <button
                   type="button"
-                  className="text-center text-[13px] text-muted-foreground underline underline-offset-4"
+                  className="min-h-12 text-center text-[13px] text-muted-foreground underline underline-offset-4"
                   onClick={() =>
                     setStep(
                       step.index === 0

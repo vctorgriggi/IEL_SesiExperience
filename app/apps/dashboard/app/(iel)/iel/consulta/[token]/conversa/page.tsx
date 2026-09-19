@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { ConversaColaborador } from '@/components/iel-demo/chat/conversa-colaborador';
+
+export const metadata: Metadata = { title: 'Como é trabalhar aqui' };
 
 type PageProps = {
   params: Promise<{ token: string }>;

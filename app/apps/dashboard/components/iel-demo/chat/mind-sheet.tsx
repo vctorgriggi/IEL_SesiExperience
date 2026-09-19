@@ -259,18 +259,23 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
   return (
     <>
       <ScrollArea className="min-h-0 flex-1">
-        <div
-          role="log"
-          aria-live="polite"
-          aria-label="Conversa com o Mind"
-          className="flex flex-col gap-3 p-4"
-        >
-          {mensagens.map((mensagem) => (
-            <BolhaMind
-              key={mensagem.id}
-              mensagem={mensagem}
-            />
-          ))}
+        <div className="flex flex-col gap-3 p-4">
+          {/* Só as falas ficam no `log`: sugestões e botões entram e saem
+              sem serem anunciados como mensagem. */}
+          <div
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label="Conversa com o Mind"
+            className="flex flex-col gap-3"
+          >
+            {mensagens.map((mensagem) => (
+              <BolhaMind
+                key={mensagem.id}
+                mensagem={mensagem}
+              />
+            ))}
+          </div>
 
           {pensando ? (
             <p
@@ -353,6 +358,7 @@ function BolhaMind({ mensagem }: { mensagem: Mensagem }) {
     return (
       <div className="flex justify-end">
         <p className="max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-sm text-primary-foreground">
+          <span className="sr-only">Você perguntou: </span>
           {mensagem.texto}
         </p>
       </div>
@@ -363,6 +369,7 @@ function BolhaMind({ mensagem }: { mensagem: Mensagem }) {
     return (
       <div className="flex justify-start">
         <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm leading-relaxed">
+          <span className="sr-only">Mind disse: </span>
           {mensagem.texto}
         </p>
       </div>
@@ -373,6 +380,7 @@ function BolhaMind({ mensagem }: { mensagem: Mensagem }) {
   return (
     <div className="flex flex-col items-start gap-1.5">
       <div className="flex max-w-[90%] flex-col gap-2 rounded-2xl rounded-tl-sm bg-muted px-3 py-2.5 text-sm leading-relaxed">
+        <span className="sr-only">Mind respondeu:</span>
         {resposta.paragrafos.map((paragrafo, index) => (
           <p key={index}>{paragrafo}</p>
         ))}
@@ -447,6 +455,7 @@ export function MindTrigger({ contexto }: { contexto: MindContexto }) {
         className="fixed right-4 bottom-4 z-40 shadow-xs"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
+        aria-expanded={open}
       >
         <Image
           src="/marca/simbolo.png"

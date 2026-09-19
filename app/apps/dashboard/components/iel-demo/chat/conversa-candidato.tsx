@@ -78,6 +78,7 @@ export function ConversaCandidato({
     <ConversaGuiada
       key={`${variante}:${sessao}`}
       roteiro={roteiro}
+      focarAoAbrir={sessao > 0}
       contexto={
         vaga ? (
           <Badge

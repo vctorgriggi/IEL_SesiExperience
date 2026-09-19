@@ -103,11 +103,22 @@ export function IelShell({ children }: { children: ReactNode }) {
       className="bg-background text-foreground"
     >
       <PageHeaderProvider>
+        {/* Primeiro foco da página: pula a barra lateral e o cabeçalho. */}
+        <a
+          href="#conteudo"
+          className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium ring-2 ring-ring focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+        >
+          Pular para o conteúdo
+        </a>
         <SidebarProvider style={ESTILO_DA_CASCA}>
           <AppSidebar />
           <SidebarInset>
             <SiteHeader />
-            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6">
+            <div
+              id="conteudo"
+              tabIndex={-1}
+              className="flex flex-1 flex-col gap-4 p-4 outline-none md:gap-6 lg:p-6"
+            >
               {children}
             </div>
             <MindTrigger contexto={contextoDaRota(pathname)} />

@@ -41,6 +41,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -144,8 +145,9 @@ function InviteActions({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-sm"
-            aria-label={`Ações do convite de ${label}`}
+            size="icon"
+            aria-label={`Ações para o convite de ${label}`}
+            className="size-10"
           >
             <MoreVertical />
           </Button>
@@ -215,7 +217,6 @@ export function CultureSampleTable({ companyId }: { companyId: string }) {
         <Button
           variant="outline"
           size="sm"
-          aria-pressed={mostrarEmails}
           onClick={() => setMostrarEmails((atual) => !atual)}
         >
           {mostrarEmails ? <EyeOff /> : <Eye />}
@@ -224,13 +225,37 @@ export function CultureSampleTable({ companyId }: { companyId: string }) {
       </div>
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Colaboradores convidados a responder sobre a empresa: e-mail{' '}
+            {mostrarEmails ? 'completo' : 'mascarado'}, área, papel e estado
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead>E-mail corporativo</TableHead>
-              <TableHead className="w-[12rem]">Área</TableHead>
-              <TableHead className="w-[7rem]">Papel</TableHead>
-              <TableHead className="w-[10rem]">Estado</TableHead>
-              <TableHead className="w-12" />
+              <TableHead scope="col">E-mail corporativo</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[12rem]"
+              >
+                Área
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[7rem]"
+              >
+                Papel
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[10rem]"
+              >
+                Estado
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-12"
+              >
+                <span className="sr-only">Ações</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

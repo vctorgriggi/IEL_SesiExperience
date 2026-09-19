@@ -34,6 +34,7 @@ import { Button } from '@workspace/ui/shadcn/button';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -75,9 +76,12 @@ function Metodo({ label }: { label: string }) {
           <button
             type="button"
             aria-label={label}
-            className="inline-flex text-muted-foreground hover:text-foreground"
+            className="-m-1.5 inline-flex p-1.5 text-muted-foreground hover:text-foreground"
           >
-            <Info className="size-3.5" />
+            <Info
+              aria-hidden="true"
+              className="size-3.5"
+            />
           </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-xs">{label}</TooltipContent>
@@ -98,6 +102,9 @@ function Metodo({ label }: { label: string }) {
 export function JobScreen({ jobId }: { jobId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const [pessoaAberta, setPessoaAberta] = useState<string | null>(null);
+  // A gaveta fica montada depois de aberta: fechar só muda `gavetaAberta`,
+  // para a animação correr e o foco voltar ao nome da pessoa na tabela.
+  const [gavetaAberta, setGavetaAberta] = useState(false);
   const [abaVaga, setAbaVaga] = useState('candidatos');
   const [abaCandidatos, setAbaCandidatos] =
     useState<CandidatesTab>('sugeridos');
@@ -316,7 +323,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
               href={iel.companies.byId(job.companyId)}
               className="text-foreground underline-offset-4 hover:underline"
             >
-              Ver empresa →
+              Ver empresa <span aria-hidden="true">→</span>
             </Link>
           </p>
         </div>
@@ -327,10 +334,13 @@ export function JobScreen({ jobId }: { jobId: string }) {
             <TabsTrigger value="cultura">
               {COPY.culture.label}
               {perfilAberto ? (
-                <span
-                  aria-label="faltam respostas"
-                  className="size-1.5 rounded-full bg-[hsl(var(--brand-accent))]"
-                />
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-1.5 rounded-full bg-[hsl(var(--brand-accent))]"
+                  />
+                  <span className="sr-only">, faltam respostas</span>
+                </>
               ) : null}
             </TabsTrigger>
             <TabsTrigger value="perguntas">
@@ -366,7 +376,10 @@ export function JobScreen({ jobId }: { jobId: string }) {
             referralLimit={REFERRAL_LIMIT}
             onToggleReferral={toggleReferral}
             onToggleComparison={toggleComparison}
-            onOpenPerson={(entry) => setPessoaAberta(entry.application.id)}
+            onOpenPerson={(entry) => {
+              setPessoaAberta(entry.application.id);
+              setGavetaAberta(true);
+            }}
             onAskPerson={perguntarA}
           />
         </div>
@@ -402,11 +415,24 @@ export function JobScreen({ jobId }: { jobId: string }) {
       >
         <div className="overflow-x-auto rounded-lg border">
           <Table>
+            <TableCaption className="sr-only">
+              Perguntas registradas nesta vaga e o estado de cada uma
+            </TableCaption>
             <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead>Pergunta</TableHead>
-                <TableHead className="w-[200px]">Para quem</TableHead>
-                <TableHead className="w-[160px]">Estado</TableHead>
+                <TableHead scope="col">Pergunta</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[200px]"
+                >
+                  Para quem
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[160px]"
+                >
+                  Estado
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -468,11 +494,19 @@ export function JobScreen({ jobId }: { jobId: string }) {
       <TabsContent value="enviados">
         <div className="overflow-x-auto rounded-lg border">
           <Table>
+            <TableCaption className="sr-only">
+              Remessas de currículos enviadas à empresa nesta vaga
+            </TableCaption>
             <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead>Remessa</TableHead>
-                <TableHead>Pessoas</TableHead>
-                <TableHead className="w-[160px]">Enviada em</TableHead>
+                <TableHead scope="col">Remessa</TableHead>
+                <TableHead scope="col">Pessoas</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[160px]"
+                >
+                  Enviada em
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -536,11 +570,25 @@ export function JobScreen({ jobId }: { jobId: string }) {
       >
         <div className="overflow-x-auto rounded-lg border">
           <Table>
+            <TableCaption className="sr-only">
+              Critérios da vaga, obrigatoriedade e pedido de confirmação ao
+              gestor
+            </TableCaption>
             <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead>Critério da vaga</TableHead>
-                <TableHead className="w-[160px]">Obrigatoriedade</TableHead>
-                <TableHead className="w-[140px]" />
+                <TableHead scope="col">Critério da vaga</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[160px]"
+                >
+                  Obrigatoriedade
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[140px]"
+                >
+                  <span className="sr-only">Ação</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -569,6 +617,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
                       }
                     >
                       {COPY.questions.askManager}
+                      <span className="sr-only">: {criterion.label}</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -583,11 +632,24 @@ export function JobScreen({ jobId }: { jobId: string }) {
       <TabsContent value="historico">
         <div className="overflow-x-auto rounded-lg border">
           <Table>
+            <TableCaption className="sr-only">
+              Histórico de ações nesta vaga
+            </TableCaption>
             <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead>Ação</TableHead>
-                <TableHead className="w-[200px]">Quem</TableHead>
-                <TableHead className="w-[180px]">Quando</TableHead>
+                <TableHead scope="col">Ação</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[200px]"
+                >
+                  Quem
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[180px]"
+                >
+                  Quando
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -628,10 +690,9 @@ export function JobScreen({ jobId }: { jobId: string }) {
           job={job}
           talent={talentoAberto}
           application={aberta.application}
-          open={pessoaAberta !== null}
-          onOpenChange={(aberto) => {
-            if (!aberto) setPessoaAberta(null);
-          }}
+          open={gavetaAberta}
+          onOpenChange={setGavetaAberta}
+          retornarFocoPara={`abrir-pessoa-${aberta.application.id}`}
         />
       ) : null}
 

@@ -15,7 +15,7 @@ import {
   CardTitle
 } from '@workspace/ui/shadcn/card';
 
-import { formatarValorKpi } from './formato';
+import { formatarValorKpi, lerValorKpi, lerVariacao } from './formato';
 import { MarcadorHistorico } from './marcador-historico';
 
 export type KpiCardProps = {
@@ -82,6 +82,7 @@ export function KpiCard({
   className
 }: KpiCardProps) {
   const { texto, Icone } = direcao(kpi);
+  const variacaoFalada = lerVariacao(kpi);
 
   return (
     <Card
@@ -101,7 +102,12 @@ export function KpiCard({
           ) : null}
         </CardDescription>
         <CardTitle className="text-2xl font-semibold tabular-nums">
-          {valor ?? formatarValorKpi(kpi)}
+          {valor ?? (
+            <>
+              <span aria-hidden="true">{formatarValorKpi(kpi)}</span>
+              <span className="sr-only">{lerValorKpi(kpi)}</span>
+            </>
+          )}
         </CardTitle>
         {kpi.variacaoTexto ? (
           <CardAction>
@@ -109,8 +115,16 @@ export function KpiCard({
               variant="outline"
               className="gap-1 font-normal"
             >
-              <Icone className="size-3" />
-              {kpi.variacaoTexto}
+              {/*
+               * "↗ +10 p.p." não se lê: o selo fica para os olhos e o leitor
+               * de tela ouve a frase inteira.
+               */}
+              <Icone
+                aria-hidden="true"
+                className="size-3"
+              />
+              <span aria-hidden="true">{kpi.variacaoTexto}</span>
+              <span className="sr-only">{variacaoFalada}</span>
             </Badge>
           </CardAction>
         ) : null}
@@ -119,7 +133,14 @@ export function KpiCard({
         <span className="line-clamp-1 flex items-center gap-2 font-medium">
           {rodape ?? (
             <>
-              {texto} <Icone className="size-4 shrink-0" />
+              {/* Com o selo, a frase já foi lida por extenso logo acima. */}
+              <span aria-hidden={variacaoFalada ? 'true' : undefined}>
+                {texto}
+              </span>{' '}
+              <Icone
+                aria-hidden="true"
+                className="size-4 shrink-0"
+              />
             </>
           )}
         </span>

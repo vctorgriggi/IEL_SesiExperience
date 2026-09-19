@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { CompanyDetailScreen } from '@/components/iel-demo/companies/companies-screens';
+
+export const metadata: Metadata = { title: 'Empresa' };
 
 type PageProps = {
   params: Promise<{ companyId: string }>;

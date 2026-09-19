@@ -259,7 +259,9 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                   <SidebarMenuButton
                     onClick={() => setBusca(true)}
-                    aria-label="Buscar (⌘K)"
+                    aria-label="Buscar vaga, empresa ou pessoa"
+                    aria-keyshortcuts="Meta+K Control+K"
+                    aria-haspopup="dialog"
                     title="Buscar (⌘K)"
                     className="size-8 shrink-0 justify-center border bg-background group-data-[collapsible=icon]:hidden"
                   >
@@ -276,6 +278,9 @@ export function AppSidebar() {
                     asChild
                     tooltip={item.label}
                     isActive={item.ativo}
+                    // O kit marca o item ativo só com `data-active`; o
+                    // leitor de tela precisa do `aria-current`.
+                    aria-current={item.ativo ? 'page' : undefined}
                   >
                     <Link href={item.href}>
                       <item.icon />
@@ -323,6 +328,9 @@ export function AppSidebar() {
                     asChild
                     tooltip="Integrações"
                     isActive={pathname === iel.dataSources}
+                    aria-current={
+                      pathname === iel.dataSources ? 'page' : undefined
+                    }
                   >
                     <Link href={iel.dataSources}>
                       <Plug />
@@ -412,6 +420,7 @@ function NavRecentes({ vagas }: { vagas: Job[] }) {
               <SidebarMenuButton
                 asChild
                 isActive={pathname.startsWith(href)}
+                aria-current={pathname.startsWith(href) ? 'page' : undefined}
                 title={empresa ? `${job.title} · ${empresa}` : job.title}
               >
                 {/*
@@ -571,17 +580,21 @@ function BuscaGlobal({
       open={open}
       onOpenChange={mudarAbertura}
     >
-      <DialogHeader className="sr-only">
-        <DialogTitle>Buscar</DialogTitle>
-        <DialogDescription>
-          Vagas, empresas e pessoas da base.
-        </DialogDescription>
-      </DialogHeader>
       <DialogContent
         className="overflow-hidden p-0"
         showCloseButton={false}
       >
+        {/* Título e descrição dentro do conteúdo: é ali que o Radix os liga
+            ao diálogo (`aria-labelledby`/`aria-describedby`). */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>Buscar</DialogTitle>
+          <DialogDescription>
+            Digite o nome de uma vaga, empresa ou pessoa e use as setas para
+            escolher um resultado. Esc fecha.
+          </DialogDescription>
+        </DialogHeader>
         <Command
+          label="Buscar vaga, empresa ou pessoa"
           shouldFilter={false}
           className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
         >

@@ -78,6 +78,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -303,7 +304,10 @@ export function CompaniesScreen() {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+              />
               <Label
                 htmlFor="buscar-empresa"
                 className="sr-only"
@@ -355,14 +359,32 @@ export function CompaniesScreen() {
 
         <div className="overflow-x-auto rounded-lg border">
           <Table>
+            <TableCaption className="sr-only">
+              Empresas atendidas: {lista.length.toLocaleString('pt-BR')}{' '}
+              {lista.length === 1 ? 'empresa' : 'empresas'} nesta lista, página{' '}
+              {paginaAtual + 1} de {totalPaginas}. Abra uma empresa pelo nome.
+            </TableCaption>
             <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead>Empresa</TableHead>
-                <TableHead className="w-[8rem] text-right">
+                <TableHead scope="col">Empresa</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[8rem] text-right"
+                >
                   Vagas abertas
                 </TableHead>
-                <TableHead className="w-[14rem]">Perfil da empresa</TableHead>
-                <TableHead className="w-[10rem]">Prazo</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[14rem]"
+                >
+                  Perfil da empresa
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[10rem]"
+                >
+                  Prazo
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -403,21 +425,29 @@ export function CompaniesScreen() {
                         {sample ? (
                           <div className="flex items-center gap-2">
                             <Progress
+                              aria-hidden="true"
                               className="h-1.5 w-16 bg-muted"
                               value={percent}
                             />
                             <span className="tabular-nums">
                               {sample.answered} de {sample.total}
+                              <span className="sr-only"> responderam</span>
                             </span>
                             {aberto ? (
-                              <CircleAlert
-                                aria-label={plural(
-                                  openPoints,
-                                  'ponto em aberto',
-                                  'pontos em aberto'
-                                )}
-                                className="size-3.5 text-[hsl(var(--brand-accent))]"
-                              />
+                              <>
+                                <CircleAlert
+                                  aria-hidden="true"
+                                  className="size-3.5 text-[hsl(var(--brand-accent))]"
+                                />
+                                <span className="sr-only">
+                                  ,{' '}
+                                  {plural(
+                                    openPoints,
+                                    'ponto em aberto',
+                                    'pontos em aberto'
+                                  )}
+                                </span>
+                              </>
                             ) : null}
                           </div>
                         ) : (
@@ -427,7 +457,14 @@ export function CompaniesScreen() {
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {sample ? deadlineLabel(sample) : '—'}
+                        {sample ? (
+                          deadlineLabel(sample)
+                        ) : (
+                          <>
+                            <span aria-hidden="true">—</span>
+                            <span className="sr-only">Sem prazo</span>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -476,7 +513,10 @@ export function CompaniesScreen() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
+            <div
+              aria-live="polite"
+              className="flex w-fit items-center justify-center text-sm font-medium"
+            >
               Página {paginaAtual + 1} de {totalPaginas}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -488,7 +528,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual === 0}
               >
                 <span className="sr-only">Primeira página</span>
-                <ChevronsLeft />
+                <ChevronsLeft aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -498,7 +538,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual === 0}
               >
                 <span className="sr-only">Página anterior</span>
-                <ChevronLeft />
+                <ChevronLeft aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -510,7 +550,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual >= totalPaginas - 1}
               >
                 <span className="sr-only">Próxima página</span>
-                <ChevronRight />
+                <ChevronRight aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -520,7 +560,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual >= totalPaginas - 1}
               >
                 <span className="sr-only">Última página</span>
-                <ChevronsRight />
+                <ChevronsRight aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -733,14 +773,29 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         <TabsContent value="vagas">
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">
+                Vagas de {company.name}: etapa, marcados para envio e
+                compatíveis
+              </TableCaption>
               <TableHeader className="bg-muted">
                 <TableRow>
-                  <TableHead>Vaga</TableHead>
-                  <TableHead className="w-[12rem]">Etapa</TableHead>
-                  <TableHead className="w-[11rem] text-right">
+                  <TableHead scope="col">Vaga</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[12rem]"
+                  >
+                    Etapa
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[11rem] text-right"
+                  >
                     Marcados para envio
                   </TableHead>
-                  <TableHead className="w-[10rem] text-right">
+                  <TableHead
+                    scope="col"
+                    className="w-[10rem] text-right"
+                  >
                     Compatíveis
                   </TableHead>
                 </TableRow>
@@ -859,9 +914,9 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
             <div
               className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full"
               role="img"
-              aria-label={retorno.itens
-                .map((item) => `${item.rotulo}: ${item.pct ?? 0}%`)
-                .join(', ')}
+              aria-label={`Retorno das remessas: ${retorno.itens
+                .map((item) => `${item.rotulo}, ${item.pct ?? 0}%`)
+                .join('; ')}`}
             >
               {retorno.itens.map((item) =>
                 item.pct ? (
@@ -916,13 +971,36 @@ function RetornoDasEmpresasCard({ periodo }: { periodo: Periodo }) {
         {setoresVisiveis.length > 0 ? (
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">
+                Retorno das empresas por setor, em percentual das remessas
+              </TableCaption>
               <TableHeader className="bg-muted">
                 <TableRow>
-                  <TableHead>Setor</TableHead>
-                  <TableHead className="text-right">Remessas</TableHead>
-                  <TableHead className="text-right">Contratou</TableHead>
-                  <TableHead className="text-right">Não contratou</TableHead>
-                  <TableHead className="text-right">Sem resposta</TableHead>
+                  <TableHead scope="col">Setor</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Remessas
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Contratou
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Não contratou
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Sem resposta
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -970,6 +1048,16 @@ function coortePadrao(coortes: CoortePermanencia[]): string | undefined {
   return (apuradas.at(-1) ?? coortes.at(-1))?.mes;
 }
 
+/** O "—" para os olhos, com o motivo escrito para o leitor de tela. */
+function Traco({ texto }: { texto: string }) {
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{texto}</span>
+    </>
+  );
+}
+
 /** Um dos três números da coorte. */
 function NumeroDaCoorte({
   rotulo,
@@ -1003,12 +1091,12 @@ function PermanenciaCard() {
     pctFicou: number | null,
     apurados: number
   ): { valor: React.ReactNode; apoio: string } => {
-    if (!coorte) return { valor: '—', apoio: '' };
+    if (!coorte) return { valor: <Traco texto="sem dado" />, apoio: '' };
     if (coorte.oculto)
       return { valor: <ValorOculto />, apoio: 'recorte pequeno' };
     if (pctFicou === null) {
       return {
-        valor: '—',
+        valor: <Traco texto="ainda sem taxa" />,
         apoio: `em apuração · ${apurados} de ${coorte.contratados} com desfecho`
       };
     }
@@ -1064,7 +1152,7 @@ function PermanenciaCard() {
                   coorte.contratados
                 )
               ) : (
-                '—'
+                <Traco texto="sem dado" />
               )
             }
             apoio="que a empresa devolveu"
@@ -1228,12 +1316,19 @@ function RoteiroDaLigacao({ companyId }: { companyId: string }) {
                 className="gap-1 font-normal text-muted-foreground"
               >
                 {data ? (
-                  <Check className="size-3 text-foreground" />
+                  <Check
+                    aria-hidden="true"
+                    className="size-3 text-foreground"
+                  />
                 ) : (
-                  <Clock className="size-3" />
+                  <Clock
+                    aria-hidden="true"
+                    className="size-3"
+                  />
                 )}
                 {ESTADO_ROTEIRO_LABEL[estado]}
                 {data ? ` · ${formatarDataCurta(data)}` : ''}
+                {data ? null : <span className="sr-only">: ainda não</span>}
               </Badge>
             );
           })}

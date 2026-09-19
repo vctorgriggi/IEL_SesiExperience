@@ -80,18 +80,33 @@ export function JobSectionCards({
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       <Card className="@container/card">
-        <CardHeader>
+        {/* O cartão é número, selo e rodapé soltos; lido em sequência vira
+            "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só,
+            e o desenho fica para os olhos. */}
+        <p className="sr-only">
+          Compatíveis: {plural(combinam, 'pessoa', 'pessoas')} com{' '}
+          {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa, acima do
+          mínimo do IEL, de {responderam} que responderam.
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Compatíveis</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {combinam}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <TrendingUp />≥ {ADHERENCE_THRESHOLD}%
+              <TrendingUp aria-hidden="true" />
+              <span aria-hidden="true">≥ {ADHERENCE_THRESHOLD}%</span>
+              <span className="sr-only">
+                com {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa
+              </span>
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             Acima do mínimo do IEL
           </div>
@@ -102,19 +117,29 @@ export function JobSectionCards({
       </Card>
 
       <Card className="@container/card">
-        <CardHeader>
+        <p className="sr-only">
+          Sem resposta: {plural(semResposta, 'pessoa', 'pessoas')}. O prazo de
+          resposta, de {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')},
+          termina em {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem
+          não responde sai do processo.
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Sem resposta</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {semResposta}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <Clock />
+              <Clock aria-hidden="true" />
+              <span className="sr-only">Prazo de </span>
               {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             Prazo de resposta termina{' '}
             {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}
@@ -126,7 +151,13 @@ export function JobSectionCards({
       </Card>
 
       <Card className="@container/card">
-        <CardHeader>
+        <p className="sr-only">
+          Marcados para envio: {marcados} de {REFERRAL_LIMIT}.{' '}
+          {faltamParaFechar === 0
+            ? 'Remessa fechada.'
+            : `Faltam ${faltamParaFechar} para fechar a remessa.`}
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Marcados</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {marcados}{' '}
@@ -135,7 +166,10 @@ export function JobSectionCards({
             </span>
           </CardTitle>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             {faltamParaFechar === 0
               ? 'Remessa fechada'
@@ -151,7 +185,9 @@ export function JobSectionCards({
         className="@container/card cursor-pointer transition-colors hover:border-foreground/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
         role="button"
         tabIndex={0}
-        aria-label={`Ver ${plural(resgate, 'pessoa', 'pessoas')} na aba Resgate`}
+        aria-label={`Resgate: ${plural(resgate, 'pessoa combina', 'pessoas combinam')} com a empresa e ${
+          resgate === 1 ? 'fica' : 'ficam'
+        } abaixo de ${RESCUE_TECHNICAL_CEILING}% nos requisitos. Ver na aba Resgate`}
         onClick={onOpenRescue}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -170,7 +206,7 @@ export function JobSectionCards({
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <Activity />
+              <Activity aria-hidden="true" />
               combinam
             </Badge>
           </CardAction>

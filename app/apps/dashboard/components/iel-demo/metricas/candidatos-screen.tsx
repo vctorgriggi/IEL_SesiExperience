@@ -213,7 +213,12 @@ export function CandidatosScreen() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <Funil etapas={etapas} />
+            <Funil
+              etapas={etapas}
+              titulo={`Funil da comunicação, ${
+                abaValida === 'total' ? 'total' : CANAL_LABEL[abaValida]
+              }`}
+            />
           </CardContent>
           <CardFooter className="text-sm text-muted-foreground">
             Quem abre e não conclui recebe um lembrete em 24 horas.
@@ -241,7 +246,7 @@ export function CandidatosScreen() {
             >
               <Link href={routes.dashboard.iel.talents.index}>
                 Ver pessoas
-                <ArrowRight />
+                <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
           </CardAction>
@@ -332,7 +337,11 @@ function OndeOCandidatoPara({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ol className="flex flex-col gap-3">
+        {/* A barra é só desenho; o % escrito ao lado é o equivalente. */}
+        <ol
+          aria-label="Abandono no aceite e em cada pergunta"
+          className="flex flex-col gap-3"
+        >
           {pontos.map((ponto) => {
             const [titulo, rotulo] = ponto.rotulo.split(' · ');
             const destaque = maior?.ponto === ponto.ponto;
@@ -363,7 +372,18 @@ function OndeOCandidatoPara({
                   />
                 </div>
                 <span className="text-right font-medium tabular-nums">
-                  {ponto.pct === null ? <ValorOculto /> : `${ponto.pct}%`}
+                  {ponto.pct === null ? (
+                    <ValorOculto />
+                  ) : (
+                    <>
+                      {ponto.pct}%
+                      <span className="sr-only">
+                        {' '}
+                        de abandono
+                        {destaque ? ', o maior do recorte' : ''}
+                      </span>
+                    </>
+                  )}
                 </span>
               </li>
             );

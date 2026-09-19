@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { ConversaCandidato } from '@/components/iel-demo/chat/conversa-candidato';
+
+export const metadata: Metadata = { title: 'Questionário da vaga' };
 
 type PageProps = {
   params: Promise<{ applicationId: string }>;

@@ -26,12 +26,16 @@ export function ValorOculto({ className }: { className?: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
+        {/*
+         * `aria-label` num `span` sem papel é ignorado por vários leitores:
+         * o texto vai escrito, em `sr-only`, e o traço fica só para os olhos.
+         */}
         <span
           tabIndex={0}
-          aria-label={TEXTO_OCULTO}
           className={cn('cursor-help text-muted-foreground', className)}
         >
-          —
+          <span aria-hidden="true">—</span>
+          <span className="sr-only">{TEXTO_OCULTO}</span>
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-64">{TEXTO_OCULTO}</TooltipContent>

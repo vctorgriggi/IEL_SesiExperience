@@ -111,7 +111,11 @@ export function RodapeDaTabela<T>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex w-fit items-center justify-center text-sm font-medium tabular-nums">
+        {/* Anunciado ao trocar de página: o leitor de tela sabe onde está. */}
+        <div
+          aria-live="polite"
+          className="flex w-fit items-center justify-center text-sm font-medium tabular-nums"
+        >
           Página {pagina + 1} de {totalPaginas}
         </div>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -123,7 +127,7 @@ export function RodapeDaTabela<T>({
             disabled={primeira}
           >
             <span className="sr-only">Primeira página</span>
-            <ChevronsLeft />
+            <ChevronsLeft aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -133,7 +137,7 @@ export function RodapeDaTabela<T>({
             disabled={primeira}
           >
             <span className="sr-only">Página anterior</span>
-            <ChevronLeft />
+            <ChevronLeft aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -143,7 +147,7 @@ export function RodapeDaTabela<T>({
             disabled={ultima}
           >
             <span className="sr-only">Próxima página</span>
-            <ChevronRight />
+            <ChevronRight aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -153,7 +157,7 @@ export function RodapeDaTabela<T>({
             disabled={ultima}
           >
             <span className="sr-only">Última página</span>
-            <ChevronsRight />
+            <ChevronsRight aria-hidden="true" />
           </Button>
         </div>
       </div>

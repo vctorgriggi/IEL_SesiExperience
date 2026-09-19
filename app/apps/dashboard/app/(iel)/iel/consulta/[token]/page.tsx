@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { CultureInviteScreen } from '@/components/iel-demo/companies/culture-invite-screen';
+
+export const metadata: Metadata = { title: 'Como é trabalhar aqui' };
 
 type PageProps = {
   params: Promise<{ token: string }>;

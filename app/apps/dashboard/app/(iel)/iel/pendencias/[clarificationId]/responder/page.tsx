@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { RecipientExperienceScreen } from '@/components/iel-demo/clarifications/recipient-experience-screen';
+
+export const metadata: Metadata = { title: 'Responder à pergunta' };
 
 type PageProps = {
   params: Promise<{ clarificationId: string }>;
