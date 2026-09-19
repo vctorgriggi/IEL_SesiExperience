@@ -45,6 +45,6 @@ yarn-error.log*
 # IDE
 .idea/
 .cursor/
-.claude/skills/
+.claude/skills/ 
 .kiro/
 
