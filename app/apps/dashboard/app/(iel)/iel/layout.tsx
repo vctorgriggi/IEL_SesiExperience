@@ -1,9 +1,17 @@
 import type { PropsWithChildren } from 'react';
 import type { Metadata } from 'next';
 import { Red_Hat_Display } from 'next/font/google';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
 import { VLibras } from '@/components/iel-demo/layout/vlibras';
+import {
+  acessoExigeSenha,
+  temSessaoDaAnalista
+} from '@/features/iel-demo/acesso/sessao';
 import { IelDemoProvider } from '@/features/iel-demo/state/demo-provider';
+
+import { routes } from '@workspace/routes';
 
 import './iel-theme.css';
 
@@ -36,11 +44,42 @@ export const metadata: Metadata = {
  * Área isolada do protótipo IEL: dados fictícios, estado local no navegador e
  * nenhum acesso às rotas autenticadas do produto.
  */
-export default function IelDemoLayout({ children }: PropsWithChildren) {
+/*
+ * Rotas abertas: quem entra por link não tem senha nem cadastro (R9, R10).
+ * O candidato responde o questionário, o colaborador responde a consulta da
+ * empresa e o RH abre o relatório da remessa. Todo o resto é da analista.
+ */
+const SENTINELA = '__id__';
+
+function prefixo(caminho: string): string {
+  return caminho.slice(0, caminho.indexOf(SENTINELA));
+}
+
+const ROTAS_ABERTAS = [
+  routes.dashboard.iel.signIn,
+  prefixo(routes.dashboard.iel.applications.byId(SENTINELA).fit),
+  prefixo(routes.dashboard.iel.cultureInvite.byToken(SENTINELA)),
+  prefixo(routes.dashboard.iel.report.byToken(SENTINELA))
+];
+
+function ehRotaAberta(pathname: string): boolean {
+  return ROTAS_ABERTAS.some(
+    (rota) => pathname === rota || pathname.startsWith(rota)
+  );
+}
+
+export default async function IelDemoLayout({ children }: PropsWithChildren) {
+  // O middleware carimba o caminho no cabeçalho: é como um layout de
+  // servidor sabe em qual rota está sem virar componente de cliente.
+  const pathname = (await headers()).get('x-pathname') ?? '';
+  if (!ehRotaAberta(pathname) && !(await temSessaoDaAnalista())) {
+    redirect(routes.dashboard.iel.signIn);
+  }
+
   return (
     <div className={redHatDisplay.variable}>
       <IelDemoProvider>
-        <IelShell>{children}</IelShell>
+        <IelShell podeSair={acessoExigeSenha()}>{children}</IelShell>
       </IelDemoProvider>
       <VLibras />
     </div>

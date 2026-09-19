@@ -80,8 +80,19 @@ const PREFIXOS_POR_LINK: {
  * sem menu — dar a eles a navegação do analista seria mostrar um app que
  * eles não têm.
  */
-export function IelShell({ children }: { children: ReactNode }) {
+export function IelShell({
+  children,
+  podeSair
+}: {
+  children: ReactNode;
+  /** A porta exige senha, então há de onde sair. */
+  podeSair: boolean;
+}) {
   const pathname = usePathname();
+
+  // A porta da Central desenha a própria tela, com a marca no centro.
+  if (pathname.startsWith(routes.dashboard.iel.signIn)) return children;
+
   const porLink = PREFIXOS_POR_LINK.find((rota) =>
     pathname.startsWith(rota.base)
   );
@@ -111,7 +122,7 @@ export function IelShell({ children }: { children: ReactNode }) {
           Pular para o conteúdo
         </a>
         <SidebarProvider style={ESTILO_DA_CASCA}>
-          <AppSidebar />
+          <AppSidebar podeSair={podeSair} />
           <SidebarInset>
             <SiteHeader />
             <div

@@ -32,6 +32,12 @@ export const env = createEnv({
     // funcionam sem elas, na regra fixa. O modelo real só liga quando o
     // provedor e a chave dele estão presentes — veja
     // features/iel-demo/ai/index.ts.
+    /*
+     * Senha de equipe da Central IEL. Sem ela, a porta fica aberta: é o que
+     * permite rodar o protótipo local sem configurar nada. Em produção,
+     * defina uma senha — e troque pelo login com conta quando houver banco.
+     */
+    IEL_SENHA_ANALISTA: z.string().min(1).optional(),
     IEL_AI_PROVIDER: z
       .enum(['deterministic', 'anthropic', 'deepseek'])
       .optional(),
@@ -62,6 +68,7 @@ export const env = createEnv({
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
     SECURITY_X_FRAME_OPTIONS: process.env.SECURITY_X_FRAME_OPTIONS,
     SECURITY_REFERRER_POLICY: process.env.SECURITY_REFERRER_POLICY,
+    IEL_SENHA_ANALISTA: process.env.IEL_SENHA_ANALISTA,
     IEL_AI_PROVIDER: process.env.IEL_AI_PROVIDER,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
