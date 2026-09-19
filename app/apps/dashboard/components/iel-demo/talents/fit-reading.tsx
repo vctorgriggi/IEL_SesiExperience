@@ -1,7 +1,10 @@
 'use client';
 
+import { getFitInsights } from '@/features/iel-demo/analysis/fit-insights';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  AXIS_WEIGHT_LABEL,
+  getAxisWeights,
   getCompany,
   getCultureReading,
   getFitReading,
@@ -14,12 +17,15 @@ import { cn } from '@workspace/ui';
 
 import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 import {
+  Chip,
   formatDate,
   InfoHint,
   Panel,
   PanelHeader,
   SourceDot
 } from '../shared/ui';
+import { FitInsights } from './fit-insights';
+import { FitRadar } from './fit-radar';
 
 const CONDITION_STATUS_LABEL: Record<string, string> = {
   confirmado: 'confirmado pelo gestor',
@@ -114,10 +120,10 @@ function AxisRow({
           {entry.axis.label}
         </h3>
         <InfoHint label={entry.axis.description} />
-        <CriterionStateHeadline
-          state={entry.state}
-          className="ml-auto"
-        />
+        {/* O peso vem antes do estado porque é ele que diz o quanto este
+            eixo decide a vaga — sem isso, cinco estados parecem equivalentes. */}
+        <Chip className="ml-auto">{AXIS_WEIGHT_LABEL[entry.weight]}</Chip>
+        <CriterionStateHeadline state={entry.state} />
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
@@ -205,6 +211,7 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
   const reading = getFitReading(state, job, talentId);
   const company = getCompany(job.companyId);
   const culture = getCultureReading(state, job.companyId);
+  const insights = getFitInsights(reading, getAxisWeights(state, job));
 
   const withBothSides = reading.filter(
     (entry) => entry.missingSide === null
@@ -232,7 +239,15 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
         }
       />
 
-      <ul className="mt-5 divide-y divide-border">
+      {/* A forma e a leitura antes da lista: quem abre a tela precisa ver
+          onde a vaga prioriza e por onde começar, e só depois percorrer os
+          cinco eixos um a um. */}
+      <div className="mt-5 grid gap-6 border-b border-border pb-6 lg:grid-cols-2">
+        <FitRadar reading={reading} />
+        <FitInsights insights={insights} />
+      </div>
+
+      <ul className="mt-2 divide-y divide-border">
         {reading.map((entry) => (
           <AxisRow
             key={entry.axis.id}

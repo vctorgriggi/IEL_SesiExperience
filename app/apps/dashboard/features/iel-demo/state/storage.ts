@@ -28,6 +28,8 @@ type PersistedState = {
   dataSources: DemoState['dataSources'];
   teams: DemoState['teams'];
   clarifications: DemoState['clarifications'];
+  /** Pesos confirmados pela empresa durante a demonstração. */
+  axisWeights: DemoState['axisWeights'];
   referrals: DemoState['referrals'];
   history: DemoState['history'];
   appliedSyncEventIds: DemoState['appliedSyncEventIds'];
@@ -98,6 +100,7 @@ function toPersisted(state: DemoState): PersistedState {
     dataSources: state.dataSources,
     teams: state.teams,
     clarifications: state.clarifications,
+    axisWeights: state.axisWeights,
     referrals: state.referrals,
     history: state.history,
     appliedSyncEventIds: state.appliedSyncEventIds,
@@ -126,6 +129,7 @@ function fromPersisted(persisted: PersistedState): DemoState {
     dataSources: persisted.dataSources ?? state.dataSources,
     teams: persisted.teams ?? state.teams,
     clarifications: persisted.clarifications ?? state.clarifications,
+    axisWeights: persisted.axisWeights ?? state.axisWeights,
     referrals: persisted.referrals ?? state.referrals,
     history: persisted.history ?? state.history,
     appliedSyncEventIds:

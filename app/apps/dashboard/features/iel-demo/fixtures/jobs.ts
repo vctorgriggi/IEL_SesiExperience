@@ -95,6 +95,43 @@ export const DEMO_JOBS: Job[] = [
         confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
       }
     ],
+    axisWeights: {
+      // A vaga 1 é a história do roteiro: equipe com pouca sobreposição entre
+      // turnos e rotina executada sozinha. Apoio inicial e autonomia são
+      // exatamente os eixos em que a expectativa de Ana não encontra a
+      // condição da equipe — declarar o peso alto aqui é o que faz a leitura
+      // mostrar a divergência no lugar de diluí-la entre cinco eixos iguais.
+      'apoio-inicial': 'alto',
+      autonomia: 'alto',
+      'ritmo-turno': 'medio',
+      'comunicacao-prioridades': 'medio',
+      aprendizado: 'baixo'
+    },
+    axisWeightSuggestions: [
+      {
+        axisId: 'apoio-inicial',
+        weight: 'alto',
+        excerpt:
+          'Equipe com pouca sobreposição entre turnos. O apoio nas primeiras atividades ainda não foi confirmado pela empresa.',
+        sourceLabel: 'Contexto organizacional da vaga',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'autonomia',
+        weight: 'alto',
+        excerpt:
+          'Apoio à expedição: conferência de pedidos, registro de saídas e organização das cargas do turno da tarde.',
+        sourceLabel: 'Resumo da vaga',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'ritmo-turno',
+        weight: 'medio',
+        excerpt: 'Disponibilidade para o turno da tarde',
+        sourceLabel: 'Requisitos essenciais da vaga',
+        sourceId: 'FONTE-EMPREGARE'
+      }
+    ],
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Cerrado Distribuição',
@@ -174,6 +211,35 @@ export const DEMO_JOBS: Job[] = [
         confirmedBy: 'Condição confirmada pelo gestor Rafael Nogueira'
       }
     ],
+    axisWeights: {
+      // Na vaga 2 a empresa oferece o que falta na vaga 1: colega de
+      // referência nas primeiras semanas. O aprendizado pesa alto porque a
+      // função é aprender a rotina do estoque, e o apoio inicial pesa alto
+      // porque é a condição que a empresa assumiu e precisa sustentar.
+      aprendizado: 'alto',
+      'apoio-inicial': 'alto',
+      'comunicacao-prioridades': 'medio',
+      'ritmo-turno': 'baixo',
+      autonomia: 'baixo'
+    },
+    axisWeightSuggestions: [
+      {
+        axisId: 'aprendizado',
+        weight: 'alto',
+        excerpt:
+          'Apoio administrativo ao estoque: controle de materiais, registro de entradas e saídas e apoio a inventários.',
+        sourceLabel: 'Resumo da vaga',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'apoio-inicial',
+        weight: 'alto',
+        excerpt:
+          'O gestor confirmou colega de referência nas primeiras quatro semanas e reunião semanal de prioridades.',
+        sourceLabel: 'Contexto organizacional da vaga',
+        sourceId: 'FONTE-EMPRESA'
+      }
+    ],
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Horizonte Alimentos',
@@ -240,6 +306,35 @@ export const DEMO_JOBS: Job[] = [
         dimension: 'organizacional',
         required: false,
         confirmedBy: 'A confirmar com a empresa'
+      }
+    ],
+    axisWeights: {
+      // A vaga 3 é atendimento e organização de documentos: o dia é feito de
+      // prioridades que chegam de fora. O contexto da equipe está pouco
+      // documentado, então os demais eixos ficam em médio ou baixo — declarar
+      // peso alto onde não há informação só produziria alarme vazio.
+      'comunicacao-prioridades': 'alto',
+      'ritmo-turno': 'medio',
+      'apoio-inicial': 'medio',
+      aprendizado: 'baixo',
+      autonomia: 'baixo'
+    },
+    axisWeightSuggestions: [
+      {
+        axisId: 'comunicacao-prioridades',
+        weight: 'alto',
+        excerpt:
+          'Assistência administrativa: organização de documentos, atendimento telefônico e apoio a orçamentos.',
+        sourceLabel: 'Resumo da vaga',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'apoio-inicial',
+        weight: 'medio',
+        excerpt:
+          'Atividades e expectativas da equipe estão parcialmente documentadas; o contexto organizacional ainda é insuficiente para comparar candidatos nessa dimensão.',
+        sourceLabel: 'Contexto organizacional da vaga',
+        sourceId: 'FONTE-EMPREGARE'
       }
     ],
     externalRef: {

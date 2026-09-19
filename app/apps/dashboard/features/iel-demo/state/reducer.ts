@@ -1,7 +1,9 @@
 import type { FitAxisId } from '../analysis/fit-axes';
+import { getFitAxis } from '../analysis/fit-axes';
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
 import { plural } from '../format';
 import type {
+  AxisWeight,
   Clarification,
   ClarificationEffect,
   CriterionState,
@@ -86,6 +88,19 @@ export type DemoAction =
       companyId: string;
       axisId: FitAxisId;
       optionId: string;
+      at: string;
+    }
+  | {
+      /**
+       * A empresa define o peso de um eixo nesta vaga — confirmando a
+       * proposta da análise, corrigindo-a, ou acatando um padrão observado
+       * nos processos. Em qualquer caso é uma decisão declarada por alguém,
+       * e por isso entra no histórico.
+       */
+      type: 'set-axis-weight';
+      jobId: string;
+      axisId: FitAxisId;
+      weight: AxisWeight;
       at: string;
     }
   | {
@@ -358,6 +373,26 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           },
           ...state.history
         ]
+      };
+    }
+
+    case 'set-axis-weight': {
+      const current = state.axisWeights?.[action.jobId] ?? {};
+      if (current[action.axisId] === action.weight) return state;
+
+      return {
+        ...state,
+        axisWeights: {
+          ...state.axisWeights,
+          [action.jobId]: { ...current, [action.axisId]: action.weight }
+        },
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Empresa da vaga',
+          action: 'Peso do eixo definido pela empresa',
+          description: `O eixo "${getFitAxis(action.axisId).label}" passa a ter peso ${action.weight} na vaga ${action.jobId}. O peso ordena a leitura e a atenção; não produz nota.`,
+          entityRef: action.jobId
+        })
       };
     }
 

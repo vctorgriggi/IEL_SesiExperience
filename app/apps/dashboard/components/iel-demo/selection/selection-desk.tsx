@@ -40,6 +40,7 @@ import {
 } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
+import { AxisWeights } from '../companies/axis-weights';
 import { CriterionStateLegend } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
 import {
@@ -565,6 +566,8 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
                 </p>
               </div>
             </Panel>
+
+            <AxisWeights jobId={job.id} />
           </div>
         </div>
       ) : null}

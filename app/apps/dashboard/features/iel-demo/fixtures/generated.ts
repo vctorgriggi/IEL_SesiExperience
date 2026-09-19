@@ -19,9 +19,11 @@
  * cada apresentação.
  */
 
+import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
 import type {
   AnalysisByApplication,
   Application,
+  AxisWeight,
   Company,
   CriterionAnalysis,
   CriterionState,
@@ -366,6 +368,25 @@ const GENERATED_COMPANY_COUNT = 12;
 const JOBS_PER_COMPANY = 3;
 const GENERATED_TALENT_COUNT = 260;
 
+/**
+ * Pesos por eixo para uma vaga do pano de fundo.
+ *
+ * Não são aleatórios a cada render: saem do mesmo gerador semeado das demais
+ * decisões da base. A distribuição deixa o peso alto minoritário de propósito
+ * — se toda vaga priorizasse todos os eixos, a prioridade não separaria nada
+ * e as telas de triagem por prontidão ficariam sem contraste.
+ */
+function buildAxisWeights(
+  random: () => number
+): Partial<Record<FitAxisId, AxisWeight>> {
+  const weights: Partial<Record<FitAxisId, AxisWeight>> = {};
+  for (const axis of FIT_AXES) {
+    const draw = random();
+    weights[axis.id] = draw > 0.75 ? 'alto' : draw > 0.3 ? 'medio' : 'baixo';
+  }
+  return weights;
+}
+
 function buildCriteria(jobId: string, random: () => number): JobCriterion[] {
   const count = 6 + Math.floor(random() * 3);
   return CRITERION_POOL.slice(0, count).map((entry, index) => ({
@@ -454,6 +475,11 @@ function build(): GeneratedBase {
         organizationalContext:
           'Contexto organizacional informado pela empresa na base demo.',
         criteria: buildCriteria(jobId, random),
+        axisWeights: buildAxisWeights(random),
+        // O pano de fundo não traz proposta assistida: ela é um trecho real de
+        // um texto real, e inventar citação para centenas de vagas fictícias
+        // encheria a base de evidência sem lastro.
+        axisWeightSuggestions: [],
         externalRef: {
           system: 'Empregare — demonstração',
           account: `ACC-${companyId}`,

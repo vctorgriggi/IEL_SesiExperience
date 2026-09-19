@@ -4,6 +4,7 @@ import {
   getCoverage,
   getCriterionAnalysis
 } from '../analysis/criterion-states';
+import { getFitInsights } from '../analysis/fit-insights';
 import {
   buildInitialDemoState,
   COMPARISON_LIMIT,
@@ -13,10 +14,12 @@ import {
   DEMO_TALENTS,
   findClarificationTemplate
 } from '../fixtures';
-import type { DemoState } from '../types';
+import type { DemoState, Job } from '../types';
 import { applySyncEventPayload, demoReducer, type DemoAction } from './reducer';
 import {
   getApplication,
+  getAxisWeight,
+  getAxisWeights,
   getClarification,
   getCultureAttentionPoints,
   getCultureReading,
@@ -25,10 +28,13 @@ import {
   getJob,
   getOpenClarifications,
   getOverviewMetrics,
+  getPendingAxisWeightSuggestion,
   getReusedEvidences,
   getTalentJourney,
   getTalentTransparency,
-  getVisibleTalentIds
+  getVisibleTalentIds,
+  getWeightLearning,
+  WEIGHT_LEARNING_MIN_OCCURRENCES
 } from './selectors';
 
 const AT = '2026-09-15T10:00:00.000Z';
@@ -903,5 +909,291 @@ describe('devolutiva ao candidato', () => {
     expect(view.records.every((record) => record.talentId === 'ANA')).toBe(
       true
     );
+  });
+});
+
+describe('peso dos eixos declarado pela empresa', () => {
+  it('trata eixo sem peso declarado como médio, e não como irrelevante', () => {
+    const state = buildInitialDemoState();
+    const job = getJob('VAG-01')!;
+
+    // Nenhuma vaga gerada precisa declarar os cinco eixos, e a base curada
+    // pode deixar um de fora. Silêncio da empresa não é prioridade baixa: é
+    // ausência de decisão, e o padrão precisa refletir isso.
+    const semDeclaracao: Job = { ...job, axisWeights: {} };
+    expect(getAxisWeight(semDeclaracao, 'apoio-inicial')).toBe('medio');
+    expect(getAxisWeight(semDeclaracao, 'aprendizado', state)).toBe('medio');
+  });
+
+  it('carrega os pesos curados da vaga 1, onde a história acontece', () => {
+    const job = getJob('VAG-01')!;
+
+    // É nestes dois eixos que a expectativa de Ana não encontra a condição da
+    // equipe. Declará-los prioritários é o que faz a leitura mostrar a
+    // diferença em vez de diluí-la entre cinco eixos equivalentes.
+    expect(getAxisWeight(job, 'apoio-inicial')).toBe('alto');
+    expect(getAxisWeight(job, 'autonomia')).toBe('alto');
+    expect(getAxisWeight(job, 'aprendizado')).toBe('baixo');
+
+    // A proposta assistida nasce pendente e cita um trecho real do texto da
+    // vaga: confirmar no escuro não seria supervisão humana.
+    const state = buildInitialDemoState();
+    const pendente = getPendingAxisWeightSuggestion(
+      state,
+      job,
+      'apoio-inicial'
+    )!;
+    expect(pendente.weight).toBe('alto');
+    expect(job.organizationalContext).toContain(pendente.excerpt);
+  });
+
+  it('grava o peso definido pela empresa, registra no histórico e encerra a proposta', () => {
+    let state = buildInitialDemoState();
+    const job = getJob('VAG-01')!;
+
+    expect(
+      getPendingAxisWeightSuggestion(state, job, 'apoio-inicial')
+    ).not.toBeNull();
+
+    state = demoReducer(state, {
+      type: 'set-axis-weight',
+      jobId: 'VAG-01',
+      axisId: 'apoio-inicial',
+      weight: 'medio',
+      at: AT
+    });
+
+    // A correção da empresa vence a fixture: é a decisão mais recente, e tem
+    // autor e hora.
+    expect(getAxisWeight(job, 'apoio-inicial', state)).toBe('medio');
+    expect(state.history[0]!.action).toBe('Peso do eixo definido pela empresa');
+    expect(state.history[0]!.entityRef).toBe('VAG-01');
+
+    // Respondido o eixo, a proposta deixa de ser pendente — mesmo contrato do
+    // traçado cultural.
+    expect(
+      getPendingAxisWeightSuggestion(state, job, 'apoio-inicial')
+    ).toBeNull();
+
+    // Os demais eixos e as demais vagas não são afetados.
+    expect(getAxisWeight(job, 'autonomia', state)).toBe('alto');
+    expect(getAxisWeight(getJob('VAG-02')!, 'aprendizado', state)).toBe('alto');
+  });
+
+  it('leva o peso para dentro da leitura de aderência sem mudar o resto dela', () => {
+    const state = buildInitialDemoState();
+    const reading = getFitReading(state, getJob('VAG-01')!, 'ANA');
+
+    const apoio = reading.find((entry) => entry.axis.id === 'apoio-inicial')!;
+    expect(apoio.weight).toBe('alto');
+    // O peso ordena a atenção; não altera o estado lido no eixo.
+    expect(apoio.state).toBe('sem-informacao');
+  });
+});
+
+describe('leitura assistida dos eixos', () => {
+  it('põe a divergência em eixo prioritário antes de qualquer aderência', () => {
+    let state = buildInitialDemoState();
+
+    // A divergência de Ana em apoio inicial só existe depois que o gestor
+    // responde: antes disso o lado da empresa está vazio.
+    state = askManagerAboutSupport(state);
+    const created = state.clarifications.at(-1)!;
+    state = run(
+      state,
+      {
+        type: 'answer-clarification',
+        clarificationId: created.id,
+        answer: created.preparedAnswer ?? 'Resposta preparada do cenário.',
+        declined: false,
+        at: AT
+      },
+      {
+        type: 'incorporate-clarification',
+        clarificationId: created.id,
+        at: AT,
+        decisions: created.effects.map((effect) => ({
+          applicationId: effect.applicationId,
+          criterionId: effect.criterionId,
+          state: effect.suggestedState,
+          note: effect.note
+        }))
+      }
+    );
+
+    const job = getJob('VAG-01')!;
+    const insights = getFitInsights(
+      getFitReading(state, job, 'ANA'),
+      getAxisWeights(state, job)
+    );
+
+    const atencao = insights.findIndex(
+      (insight) => insight.axisId === 'apoio-inicial'
+    );
+    expect(insights[atencao]!.kind).toBe('atencao');
+    // O texto descreve o encontro dos dois lados, nunca a pessoa.
+    expect(insights[atencao]!.title).toContain('não coincidem');
+
+    const forte = insights.findIndex((insight) => insight.kind === 'forte');
+    if (forte >= 0) expect(atencao).toBeLessThan(forte);
+
+    // Nenhuma leitura vira lista infinita: no máximo cinco itens.
+    expect(insights.length).toBeLessThanOrEqual(5);
+  });
+
+  it('aponta como lacuna o eixo prioritário em que falta o lado da pessoa', () => {
+    const state = buildInitialDemoState();
+    const job = getJob('VAG-01')!;
+
+    // Ana não declarou nada sobre autonomia, e a vaga marcou esse eixo como
+    // prioritário: é exatamente o que uma coleta dirigida resolveria.
+    const insights = getFitInsights(
+      getFitReading(state, job, 'ANA'),
+      getAxisWeights(state, job)
+    );
+
+    const lacuna = insights.find((insight) => insight.axisId === 'autonomia')!;
+    expect(lacuna.kind).toBe('lacuna');
+    expect(lacuna.detail).toContain('coleta dirigida');
+
+    // Comunicação de prioridades também falta do lado da pessoa, mas a vaga
+    // dá peso médio a esse eixo: não vira alarme.
+    expect(
+      insights.some((insight) => insight.axisId === 'comunicacao-prioridades')
+    ).toBe(false);
+  });
+});
+
+describe('aprendizado dos processos sobre o peso dos eixos', () => {
+  /** Leva Ana ao desfecho "não avançar" na vaga 1, com divergência em apoio. */
+  function declineAnaOnJobOne(initial: DemoState): DemoState {
+    let state = askManagerAboutSupport(initial);
+    const created = state.clarifications.at(-1)!;
+    state = run(
+      state,
+      {
+        type: 'answer-clarification',
+        clarificationId: created.id,
+        answer: created.preparedAnswer ?? 'Resposta preparada do cenário.',
+        declined: false,
+        at: AT
+      },
+      {
+        type: 'incorporate-clarification',
+        clarificationId: created.id,
+        at: AT,
+        decisions: created.effects.map((effect) => ({
+          applicationId: effect.applicationId,
+          criterionId: effect.criterionId,
+          state: effect.suggestedState,
+          note: effect.note
+        }))
+      },
+      {
+        type: 'register-referral',
+        at: AT,
+        input: {
+          jobId: 'VAG-01',
+          companyId: 'EMP-01',
+          message: 'Encaminhamento de 1 perfil.',
+          items: [
+            {
+              applicationId: 'CAND-01',
+              justification: 'Experiência de conferência registrada.',
+              sharedEvidenceIds: ['EVD-ANA-01'],
+              summary: 'Ana Ribeiro.',
+              attentionPoints: [],
+              suggestedQuestions: []
+            }
+          ]
+        }
+      }
+    );
+
+    return demoReducer(state, {
+      type: 'manager-decision',
+      referralId: state.referrals[0]!.id,
+      applicationId: 'CAND-01',
+      decision: 'nao-avancar',
+      note: 'Precisamos de alguém que execute a rotina sem acompanhamento.',
+      at: AT
+    });
+  }
+
+  it('propõe elevar o peso do eixo em que os processos recusados divergiam', () => {
+    let state = buildInitialDemoState();
+
+    // A empresa havia rebaixado o eixo; os processos dizem outra coisa. É
+    // este o padrão que a central identifica — e só propõe.
+    state = demoReducer(state, {
+      type: 'set-axis-weight',
+      jobId: 'VAG-01',
+      axisId: 'apoio-inicial',
+      weight: 'medio',
+      at: AT
+    });
+    state = declineAnaOnJobOne(state);
+
+    const learning = getWeightLearning(state, 'VAG-01');
+    const apoio = learning.find((entry) => entry.axisId === 'apoio-inicial')!;
+
+    expect(apoio.occurrences).toBeGreaterThanOrEqual(
+      WEIGHT_LEARNING_MIN_OCCURRENCES
+    );
+    expect(apoio.suggestedWeight).toBe('alto');
+    expect(apoio.rationale).toContain('divergência');
+
+    // A proposta não se aplica sozinha: o peso continua o que a empresa
+    // definiu até alguém confirmar.
+    expect(getAxisWeight(getJob('VAG-01')!, 'apoio-inicial', state)).toBe(
+      'medio'
+    );
+
+    state = demoReducer(state, {
+      type: 'set-axis-weight',
+      jobId: 'VAG-01',
+      axisId: apoio.axisId,
+      weight: apoio.suggestedWeight,
+      at: AT
+    });
+    expect(getAxisWeight(getJob('VAG-01')!, 'apoio-inicial', state)).toBe(
+      'alto'
+    );
+    // Confirmado, o padrão sai da lista: propor de novo o que já vale seria
+    // ruído.
+    expect(
+      getWeightLearning(state, 'VAG-01').some(
+        (entry) => entry.axisId === 'apoio-inicial'
+      )
+    ).toBe(false);
+  });
+
+  it('não enxerga padrão onde nenhum processo foi recusado', () => {
+    let state = buildInitialDemoState();
+    expect(getWeightLearning(state, 'VAG-01')).toEqual([]);
+
+    // Um encaminhamento sem decisão da empresa também não é padrão: o
+    // aprendizado vem do desfecho, não do envio.
+    state = demoReducer(state, {
+      type: 'register-referral',
+      at: AT,
+      input: {
+        jobId: 'VAG-01',
+        companyId: 'EMP-01',
+        message: 'Encaminhamento de 1 perfil.',
+        items: [
+          {
+            applicationId: 'CAND-01',
+            justification: 'Experiência de conferência registrada.',
+            sharedEvidenceIds: ['EVD-ANA-01'],
+            summary: 'Ana Ribeiro.',
+            attentionPoints: [],
+            suggestedQuestions: []
+          }
+        ]
+      }
+    });
+
+    expect(getWeightLearning(state, 'VAG-01')).toEqual([]);
   });
 });

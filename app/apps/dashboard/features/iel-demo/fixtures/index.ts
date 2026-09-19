@@ -13,7 +13,7 @@ import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 2;
+export const DEMO_SCHEMA_VERSION = 3;
 
 const GENERATED = getGeneratedBase();
 
@@ -132,6 +132,7 @@ export function buildInitialDemoState(): DemoState {
     evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
     teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
     cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
+    axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
     history: clone(INITIAL_HISTORY),

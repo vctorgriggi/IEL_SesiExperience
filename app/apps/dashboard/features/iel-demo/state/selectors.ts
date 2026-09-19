@@ -12,7 +12,7 @@ import {
   type CultureQuestion,
   type CultureRespondent
 } from '../analysis/culture';
-import { FIT_AXES, type FitAxis } from '../analysis/fit-axes';
+import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
   ALL_COMPANIES,
   ALL_JOBS,
@@ -25,6 +25,8 @@ import {
 import { plural } from '../format';
 import type {
   Application,
+  AxisWeight,
+  AxisWeightSuggestion,
   Clarification,
   Company,
   CriterionRef,
@@ -785,12 +787,156 @@ export function getReusedEvidences(
     .filter((entry) => entry.jobs.length > 1);
 }
 
+/**
+ * Peso de um eixo nesta vaga.
+ *
+ * A vaga é catálogo estático e o peso pode ser corrigido durante a
+ * demonstração, então há duas camadas: o que a empresa declarou na base e o
+ * que alguém confirmou ou corrigiu depois. O estado, quando informado, vence
+ * — é a decisão mais recente, e tem autor e hora no histórico.
+ *
+ * Ausente dos dois lados, vale `'medio'`: um eixo sem peso declarado não é um
+ * eixo sem importância, é um eixo sobre o qual a empresa ainda não se
+ * pronunciou. Tratá-lo como baixo silenciaria o que ninguém decidiu.
+ */
+export function getAxisWeight(
+  job: Job,
+  axisId: FitAxisId,
+  state?: DemoState
+): AxisWeight {
+  return (
+    state?.axisWeights?.[job.id]?.[axisId] ?? job.axisWeights[axisId] ?? 'medio'
+  );
+}
+
+export const AXIS_WEIGHT_LABEL: Record<AxisWeight, string> = {
+  alto: 'peso alto',
+  medio: 'peso médio',
+  baixo: 'peso baixo'
+};
+
+/** Os cinco pesos da vaga, já com as correções registradas na demonstração. */
+export function getAxisWeights(
+  state: DemoState,
+  job: Job
+): Record<FitAxisId, AxisWeight> {
+  const weights = {} as Record<FitAxisId, AxisWeight>;
+  for (const axis of FIT_AXES) {
+    weights[axis.id] = getAxisWeight(job, axis.id, state);
+  }
+  return weights;
+}
+
+/**
+ * Proposta de peso ainda pendente num eixo.
+ *
+ * Deixa de ser pendente no instante em que alguém confirma ou corrige — é o
+ * mesmo contrato do traçado cultural, e a razão dele: a proposta informa a
+ * decisão, nunca a substitui.
+ */
+export function getPendingAxisWeightSuggestion(
+  state: DemoState,
+  job: Job,
+  axisId: FitAxisId
+): AxisWeightSuggestion | null {
+  if (state.axisWeights?.[job.id]?.[axisId]) return null;
+  return (
+    job.axisWeightSuggestions.find(
+      (suggestion) => suggestion.axisId === axisId
+    ) ?? null
+  );
+}
+
+/**
+ * Quantos desfechos "não avançar" com divergência no mesmo eixo bastam para
+ * a central propor um ajuste de peso.
+ *
+ * Em operação o limiar seria maior: dois processos não fazem um padrão, e o
+ * enunciado pede que resultados virem aprendizado sem virar superstição. Na
+ * base curada há um único encaminhamento recusado por vez durante o roteiro,
+ * então o limiar fica em 1 para que a demonstração tenha o que mostrar. É um
+ * parâmetro, explicitamente, e não uma regra escondida no código.
+ */
+export const WEIGHT_LEARNING_MIN_OCCURRENCES = 1;
+
+export type WeightLearning = {
+  axisId: FitAxisId;
+  /** Encaminhamentos recusados que tinham divergência neste eixo. */
+  occurrences: number;
+  suggestedWeight: AxisWeight;
+  rationale: string;
+};
+
+/**
+ * O que os processos desta vaga sugerem sobre as prioridades dela.
+ *
+ * O enunciado pede usar "informações e resultados dos processos para
+ * identificar padrões". A referência de mercado ajusta os pesos sozinha; aqui
+ * não. Ajuste automático transforma um punhado de recusas em regra
+ * permanente, e ninguém consegue depois explicar por que o sistema passou a
+ * priorizar um eixo — que é exatamente a opacidade que o desafio manda
+ * evitar. Então a central identifica o padrão, diz em quantos casos ele
+ * aparece, e deixa a empresa decidir.
+ *
+ * A leitura de fit usada é a atual, não um retrato do momento da decisão: a
+ * base demo não versiona análises. Em produção o padrão se apoiaria no
+ * snapshot congelado no encaminhamento.
+ */
+export function getWeightLearning(
+  state: DemoState,
+  jobId: string
+): WeightLearning[] {
+  const job = getJob(jobId);
+  if (!job) return [];
+
+  const declined = state.referrals
+    .filter(
+      (referral) => referral.state === 'registrado' && referral.jobId === jobId
+    )
+    .flatMap((referral) => referral.items)
+    .filter((item) => item.managerDecision === 'nao-avancar');
+
+  if (declined.length === 0) return [];
+
+  const occurrences = new Map<FitAxisId, number>();
+  for (const item of declined) {
+    const application = state.applications.find(
+      (entry) => entry.id === item.applicationId
+    );
+    if (!application) continue;
+
+    for (const entry of getFitReading(state, job, application.talentId)) {
+      if (entry.state !== 'divergencia') continue;
+      occurrences.set(entry.axis.id, (occurrences.get(entry.axis.id) ?? 0) + 1);
+    }
+  }
+
+  return FIT_AXES.map((axis) => ({
+    axis,
+    count: occurrences.get(axis.id) ?? 0
+  }))
+    .filter(
+      (entry) =>
+        entry.count >= WEIGHT_LEARNING_MIN_OCCURRENCES &&
+        // Propor o que já vale seria ruído: o eixo já está priorizado.
+        getAxisWeight(job, entry.axis.id, state) !== 'alto'
+    )
+    .map((entry) => ({
+      axisId: entry.axis.id,
+      occurrences: entry.count,
+      suggestedWeight: 'alto' as AxisWeight,
+      rationale: `Em ${entry.count} ${entry.count === 1 ? 'encaminhamento que não avançou' : 'encaminhamentos que não avançaram'} nesta vaga, a leitura apontava divergência em ${entry.axis.label.toLowerCase()}. Elevar o peso faz esse eixo ser esclarecido antes do encaminhamento, não depois.`
+    }));
+}
+
 export type FitReadingEntry = {
   axis: FitAxis;
   /** O que a equipe informou neste eixo, se informou. */
   condition: TeamCondition | null;
   /** O que a pessoa declarou neste eixo, se declarou. */
   preference: TalentPreference | null;
+  /** Peso que a empresa deu a este eixo nesta vaga. */
+  weight: AxisWeight;
   /** Leitura do encontro entre os dois lados. */
   state: CriterionState;
   /** De qual lado falta informação, quando falta. */
@@ -823,6 +969,7 @@ export function getFitReading(
   const talent = getTalent(talentId);
 
   return FIT_AXES.map((axis) => {
+    const weight = getAxisWeight(job, axis.id, state);
     const record =
       team?.conditions.find((entry) => entry.axisId === axis.id) ?? null;
     // Um registro que apenas marca a pergunta em aberto não é um lado
@@ -836,6 +983,7 @@ export function getFitReading(
         axis,
         condition,
         preference,
+        weight,
         state: 'sem-informacao' as CriterionState,
         missingSide: 'ambos' as const
       };
@@ -846,6 +994,7 @@ export function getFitReading(
         axis,
         condition,
         preference,
+        weight,
         state: 'sem-informacao' as CriterionState,
         missingSide: 'candidato' as const
       };
@@ -856,6 +1005,7 @@ export function getFitReading(
         axis,
         condition,
         preference,
+        weight,
         state: 'sem-informacao' as CriterionState,
         missingSide: 'empresa' as const
       };
@@ -874,6 +1024,7 @@ export function getFitReading(
         axis,
         condition,
         preference,
+        weight,
         state: 'divergencia' as CriterionState,
         missingSide: null
       };
@@ -883,6 +1034,7 @@ export function getFitReading(
       axis,
       condition,
       preference,
+      weight,
       state: (condition.status === 'confirmado'
         ? 'alinhamento'
         : 'a-esclarecer') as CriterionState,

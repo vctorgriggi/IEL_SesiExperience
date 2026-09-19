@@ -181,6 +181,39 @@ export type JobCriterion = {
   confirmedBy: string;
 };
 
+/**
+ * Peso que a empresa dá a um eixo de aderência nesta vaga.
+ *
+ * Existe porque o mesmo eixo não pesa igual em toda vaga: numa operação de
+ * turno sem sobreposição, o apoio inicial decide a rotina; numa vaga de
+ * escritório com colega ao lado, ele é secundário. Sem essa declaração, ou a
+ * leitura trata os cinco eixos como equivalentes — e some justamente o que
+ * a empresa considera crítico — ou alguém inventa uma ponderação escondida.
+ *
+ * O peso é declarado, não calculado, e pertence à empresa. Ele ordena a
+ * leitura e a atenção; nunca vira multiplicador de nota, porque nota global
+ * não existe neste produto.
+ */
+export type AxisWeight = 'alto' | 'medio' | 'baixo';
+
+/**
+ * Proposta de peso feita pela análise assistida a partir da descrição da vaga.
+ *
+ * Mesmo contrato de `CultureSuggestion`: a análise lê o texto que a empresa
+ * já escreveu, propõe, mostra o trecho que sustenta e fica pendente até
+ * alguém confirmar ou corrigir. O enunciado exige supervisão humana; uma
+ * proposta que se aplica sozinha seria o ajuste automático de pesos que
+ * decidimos não reproduzir.
+ */
+export type AxisWeightSuggestion = {
+  axisId: FitAxisId;
+  weight: AxisWeight;
+  /** Trecho do texto da vaga que sustenta a proposta. */
+  excerpt: string;
+  sourceLabel: string;
+  sourceId: DataSourceId;
+};
+
 export type JobStage = 'aberta' | 'em-selecao' | 'encerrada';
 
 export type ExternalRef = {
@@ -201,6 +234,10 @@ export type Job = {
   essentialRequirements: string[];
   organizationalContext: string;
   criteria: JobCriterion[];
+  /** Peso declarado pela empresa por eixo. Ausente vale como 'medio'. */
+  axisWeights: Partial<Record<FitAxisId, AxisWeight>>;
+  /** O que a análise assistida propôs a partir do texto da vaga. */
+  axisWeightSuggestions: AxisWeightSuggestion[];
   externalRef: ExternalRef;
   /** Última atualização simulada recebida da origem. */
   updatedAt: string;
@@ -431,6 +468,18 @@ export type DemoState = {
   evidences: Evidence[];
   teams: Team[];
   cultureAnswers: CultureAnswer[];
+  /**
+   * Pesos confirmados ou corrigidos pela empresa durante a demonstração,
+   * por vaga. Ficam no estado, e não na fixture, porque a vaga é catálogo
+   * estático: a confirmação é ação de alguém, tem autor e hora, e precisa
+   * sobreviver ao recarregamento junto do resto do progresso.
+   *
+   * Opcional porque há recortes parciais de `DemoState` montados para
+   * operações que não leem peso nenhum (o provedor determinístico do
+   * assistente, por exemplo). Ausente equivale a "ninguém corrigiu nada": a
+   * leitura cai no peso declarado na vaga.
+   */
+  axisWeights?: Record<string, Partial<Record<FitAxisId, AxisWeight>>>;
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];
