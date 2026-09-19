@@ -21,6 +21,8 @@ import {
   getJob,
   getOpenClarifications,
   getOverviewMetrics,
+  getReusedEvidences,
+  getTalentJourney,
   getVisibleTalentIds
 } from './selectors';
 
@@ -575,5 +577,105 @@ describe('indicadores, integração e reset', () => {
     const note = state.evidences.at(-1)!;
     expect(note.visibility).toBe('interno');
     expect(note.links).toEqual([]);
+  });
+});
+
+describe('trajetória entre processos', () => {
+  it('reúne as candidaturas da pessoa em ordem, da mais recente para a mais antiga', () => {
+    const state = buildInitialDemoState();
+    const journey = getTalentJourney(state, 'ANA');
+
+    // Ana participa de dois processos: é o caso que mostra a mesma pessoa
+    // lida em contextos diferentes.
+    expect(journey).toHaveLength(2);
+    expect(journey.map((entry) => entry.application.jobId)).toEqual([
+      'VAG-01',
+      'VAG-02'
+    ]);
+    expect(
+      journey[0]!.application.appliedAt >= journey[1]!.application.appliedAt
+    ).toBe(true);
+    expect(journey.every((entry) => entry.outcome === 'em-analise')).toBe(true);
+  });
+
+  it('registra o desfecho e a justificativa que a empresa devolveu', () => {
+    let state = buildInitialDemoState();
+
+    state = demoReducer(state, {
+      type: 'register-referral',
+      at: AT,
+      input: {
+        jobId: 'VAG-02',
+        companyId: 'EMP-02',
+        message: 'Encaminhamento de 1 perfil.',
+        items: [
+          {
+            applicationId: 'CAND-05',
+            justification: 'Experiência relacionada e interesse declarado.',
+            sharedEvidenceIds: ['EVD-ANA-01'],
+            summary: 'Ana Ribeiro.',
+            attentionPoints: [],
+            suggestedQuestions: []
+          }
+        ]
+      }
+    });
+
+    expect(
+      getTalentJourney(state, 'ANA').find(
+        (entry) => entry.application.jobId === 'VAG-02'
+      )?.outcome
+    ).toBe('encaminhada');
+
+    state = demoReducer(state, {
+      type: 'manager-decision',
+      referralId: state.referrals[0]!.id,
+      applicationId: 'CAND-05',
+      decision: 'nao-avancar',
+      note: 'Buscamos alguém que já execute a rotina sem acompanhamento.',
+      at: AT
+    });
+
+    const entry = getTalentJourney(state, 'ANA').find(
+      (item) => item.application.jobId === 'VAG-02'
+    )!;
+
+    // O resultado do processo fica registrado com o motivo: é o que permite
+    // que a próxima conexão aprenda com esta.
+    expect(entry.outcome).toBe('nao-avancou');
+    expect(entry.managerNote).toContain('sem acompanhamento');
+    expect(entry.decidedAt).toBe(AT);
+
+    // A outra candidatura da mesma pessoa não é afetada.
+    expect(
+      getTalentJourney(state, 'ANA').find(
+        (item) => item.application.jobId === 'VAG-01'
+      )?.outcome
+    ).toBe('em-analise');
+  });
+
+  it('aponta os registros que serviram a mais de um processo da pessoa', () => {
+    const state = buildInitialDemoState();
+    const reused = getReusedEvidences(state, 'ANA');
+
+    expect(reused.length).toBeGreaterThan(0);
+    for (const entry of reused) {
+      expect(entry.jobs.length).toBeGreaterThan(1);
+    }
+
+    // O registro do currículo sustenta critérios das duas vagas: a informação
+    // foi coletada uma vez e não precisou ser pedida de novo.
+    const curriculum = reused.find(
+      (entry) => entry.evidence.id === 'EVD-ANA-01'
+    );
+    expect(curriculum?.jobs.map((job) => job.id).sort()).toEqual([
+      'VAG-01',
+      'VAG-02'
+    ]);
+  });
+
+  it('não inventa reaproveitamento para quem tem um processo só', () => {
+    const state = buildInitialDemoState();
+    expect(getReusedEvidences(state, 'BRUNO')).toHaveLength(0);
   });
 });

@@ -11,7 +11,6 @@ import {
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  EXTERNAL_STAGE_LABEL,
   getApplicationsByTalent,
   getAssessments,
   getCompany,
@@ -21,8 +20,7 @@ import {
   getJob,
   getReferralListSelection,
   getSourceBreakdown,
-  getTalent,
-  REFERRAL_STAGE_LABEL
+  getTalent
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Dimension, JobCriterion } from '@/features/iel-demo/types';
@@ -54,6 +52,7 @@ import {
   SourceBreakdownBar,
   SourceDot
 } from '../shared/ui';
+import { TalentJourney } from './talent-journey';
 
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const { state, dispatch, persona } = useIelDemo();
@@ -422,60 +421,7 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Candidaturas deste perfil
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <ul className="space-y-2">
-                {applications.map((application) => {
-                  const applicationJob = getJob(application.jobId);
-                  const applicationCompany = applicationJob
-                    ? getCompany(applicationJob.companyId)
-                    : null;
-                  return (
-                    <li
-                      key={application.id}
-                      className="flex flex-col gap-2 rounded-[var(--control-radius)] border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {applicationJob?.title}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {applicationCompany?.name} · inscrição em{' '}
-                          {formatDate(application.appliedAt)} ·{' '}
-                          {application.externalRef.id}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          <Chip>
-                            {EXTERNAL_STAGE_LABEL[application.externalStage]}
-                          </Chip>
-                          <Chip tone="info">
-                            {REFERRAL_STAGE_LABEL[application.referralStage]}
-                          </Chip>
-                        </div>
-                      </div>
-                      <Link
-                        href={iel.talents
-                          .byId(talent.id)
-                          .inJob(application.jobId)}
-                      >
-                        <Button
-                          size="sm"
-                          variant="outline"
-                        >
-                          Ver análise nesta vaga
-                        </Button>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </CardContent>
-          </Card>
+          <TalentJourney talentId={talent.id} />
 
           <Card>
             <CardHeader>

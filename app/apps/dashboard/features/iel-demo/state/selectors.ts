@@ -1,7 +1,8 @@
 import {
   CRITERION_STATE_META,
   getCoverage,
-  getCriterionAnalysis
+  getCriterionAnalysis,
+  type CoverageSummary
 } from '../analysis/criterion-states';
 import {
   ALL_COMPANIES,
@@ -650,4 +651,123 @@ export function getCandidateFilterCounts(
     ).length;
   }
   return counts;
+}
+
+export type JourneyOutcome =
+  | 'em-analise'
+  | 'encaminhada'
+  | 'quero-entrevistar'
+  | 'nao-avancou';
+
+export const JOURNEY_OUTCOME_LABEL: Record<JourneyOutcome, string> = {
+  'em-analise': 'Em análise no IEL',
+  encaminhada: 'Encaminhada, aguardando retorno',
+  'quero-entrevistar': 'Empresa quis entrevistar',
+  'nao-avancou': 'Empresa não avançou'
+};
+
+export type JourneyEntry = {
+  application: Application;
+  job: Job | null;
+  company: Company | null;
+  outcome: JourneyOutcome;
+  /** Justificativa operacional registrada pela empresa, quando houver. */
+  managerNote: string | null;
+  decidedAt: string | null;
+  coverage: CoverageSummary;
+  clarifications: Clarification[];
+};
+
+/**
+ * A trajetória de uma pessoa entre processos.
+ *
+ * O enunciado trata como efeito do problema a "dificuldade de transformar os
+ * resultados dos processos em aprendizado": cada seleção termina e o que se
+ * aprendeu com ela não alcança a próxima. Aqui as candidaturas da mesma pessoa
+ * aparecem em sequência, com o que cada uma produziu — o que a empresa
+ * respondeu e por quê.
+ *
+ * Isto é o percurso da pessoa entre oportunidades. Acompanhamento após a
+ * contratação está fora do escopo definido para este protótipo.
+ */
+export function getTalentJourney(
+  state: DemoState,
+  talentId: string
+): JourneyEntry[] {
+  const applications = getApplicationsByTalent(state, talentId);
+
+  return applications
+    .map((application) => {
+      const job = getJob(application.jobId);
+      const referralItem = state.referrals
+        .filter((referral) => referral.state === 'registrado')
+        .flatMap((referral) => referral.items)
+        .find((item) => item.applicationId === application.id);
+
+      let outcome: JourneyOutcome = 'em-analise';
+      if (referralItem?.managerDecision === 'quero-entrevistar') {
+        outcome = 'quero-entrevistar';
+      } else if (referralItem?.managerDecision === 'nao-avancar') {
+        outcome = 'nao-avancou';
+      } else if (referralItem) {
+        outcome = 'encaminhada';
+      }
+
+      return {
+        application,
+        job,
+        company: job ? getCompany(job.companyId) : null,
+        outcome,
+        managerNote: referralItem?.managerNote ?? null,
+        decidedAt: referralItem?.decidedAt ?? null,
+        coverage: job
+          ? getCoverage(job, state.analysis, application.id)
+          : { withInformation: 0, total: 0, missing: [] },
+        clarifications: getClarificationsByApplication(state, application.id)
+      };
+    })
+    .sort((a, b) =>
+      a.application.appliedAt < b.application.appliedAt ? 1 : -1
+    );
+}
+
+export type ReusedEvidence = {
+  evidence: Evidence;
+  /** Vagas da pessoa que este mesmo registro ajuda a analisar. */
+  jobs: Job[];
+};
+
+/**
+ * Registros que já serviram a mais de um processo da mesma pessoa.
+ *
+ * É a contrapartida concreta do "não pedir à pessoa que preencha tudo de
+ * novo": a informação foi coletada uma vez e sustentou análises em vagas
+ * diferentes, cada uma com o seu contexto.
+ */
+export function getReusedEvidences(
+  state: DemoState,
+  talentId: string
+): ReusedEvidence[] {
+  const applicationJobIds = new Set(
+    getApplicationsByTalent(state, talentId).map(
+      (application) => application.jobId
+    )
+  );
+
+  return state.evidences
+    .filter((evidence) => evidence.talentId === talentId)
+    .map((evidence) => {
+      const jobIds = new Set(
+        evidence.links
+          .map((link) => link.jobId)
+          .filter((jobId) => applicationJobIds.has(jobId))
+      );
+      return {
+        evidence,
+        jobs: [...jobIds]
+          .map((jobId) => getJob(jobId))
+          .filter((job): job is Job => job !== null)
+      };
+    })
+    .filter((entry) => entry.jobs.length > 1);
 }
