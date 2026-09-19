@@ -64,7 +64,38 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Marina Duarte',
     contactEmail: 'marina.duarte@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-28'
+    updatedAt: '2026-08-28',
+    cultureSuggestions: [
+      {
+        axisId: 'apoio-inicial',
+        optionId: 'troca-informal',
+        excerpt: 'comunicação direta entre as equipes',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      },
+      {
+        axisId: 'autonomia',
+        optionId: 'autonomia-ampla',
+        excerpt:
+          'A rotina é executada sem supervisão direta durante a maior parte do turno.',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'comunicacao-prioridades',
+        optionId: 'por-escrito',
+        excerpt: 'Checklist impresso entregue no início do turno.',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      },
+      {
+        axisId: 'ritmo-turno',
+        optionId: 'fixo',
+        excerpt: 'Turno da tarde (13h às 22h)',
+        sourceLabel: 'Descrição da vaga Assistente de Logística',
+        sourceId: 'FONTE-EMPREGARE'
+      }
+    ]
   },
   {
     id: 'EMP-02',
@@ -76,7 +107,24 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Rafael Nogueira',
     contactEmail: 'rafael.nogueira@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-30'
+    updatedAt: '2026-08-30',
+    cultureSuggestions: [
+      {
+        axisId: 'apoio-inicial',
+        optionId: 'acompanhamento-formal',
+        excerpt:
+          'Colega de referência acompanha a pessoa nas primeiras quatro semanas.',
+        sourceLabel: 'Contexto da equipe confirmado pelo gestor',
+        sourceId: 'FONTE-EMPRESA'
+      },
+      {
+        axisId: 'comunicacao-prioridades',
+        optionId: 'por-escrito',
+        excerpt: 'procedimentos escritos para movimentação de materiais',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      }
+    ]
   },
   {
     id: 'EMP-03',
@@ -88,7 +136,16 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Sônia Prado',
     contactEmail: 'sonia.prado@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-12'
+    updatedAt: '2026-08-12',
+    cultureSuggestions: [
+      {
+        axisId: 'autonomia',
+        optionId: 'autonomia-ampla',
+        excerpt: 'divisão informal de tarefas administrativas',
+        sourceLabel: 'Descrição institucional informada pela empresa',
+        sourceId: 'FONTE-EMPRESA'
+      }
+    ]
   }
 ];
 

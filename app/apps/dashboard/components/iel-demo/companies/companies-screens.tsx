@@ -28,6 +28,7 @@ import {
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import { Chip, formatDate, IelPageHeader } from '../shared/ui';
+import { CultureProfile } from './culture-profile';
 
 export function CompaniesScreen() {
   const { state } = useIelDemo();
@@ -161,6 +162,8 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           </span>
         </div>
       </IelPageHeader>
+
+      <CultureProfile companyId={company.id} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

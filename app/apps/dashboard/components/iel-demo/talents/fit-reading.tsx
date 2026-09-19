@@ -3,7 +3,9 @@
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getCompany,
+  getCultureReading,
   getFitReading,
+  type CultureAxisReading,
   type FitReadingEntry
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
@@ -68,7 +70,13 @@ function Side({
   );
 }
 
-function AxisRow({ entry }: { entry: FitReadingEntry }) {
+function AxisRow({
+  entry,
+  culture
+}: {
+  entry: FitReadingEntry;
+  culture: CultureAxisReading | undefined;
+}) {
   return (
     <li className="py-3">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -112,6 +120,22 @@ function AxisRow({ entry }: { entry: FitReadingEntry }) {
           }
         />
       </div>
+
+      {culture?.state === 'divergente' ? (
+        <p className="mt-2 ml-4 border-l-2 border-destructive/40 pl-3 text-xs leading-relaxed text-muted-foreground">
+          <span className="font-medium text-destructive">
+            A empresa se descreve de outro jeito neste eixo.
+          </span>{' '}
+          {culture.voices
+            .map(
+              (voice) =>
+                `${voice.respondent === 'equipe' ? 'a equipe' : 'a gestão'} responde “${voice.optionLabel}”`
+            )
+            .join(', e ')}
+          . A condição acima é a praticada nesta equipe — é ela que a pessoa
+          encontra no turno.
+        </p>
+      ) : null}
     </li>
   );
 }
@@ -134,6 +158,9 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
   const { state } = useIelDemo();
   const reading = getFitReading(state, job, talentId);
   const company = getCompany(job.companyId);
+  // O briefing separa a descrição institucional das condições da equipe e
+  // destaca justamente quando elas não coincidem.
+  const culture = getCultureReading(state, job.companyId);
 
   const withBothSides = reading.filter(
     (entry) => entry.missingSide === null
@@ -164,6 +191,9 @@ export function FitReading({ job, talentId }: { job: Job; talentId: string }) {
             <AxisRow
               key={entry.axis.id}
               entry={entry}
+              culture={culture.find(
+                (item) => item.question.axisId === entry.axis.id
+              )}
             />
           ))}
         </ul>

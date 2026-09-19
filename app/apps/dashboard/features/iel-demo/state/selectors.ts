@@ -4,6 +4,14 @@ import {
   getCriterionAnalysis,
   type CoverageSummary
 } from '../analysis/criterion-states';
+import {
+  CULTURE_QUESTIONS,
+  getCultureOptionLabel,
+  MIN_TEAM_RESPONSES,
+  type CultureOptionId,
+  type CultureQuestion,
+  type CultureRespondent
+} from '../analysis/culture';
 import { FIT_AXES, type FitAxis } from '../analysis/fit-axes';
 import {
   ALL_COMPANIES,
@@ -21,6 +29,7 @@ import type {
   Company,
   CriterionRef,
   CriterionState,
+  CultureSuggestion,
   DataSourceId,
   DemoState,
   Dimension,
@@ -907,5 +916,126 @@ export function getFitGaps(
   return getFitReading(state, job, talentId).filter(
     (entry) =>
       entry.missingSide === 'candidato' || entry.missingSide === 'ambos'
+  );
+}
+
+export type CultureAxisState =
+  | 'convergente'
+  | 'divergente'
+  | 'apenas-gestao'
+  | 'consulta-insuficiente'
+  | 'sem-resposta';
+
+export const CULTURE_AXIS_STATE_LABEL: Record<CultureAxisState, string> = {
+  convergente: 'Respostas convergem',
+  divergente: 'Gestão e equipe divergem',
+  'apenas-gestao': 'Só a gestão respondeu',
+  'consulta-insuficiente': 'Consulta à equipe sem base suficiente',
+  'sem-resposta': 'Ninguém respondeu ainda'
+};
+
+export type CultureVoice = {
+  respondent: CultureRespondent;
+  /** Alternativa mais respondida por este papel. */
+  optionId: CultureOptionId;
+  optionLabel: string;
+  /** Respostas nesta alternativa e total do papel. */
+  count: number;
+  total: number;
+};
+
+export type CultureAxisReading = {
+  question: CultureQuestion;
+  voices: CultureVoice[];
+  state: CultureAxisState;
+  /** Proposta da análise ainda não confirmada por ninguém. */
+  pendingSuggestion: CultureSuggestion | null;
+};
+
+/**
+ * Leitura do traçado cultural de uma empresa, eixo a eixo.
+ *
+ * Nunca reduz os papéis a um valor só. Se a gestão diz uma coisa e a equipe
+ * diz outra, as duas aparecem e o eixo é marcado como divergente — o enunciado
+ * pede redução de vieses, e média entre quem manda e quem executa apaga
+ * exatamente o viés que interessa ver.
+ */
+export function getCultureReading(
+  state: DemoState,
+  companyId: string
+): CultureAxisReading[] {
+  const company = getCompany(companyId);
+  const answers = state.cultureAnswers.filter(
+    (answer) => answer.companyId === companyId
+  );
+
+  return CULTURE_QUESTIONS.map((question) => {
+    const axisAnswers = answers.filter(
+      (answer) => answer.axisId === question.axisId
+    );
+
+    const voices: CultureVoice[] = [];
+    for (const respondent of [
+      'gestao',
+      'rh',
+      'equipe'
+    ] as CultureRespondent[]) {
+      const byRespondent = axisAnswers.filter(
+        (answer) => answer.respondent === respondent
+      );
+      if (byRespondent.length === 0) continue;
+
+      const total = byRespondent.reduce((sum, a) => sum + a.count, 0);
+      const top = [...byRespondent].sort((a, b) => b.count - a.count)[0]!;
+      voices.push({
+        respondent,
+        optionId: top.optionId,
+        optionLabel: getCultureOptionLabel(question.axisId, top.optionId),
+        count: top.count,
+        total
+      });
+    }
+
+    const pendingSuggestion =
+      company?.cultureSuggestions.find(
+        (suggestion) =>
+          suggestion.axisId === question.axisId &&
+          !axisAnswers.some((answer) => answer.respondent === 'gestao')
+      ) ?? null;
+
+    return {
+      question,
+      voices,
+      state: readCultureAxisState(voices),
+      pendingSuggestion
+    };
+  });
+}
+
+function readCultureAxisState(voices: CultureVoice[]): CultureAxisState {
+  if (voices.length === 0) return 'sem-resposta';
+
+  const team = voices.find((voice) => voice.respondent === 'equipe');
+  const management = voices.find((voice) => voice.respondent !== 'equipe');
+
+  if (!team) return management ? 'apenas-gestao' : 'sem-resposta';
+  if (team.total < MIN_TEAM_RESPONSES) return 'consulta-insuficiente';
+  if (!management) return 'convergente';
+
+  return voices.every((voice) => voice.optionId === voices[0]!.optionId)
+    ? 'convergente'
+    : 'divergente';
+}
+
+/** Eixos em que a leitura do traçado cultural não se sustenta sozinha. */
+export function getCultureAttentionPoints(
+  state: DemoState,
+  companyId: string
+): CultureAxisReading[] {
+  return getCultureReading(state, companyId).filter(
+    (entry) =>
+      entry.state === 'divergente' ||
+      entry.state === 'apenas-gestao' ||
+      entry.state === 'consulta-insuficiente'
   );
 }

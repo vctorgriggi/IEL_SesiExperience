@@ -1,3 +1,4 @@
+import type { CultureOptionId, CultureRespondent } from './analysis/culture';
 import type { FitAxisId } from './analysis/fit-axes';
 
 /**
@@ -100,6 +101,44 @@ export type Company = {
   contactEmail: string;
   sourceId: DataSourceId;
   updatedAt: string;
+  /** O que a análise assistida propôs a partir dos textos da empresa. */
+  cultureSuggestions: CultureSuggestion[];
+};
+
+/**
+ * Proposta de traçado feita pela análise assistida a partir de texto que a
+ * empresa já produziu.
+ *
+ * Fica pendente até alguém da empresa confirmar ou corrigir: o enunciado
+ * exige supervisão humana e diz que recomendações apoiam, não substituem. O
+ * trecho de origem acompanha a proposta para que a confirmação seja
+ * informada, e não um clique no escuro.
+ */
+export type CultureSuggestion = {
+  axisId: FitAxisId;
+  optionId: CultureOptionId;
+  /** Trecho do texto existente que sustenta a proposta. */
+  excerpt: string;
+  /** De onde veio o trecho, nas palavras do produto. */
+  sourceLabel: string;
+  sourceId: DataSourceId;
+};
+
+/**
+ * Resposta registrada sobre a cultura da empresa.
+ *
+ * `count` existe porque a consulta à equipe entra agregada: dez pessoas
+ * respondendo a mesma alternativa viram um registro com count 10, sem
+ * identificar ninguém.
+ */
+export type CultureAnswer = {
+  id: string;
+  companyId: string;
+  axisId: FitAxisId;
+  optionId: CultureOptionId;
+  respondent: CultureRespondent;
+  count: number;
+  answeredAt: string;
 };
 
 export type TeamConditionStatus = 'confirmado' | 'da-descricao' | 'a-confirmar';
@@ -391,6 +430,7 @@ export type DemoState = {
   analysis: AnalysisByApplication;
   evidences: Evidence[];
   teams: Team[];
+  cultureAnswers: CultureAnswer[];
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

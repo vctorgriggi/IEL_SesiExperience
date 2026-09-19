@@ -408,7 +408,8 @@ function build(): GeneratedBase {
       contactName: `${pick(random, FIRST_NAMES)} ${pick(random, LAST_NAMES)}`,
       contactEmail: `contato.${companyId.toLowerCase()}@example.com`,
       sourceId: 'FONTE-EMPRESA',
-      updatedAt: dateBefore(12 + (c % 40))
+      updatedAt: dateBefore(12 + (c % 40)),
+      cultureSuggestions: []
     });
 
     const teamId = `GEN-EQP-${String(c + 1).padStart(2, '0')}`;

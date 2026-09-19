@@ -7,6 +7,7 @@ import {
   DEMO_REFERENCE_DATE,
   DEMO_TEAMS
 } from './companies';
+import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_EVIDENCES } from './evidences';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
@@ -130,6 +131,7 @@ export function buildInitialDemoState(): DemoState {
     analysis: { ...clone(DEMO_ANALYSIS), ...clone(GENERATED.analysis) },
     evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
     teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
+    cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
     clarifications: clone(DEMO_CLARIFICATIONS),
     referrals: [],
     history: clone(INITIAL_HISTORY),
@@ -159,6 +161,7 @@ export {
   DEMO_REFERENCE_DATE,
   DEMO_TEAMS
 } from './companies';
+export { DEMO_CULTURE_ANSWERS } from './culture';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';
 export { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';

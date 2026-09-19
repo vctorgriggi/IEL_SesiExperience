@@ -18,6 +18,8 @@ import { applySyncEventPayload, demoReducer, type DemoAction } from './reducer';
 import {
   getApplication,
   getClarification,
+  getCultureAttentionPoints,
+  getCultureReading,
   getFitGaps,
   getFitReading,
   getJob,
@@ -749,5 +751,94 @@ describe('aderência ao contexto, eixo a eixo', () => {
       'comunicacao-prioridades'
     ]);
     expect(gaps.every((entry) => entry.preference === null)).toBe(true);
+  });
+});
+
+describe('traçado cultural da empresa', () => {
+  it('mostra a divergência entre gestão e equipe em vez de escolher uma versão', () => {
+    const state = buildInitialDemoState();
+    const apoio = getCultureReading(state, 'EMP-01').find(
+      (entry) => entry.question.axisId === 'apoio-inicial'
+    )!;
+
+    // A gestão responde que há troca informal; a equipe, em maioria, responde
+    // que cada um assume por conta. Uma fonte única esconderia isso.
+    const gestao = apoio.voices.find((voice) => voice.respondent === 'gestao')!;
+    const equipe = apoio.voices.find((voice) => voice.respondent === 'equipe')!;
+
+    expect(gestao.optionId).toBe('troca-informal');
+    expect(equipe.optionId).toBe('por-conta');
+    expect(apoio.state).toBe('divergente');
+
+    // As duas versões continuam visíveis: nada é reduzido a um valor só.
+    expect(apoio.voices).toHaveLength(2);
+    expect(equipe.total).toBe(7);
+  });
+
+  it('não trata poucas respostas como se fossem a equipe', () => {
+    const state = buildInitialDemoState();
+    const autonomia = getCultureReading(state, 'EMP-03').find(
+      (entry) => entry.question.axisId === 'autonomia'
+    )!;
+
+    // Duas respostas não sustentam uma leitura sobre o conjunto.
+    expect(autonomia.state).toBe('consulta-insuficiente');
+  });
+
+  it('marca como convergente quando gestão, RH e equipe coincidem', () => {
+    const state = buildInitialDemoState();
+    const apoio = getCultureReading(state, 'EMP-02').find(
+      (entry) => entry.question.axisId === 'apoio-inicial'
+    )!;
+
+    expect(apoio.voices.map((voice) => voice.respondent).sort()).toEqual([
+      'equipe',
+      'gestao',
+      'rh'
+    ]);
+    expect(apoio.state).toBe('convergente');
+  });
+
+  it('a proposta da análise não vale como resposta até ser confirmada', () => {
+    let state = buildInitialDemoState();
+    const axis = 'ritmo-turno';
+
+    const before = getCultureReading(state, 'EMP-01').find(
+      (entry) => entry.question.axisId === axis
+    )!;
+
+    // Existe proposta montada a partir da descrição da vaga, mas o eixo
+    // continua sem resposta: supervisão humana é exigência do enunciado.
+    expect(before.pendingSuggestion?.optionId).toBe('fixo');
+    expect(before.pendingSuggestion?.excerpt).toContain('Turno da tarde');
+    expect(before.state).toBe('sem-resposta');
+    expect(before.voices).toHaveLength(0);
+
+    state = demoReducer(state, {
+      type: 'answer-culture',
+      companyId: 'EMP-01',
+      axisId: axis,
+      optionId: 'variacao-prevista',
+      at: AT
+    });
+
+    const after = getCultureReading(state, 'EMP-01').find(
+      (entry) => entry.question.axisId === axis
+    )!;
+
+    // A empresa corrigiu a proposta: vale a resposta humana, não a sugestão.
+    expect(after.voices[0]?.respondent).toBe('gestao');
+    expect(after.voices[0]?.optionId).toBe('variacao-prevista');
+    expect(after.pendingSuggestion).toBeNull();
+    expect(state.history[0]?.action).toBe('Traçado cultural respondido');
+  });
+
+  it('aponta os eixos cuja leitura não se sustenta sozinha', () => {
+    const state = buildInitialDemoState();
+    const attention = getCultureAttentionPoints(state, 'EMP-01');
+
+    expect(attention.map((entry) => entry.question.axisId)).toContain(
+      'apoio-inicial'
+    );
   });
 });
