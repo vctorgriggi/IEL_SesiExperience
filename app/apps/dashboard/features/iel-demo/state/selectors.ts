@@ -4,13 +4,13 @@ import {
   getCriterionAnalysis
 } from '../analysis/criterion-states';
 import {
+  ALL_COMPANIES,
+  ALL_JOBS,
+  ALL_TALENTS,
   DEMO_ASSESSMENTS,
   DEMO_CATALOG,
-  DEMO_COMPANIES,
   DEMO_DATA_SOURCES,
-  DEMO_JOBS,
-  DEMO_PERSONAS,
-  DEMO_TALENTS
+  DEMO_PERSONAS
 } from '../fixtures';
 import { plural } from '../format';
 import type {
@@ -75,15 +75,15 @@ export function getPersona(state: DemoState): Persona {
 }
 
 export function getCompany(companyId: string): Company | null {
-  return DEMO_COMPANIES.find((company) => company.id === companyId) ?? null;
+  return ALL_COMPANIES.find((company) => company.id === companyId) ?? null;
 }
 
 export function getJob(jobId: string): Job | null {
-  return DEMO_JOBS.find((job) => job.id === jobId) ?? null;
+  return ALL_JOBS.find((job) => job.id === jobId) ?? null;
 }
 
 export function getTalent(talentId: string): Talent | null {
-  return DEMO_TALENTS.find((talent) => talent.id === talentId) ?? null;
+  return ALL_TALENTS.find((talent) => talent.id === talentId) ?? null;
 }
 
 export function getTeam(state: DemoState, teamId: string): Team | null {
@@ -130,7 +130,7 @@ export function getApplicationsByTalent(
 }
 
 export function getJobsByCompany(companyId: string): Job[] {
-  return DEMO_JOBS.filter((job) => job.companyId === companyId);
+  return ALL_JOBS.filter((job) => job.companyId === companyId);
 }
 
 export function getCriterion(
@@ -312,7 +312,7 @@ export function getVisibleJobs(state: DemoState): Job[] {
   if (persona.kind === 'gestor' && persona.companyId) {
     return getJobsByCompany(persona.companyId);
   }
-  return DEMO_JOBS;
+  return ALL_JOBS;
 }
 
 export function getVisibleCompanies(state: DemoState): Company[] {
@@ -321,14 +321,14 @@ export function getVisibleCompanies(state: DemoState): Company[] {
     const company = getCompany(persona.companyId);
     return company ? [company] : [];
   }
-  return DEMO_COMPANIES;
+  return ALL_COMPANIES;
 }
 
 /** Talentos visíveis para a persona: gestor só vê quem foi compartilhado. */
 export function getVisibleTalentIds(state: DemoState): string[] {
   const persona = getPersona(state);
   if (persona.kind !== 'gestor' || !persona.companyId) {
-    return DEMO_TALENTS.map((talent) => talent.id);
+    return ALL_TALENTS.map((talent) => talent.id);
   }
 
   const referrals = getReferralsByCompany(state, persona.companyId);
@@ -562,4 +562,92 @@ export function getEvidencesForApplication(
   }
 
   return result;
+}
+
+export type CandidateFilter =
+  | 'todas'
+  | 'lacuna-obrigatoria'
+  | 'divergencia'
+  | 'a-esclarecer'
+  | 'cobertura-completa';
+
+export const CANDIDATE_FILTER_LABEL: Record<CandidateFilter, string> = {
+  todas: 'Todas as candidaturas',
+  'lacuna-obrigatoria': 'Requisito obrigatório sem informação',
+  divergencia: 'Com divergência identificada',
+  'a-esclarecer': 'Com ponto a esclarecer',
+  'cobertura-completa': 'Com dados em todos os critérios'
+};
+
+/**
+ * Triagem por estado da análise.
+ *
+ * É a operação que justifica a ferramenta quando a vaga tem dezenas de
+ * candidaturas: em vez de abrir uma a uma para descobrir onde falta
+ * informação, o analista pede a lista de quem tem lacuna em requisito
+ * obrigatório e age só sobre ela.
+ */
+export function filterApplicationsByAnalysis(
+  state: DemoState,
+  job: Job,
+  applications: Application[],
+  filter: CandidateFilter
+): Application[] {
+  if (filter === 'todas') return applications;
+
+  return applications.filter((application) => {
+    const states = job.criteria.map((criterion) => ({
+      criterion,
+      analysis: getCriterionAnalysis(
+        state.analysis,
+        application.id,
+        criterion.id
+      )
+    }));
+
+    switch (filter) {
+      case 'lacuna-obrigatoria':
+        return states.some(
+          (entry) =>
+            entry.criterion.required &&
+            entry.analysis.state === 'sem-informacao'
+        );
+      case 'divergencia':
+        return states.some((entry) => entry.analysis.state === 'divergencia');
+      case 'a-esclarecer':
+        return states.some((entry) => entry.analysis.state === 'a-esclarecer');
+      case 'cobertura-completa': {
+        const coverage = getCoverage(job, state.analysis, application.id);
+        return coverage.withInformation === coverage.total;
+      }
+      default:
+        return true;
+    }
+  });
+}
+
+/** Quantas candidaturas cairiam em cada filtro, para mostrar no seletor. */
+export function getCandidateFilterCounts(
+  state: DemoState,
+  job: Job,
+  applications: Application[]
+): Record<CandidateFilter, number> {
+  const filters: CandidateFilter[] = [
+    'todas',
+    'lacuna-obrigatoria',
+    'divergencia',
+    'a-esclarecer',
+    'cobertura-completa'
+  ];
+
+  const counts = {} as Record<CandidateFilter, number>;
+  for (const filter of filters) {
+    counts[filter] = filterApplicationsByAnalysis(
+      state,
+      job,
+      applications,
+      filter
+    ).length;
+  }
+  return counts;
 }

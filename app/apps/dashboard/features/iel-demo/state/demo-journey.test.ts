@@ -31,17 +31,48 @@ function run(state: DemoState, ...actions: DemoAction[]): DemoState {
 }
 
 describe('base fictícia da Central IEL', () => {
-  it('começa com 3 empresas, 3 vagas, 8 talentos e 10 candidaturas', () => {
+  it('mantém o núcleo curado do roteiro intacto sob o volume gerado', () => {
     const state = buildInitialDemoState();
-    const uniqueTalents = new Set(
-      state.applications.map((application) => application.talentId)
+    const curated = state.applications.filter(
+      (application) => !application.id.startsWith('GEN-')
+    );
+    const curatedTalents = new Set(
+      curated.map((application) => application.talentId)
     );
 
     expect(DEMO_COMPANIES).toHaveLength(3);
     expect(DEMO_JOBS).toHaveLength(3);
     expect(DEMO_TALENTS).toHaveLength(8);
-    expect(state.applications).toHaveLength(10);
-    expect(uniqueTalents.size).toBe(8);
+    expect(curated).toHaveLength(10);
+    expect(curatedTalents.size).toBe(8);
+  });
+
+  it('gera volume em volta sem colidir com os identificadores curados', () => {
+    const state = buildInitialDemoState();
+    const generated = state.applications.filter((application) =>
+      application.id.startsWith('GEN-')
+    );
+
+    // A escala é o ponto: o enunciado cobra volume, e a vaga do roteiro
+    // precisa ter candidaturas demais para serem lidas uma a uma.
+    expect(generated.length).toBeGreaterThan(400);
+    expect(
+      state.applications.filter((application) => application.jobId === 'VAG-01')
+        .length
+    ).toBeGreaterThan(50);
+
+    const ids = new Set(
+      state.applications.map((application) => application.id)
+    );
+    expect(ids.size).toBe(state.applications.length);
+  });
+
+  it('constrói a mesma base a cada chamada', () => {
+    // Datas fixas e semente fixa: a demonstração não pode mudar entre telas
+    // nem entre apresentações.
+    expect(JSON.stringify(buildInitialDemoState())).toBe(
+      JSON.stringify(buildInitialDemoState())
+    );
   });
 
   it('mantém uma pessoa com duas candidaturas como um único talento', () => {
@@ -475,19 +506,22 @@ describe('indicadores, integração e reset', () => {
     const event = DEMO_SYNC_EVENTS[0]!;
 
     const once = applySyncEventPayload(initial, event, AT);
-    expect(once.applications).toHaveLength(10);
+    const beforeRepeat = once.applications.length;
     expect(getApplication(once, 'CAND-07')?.externalStage).toBe('triagem');
     expect(once.appliedSyncEventIds).toEqual([event.id]);
 
     const twice = applySyncEventPayload(once, event, AT);
-    expect(twice.applications).toHaveLength(10);
+    expect(twice.applications).toHaveLength(beforeRepeat);
     expect(twice.appliedSyncEventIds).toEqual([event.id]);
     expect(twice.history[0]?.action).toBe(
       'Atualização recebida (sem mudanças)'
     );
     expect(
-      new Set(twice.applications.map((application) => application.talentId))
-        .size
+      new Set(
+        twice.applications
+          .filter((application) => !application.id.startsWith('GEN-'))
+          .map((application) => application.talentId)
+      ).size
     ).toBe(8);
   });
 
