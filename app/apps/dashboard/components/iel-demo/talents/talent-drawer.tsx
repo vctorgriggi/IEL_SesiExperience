@@ -25,6 +25,7 @@ import {
 } from '@workspace/ui/shadcn/drawer';
 import { useIsMobile } from '@workspace/ui/use-mobile';
 
+import { SimularEnvioButton } from '../chat/simular-envio-dialog';
 import { TalentFitView } from './talent-fit-view';
 
 /** "Ana Ribeiro" vira "AR": duas letras bastam para o avatar. */
@@ -129,7 +130,13 @@ export function TalentDrawer({
           >
             Abrir perfil completo →
           </Link>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* A empresa fica de fora da mensagem de propósito (R5). */}
+            <SimularEnvioButton
+              destinatario="candidato"
+              link={iel.applications.byId(application.id).conversation}
+              contexto={{ atividade: job.title, cidade: job.location }}
+            />
             <Button
               variant="outline"
               size="sm"

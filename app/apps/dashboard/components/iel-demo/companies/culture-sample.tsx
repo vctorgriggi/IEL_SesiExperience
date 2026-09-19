@@ -10,6 +10,7 @@ import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import type { CultureInvitePerson } from '@/features/iel-demo/state/reducer';
 import {
+  getCompany,
   getCultureInvites,
   getCultureInviteStatus,
   type CultureInviteStatus
@@ -45,6 +46,8 @@ import {
   TableHeader,
   TableRow
 } from '@workspace/ui/shadcn/table';
+
+import { SimularEnvioDialog } from '../chat/simular-envio-dialog';
 
 /**
  * Quem foi convidado e quem ainda falta (M2).
@@ -113,7 +116,9 @@ function InviteActions({
 }) {
   const { dispatch } = useIelDemo();
   const [linkVisivel, setLinkVisivel] = useState<string | null>(null);
+  const [simulando, setSimulando] = useState(false);
   const respondido = getCultureInviteStatus(invite) === 'respondido';
+  const empresa = getCompany(invite.companyId)?.name;
 
   const copiar = async () => {
     const url = inviteUrl(invite.token);
@@ -164,8 +169,23 @@ function InviteActions({
           <DropdownMenuItem onSelect={() => void copiar()}>
             Copiar link
           </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={respondido}
+            onSelect={() => setSimulando(true)}
+          >
+            Simular envio
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <SimularEnvioDialog
+        destinatario="colaborador"
+        link={routes.dashboard.iel.cultureInvite.conversationByToken(
+          invite.token
+        )}
+        contexto={{ empresa }}
+        open={simulando}
+        onOpenChange={setSimulando}
+      />
     </div>
   );
 }
