@@ -262,6 +262,9 @@ export const api = {
   invitations: {
     validate: (token: string) =>
       `/api/invitations/validate/${encodeSegment(token)}`
+  },
+  iel: {
+    assistant: () => '/api/iel/assistant'
   }
 } as const;
 
