@@ -2,14 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { DEMO_TALENTS } from '@/features/iel-demo/fixtures';
+import { useRouter } from 'next/navigation';
+import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
-import { getApplicationsByTalent } from '@/features/iel-demo/state/selectors';
 import { Search } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { Alert } from '@workspace/ui';
-import { Button } from '@workspace/ui/shadcn/button';
 import { Input } from '@workspace/ui/shadcn/input';
 import { Label } from '@workspace/ui/shadcn/label';
 import {
@@ -21,6 +20,8 @@ import {
   TableRow
 } from '@workspace/ui/shadcn/table';
 
+import { normalizarBusca } from '../jobs/busca';
+import { RodapeDaTabela, usePaginacao } from '../jobs/table-pagination';
 import { usePageHeader } from '../layout/page-header-context';
 import { formatarData } from '../shared/datas';
 
@@ -29,32 +30,49 @@ import { formatarData } from '../shared/datas';
  *
  * A lista global não ranqueia ninguém: combinar é sempre com uma empresa, e
  * aqui não há empresa. O que ela oferece é o caminho — quem é, onde está, em
- * quantos processos entrou e quando foi a última leitura.
+ * quantos processos entrou e quando foi a última candidatura.
+ *
+ * Antes a lista mostrava só as 8 pessoas do roteiro e ignorava o resto da
+ * base e quem chegou pela planilha. Agora é a base inteira, paginada: com
+ * milhares de perfis, uma tabela sem página travaria a tela.
  */
 export function TalentsScreen() {
   const { state, persona } = useIelDemo();
+  const router = useRouter();
   const [busca, setBusca] = useState('');
   const iel = routes.dashboard.iel;
 
   usePageHeader({ breadcrumb: [{ label: 'Pessoas' }] });
 
-  const linhas = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    return DEMO_TALENTS.filter(
-      (talent) =>
-        !termo ||
-        talent.name.toLowerCase().includes(termo) ||
-        talent.headline.toLowerCase().includes(termo) ||
-        talent.city.toLowerCase().includes(termo)
-    ).map((talent) => {
-      const candidaturas = getApplicationsByTalent(state, talent.id);
-      const ultima = candidaturas
-        .map((application) => application.appliedAt)
-        .sort()
-        .at(-1);
-      return { talent, candidaturas, ultima: ultima ?? null };
-    });
-  }, [state, busca]);
+  // Uma passada pelas candidaturas para todas as pessoas, em vez de um filtro
+  // por linha.
+  const todas = useMemo(() => {
+    const porPessoa = new Map<string, { total: number; ultima: string }>();
+    for (const application of state.applications) {
+      const atual = porPessoa.get(application.talentId);
+      porPessoa.set(application.talentId, {
+        total: (atual?.total ?? 0) + 1,
+        ultima:
+          atual && atual.ultima > application.appliedAt
+            ? atual.ultima
+            : application.appliedAt
+      });
+    }
+
+    return [...ALL_TALENTS, ...(state.importedTalents ?? [])].map((talent) => ({
+      talent,
+      candidaturas: porPessoa.get(talent.id)?.total ?? 0,
+      ultima: porPessoa.get(talent.id)?.ultima ?? null,
+      busca: normalizarBusca(`${talent.name} ${talent.headline} ${talent.city}`)
+    }));
+  }, [state.applications, state.importedTalents]);
+
+  const filtradas = useMemo(() => {
+    const termo = normalizarBusca(busca);
+    return termo ? todas.filter((linha) => linha.busca.includes(termo)) : todas;
+  }, [todas, busca]);
+
+  const paginacao = usePaginacao(filtradas);
 
   if (persona.kind === 'gestor') {
     return (
@@ -74,14 +92,14 @@ export function TalentsScreen() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight">Pessoas</h1>
-          <p className="text-sm text-muted-foreground">
-            {linhas.length} de {DEMO_TALENTS.length} perfis ·{' '}
-            {state.applications.length} candidaturas na base
-          </p>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">Pessoas</h1>
+        <p className="text-sm text-muted-foreground">
+          Quem se candidatou pelo IEL. Clique para abrir o perfil.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Label
@@ -95,7 +113,10 @@ export function TalentsScreen() {
             type="search"
             placeholder="Nome, cidade ou cargo…"
             value={busca}
-            onChange={(event) => setBusca(event.target.value)}
+            onChange={(event) => {
+              setBusca(event.target.value);
+              paginacao.irPara(0);
+            }}
             className="h-8 w-[240px] pl-8 text-[13px]"
           />
         </div>
@@ -106,64 +127,67 @@ export function TalentsScreen() {
           <TableHeader className="bg-muted">
             <TableRow>
               <TableHead>Pessoa</TableHead>
-              <TableHead className="w-[160px]">Cidade</TableHead>
-              <TableHead className="w-[140px] text-right">
+              <TableHead className="w-[200px]">Cidade</TableHead>
+              <TableHead className="w-[120px] text-right">
                 Candidaturas
               </TableHead>
-              <TableHead className="w-[160px]">Última leitura</TableHead>
-              <TableHead className="w-[120px]" />
+              <TableHead className="w-[160px] text-right">
+                Última candidatura
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhas.length === 0 ? (
+            {paginacao.linhas.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={4}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Ninguém com esse nome na base.
                 </TableCell>
               </TableRow>
             ) : (
-              linhas.map(({ talent, candidaturas, ultima }) => (
-                <TableRow key={talent.id}>
-                  <TableCell className="whitespace-normal">
-                    <Link
-                      href={iel.talents.byId(talent.id).index}
-                      className="font-medium underline-offset-4 hover:underline"
-                    >
-                      {talent.name}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {talent.headline}
-                    </p>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {talent.city}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {candidaturas.length}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {ultima ? formatarData(ultima) : '—'}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      asChild
-                    >
-                      <Link href={iel.talents.byId(talent.id).index}>
-                        Abrir perfil
+              paginacao.linhas.map(({ talent, candidaturas, ultima }) => {
+                const href = iel.talents.byId(talent.id).index;
+                return (
+                  <TableRow
+                    key={talent.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(href)}
+                  >
+                    <TableCell className="max-w-0 whitespace-normal">
+                      <Link
+                        href={href}
+                        onClick={(evento) => evento.stopPropagation()}
+                        className="block truncate font-medium underline-offset-4 hover:underline"
+                      >
+                        {talent.name}
                       </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {talent.headline}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {talent.city}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {candidaturas}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {ultima ? formatarData(ultima) : '—'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </div>
+
+      <RodapeDaTabela
+        paginacao={paginacao}
+        resumo={`${filtradas.length} de ${todas.length} pessoas · ${state.applications.length} candidaturas`}
+      />
     </div>
   );
 }

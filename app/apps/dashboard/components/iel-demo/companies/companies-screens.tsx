@@ -8,19 +8,28 @@ import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getCompany,
   getCompanyCultureProfile,
+  getCompanyListRows,
   getCultureInvites,
   getCultureReading,
   getCultureSampleProgress,
   getJobRanking,
   getJobsByCompany,
   getReferralListSelection,
-  getVisibleCompanies,
   JOB_STAGE_LABEL,
   REFERRAL_LIMIT,
+  type CompanyListRow,
   type CultureSampleProgress
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { CircleAlert, Clock, Search } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  CircleAlert,
+  Clock,
+  Search
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -35,7 +44,15 @@ import {
   CardTitle
 } from '@workspace/ui/shadcn/card';
 import { Input } from '@workspace/ui/shadcn/input';
+import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@workspace/ui/shadcn/select';
 import {
   Sheet,
   SheetContent,
@@ -104,114 +121,358 @@ function SectionCard({
 
 /** O prazo como frase curta de badge: uma contagem, não uma data. */
 function deadlineLabel(progress: CultureSampleProgress): string {
+  if (progress.total > 0 && progress.answered === progress.total) {
+    return 'todos responderam';
+  }
   const days = progress.daysLeft;
   if (days === null) return 'sem prazo';
-  if (progress.overdue) return 'vencido';
+  if (progress.overdue) return 'prazo vencido';
   if (days <= 0) return 'vence hoje';
-  return `prazo em ${plural(days, 'dia', 'dias')}`;
+  return `vence em ${plural(days, 'dia', 'dias')}`;
 }
 
+type AbaEmpresas = 'com-vaga' | 'perfil-aberto' | 'todas';
+
+const ABAS_EMPRESAS: AbaEmpresas[] = ['com-vaga', 'perfil-aberto', 'todas'];
+
+const TODOS_OS_SETORES = 'todos';
+
+/**
+ * A lista de empresas do IEL.
+ *
+ * São mais de 2.500 empresas atendidas, e a pergunta da tela não é "quais
+ * existem", é "com quem eu tenho trabalho agora". Por isso abre em "Com vaga
+ * aberta", filtra por nome, cidade e setor, e pagina **antes** de desenhar:
+ * a tabela nunca monta mais linhas do que a página mostra. A leitura pesada
+ * (vagas, amostra e perfil de cada empresa) é feita uma vez em
+ * `getCompanyListRows` e memorizada; buscar e trocar de aba só filtram.
+ */
 export function CompaniesScreen() {
   const { state } = useIelDemo();
   const iel = routes.dashboard.iel;
+  const [aba, setAba] = useState<AbaEmpresas>('com-vaga');
   const [busca, setBusca] = useState('');
+  const [setor, setSetor] = useState(TODOS_OS_SETORES);
+  const [pagina, setPagina] = useState(0);
+  const [porPagina, setPorPagina] = useState(10);
 
   usePageHeader({ breadcrumb: [{ label: 'Empresas' }] });
 
-  const companies = getVisibleCompanies(state);
-  const termo = busca.trim().toLowerCase();
-  const visiveis = companies.filter((company) =>
-    termo.length === 0
-      ? true
-      : `${company.name} ${company.sector} ${company.location}`
-          .toLowerCase()
-          .includes(termo)
+  const linhas = useMemo(() => getCompanyListRows(state), [state]);
+
+  const setores = useMemo(
+    () =>
+      [...new Set(linhas.map((linha) => linha.company.sector))].sort((a, b) =>
+        a.localeCompare(b, 'pt-BR')
+      ),
+    [linhas]
   );
+
+  // A busca e o setor valem para as três abas; os contadores das abas
+  // respondem "quantas há com esse filtro", não "quantas há no total".
+  const filtradas = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return linhas.filter(
+      (linha) =>
+        (setor === TODOS_OS_SETORES || linha.company.sector === setor) &&
+        (termo.length === 0 ||
+          `${linha.company.name} ${linha.company.sector} ${linha.company.location}`
+            .toLowerCase()
+            .includes(termo))
+    );
+  }, [linhas, busca, setor]);
+
+  const porAba = useMemo(() => {
+    const comVaga = filtradas.filter((linha) => linha.openJobs > 0);
+    const perfilAberto = filtradas.filter(
+      (linha) => linha.openPoints !== null && linha.openPoints > 0
+    );
+    return {
+      'com-vaga': comVaga,
+      'perfil-aberto': perfilAberto,
+      todas: filtradas
+    } satisfies Record<AbaEmpresas, CompanyListRow[]>;
+  }, [filtradas]);
+
+  const lista = porAba[aba];
+  const totalPaginas = Math.max(1, Math.ceil(lista.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas - 1);
+  const visiveis = lista.slice(
+    paginaAtual * porPagina,
+    paginaAtual * porPagina + porPagina
+  );
+
+  const trocarAba = (valor: string) => {
+    const escolhida = ABAS_EMPRESAS.find((item) => item === valor);
+    if (!escolhida) return;
+    setAba(escolhida);
+    setPagina(0);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">Empresas</h1>
         <p className="text-sm text-muted-foreground">
-          Quem já descreveu como trabalha e quem ainda deve respostas.
+          {linhas.length.toLocaleString('pt-BR')} empresas atendidas · quem tem
+          vaga aberta e quem ainda deve respostas.
         </p>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          placeholder="Buscar por empresa, setor ou cidade"
-          aria-label="Buscar empresa"
-          value={busca}
-          onChange={(event) => setBusca(event.target.value)}
-        />
-      </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Tabs
+            value={aba}
+            onValueChange={trocarAba}
+            className="max-w-full overflow-x-auto"
+          >
+            <TabsList className="**:data-[slot=badge]:h-5 **:data-[slot=badge]:min-w-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
+              <TabsTrigger value="com-vaga">
+                Com vaga aberta{' '}
+                <Badge variant="secondary">
+                  {porAba['com-vaga'].length.toLocaleString('pt-BR')}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="perfil-aberto">
+                Perfil em aberto{' '}
+                <Badge variant="secondary">
+                  {porAba['perfil-aberto'].length.toLocaleString('pt-BR')}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="todas">
+                Todas{' '}
+                <Badge variant="secondary">
+                  {porAba.todas.length.toLocaleString('pt-BR')}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead>Empresa</TableHead>
-              <TableHead className="w-[14rem]">Setor</TableHead>
-              <TableHead className="w-[12rem]">Cidade</TableHead>
-              <TableHead className="w-[14rem]">Respostas da equipe</TableHead>
-              <TableHead className="w-[8rem] text-right">
-                Vagas abertas
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visiveis.map((company) => {
-              const progress = getCultureSampleProgress(state, company.id);
-              const jobs = getJobsByCompany(company.id);
-              const percent =
-                progress.total > 0
-                  ? (progress.answered / progress.total) * 100
-                  : 0;
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Label
+                htmlFor="buscar-empresa"
+                className="sr-only"
+              >
+                Buscar empresa
+              </Label>
+              <Input
+                id="buscar-empresa"
+                type="search"
+                placeholder="Nome, cidade ou setor…"
+                value={busca}
+                onChange={(event) => {
+                  setBusca(event.target.value);
+                  setPagina(0);
+                }}
+                className="h-8 w-[220px] pl-8 text-[13px]"
+              />
+            </div>
+            <Select
+              value={setor}
+              onValueChange={(valor) => {
+                setSetor(valor);
+                setPagina(0);
+              }}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-[180px]"
+                aria-label="Filtrar por setor"
+              >
+                <SelectValue placeholder="Setor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TODOS_OS_SETORES}>
+                  Todos os setores
+                </SelectItem>
+                {setores.map((item) => (
+                  <SelectItem
+                    key={item}
+                    value={item}
+                  >
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-              return (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <Link
-                      href={iel.companies.byId(company.id)}
-                      className="font-medium underline-offset-4 hover:underline"
-                    >
-                      {company.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {company.sector}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {company.location}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress
-                        className="h-1.5 w-24 bg-muted"
-                        value={percent}
-                      />
-                      <span className="tabular-nums text-muted-foreground">
-                        {progress.answered} de {progress.total}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {jobs.length}
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted">
+              <TableRow>
+                <TableHead>Empresa</TableHead>
+                <TableHead className="w-[8rem] text-right">
+                  Vagas abertas
+                </TableHead>
+                <TableHead className="w-[14rem]">Perfil da empresa</TableHead>
+                <TableHead className="w-[10rem]">Prazo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visiveis.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    Nenhuma empresa com esse filtro.
                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                visiveis.map(({ company, openJobs, sample, openPoints }) => {
+                  const percent =
+                    sample && sample.total > 0
+                      ? (sample.answered / sample.total) * 100
+                      : 0;
+                  const aberto = openPoints !== null && openPoints > 0;
 
-      {visiveis.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nenhuma empresa com esse termo.
-        </p>
-      ) : null}
+                  return (
+                    <TableRow key={company.id}>
+                      <TableCell>
+                        <Link
+                          href={iel.companies.byId(company.id)}
+                          className="font-medium underline-offset-4 hover:underline"
+                        >
+                          {company.name}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {company.sector} · {company.location}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {openJobs}
+                      </TableCell>
+                      <TableCell>
+                        {sample ? (
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              className="h-1.5 w-16 bg-muted"
+                              value={percent}
+                            />
+                            <span className="tabular-nums">
+                              {sample.answered} de {sample.total}
+                            </span>
+                            {aberto ? (
+                              <CircleAlert
+                                aria-label={plural(
+                                  openPoints,
+                                  'ponto em aberto',
+                                  'pontos em aberto'
+                                )}
+                                className="size-3.5 text-[hsl(var(--brand-accent))]"
+                              />
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            sem consulta
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {sample ? deadlineLabel(sample) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
+            {lista.length.toLocaleString('pt-BR')}{' '}
+            {lista.length === 1 ? 'empresa' : 'empresas'} nesta lista
+          </div>
+          <div className="flex w-full items-center gap-8 lg:w-fit">
+            <div className="hidden items-center gap-2 lg:flex">
+              <Label
+                htmlFor="empresas-por-pagina"
+                className="text-sm font-medium"
+              >
+                Linhas por página
+              </Label>
+              <Select
+                value={`${porPagina}`}
+                onValueChange={(valor) => {
+                  setPorPagina(Number(valor));
+                  setPagina(0);
+                }}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className="w-20"
+                  id="empresas-por-pagina"
+                >
+                  <SelectValue placeholder={`${porPagina}`} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 50].map((tamanho) => (
+                    <SelectItem
+                      key={tamanho}
+                      value={`${tamanho}`}
+                    >
+                      {tamanho}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              Página {paginaAtual + 1} de {totalPaginas}
+            </div>
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
+              <Button
+                variant="outline"
+                size="icon"
+                className="hidden size-8 lg:flex"
+                onClick={() => setPagina(0)}
+                disabled={paginaAtual === 0}
+              >
+                <span className="sr-only">Primeira página</span>
+                <ChevronsLeft />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() => setPagina(Math.max(0, paginaAtual - 1))}
+                disabled={paginaAtual === 0}
+              >
+                <span className="sr-only">Página anterior</span>
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() =>
+                  setPagina(Math.min(totalPaginas - 1, paginaAtual + 1))
+                }
+                disabled={paginaAtual >= totalPaginas - 1}
+              >
+                <span className="sr-only">Próxima página</span>
+                <ChevronRight />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="hidden size-8 lg:flex"
+                onClick={() => setPagina(totalPaginas - 1)}
+                disabled={paginaAtual >= totalPaginas - 1}
+              >
+                <span className="sr-only">Última página</span>
+                <ChevronsRight />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -309,11 +570,17 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">{company.name}</h1>
         <p className="text-sm text-muted-foreground">
-          {company.sector} · {company.location} · {company.contactName}
+          {company.sector} · {company.location} · contato: {company.contactName}
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/*
+       * Três números, todos da empresa: quem respondeu, quantos pontos
+       * fecham e quantas sugestões esperam confirmação. "Vagas abertas" saiu
+       * daqui — com o rodapé "até 5 currículos por vaga", era regra de vaga
+       * dentro do herói da empresa — e virou contador na aba Vagas.
+       */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SectionCard
           description="Responderam"
           value={`${progress.answered} de ${progress.total}`}
@@ -331,7 +598,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
               ? 'A consulta sustenta o perfil'
               : 'A consulta ainda não sustenta o perfil'
           }
-          hint={`Mínimo de ${progress.requiredForProfile} respostas da equipe`}
+          hint={`mínimo de ${progress.requiredForProfile} respostas da equipe por ponto`}
         />
         <SectionCard
           description="Pontos fechados"
@@ -350,23 +617,13 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           footer={
             suficientes === profile.length
               ? 'Os cinco pontos fecham'
-              : `${profile.length - suficientes} em aberto`
+              : `${plural(profile.length - suficientes, 'ponto em aberto', 'pontos em aberto')}`
           }
           hint="Ponto sem base não entra no cálculo"
         />
         <SectionCard
-          description="Vagas abertas"
-          value={`${jobs.length}`}
-          footer={
-            jobs.length === 0
-              ? 'Nenhuma vaga nesta empresa'
-              : 'Em seleção pelo IEL'
-          }
-          hint={`Até ${REFERRAL_LIMIT} currículos por vaga`}
-        />
-        <SectionCard
-          description="Sugestões"
-          value={`${sugestoes}`}
+          description="Sugestões para confirmar"
+          value={plural(sugestoes, 'ponto', 'pontos')}
           footer={
             sugestoes === 0
               ? 'Nada pendente de confirmação'
@@ -382,7 +639,15 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           {ehAnalista ? (
             <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
           ) : null}
-          <TabsTrigger value="vagas">Vagas</TabsTrigger>
+          <TabsTrigger value="vagas">
+            Vagas{' '}
+            <Badge
+              variant="secondary"
+              className="h-5 min-w-5 rounded-full bg-muted-foreground/30 px-1"
+            >
+              {jobs.length}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="cultura">
@@ -394,10 +659,6 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
             value="colaboradores"
             className="flex flex-col gap-4"
           >
-            <p className="text-sm text-muted-foreground">
-              A amostra convidada e o estado de cada link. Esta aba não mostra —
-              e não tem como mostrar — o que cada pessoa respondeu.
-            </p>
             <CultureSampleTable companyId={companyId} />
           </TabsContent>
         ) : null}
@@ -405,12 +666,12 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         <TabsContent value="vagas">
           <div className="overflow-x-auto rounded-lg border">
             <Table>
-              <TableHeader className="bg-muted/50">
+              <TableHeader className="bg-muted">
                 <TableRow>
                   <TableHead>Vaga</TableHead>
                   <TableHead className="w-[12rem]">Etapa</TableHead>
-                  <TableHead className="w-[9rem] text-right">
-                    Marcados
+                  <TableHead className="w-[11rem] text-right">
+                    Marcados para envio
                   </TableHead>
                   <TableHead className="w-[10rem] text-right">
                     Compatíveis
@@ -444,7 +705,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                         {JOB_STAGE_LABEL[job.stage]}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {marcados}/{REFERRAL_LIMIT}
+                        {marcados} de {REFERRAL_LIMIT}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {compativeis}

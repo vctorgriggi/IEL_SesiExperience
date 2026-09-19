@@ -4,14 +4,22 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  getCompany,
+  getCompatibleCount,
+  getJobListState,
+  getReferralListSelection,
   getTalent,
   getVisibleCompanies,
   getVisibleJobs,
-  getVisibleTalentIds
+  getVisibleTalentIds,
+  REFERRAL_LIMIT
 } from '@/features/iel-demo/state/selectors';
+import type { Job } from '@/features/iel-demo/types';
 import {
+  Briefcase,
   Building2,
   ChevronsUpDown,
   CirclePlus,
@@ -20,12 +28,13 @@ import {
   Inbox,
   ListOrdered,
   Search,
-  Users
+  Users,
+  type LucideIcon
 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -33,11 +42,19 @@ import {
   CommandList
 } from '@workspace/ui/shadcn/command';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@workspace/ui/shadcn/dialog';
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
@@ -45,16 +62,31 @@ import {
   SidebarMenuItem
 } from '@workspace/ui/shadcn/sidebar';
 
+import { normalizarBusca } from '../jobs/busca';
 import { montarPendencias } from '../overview/pendencias';
 import { ComoFuncionaDialog, RoteiroDialog } from './demo-dialogs';
-import { NavJobs } from './nav-jobs';
 import { NavUser } from './nav-user';
+import { RECENTES_NA_BARRA, useRecentJobs } from './use-recent-jobs';
+
+type ItemPrincipal = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge: number | null;
+  ativo: boolean;
+};
 
 /**
- * Barra do analista.
+ * Barra do analista, organizada por páginas.
  *
- * Papéis (prancha 2): só o analista tem app. A barra é dele — empresa e
- * candidato recebem link, e essas telas ficam fora desta casca.
+ * Ela já foi uma árvore Empresa → Vaga. Com mais de 2.500 empresas atendidas
+ * e perto de 2.500 vagas por mês, a árvore não cabia e não se achava nada
+ * nela. Ficaram quatro destinos fixos — Hoje, Vagas, Empresas, Pessoas —, as
+ * cinco vagas em que a analista mexeu por último e a busca ⌘K para chegar em
+ * qualquer uma das outras.
+ *
+ * Papéis (prancha 2): só o analista tem app. Empresa e candidato recebem
+ * link, e essas telas ficam fora desta casca.
  */
 export function AppSidebar() {
   const { state, persona } = useIelDemo();
@@ -65,28 +97,45 @@ export function AppSidebar() {
   const [comoFunciona, setComoFunciona] = useState(false);
   const [roteiro, setRoteiro] = useState(false);
 
+  // ⌘K / Ctrl+K em qualquer tela da casca.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setBusca((aberta) => !aberta);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   /*
    * A fila do dia percorre o ranking de cada vaga visível, e a barra fica
    * montada em todas as telas. Sem memória, abrir um diálogo recalcularia a
    * base inteira.
    */
   const pendencias = useMemo(() => montarPendencias(state).length, [state]);
-  const primeiraVaga = useMemo(
-    () => getVisibleJobs(state).find((job) => job.stage !== 'encerrada'),
-    [state]
+  const vagas = useMemo(() => getVisibleJobs(state), [state]);
+  const emSelecao = useMemo(
+    () =>
+      vagas.filter((job) => getJobListState(state, job) === 'em-selecao')
+        .length,
+    [vagas, state]
   );
+  const primeiraVaga = vagas.find((job) => job.stage !== 'encerrada');
 
   /*
    * O gestor entra pela mesma casca, mas não faz o trabalho da analista:
    * importar planilha, varrer a fila do dia e navegar pela base de pessoas
    * são tarefas do IEL. Deixar esses destinos no menu dele seria oferecer
    * portas para o recorte de outras empresas (PRODUTO.md §5) — o único lugar
-   * que faz sentido para ele é a própria empresa.
+   * que faz sentido para ele é a própria empresa, e as recentes dele se
+   * limitam às vagas dela.
    */
   const eGestor = persona.kind === 'gestor';
   const empresaDoGestor = persona.companyId;
 
-  const principais = eGestor
+  const principais: ItemPrincipal[] = eGestor
     ? [
         {
           href: empresaDoGestor
@@ -94,7 +143,8 @@ export function AppSidebar() {
             : iel.companies.index,
           label: 'Minha empresa',
           icon: Building2,
-          badge: null
+          badge: null,
+          ativo: pathname.startsWith(iel.companies.index)
         }
       ]
     : [
@@ -102,15 +152,30 @@ export function AppSidebar() {
           href: iel.index,
           label: 'Hoje',
           icon: Inbox,
-          badge: pendencias > 0 ? pendencias : null
+          badge: pendencias > 0 ? pendencias : null,
+          ativo: pathname === iel.index
+        },
+        {
+          href: iel.jobs.index,
+          label: 'Vagas',
+          icon: Briefcase,
+          badge: emSelecao > 0 ? emSelecao : null,
+          ativo: pathname.startsWith(iel.jobs.index)
         },
         {
           href: iel.companies.index,
           label: 'Empresas',
           icon: Building2,
-          badge: null
+          badge: null,
+          ativo: pathname.startsWith(iel.companies.index)
         },
-        { href: iel.talents.index, label: 'Pessoas', icon: Users, badge: null }
+        {
+          href: iel.talents.index,
+          label: 'Pessoas',
+          icon: Users,
+          badge: null,
+          ativo: pathname.startsWith(iel.talents.index)
+        }
       ];
 
   return (
@@ -190,11 +255,11 @@ export function AppSidebar() {
 
             <SidebarMenu>
               {principais.map((item) => (
-                <SidebarMenuItem key={item.href}>
+                <SidebarMenuItem key={item.label}>
                   <SidebarMenuButton
                     asChild
                     tooltip={item.label}
-                    isActive={pathname === item.href}
+                    isActive={item.ativo}
                   >
                     <Link href={item.href}>
                       <item.icon />
@@ -202,7 +267,9 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                   {item.badge ? (
-                    <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                    <SidebarMenuBadge className="tabular-nums">
+                      {item.badge}
+                    </SidebarMenuBadge>
                   ) : null}
                 </SidebarMenuItem>
               ))}
@@ -210,7 +277,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <NavJobs />
+        <NavRecentes vagas={vagas} />
 
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
@@ -270,8 +337,120 @@ export function AppSidebar() {
   );
 }
 
+/** Quantas vagas a barra sugere quando ainda não há recentes. */
+const SUGESTOES_NA_BARRA = 3;
+
 /**
- * Busca por vaga, empresa e pessoa — o que a analista procura pelo nome.
+ * As últimas vagas abertas, ou, na primeira visita, as que têm mais gente
+ * passando do corte.
+ *
+ * Some com a barra recolhida: o nome da vaga é o conteúdo da linha, e um
+ * ícone repetido cinco vezes não diria qual é qual.
+ */
+function NavRecentes({ vagas }: { vagas: Job[] }) {
+  const { state } = useIelDemo();
+  const pathname = usePathname();
+  const iel = routes.dashboard.iel;
+  const recentes = useRecentJobs();
+
+  // O recorte da persona vale aqui também: o gestor só vê vagas da empresa.
+  const visiveis = useMemo(() => {
+    const porId = new Map(vagas.map((job) => [job.id, job]));
+    return recentes
+      .map((id) => porId.get(id))
+      .filter((job): job is Job => Boolean(job))
+      .slice(0, RECENTES_NA_BARRA);
+  }, [recentes, vagas]);
+
+  const semRecentes = visiveis.length === 0;
+
+  // O ranking de cada vaga custa caro: só é calculado sem recentes.
+  const sugestoes = useMemo(() => {
+    if (!semRecentes) return [];
+    return vagas
+      .filter((job) => job.stage !== 'encerrada')
+      .map((job) => ({ job, compativeis: getCompatibleCount(state, job.id) }))
+      .sort((a, b) => b.compativeis - a.compativeis)
+      .slice(0, SUGESTOES_NA_BARRA)
+      .map((entrada) => entrada.job);
+  }, [semRecentes, vagas, state]);
+
+  const lista = semRecentes ? sugestoes : visiveis;
+  if (lista.length === 0) return null;
+
+  return (
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <SidebarGroupLabel>
+        {semRecentes ? 'Sugestões' : 'Recentes'}
+      </SidebarGroupLabel>
+      <SidebarMenu>
+        {lista.map((job) => {
+          const href = iel.jobs.byId(job.id).index;
+          const marcados = getReferralListSelection(state, job.id).length;
+          const empresa = getCompany(job.companyId)?.name;
+          return (
+            <SidebarMenuItem key={job.id}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(href)}
+                title={empresa ? `${job.title} · ${empresa}` : job.title}
+              >
+                {/*
+                 * O contador é o dado da linha e não pode encolher: a regra
+                 * do bloco corta o último filho com reticências, e "0/5"
+                 * virava "0..". Quem cede espaço é o nome da vaga.
+                 */}
+                <Link href={href}>
+                  <span className="min-w-0 flex-1 truncate">{job.title}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {marcados}/{REFERRAL_LIMIT}
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+
+/** Quantos resultados cada grupo do ⌘K mostra. */
+const RESULTADOS_POR_GRUPO = 8;
+
+type Resultado = { id: string; titulo: string; detalhe: string; href: string };
+
+/**
+ * Filtra um índice já normalizado e devolve os primeiros resultados e o total.
+ *
+ * Quem começa com o termo vem antes de quem só o contém: "sinop" deve trazer
+ * "Sinop Alimentos" antes de "Vale do Sinop".
+ */
+function filtrar(
+  indice: { busca: string; resultado: Resultado }[],
+  termo: string
+): { itens: Resultado[]; total: number } {
+  const noInicio: Resultado[] = [];
+  const noMeio: Resultado[] = [];
+  for (const entrada of indice) {
+    const posicao = entrada.busca.indexOf(termo);
+    if (posicao === 0) noInicio.push(entrada.resultado);
+    else if (posicao > 0) noMeio.push(entrada.resultado);
+  }
+  const todos = noInicio.concat(noMeio);
+  return {
+    itens: todos.slice(0, RESULTADOS_POR_GRUPO),
+    total: todos.length
+  };
+}
+
+/**
+ * Busca por vaga, empresa e pessoa — o jeito rápido de chegar a uma entre
+ * milhares.
+ *
+ * O filtro é feito aqui, e não pelo `cmdk`: entregar 2.500 empresas ao
+ * componente para ele esconder quase todas custaria cada tecla. Cada grupo
+ * mostra no máximo oito resultados e diz quantos havia.
  *
  * O recorte é o da persona: o que `getVisible*` não devolve não aparece aqui
  * também.
@@ -283,74 +462,175 @@ function BuscaGlobal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { state } = useIelDemo();
+  const { state, persona } = useIelDemo();
   const router = useRouter();
   const iel = routes.dashboard.iel;
+  const recentes = useRecentJobs();
+  const [consulta, setConsulta] = useState('');
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        onOpenChange(!open);
+  // O índice só é montado com o diálogo aberto e só muda com o estado.
+  const indice = useMemo(() => {
+    if (!open) return null;
+
+    const vagas = getVisibleJobs(state).map((job) => {
+      const empresa = getCompany(job.companyId)?.name ?? '';
+      return {
+        busca: normalizarBusca(`${job.title} ${empresa}`),
+        resultado: {
+          id: job.id,
+          titulo: job.title,
+          detalhe: empresa,
+          href: iel.jobs.byId(job.id).index
+        }
+      };
+    });
+
+    const empresas = getVisibleCompanies(state).map((company) => ({
+      busca: normalizarBusca(company.name),
+      resultado: {
+        id: company.id,
+        titulo: company.name,
+        detalhe: company.location,
+        href: iel.companies.byId(company.id)
       }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onOpenChange]);
+    }));
+
+    const talentos =
+      persona.kind === 'gestor'
+        ? getVisibleTalentIds(state)
+            .map((id) => getTalent(id, state))
+            .filter((talent) => talent !== null)
+        : [...ALL_TALENTS, ...(state.importedTalents ?? [])];
+    const pessoas = talentos.map((talent) => ({
+      busca: normalizarBusca(talent.name),
+      resultado: {
+        id: talent.id,
+        titulo: talent.name,
+        detalhe: talent.city,
+        href: iel.talents.byId(talent.id).index
+      }
+    }));
+
+    return { vagas, empresas, pessoas };
+  }, [open, state, persona.kind, iel]);
+
+  const termo = normalizarBusca(consulta);
+
+  const grupos = useMemo(() => {
+    if (!indice || !termo) return [];
+    return [
+      { titulo: 'Vagas', ...filtrar(indice.vagas, termo) },
+      { titulo: 'Empresas', ...filtrar(indice.empresas, termo) },
+      { titulo: 'Pessoas', ...filtrar(indice.pessoas, termo) }
+    ].filter((grupo) => grupo.total > 0);
+  }, [indice, termo]);
+
+  // Sem nada digitado, o atalho mais provável é voltar a uma vaga recente.
+  const vagasRecentes = useMemo(() => {
+    if (!indice || termo) return [];
+    const porId = new Map(
+      indice.vagas.map((entrada) => [entrada.resultado.id, entrada.resultado])
+    );
+    return recentes
+      .map((id) => porId.get(id))
+      .filter((resultado): resultado is Resultado => Boolean(resultado))
+      .slice(0, RECENTES_NA_BARRA);
+  }, [indice, termo, recentes]);
+
+  const mudarAbertura = (aberta: boolean) => {
+    if (!aberta) setConsulta('');
+    onOpenChange(aberta);
+  };
 
   const ir = (href: string) => {
-    onOpenChange(false);
+    mudarAbertura(false);
     router.push(href);
   };
 
-  const talentos = getVisibleTalentIds(state)
-    .map((id) => getTalent(id, state))
-    .filter((talent) => talent !== null);
-
   return (
-    <CommandDialog
+    <Dialog
       open={open}
-      onOpenChange={onOpenChange}
-      title="Buscar"
-      description="Vagas, empresas e pessoas da base."
+      onOpenChange={mudarAbertura}
     >
-      <CommandInput placeholder="Buscar vaga, empresa ou pessoa…" />
-      <CommandList>
-        <CommandEmpty>Nada encontrado.</CommandEmpty>
-        <CommandGroup heading="Vagas">
-          {getVisibleJobs(state).map((job) => (
-            <CommandItem
-              key={job.id}
-              value={`vaga ${job.title}`}
-              onSelect={() => ir(iel.jobs.byId(job.id).index)}
-            >
-              {job.title}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Empresas">
-          {getVisibleCompanies(state).map((company) => (
-            <CommandItem
-              key={company.id}
-              value={`empresa ${company.name}`}
-              onSelect={() => ir(iel.companies.byId(company.id))}
-            >
-              {company.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Pessoas">
-          {talentos.map((talent) => (
-            <CommandItem
-              key={talent.id}
-              value={`pessoa ${talent.name}`}
-              onSelect={() => ir(iel.talents.byId(talent.id).index)}
-            >
-              {talent.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </CommandList>
-    </CommandDialog>
+      <DialogHeader className="sr-only">
+        <DialogTitle>Buscar</DialogTitle>
+        <DialogDescription>
+          Vagas, empresas e pessoas da base.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogContent
+        className="overflow-hidden p-0"
+        showCloseButton={false}
+      >
+        <Command
+          shouldFilter={false}
+          className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
+        >
+          <CommandInput
+            placeholder="Buscar vaga, empresa ou pessoa…"
+            value={consulta}
+            onValueChange={setConsulta}
+          />
+          <CommandList>
+            <CommandEmpty>
+              {termo
+                ? 'Nada encontrado com esse nome.'
+                : 'Digite o nome de uma vaga, empresa ou pessoa.'}
+            </CommandEmpty>
+            {vagasRecentes.length > 0 ? (
+              <CommandGroup heading="Vagas recentes">
+                {vagasRecentes.map((resultado) => (
+                  <LinhaDeResultado
+                    key={resultado.id}
+                    resultado={resultado}
+                    onSelect={ir}
+                  />
+                ))}
+              </CommandGroup>
+            ) : null}
+            {grupos.map((grupo) => (
+              <CommandGroup
+                key={grupo.titulo}
+                heading={
+                  grupo.total > grupo.itens.length
+                    ? `${grupo.titulo} · ${grupo.itens.length} de ${grupo.total}`
+                    : grupo.titulo
+                }
+              >
+                {grupo.itens.map((resultado) => (
+                  <LinhaDeResultado
+                    key={resultado.id}
+                    resultado={resultado}
+                    onSelect={ir}
+                  />
+                ))}
+              </CommandGroup>
+            ))}
+          </CommandList>
+        </Command>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LinhaDeResultado({
+  resultado,
+  onSelect
+}: {
+  resultado: Resultado;
+  onSelect: (href: string) => void;
+}) {
+  return (
+    <CommandItem
+      value={resultado.id}
+      onSelect={() => onSelect(resultado.href)}
+    >
+      <span className="min-w-0 flex-1 truncate">{resultado.titulo}</span>
+      {resultado.detalhe ? (
+        <span className="shrink-0 truncate text-xs text-muted-foreground">
+          {resultado.detalhe}
+        </span>
+      ) : null}
+    </CommandItem>
   );
 }

@@ -384,6 +384,165 @@ const JOBS_PER_COMPANY = 3;
 const GENERATED_TALENT_COUNT = 260;
 
 /**
+ * Empresas leves: o resto da carteira do IEL.
+ *
+ * O Centro de Empregos atende mais de 2.500 indústrias, e a maioria não tem
+ * vaga aberta nem consulta de cultura neste mês — é nome, setor, cidade e um
+ * contato. Elas existem na base para que a navegação seja testada no volume
+ * real: uma barra lateral que lista empresa por empresa não sobrevive a isso,
+ * e a busca e as listas paginadas precisam provar que sobrevivem.
+ *
+ * O nome combina três listas: um prefixo regional de MT e GO, um ramo e o
+ * sufixo que diz o setor. O sufixo decide o setor, para "Sinop Alimentos"
+ * nunca aparecer como metalúrgica.
+ */
+const LIGHT_COMPANY_COUNT = 2485;
+
+const LIGHT_NAME_PREFIXES = [
+  'Cuiabá',
+  'Rondonópolis',
+  'Sinop',
+  'Pantanal',
+  'Cerrado',
+  'Chapada',
+  'Araguaia',
+  'Xingu',
+  'Teles Pires',
+  'Juruena',
+  'Serra Azul',
+  'Planalto',
+  'Anhanguera',
+  'Pirineus',
+  'Meia Ponte',
+  'Caldas',
+  'Rio Verde',
+  'Jataí',
+  'Buriti',
+  'Pequi',
+  'Jatobá',
+  'Tuiuiú',
+  'Guariroba',
+  'Cambará',
+  'Aroeira',
+  'Paranaíba',
+  'Corumbá',
+  'Veredas',
+  'Serra Dourada',
+  'Vale do Guaporé'
+] as const;
+
+const LIGHT_NAME_MIDDLES = [
+  '',
+  'Agro',
+  'Nova',
+  'Central',
+  'Forte',
+  'Real',
+  'Brasil',
+  'Norte',
+  'Sul',
+  'Ouro',
+  'Verde',
+  'União'
+] as const;
+
+/** Sufixo do nome e o setor que ele declara. */
+const LIGHT_SECTORS: { suffix: string; sector: string }[] = [
+  { suffix: 'Alimentos', sector: 'Alimentos' },
+  { suffix: 'Carnes', sector: 'Frigorífico' },
+  { suffix: 'Laticínios', sector: 'Laticínios' },
+  { suffix: 'Grãos', sector: 'Grãos e óleos vegetais' },
+  { suffix: 'Bioenergia', sector: 'Etanol e bioenergia' },
+  { suffix: 'Metalurgia', sector: 'Metalurgia' },
+  { suffix: 'Embalagens', sector: 'Embalagens' },
+  { suffix: 'Logística', sector: 'Logística' },
+  { suffix: 'Têxtil', sector: 'Têxtil e confecção' },
+  { suffix: 'Construções', sector: 'Construção civil' },
+  { suffix: 'Madeiras', sector: 'Madeira e móveis' },
+  { suffix: 'Fertilizantes', sector: 'Química e fertilizantes' },
+  { suffix: 'Mineração', sector: 'Mineração' },
+  { suffix: 'Farma', sector: 'Farmacêutica' },
+  { suffix: 'Bebidas', sector: 'Bebidas' },
+  { suffix: 'Plásticos', sector: 'Plásticos' },
+  { suffix: 'Couros', sector: 'Couro e calçados' },
+  { suffix: 'Implementos', sector: 'Máquinas e implementos agrícolas' }
+];
+
+const LIGHT_CITIES = [
+  'Cuiabá, MT',
+  'Várzea Grande, MT',
+  'Rondonópolis, MT',
+  'Sinop, MT',
+  'Tangará da Serra, MT',
+  'Cáceres, MT',
+  'Sorriso, MT',
+  'Lucas do Rio Verde, MT',
+  'Primavera do Leste, MT',
+  'Barra do Garças, MT',
+  'Nova Mutum, MT',
+  'Campo Verde, MT',
+  'Alta Floresta, MT',
+  'Goiânia, GO',
+  'Aparecida de Goiânia, GO',
+  'Anápolis, GO',
+  'Rio Verde, GO',
+  'Jataí, GO',
+  'Catalão, GO',
+  'Itumbiara, GO',
+  'Luziânia, GO',
+  'Senador Canedo, GO',
+  'Trindade, GO',
+  'Formosa, GO',
+  'Mineiros, GO',
+  'Goianésia, GO'
+] as const;
+
+/**
+ * Gera as empresas leves.
+ *
+ * Roda depois de todo o resto e consome o mesmo gerador semeado: as 12
+ * empresas com vaga, as pessoas e as candidaturas continuam idênticas ao que
+ * eram antes deste volume existir.
+ */
+function buildLightCompanies(random: () => number, firstIndex: number) {
+  const companies: Company[] = [];
+  const usedNames = new Set<string>();
+
+  for (let i = 0; i < LIGHT_COMPANY_COUNT; i += 1) {
+    const companyId = `GEN-EMP-${String(firstIndex + i).padStart(4, '0')}`;
+
+    // Sorteia até achar um nome livre; o espaço de combinações é mais que o
+    // dobro da carteira, então a repetição é rara e o laço, curto.
+    let name = '';
+    let sector = '';
+    do {
+      const prefix = pick(random, LIGHT_NAME_PREFIXES);
+      const middle = pick(random, LIGHT_NAME_MIDDLES);
+      const entry = pick(random, LIGHT_SECTORS);
+      name = [prefix, middle, entry.suffix].filter(Boolean).join(' ');
+      sector = entry.sector;
+    } while (usedNames.has(name));
+    usedNames.add(name);
+
+    companies.push({
+      id: companyId,
+      name,
+      sector,
+      location: pick(random, LIGHT_CITIES),
+      institutionalDescription:
+        'Empresa da carteira do IEL na base de demonstração, sem vaga aberta neste mês. A descrição institucional é fictícia.',
+      contactName: `${pick(random, FIRST_NAMES)} ${pick(random, LAST_NAMES)}`,
+      contactEmail: `contato.${companyId.toLowerCase()}@example.com`,
+      sourceId: 'FONTE-EMPRESA',
+      updatedAt: dateBefore(20 + Math.floor(random() * 300)),
+      cultureSuggestions: []
+    });
+  }
+
+  return companies;
+}
+
+/**
  * Pesos por eixo para uma vaga do pano de fundo.
  *
  * Não são aleatórios a cada render: saem do mesmo gerador semeado das demais
@@ -437,7 +596,7 @@ function build(): GeneratedBase {
 
     companies.push({
       id: companyId,
-      name: `${name} (fictícia)`,
+      name,
       sector: SECTORS[c % SECTORS.length]!,
       location: city,
       institutionalDescription:
@@ -522,7 +681,7 @@ function build(): GeneratedBase {
         {
           id: `${id}-EXP-1`,
           role: pick(random, JOB_TITLES),
-          organization: `${pick(random, COMPANY_NAMES)} (fictícia)`,
+          organization: pick(random, COMPANY_NAMES),
           period: 'jan/2023 — fev/2026',
           activities:
             'Rotina operacional declarada no currículo recebido da origem.'
@@ -642,6 +801,9 @@ function build(): GeneratedBase {
     }
   }
 
+  // Por último, de propósito: ver `buildLightCompanies`.
+  companies.push(...buildLightCompanies(random, GENERATED_COMPANY_COUNT + 1));
+
   return {
     companies,
     teams,
@@ -662,4 +824,9 @@ export function getGeneratedBase(): GeneratedBase {
   return cache;
 }
 
-export { EXTRA_ON_SCRIPT_JOB, GENERATED_TALENT_COUNT };
+export {
+  EXTRA_ON_SCRIPT_JOB,
+  GENERATED_COMPANY_COUNT,
+  GENERATED_TALENT_COUNT,
+  LIGHT_COMPANY_COUNT
+};

@@ -12,7 +12,6 @@ import { getInviteByToken } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import { Card, CardContent } from '@workspace/ui/shadcn/card';
 import { Checkbox } from '@workspace/ui/shadcn/checkbox';
@@ -35,8 +34,10 @@ import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
  * pode ver — nem ser visto por — os outros respondentes; a empresa recebe a
  * média, nunca "fulano respondeu isto".
  *
- * **Nem o próprio e-mail.** `getInviteByToken` devolve só o primeiro nome, a
- * empresa e o prazo. Um link vazado não vira vazamento de dado pessoal.
+ * **Nem o próprio nome ou e-mail.** `getInviteByToken` devolve só a empresa,
+ * o prazo e a situação — o convite nem guarda nome. A tela se apresenta como
+ * "Consulta à equipe · empresa", não como "Oi, fulano". Um link vazado não
+ * vira vazamento de dado pessoal.
  *
  * ## Base legal
  *
@@ -112,17 +113,12 @@ export function CultureInviteScreen({ token }: { token: string }) {
     // A casca por link já imprime o quadrado "IEL"; aqui fica o resto da
     // linha de topo — o que a pessoa está respondendo e para quem.
     <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-6 px-1 py-6">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium">Consulta à equipe</span>
+      <p className="text-sm font-medium">
+        Consulta à equipe
         {invite ? (
-          <Badge
-            variant="outline"
-            className="text-muted-foreground"
-          >
-            {invite.companyName}
-          </Badge>
+          <span className="text-muted-foreground"> · {invite.companyName}</span>
         ) : null}
-      </div>
+      </p>
 
       {!invite ? (
         <InviteNotice title="Link não encontrado">
@@ -146,8 +142,8 @@ export function CultureInviteScreen({ token }: { token: string }) {
               Como é trabalhar aqui?
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {invite.firstName}, são 5 perguntas sobre o dia a dia na{' '}
-              {invite.companyName}. Leva até 5 minutos.
+              São 5 perguntas sobre o dia a dia na {invite.companyName}. Leva
+              até 5 minutos.
             </p>
           </div>
 
@@ -159,8 +155,9 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 comparada com o que cada candidato procura.
               </p>
               <p>
-                <span className="font-medium">O que é coletado.</span> Só o seu
-                nome e o seu e-mail corporativo, que já estavam no convite.
+                <span className="font-medium">O que é coletado.</span> Coletamos
+                só seu e-mail corporativo, área e papel, que já estavam no
+                convite, e as 5 respostas. Seu nome não é pedido.
               </p>
               <p>
                 <span className="font-medium">Quem vê.</span> A empresa vê a
@@ -216,7 +213,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   <span aria-live="polite">
                     Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
                   </span>
-                  <span>Oi, {invite.firstName} · até 5 min</span>
+                  <span>até 5 min</span>
                 </div>
                 <Progress
                   className="h-1.5 bg-muted"

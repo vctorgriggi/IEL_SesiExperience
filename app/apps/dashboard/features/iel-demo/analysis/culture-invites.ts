@@ -1,18 +1,25 @@
 /**
  * Amostra de colaboradores que responde o traçado cultural da empresa (M2).
  *
- * A analista do IEL cadastra nome e e-mail corporativo de uma amostra da área
- * da vaga e das áreas conexas; o sistema gera um link por pessoa, sem login,
+ * A analista do IEL cadastra e-mail corporativo, área e papel de uma amostra
+ * da área da vaga e das áreas conexas; o sistema gera um link por pessoa, sem login,
  * e a tela da empresa acompanha "N de M responderam" até o prazo. O perfil da
  * empresa é a média das respostas (`getCompanyCultureProfile`), então quem
  * responde importa tanto quanto o que responde.
  *
  * ## Privacidade (PRODUTO.md §5)
  *
- * **Só nome e e-mail corporativo.** Nada de CPF, matrícula, cargo detalhado
- * ou qualquer campo que a média não use. `role` e `area` existem porque a
- * leitura precisa distinguir gestão de equipe — é essa distinção que mostra
- * quando o traçado é autorretrato da chefia.
+ * **Só e-mail corporativo, área e papel.** Nada de nome, CPF, matrícula,
+ * cargo detalhado ou qualquer campo que a média não use. O e-mail existe
+ * porque é por ele que o link sai e a cobrança chega; `role` e `area` existem
+ * porque a leitura precisa distinguir gestão de equipe — é essa distinção que
+ * mostra quando o traçado é autorretrato da chefia. O nome saiu do cadastro
+ * (a R12 do cliente o previa): a média não o usa, e numa lista de
+ * "respondeu / aguardando" ele é o que liga uma pessoa à própria resposta.
+ *
+ * **Sem data da resposta na tela.** A lista da analista mostra "Respondeu",
+ * "Aguardando" ou "Prazo vencido", nunca quando. Data exata + área pequena +
+ * média do ponto bastam para reidentificar quem respondeu o quê.
  *
  * **O token não carrega dado pessoal.** É opaco, 16 caracteres hexadecimais
  * derivados do id do convite e de uma semente do produto. Quem intercepta a
@@ -27,7 +34,8 @@
  *
  * **A resposta é agregada.** Quem responde sobre o próprio ambiente de
  * trabalho não pode ficar identificado para a gestão: a tela da empresa vê
- * contagem e média, nunca "fulano respondeu isto".
+ * contagem e média, nunca "fulano respondeu isto". Um papel com uma pessoa
+ * só não aparece sozinho — ver `getCultureDisplayVoices`.
  */
 
 import { hashHex } from './deterministic-hash';

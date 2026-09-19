@@ -28,7 +28,6 @@ function convidar(state = buildInitialDemoState(), at = AT) {
     companyId: 'EMP-02',
     people: [
       {
-        name: 'Teodoro Mascarenhas',
         corporateEmail: 'Teodoro.Mascarenhas@horizonte.example.com',
         role: 'equipe',
         area: 'Estoque'
@@ -229,14 +228,13 @@ describe('progresso da amostra', () => {
 });
 
 describe('tela do colaborador (PRODUTO.md §5)', () => {
-  it('devolve só primeiro nome, empresa, prazo e situação', () => {
+  it('devolve só empresa, prazo e situação — sem nome nem e-mail', () => {
     const state = buildInitialDemoState();
     const convite = getCultureInvites(state, 'EMP-01').at(-1)!;
     const vista = getInviteByToken(state, convite.token);
 
     expect(vista).toEqual({
       inviteId: convite.id,
-      firstName: convite.name.split(' ')[0],
       companyName: 'Cerrado Distribuição',
       expiresAt: convite.expiresAt,
       daysLeft: 1,

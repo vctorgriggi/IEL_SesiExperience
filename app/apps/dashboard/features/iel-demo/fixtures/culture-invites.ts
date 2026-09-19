@@ -25,12 +25,25 @@ import type { CultureRespondentInvite } from '../types';
  * - **Horizonte Alimentos**: consulta completa, gestão, RH e equipe.
  * - **Oficina Pantanal**: prazo vencido com 3 de 8. O perfil não fecha, e a
  *   tela diz isso em vez de tratar duas respostas de equipe como "a equipe".
+ *
+ * Não há nome em convite nenhum (PRODUTO.md §5.2): a analista cadastra só
+ * e-mail corporativo, área e papel. Os nomes abaixo existem apenas para
+ * montar o endereço de e-mail, como a empresa o teria, e não são gravados.
  */
+
+/** "Tarsila Moreira" → "tarsila.moreira@<domínio>". */
+function corporateEmail(fullName: string, domain: string): string {
+  const local = fullName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(' ', '.');
+  return `${local}@${domain}`;
+}
 
 type InviteSeed = {
   id: string;
   companyId: string;
-  name: string;
   corporateEmail: string;
   role: CultureInviteRole;
   area: string;
@@ -42,7 +55,6 @@ function buildInvite(seed: InviteSeed): CultureRespondentInvite {
   return {
     id: seed.id,
     companyId: seed.companyId,
-    name: seed.name,
     corporateEmail: seed.corporateEmail,
     role: seed.role,
     area: seed.area,
@@ -71,8 +83,7 @@ const INVITE_SEEDS: InviteSeed[] = [
   ].map((name, index) => ({
     id: `INV-EMP01-${String(index + 1).padStart(2, '0')}`,
     companyId: 'EMP-01',
-    name,
-    corporateEmail: `${name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.')}@cerrado.example.com`,
+    corporateEmail: corporateEmail(name, 'cerrado.example.com'),
     role: 'equipe' as const,
     area: 'Logística',
     sentAt: PRIMEIRA_LEVA_CERRADO,
@@ -82,8 +93,7 @@ const INVITE_SEEDS: InviteSeed[] = [
     (name, index) => ({
       id: `INV-EMP01-${String(index + 8).padStart(2, '0')}`,
       companyId: 'EMP-01',
-      name,
-      corporateEmail: `${name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.')}@cerrado.example.com`,
+      corporateEmail: corporateEmail(name, 'cerrado.example.com'),
       role: 'equipe' as const,
       area: 'Expedição',
       sentAt: SEGUNDA_LEVA_CERRADO,
@@ -94,7 +104,6 @@ const INVITE_SEEDS: InviteSeed[] = [
   {
     id: 'INV-EMP02-01',
     companyId: 'EMP-02',
-    name: 'Rafael Nogueira',
     corporateEmail: 'rafael.nogueira@horizonte.example.com',
     role: 'gestao',
     area: 'Estoque',
@@ -104,7 +113,6 @@ const INVITE_SEEDS: InviteSeed[] = [
   {
     id: 'INV-EMP02-02',
     companyId: 'EMP-02',
-    name: 'Simone Vasques',
     corporateEmail: 'simone.vasques@horizonte.example.com',
     role: 'rh',
     area: 'Gente e Gestão',
@@ -115,8 +123,7 @@ const INVITE_SEEDS: InviteSeed[] = [
     (name, index) => ({
       id: `INV-EMP02-${String(index + 3).padStart(2, '0')}`,
       companyId: 'EMP-02',
-      name,
-      corporateEmail: `${name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.')}@horizonte.example.com`,
+      corporateEmail: corporateEmail(name, 'horizonte.example.com'),
       role: 'equipe' as const,
       area: 'Estoque',
       sentAt: '2026-09-04',
@@ -127,7 +134,6 @@ const INVITE_SEEDS: InviteSeed[] = [
   {
     id: 'INV-EMP03-01',
     companyId: 'EMP-03',
-    name: 'Sônia Prado',
     corporateEmail: 'sonia.prado@pantanal.example.com',
     role: 'gestao',
     area: 'Administrativo',
@@ -145,8 +151,7 @@ const INVITE_SEEDS: InviteSeed[] = [
   ].map((name, index) => ({
     id: `INV-EMP03-${String(index + 2).padStart(2, '0')}`,
     companyId: 'EMP-03',
-    name,
-    corporateEmail: `${name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.')}@pantanal.example.com`,
+    corporateEmail: corporateEmail(name, 'pantanal.example.com'),
     role: 'equipe' as const,
     area: 'Administrativo',
     sentAt: '2026-08-29',

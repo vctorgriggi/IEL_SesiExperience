@@ -2,24 +2,29 @@
 
 import { useState } from 'react';
 import {
-  CULTURE_RESPONDENT_LABEL,
   CULTURE_SCALE_MAX,
   CULTURE_SCALE_MIN,
   getCultureOptionValue,
-  type CultureRespondent
+  MIN_TEAM_RESPONSES
 } from '@/features/iel-demo/analysis/culture';
 import { COPY, type EstadoDeLeitura } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   AXIS_WEIGHT_LABEL,
+  CULTURE_DISPLAY_RESPONDENT_LABEL,
   getAxisWeights,
   getCompanyCultureProfile,
+  getCultureDisplayVoices,
   getCultureReading,
   getCultureSampleProgress,
   getJob,
+  MIN_ROLE_RESPONSES_TO_SHOW,
   type CompanyCultureAxisProfile,
   type CultureAxisReading,
+  type CultureDisplayRespondent,
+  type CultureDisplayVoice,
+  type CultureDisplayVoices,
   type CultureSampleProgress
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
@@ -75,12 +80,17 @@ import {
  * A mesma tabela serve a tela da empresa e a aba "Como a empresa trabalha" da
  * vaga; com `jobId`, cada ponto ganha o peso que aquela vaga declarou, porque
  * é esse peso que muda o percentual que a mesa de seleção mostra ao lado.
+ *
+ * O trilho nunca desenha uma pessoa: os marcadores vêm de
+ * `getCultureDisplayVoices`, que junta gestão e RH quando um deles é uma
+ * pessoa só e esconde a equipe abaixo do mínimo de respostas.
  */
 
-/** Marcador de cada papel no trilho. Quadrado para gestão, círculo para equipe. */
-const RESPONDENT_MARK: Record<CultureRespondent, string> = {
+/** Marcador de cada grupo no trilho. Quadrado para gestão/RH, círculo para equipe. */
+const RESPONDENT_MARK: Record<CultureDisplayRespondent, string> = {
   gestao: 'rounded-[3px] bg-foreground',
   rh: 'rounded-[3px] bg-muted-foreground',
+  lideranca: 'rounded-[3px] bg-foreground',
   equipe: 'rounded-full bg-foreground'
 };
 
@@ -156,20 +166,20 @@ function meanOptionLabel(
  */
 function AxisTrack({
   entry,
+  display,
   profile
 }: {
   entry: CultureAxisReading;
+  display: CultureDisplayVoices;
   profile: CompanyCultureAxisProfile | undefined;
 }) {
-  const marks = entry.voices
+  const marks = display.voices
     .map((voice) => ({
       voice,
       value: getCultureOptionValue(entry.question.axisId, voice.optionId)
     }))
     .filter(
-      (
-        mark
-      ): mark is { voice: (typeof entry.voices)[number]; value: 1 | 2 | 3 } =>
+      (mark): mark is { voice: CultureDisplayVoice; value: 1 | 2 | 3 } =>
         mark.value !== null
     );
 
@@ -181,11 +191,13 @@ function AxisTrack({
 
   const descricao =
     marks.length === 0
-      ? 'Ninguém respondeu este ponto.'
+      ? entry.voices.length === 0
+        ? 'Ninguém respondeu este ponto.'
+        : 'Poucas respostas por grupo para mostrar sem identificar ninguém.'
       : marks
           .map(
             (mark) =>
-              `${CULTURE_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
+              `${CULTURE_DISPLAY_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
           )
           .join('. ');
 
@@ -248,15 +260,22 @@ function AxisTrack({
   );
 }
 
-/** "7 de 10 responderam": só respostas de equipe, as que fecham o ponto. */
+/**
+ * "7 de 10 da equipe": só respostas de equipe, as que fecham o ponto.
+ *
+ * O denominador é o de convites **de equipe**. Antes era o total de convites,
+ * gestão e RH incluídos, e a célula dizia "4 de 6 responderam" numa empresa em
+ * que as quatro pessoas da equipe já tinham respondido — dois números de
+ * unidades diferentes na mesma fração.
+ */
 function respondentsLabel(
   entry: CultureAxisReading,
   progress: CultureSampleProgress
 ): string {
   const equipe = entry.voices.find((voice) => voice.respondent === 'equipe');
   const respondidas = equipe?.total ?? 0;
-  const total = Math.max(progress.total, respondidas);
-  return `${respondidas} de ${total} responderam`;
+  const total = Math.max(progress.byRole.equipe.total, respondidas);
+  return `${respondidas} de ${total} da equipe`;
 }
 
 /** Proposta da análise: pré-preenchida, com o trecho que a sustenta. */
@@ -352,12 +371,12 @@ function SuggestionRow({
 }
 
 /** Legenda do trilho: sem ela os três marcadores são três pontinhos. */
-function TrackLegend() {
+function TrackLegend({ withheld }: { withheld: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
         <span className="size-2.5 rounded-[2px] bg-foreground" />
-        gestão
+        gestão/RH
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="size-2.5 rounded-full bg-foreground" />
@@ -371,6 +390,12 @@ function TrackLegend() {
         <span className="h-2.5 w-5 rounded-full bg-muted-foreground/20" />
         dispersão da equipe
       </span>
+      {withheld ? (
+        <span>
+          · grupo com menos de {MIN_ROLE_RESPONSES_TO_SHOW} respostas (equipe:{' '}
+          {MIN_TEAM_RESPONSES}) não aparece sozinho, só na média
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -401,8 +426,19 @@ export function CompanyCultureTable({
 
   const sugestoes = reading.filter((entry) => entry.pendingSuggestion !== null);
   // Confirmar ou corrigir uma sugestão é responder pela empresa: quem faz isso
-  // é o analista com o gestor ao lado, não a tela que o candidato abre.
-  const podeResponder = persona.kind !== 'candidato';
+  // é o analista com o gestor ao lado, na tela da empresa — não a vaga, que
+  // só lê a cultura com os próprios pesos, nem a tela que o candidato abre.
+  const podeResponder = persona.kind !== 'candidato' && !jobId;
+
+  const displays = new Map(
+    reading.map((entry) => [
+      entry.question.axisId,
+      getCultureDisplayVoices(state, companyId, entry.question.axisId)
+    ])
+  );
+  const algumOculto = [...displays.values()].some(
+    (display) => display.withheld > 0
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -445,7 +481,7 @@ export function CompanyCultureTable({
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-muted">
             <TableRow>
               <TableHead className="w-[14rem]">Ponto do dia a dia</TableHead>
               <TableHead>A equipe diz</TableHead>
@@ -488,6 +524,12 @@ export function CompanyCultureTable({
                   <TableCell className="align-middle">
                     <AxisTrack
                       entry={entry}
+                      display={
+                        displays.get(entry.question.axisId) ?? {
+                          voices: [],
+                          withheld: 0
+                        }
+                      }
                       profile={axisProfile}
                     />
                   </TableCell>
@@ -512,7 +554,7 @@ export function CompanyCultureTable({
                 colSpan={5}
                 className="py-2"
               >
-                <TrackLegend />
+                <TrackLegend withheld={algumOculto} />
               </TableCell>
             </TableRow>
           </TableFooter>

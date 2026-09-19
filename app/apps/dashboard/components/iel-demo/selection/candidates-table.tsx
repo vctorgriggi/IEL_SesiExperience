@@ -54,7 +54,9 @@ import {
 import { CandidateStateBadge } from './candidate-state-badge';
 
 /** As quatro leituras da mesma lista. Sugeridos é a que abre. */
-type Aba = 'sugeridos' | 'todos' | 'resgate' | 'sem-resposta';
+export type CandidatesTab = 'sugeridos' | 'todos' | 'resgate' | 'sem-resposta';
+
+type Aba = CandidatesTab;
 
 /** Quantas linhas a aba de sugeridos mostra. */
 const SUGERIDOS = 5;
@@ -95,6 +97,12 @@ export type CandidatesTableProps = {
   onToggleComparison: (applicationId: string) => void;
   onOpenPerson: (entry: JobRankingEntry) => void;
   onAskPerson: (entry: JobRankingEntry) => void;
+  /**
+   * Aba controlada por fora: o cartão "Resgate" da vaga abre esta tabela já
+   * na aba Resgate. Sem ela, a tabela guarda a própria aba.
+   */
+  tab?: CandidatesTab;
+  onTabChange?: (tab: CandidatesTab) => void;
 };
 
 /**
@@ -115,9 +123,16 @@ export function CandidatesTable({
   onToggleReferral,
   onToggleComparison,
   onOpenPerson,
-  onAskPerson
+  onAskPerson,
+  tab,
+  onTabChange
 }: CandidatesTableProps) {
-  const [aba, setAba] = useState<Aba>('sugeridos');
+  const [abaInterna, setAbaInterna] = useState<Aba>('sugeridos');
+  const aba = tab ?? abaInterna;
+  const setAba = (valor: Aba) => {
+    setAbaInterna(valor);
+    onTabChange?.(valor);
+  };
   const [busca, setBusca] = useState('');
   const [ordem, setOrdem] = useState<Ordem | null>(null);
   const [pagina, setPagina] = useState(0);

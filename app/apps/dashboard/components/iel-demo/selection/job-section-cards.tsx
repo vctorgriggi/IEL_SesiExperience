@@ -1,21 +1,19 @@
 'use client';
 
-import Link from 'next/link';
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   CANDIDATE_FIT_DEADLINE_DAYS,
-  getCompanyCultureProfile,
-  getCultureSampleProgress,
   getJobRanking,
   getReferralListSelection,
-  REFERRAL_LIMIT
+  getRescueCandidates,
+  REFERRAL_LIMIT,
+  RESCUE_TECHNICAL_CEILING
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
-import { CircleAlert, Clock, TrendingUp } from 'lucide-react';
+import { Activity, Clock, TrendingUp } from 'lucide-react';
 
-import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import {
   Card,
@@ -37,7 +35,7 @@ function prazoEm(base: string, dias: number): string {
 }
 
 /**
- * Os quatro números que abrem a vaga.
+ * Os quatro números que abrem a vaga — todos **desta vaga**.
  *
  * O rótulo é curto de propósito: com o selo ocupando o canto direito do
  * cartão, uma descrição longa quebrava em duas linhas e desalinhava os quatro
@@ -45,13 +43,25 @@ function prazoEm(base: string, dias: number): string {
  * basta, e o rodapé do cartão diz o resto.
  *
  * Nenhum deles é um indicador de desempenho: os quatro são pendências. Quantos
- * já dá para enviar, quantos ainda não responderam, quantos estão marcados e
- * o quanto da empresa já foi descrito. Quem abre a tela precisa saber o que
- * falta para fechar a remessa, e não como a vaga vai.
+ * já dá para enviar, quantos ainda não responderam, quantos estão marcados
+ * (o limite de 5 é por vaga, R6) e quantos o filtro técnico descartaria mas
+ * combinam com a empresa. Quem abre a tela precisa saber o que falta para
+ * fechar a remessa, e não como a vaga vai.
+ *
+ * O andamento da consulta à equipe já esteve aqui como quarto cartão, e saiu:
+ * "7 de 10 colaboradores responderam" é dado da empresa, igual em todas as
+ * vagas dela, e "cobrar" é ação da tela da empresa. Na vaga ele virou uma
+ * linha de contexto abaixo do subtítulo, com link para a empresa.
  */
-export function JobSectionCards({ job }: { job: Job }) {
+export function JobSectionCards({
+  job,
+  onOpenRescue
+}: {
+  job: Job;
+  /** Leva a tabela de candidatos para a aba Resgate. */
+  onOpenRescue: () => void;
+}) {
   const { state } = useIelDemo();
-  const iel = routes.dashboard.iel;
 
   const ranking = getJobRanking(state, job.id);
   const responderam = ranking.filter(
@@ -65,10 +75,7 @@ export function JobSectionCards({ job }: { job: Job }) {
   const marcados = getReferralListSelection(state, job.id).length;
   const faltamParaFechar = Math.max(0, REFERRAL_LIMIT - marcados);
 
-  const amostra = getCultureSampleProgress(state, job.companyId);
-  const perfil = getCompanyCultureProfile(state, job.companyId);
-  const pontosAbertos = perfil.filter((axis) => !axis.ready).length;
-  const faltamResponder = amostra.total - amostra.answered;
+  const resgate = getRescueCandidates(state, job.id).length;
 
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4 dark:*:data-[slot=card]:bg-card">
@@ -140,40 +147,42 @@ export function JobSectionCards({ job }: { job: Job }) {
         </CardFooter>
       </Card>
 
-      <Card className="@container/card">
+      <Card
+        className="@container/card cursor-pointer transition-colors hover:border-foreground/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver ${plural(resgate, 'pessoa', 'pessoas')} na aba Resgate`}
+        onClick={onOpenRescue}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpenRescue();
+          }
+        }}
+      >
         <CardHeader>
-          <CardDescription>Perfil da empresa</CardDescription>
+          <CardDescription>Resgate</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {amostra.answered}{' '}
+            {resgate}{' '}
             <span className="text-sm font-normal text-muted-foreground">
-              de {amostra.total}
+              {resgate === 1 ? 'pessoa' : 'pessoas'}
             </span>
           </CardTitle>
-          {pontosAbertos > 0 ? (
-            <CardAction>
-              <Badge variant="outline">
-                <CircleAlert className="text-[hsl(var(--brand-accent))]" />
-                {pontosAbertos} abertos
-              </Badge>
-            </CardAction>
-          ) : null}
+          <CardAction>
+            <Badge variant="outline">
+              <Activity />
+              combinam
+            </Badge>
+          </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {faltamResponder === 0
-              ? 'Todos os colaboradores responderam'
-              : `${plural(faltamResponder, 'colaborador ainda não respondeu', 'colaboradores ainda não responderam')}`}
+            Abaixo de {RESCUE_TECHNICAL_CEILING}% nos requisitos
           </div>
           <div className="text-muted-foreground">
-            {amostra.deadline
-              ? `prazo até ${formatarDataCurta(amostra.deadline)} · `
-              : null}
-            <Link
-              href={iel.companies.byId(job.companyId)}
-              className="text-foreground underline underline-offset-[3px]"
-            >
-              cobrar
-            </Link>
+            {resgate === 0
+              ? 'ninguém para rever agora'
+              : 'vale uma segunda olhada'}
           </div>
         </CardFooter>
       </Card>

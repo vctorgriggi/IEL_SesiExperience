@@ -68,9 +68,11 @@ export type RegisterReferralInput = {
   }[];
 };
 
-/** Pessoa da amostra, como a analista cadastra: só nome e e-mail corporativo. */
+/**
+ * Pessoa da amostra, como a analista cadastra: e-mail corporativo, área e
+ * papel. Sem nome — a consulta não precisa dele (PRODUTO.md §5.2).
+ */
 export type CultureInvitePerson = {
-  name: string;
   corporateEmail: string;
   role: CultureInviteRole;
   area: string;
@@ -1075,10 +1077,9 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         created.push({
           id,
           companyId: action.companyId,
-          name: person.name.trim(),
           corporateEmail,
           role: person.role,
-          area: person.area,
+          area: person.area.trim(),
           token: buildInviteToken(id, CULTURE_INVITE_TOKEN_SEED),
           sentAt,
           expiresAt: addDays(sentAt, CULTURE_INVITE_DEADLINE_DAYS),

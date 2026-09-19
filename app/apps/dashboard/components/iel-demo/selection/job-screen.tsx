@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CULTURE_RESPONDENT_LABEL } from '@/features/iel-demo/analysis/culture';
-import { getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
 import { COPY } from '@/features/iel-demo/copy';
 import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
@@ -15,7 +13,6 @@ import {
   getCompany,
   getCompanyCultureProfile,
   getComparisonSelection,
-  getCultureReading,
   getCultureSampleProgress,
   getJob,
   getJobRanking,
@@ -28,7 +25,7 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { JobCriterion } from '@/features/iel-demo/types';
-import { Info } from 'lucide-react';
+import { CircleAlert, Info } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { Alert, toast } from '@workspace/ui';
@@ -56,7 +53,9 @@ import {
 } from '@workspace/ui/shadcn/tooltip';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
+import { CompanyCultureTable } from '../companies/culture-profile';
 import { usePageHeader } from '../layout/page-header-context';
+import { registrarVagaRecente } from '../layout/use-recent-jobs';
 import {
   formatarData,
   formatarDataCurta,
@@ -64,7 +63,7 @@ import {
 } from '../shared/datas';
 import { TalentDrawer } from '../talents/talent-drawer';
 import { AxisWeights } from './axis-weights';
-import { CandidatesTable } from './candidates-table';
+import { CandidatesTable, type CandidatesTab } from './candidates-table';
 import { JobSectionCards } from './job-section-cards';
 
 /** Um `?` de 14px no lugar de um parágrafo: o método explica quem pedir. */
@@ -99,6 +98,10 @@ function Metodo({ label }: { label: string }) {
 export function JobScreen({ jobId }: { jobId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const [pessoaAberta, setPessoaAberta] = useState<string | null>(null);
+  const [abaVaga, setAbaVaga] = useState('candidatos');
+  const [abaCandidatos, setAbaCandidatos] =
+    useState<CandidatesTab>('sugeridos');
+  const tabelaRef = useRef<HTMLDivElement>(null);
   const [pergunta, setPergunta] = useState<{
     applicationId: string | null;
     criterion: JobCriterion;
@@ -110,6 +113,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
 
   const comparison = job ? getComparisonSelection(state, job.id) : [];
   const referralList = job ? getReferralListSelection(state, job.id) : [];
+  useEffect(() => registrarVagaRecente(jobId), [jobId]);
 
   usePageHeader({
     breadcrumb: [
@@ -194,7 +198,14 @@ export function JobScreen({ jobId }: { jobId: string }) {
   const clarifications = getClarificationsByJob(state, job.id);
   const amostra = getCultureSampleProgress(state, job.companyId);
   const perfil = getCompanyCultureProfile(state, job.companyId);
-  const leitura = getCultureReading(state, job.companyId);
+  const pontosAbertos = perfil.filter((axis) => !axis.ready).length;
+  const perfilAberto = pontosAbertos > 0;
+  const nomeEmpresa = company?.name ?? 'empresa';
+
+  const abrirResgate = () => {
+    setAbaCandidatos('resgate');
+    tabelaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const enviados = state.referrals.filter(
     (referral) => referral.jobId === job.id && referral.state === 'registrado'
@@ -266,7 +277,8 @@ export function JobScreen({ jobId }: { jobId: string }) {
 
   return (
     <Tabs
-      defaultValue="candidatos"
+      value={abaVaga}
+      onValueChange={setAbaVaga}
       className="@container/vaga gap-6"
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -279,14 +291,47 @@ export function JobScreen({ jobId }: { jobId: string }) {
             {formatarDataCurta(job.updatedAt)}
             <Metodo label="Os candidatos e o percentual de requisitos chegam da planilha do sistema de vagas. O quanto a pessoa combina com a empresa é calculado aqui, por regra fixa." />
           </p>
+          {/*
+           * Contexto da empresa, numa linha: é dado dela, igual em todas as
+           * vagas, e cobrar quem falta é ação da tela da empresa. Aqui só se
+           * lê e se vai para lá.
+           */}
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+            {perfilAberto ? (
+              <CircleAlert
+                aria-hidden="true"
+                className="size-3.5 text-[hsl(var(--brand-accent))]"
+              />
+            ) : null}
+            <span>
+              Perfil da {nomeEmpresa}:{' '}
+              {amostra.total === 0
+                ? 'ninguém da equipe foi convidado ainda'
+                : `${amostra.answered} de ${amostra.total} responderam`}
+              {perfilAberto
+                ? ` · ${plural(pontosAbertos, 'ponto em aberto', 'pontos em aberto')}`
+                : ' · perfil fechado'}
+            </span>
+            <Link
+              href={iel.companies.byId(job.companyId)}
+              className="text-foreground underline-offset-4 hover:underline"
+            >
+              Ver empresa →
+            </Link>
+          </p>
         </div>
 
         <div className="max-w-full overflow-x-auto">
           <TabsList className="**:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
             <TabsTrigger value="candidatos">Candidatos</TabsTrigger>
             <TabsTrigger value="cultura">
-              {COPY.culture.label}{' '}
-              <Badge variant="secondary">{amostra.answered}</Badge>
+              {COPY.culture.label}
+              {perfilAberto ? (
+                <span
+                  aria-label="faltam respostas"
+                  className="size-1.5 rounded-full bg-[hsl(var(--brand-accent))]"
+                />
+              ) : null}
             </TabsTrigger>
             <TabsTrigger value="perguntas">
               Perguntas{' '}
@@ -303,83 +348,52 @@ export function JobScreen({ jobId }: { jobId: string }) {
         value="candidatos"
         className="flex flex-col gap-6"
       >
-        <JobSectionCards job={job} />
-        <CandidatesTable
-          ranking={ranking}
-          rescue={rescue}
-          referralList={referralList}
-          comparison={comparison}
-          referralLimit={REFERRAL_LIMIT}
-          onToggleReferral={toggleReferral}
-          onToggleComparison={toggleComparison}
-          onOpenPerson={(entry) => setPessoaAberta(entry.application.id)}
-          onAskPerson={perguntarA}
+        <JobSectionCards
+          job={job}
+          onOpenRescue={abrirResgate}
         />
+        <div
+          ref={tabelaRef}
+          className="scroll-mt-4"
+        >
+          <CandidatesTable
+            tab={abaCandidatos}
+            onTabChange={setAbaCandidatos}
+            ranking={ranking}
+            rescue={rescue}
+            referralList={referralList}
+            comparison={comparison}
+            referralLimit={REFERRAL_LIMIT}
+            onToggleReferral={toggleReferral}
+            onToggleComparison={toggleComparison}
+            onOpenPerson={(entry) => setPessoaAberta(entry.application.id)}
+            onAskPerson={perguntarA}
+          />
+        </div>
       </TabsContent>
 
       <TabsContent
         value="cultura"
         className="flex flex-col gap-3"
       >
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader className="bg-muted">
-              <TableRow>
-                <TableHead>Ponto do dia a dia</TableHead>
-                <TableHead>O que a empresa respondeu</TableHead>
-                <TableHead className="w-[200px]">Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {perfil.map((axis) => {
-                const entrada = leitura.find(
-                  (item) => item.question.axisId === axis.axisId
-                );
-                return (
-                  <TableRow key={axis.axisId}>
-                    <TableCell className="whitespace-normal">
-                      <span className="font-medium">
-                        {getFitAxis(axis.axisId).label}
-                      </span>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {entrada?.question.prompt}
-                      </p>
-                    </TableCell>
-                    <TableCell className="whitespace-normal text-muted-foreground">
-                      {entrada && entrada.voices.length > 0
-                        ? entrada.voices
-                            .map(
-                              (voice) =>
-                                `${CULTURE_RESPONDENT_LABEL[voice.respondent]}: ${voice.optionLabel}`
-                            )
-                            .join(' · ')
-                        : 'Ninguém respondeu este ponto ainda.'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="px-1.5 text-muted-foreground"
-                      >
-                        {!axis.ready
-                          ? COPY.missingAnswers(
-                              axis.respondents,
-                              amostra.requiredForProfile
-                            )
-                          : axis.dispersion === 'divergente'
-                            ? COPY.culture.divergence
-                            : 'Perfil fechado'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {COPY.culture.sample} {amostra.answered} de {amostra.total}{' '}
-          responderam.
+        {/*
+         * A cultura é da empresa, não da vaga (R1). Esta aba a lê com os
+         * pesos desta vaga — e diz isso em uma linha, com o caminho para a
+         * empresa, onde se convida, cobra e confirma sugestões.
+         */}
+        <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <span>Respostas da equipe da {nomeEmpresa} · pesos desta vaga</span>
+          <Link
+            href={iel.companies.byId(job.companyId)}
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            Abrir a empresa
+          </Link>
         </p>
+        <CompanyCultureTable
+          companyId={job.companyId}
+          jobId={job.id}
+        />
       </TabsContent>
 
       <TabsContent
@@ -472,10 +486,20 @@ export function JobScreen({ jobId }: { jobId: string }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                enviados.map((referral) => (
+                enviados.map((referral, index) => (
                   <TableRow key={referral.id}>
                     <TableCell className="whitespace-normal">
-                      <span className="font-medium">{referral.id}</span>
+                      <span className="font-medium">
+                        {enviados.length > 1
+                          ? `${index + 1}ª remessa`
+                          : 'Remessa'}{' '}
+                        ·{' '}
+                        {plural(
+                          referral.items.length,
+                          'currículo',
+                          'currículos'
+                        )}
+                      </span>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {referral.message}
                       </p>
