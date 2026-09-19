@@ -12,13 +12,14 @@ import { getInviteByToken } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import { Card, CardContent } from '@workspace/ui/shadcn/card';
 import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
 import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
+
+import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 
 /**
  * A tela de quem trabalha na empresa e recebeu o link (M2 + M7).
@@ -35,8 +36,10 @@ import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
  * pode ver — nem ser visto por — os outros respondentes; a empresa recebe a
  * média, nunca "fulano respondeu isto".
  *
- * **Nem o próprio e-mail.** `getInviteByToken` devolve só o primeiro nome, a
- * empresa e o prazo. Um link vazado não vira vazamento de dado pessoal.
+ * **Nem o próprio nome ou e-mail.** `getInviteByToken` devolve só a empresa,
+ * o prazo e a situação — o convite nem guarda nome. A tela se apresenta como
+ * "Consulta à equipe · empresa", não como "Oi, fulano". Um link vazado não
+ * vira vazamento de dado pessoal.
  *
  * ## Base legal
  *
@@ -60,15 +63,21 @@ function shortDate(iso: string): string {
 /** Tela sem formulário: o link já foi usado, venceu ou não existe. */
 function InviteNotice({
   title,
+  tituloRef,
   children
 }: {
   title: string;
+  tituloRef?: React.Ref<HTMLHeadingElement>;
   children: React.ReactNode;
 }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-2">
-        <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+        <h1
+          ref={tituloRef}
+          tabIndex={-1}
+          className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+        >
           {title}
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -87,6 +96,17 @@ export function CultureInviteScreen({ token }: { token: string }) {
   const [accepted, setAccepted] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [finished, setFinished] = useState(false);
+
+  // Passo novo, tela nova, mesma URL: o foco vai para o título do passo, para
+  // o leitor de tela anunciar a pergunta (ou "Resposta registrada") em vez de
+  // voltar ao topo da página.
+  const tituloRef = useFocoNoTitulo<HTMLHeadingElement>(
+    finished
+      ? 'fim'
+      : step.kind === 'question'
+        ? `pergunta-${step.index}`
+        : step.kind
+  );
 
   const submit = (final: Answers) => {
     const complete = CULTURE_QUESTIONS.every(
@@ -112,17 +132,12 @@ export function CultureInviteScreen({ token }: { token: string }) {
     // A casca por link já imprime o quadrado "IEL"; aqui fica o resto da
     // linha de topo — o que a pessoa está respondendo e para quem.
     <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-6 px-1 py-6">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium">Consulta à equipe</span>
+      <p className="text-sm font-medium">
+        Consulta à equipe
         {invite ? (
-          <Badge
-            variant="outline"
-            className="text-muted-foreground"
-          >
-            {invite.companyName}
-          </Badge>
+          <span className="text-muted-foreground"> · {invite.companyName}</span>
         ) : null}
-      </div>
+      </p>
 
       {!invite ? (
         <InviteNotice title="Link não encontrado">
@@ -130,7 +145,10 @@ export function CultureInviteScreen({ token }: { token: string }) {
           você recebeu por e-mail.
         </InviteNotice>
       ) : finished || invite.status === 'respondido' ? (
-        <InviteNotice title="Resposta registrada">
+        <InviteNotice
+          title="Resposta registrada"
+          tituloRef={tituloRef}
+        >
           Você não precisa fazer mais nada, obrigado. Sua resposta entra na
           média da empresa: ninguém vê o que você respondeu, nem a sua gestão.
         </InviteNotice>
@@ -142,12 +160,16 @@ export function CultureInviteScreen({ token }: { token: string }) {
       ) : step.kind === 'consent' ? (
         <section className="flex flex-1 flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+            <h1
+              ref={tituloRef}
+              tabIndex={-1}
+              className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            >
               Como é trabalhar aqui?
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {invite.firstName}, são 5 perguntas sobre o dia a dia na{' '}
-              {invite.companyName}. Leva até 5 minutos.
+              São 5 perguntas sobre o dia a dia na {invite.companyName}. Leva
+              até 5 minutos.
             </p>
           </div>
 
@@ -159,8 +181,9 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 comparada com o que cada candidato procura.
               </p>
               <p>
-                <span className="font-medium">O que é coletado.</span> Só o seu
-                nome e o seu e-mail corporativo, que já estavam no convite.
+                <span className="font-medium">O que é coletado.</span> Coletamos
+                só seu e-mail corporativo, área e papel, que já estavam no
+                convite, e as 5 respostas. Seu nome não é pedido.
               </p>
               <p>
                 <span className="font-medium">Quem vê.</span> A empresa vê a
@@ -180,6 +203,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
           >
             <Checkbox
               id="culture-consent"
+              aria-describedby="culture-consent-ajuda"
               className="size-[18px]"
               checked={accepted}
               onCheckedChange={(checked) => setAccepted(checked === true)}
@@ -196,7 +220,10 @@ export function CultureInviteScreen({ token }: { token: string }) {
             >
               Começar
             </Button>
-            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+            <p
+              id="culture-consent-ajuda"
+              className="text-center text-xs leading-relaxed text-muted-foreground"
+            >
               Versão do aceite: {CULTURE_CONSENT_VERSION}. Sem o aceite o
               questionário não abre.
             </p>
@@ -208,33 +235,54 @@ export function CultureInviteScreen({ token }: { token: string }) {
           if (!question) return null;
           const chosen = answers[question.axisId];
           const isLast = step.index === TOTAL_QUESTIONS - 1;
+          const rotuloProgresso = `Pergunta ${step.index + 1} de ${TOTAL_QUESTIONS}`;
+          const valorProgresso = Math.round(
+            ((step.index + 1) / TOTAL_QUESTIONS) * 100
+          );
 
           return (
             <section className="flex flex-1 flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between text-[13px] text-muted-foreground">
-                  <span aria-live="polite">
-                    Pergunta {step.index + 1} de {TOTAL_QUESTIONS}
-                  </span>
-                  <span>Oi, {invite.firstName} · até 5 min</span>
+                {/* O número da pergunta é lido no título, que recebe o foco. */}
+                <div
+                  className="flex justify-between text-[13px] text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  <span>{rotuloProgresso}</span>
+                  <span>até 5 min</span>
                 </div>
                 <Progress
                   className="h-1.5 bg-muted"
-                  value={((step.index + 1) / TOTAL_QUESTIONS) * 100}
+                  value={valorProgresso}
+                  // O `Progress` do kit não repassa `value` ao Radix.
+                  aria-valuenow={valorProgresso}
+                  aria-label={rotuloProgresso}
+                  aria-valuetext={rotuloProgresso}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
+                <h1
+                  id="consulta-pergunta"
+                  ref={tituloRef}
+                  tabIndex={-1}
+                  className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+                >
+                  <span className="sr-only">{rotuloProgresso}: </span>
                   {question.prompt}
                 </h1>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p
+                  id="consulta-pergunta-dica"
+                  className="text-sm leading-relaxed text-muted-foreground"
+                >
                   Responda pelo que acontece de verdade no seu setor, não pelo
                   que deveria acontecer.
                 </p>
               </div>
 
               <RadioGroup
+                aria-labelledby="consulta-pergunta"
+                aria-describedby="consulta-pergunta-dica"
                 className="gap-2.5"
                 value={chosen ?? ''}
                 onValueChange={(value) =>
@@ -286,7 +334,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 </Button>
                 <button
                   type="button"
-                  className="text-center text-[13px] text-muted-foreground underline underline-offset-4"
+                  className="min-h-12 text-center text-[13px] text-muted-foreground underline underline-offset-4"
                   onClick={() =>
                     setStep(
                       step.index === 0

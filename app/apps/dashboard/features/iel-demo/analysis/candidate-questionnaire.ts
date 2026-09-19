@@ -72,7 +72,12 @@ import {
 import { FIT_AXES, type FitAxisId } from './fit-axes';
 
 /** Versão do texto de aceite apresentado ao candidato (M7). */
-export const CANDIDATE_CONSENT_VERSION = '2026-09-19';
+/*
+ * 2026-09-20: "percentual de aderência por eixo" virou linguagem de gente
+ * ("quanto você combina com a empresa em cada ponto"). O sentido não mudou,
+ * mas o texto que a pessoa aceitou mudou, então a versão sobe.
+ */
+export const CANDIDATE_CONSENT_VERSION = '2026-09-20';
 
 /**
  * O texto que abre o questionário, antes da primeira pergunta.
@@ -90,7 +95,7 @@ export const CANDIDATE_CONSENT_TEXT = {
   collected:
     'Coletamos apenas a alternativa escolhida em cada uma das 5 perguntas. Nada de saúde, família, religião, opinião política ou teste de personalidade.',
   whoSees:
-    'Quem vê: a equipe do IEL que cuida desta vaga. Se o seu currículo for encaminhado, a empresa vê o percentual de aderência por eixo — nunca as suas respostas uma a uma.',
+    'Quem vê: a equipe do IEL que cuida desta vaga. Se o seu currículo for encaminhado, a empresa vê quanto você combina com ela em cada ponto — nunca as suas respostas uma a uma.',
   retention:
     'As respostas ficam ligadas a esta candidatura e deixam de ser usadas quando a vaga se encerra.',
   rights:

@@ -1,10 +1,10 @@
 import { COPY } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import {
+  getCompaniesWithCultureAnswers,
   getCultureAttentionPoints,
   getJobRanking,
   getRegisteredReferrals,
-  getVisibleCompanies,
   getVisibleJobs,
   type JobRankingEntry
 } from '@/features/iel-demo/state/selectors';
@@ -22,6 +22,7 @@ import { routes } from '@workspace/routes';
  */
 export type Pendencia = {
   id: string;
+  tipo: TipoDePendencia;
   titulo: string;
   resumo: string;
   href: string;
@@ -30,6 +31,26 @@ export type Pendencia = {
 };
 
 export const PENDENCIAS_VISIVEIS = 5;
+
+/**
+ * O tipo agrupa a fila na tela. Com milhares de vagas, uma lista corrida de
+ * títulos não diz o que fazer; o cabeçalho do grupo diz.
+ */
+export type TipoDePendencia =
+  | 'respostas'
+  | 'perguntas'
+  | 'envio'
+  | 'questionario'
+  | 'cultura';
+
+/** Rótulo do grupo, na ordem da urgência. */
+export const TIPO_DE_PENDENCIA_LABEL: Record<TipoDePendencia, string> = {
+  respostas: 'Respostas para usar',
+  perguntas: 'Perguntas sem resposta',
+  envio: 'Currículos para enviar',
+  questionario: 'Candidatos sem responder',
+  cultura: 'Empresas com perfil aberto'
+};
 
 /**
  * A fila do dia, montada do estado atual das vagas e das empresas.
@@ -71,6 +92,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     if (respondidas > 0) {
       pendencias.push({
         id: `${job.id}-respostas`,
+        tipo: 'respostas',
         titulo: job.title,
         resumo: `${plural(respondidas, 'resposta chegou', 'respostas chegaram')} e ainda não entraram na análise`,
         href: iel.jobs.byId(job.id).index,
@@ -83,6 +105,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     if (semResposta > 0) {
       pendencias.push({
         id: `${job.id}-perguntas`,
+        tipo: 'perguntas',
         titulo: job.title,
         resumo: `${plural(semResposta, 'pergunta', 'perguntas')} sem resposta`,
         href: iel.jobs.byId(job.id).index,
@@ -95,6 +118,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     if (compativeis > 0 && jaEnviados === 0) {
       pendencias.push({
         id: `${job.id}-envio`,
+        tipo: 'envio',
         titulo: job.title,
         resumo: `${plural(compativeis, 'pessoa compatível', 'pessoas compatíveis')}, nenhum currículo enviado`,
         href: iel.jobs.byId(job.id).referral,
@@ -107,6 +131,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     if (semQuestionario > 0) {
       pendencias.push({
         id: `${job.id}-questionario`,
+        tipo: 'questionario',
         titulo: job.title,
         resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} as 5 perguntas`,
         href: iel.jobs.byId(job.id).index,
@@ -116,12 +141,15 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     }
   }
 
-  for (const company of getVisibleCompanies(state)) {
+  // Só as empresas com alguma resposta de cultura: sem resposta não há ponto
+  // em aberto, e percorrer a carteira inteira custaria cada render da barra.
+  for (const company of getCompaniesWithCultureAnswers(state)) {
     const emAberto = getCultureAttentionPoints(state, company.id).length;
     if (emAberto === 0) continue;
 
     pendencias.push({
       id: `${company.id}-cultura`,
+      tipo: 'cultura',
       titulo: company.name,
       resumo: `${plural(emAberto, 'ponto do dia a dia', 'pontos do dia a dia')} sem resposta suficiente da equipe`,
       href: routes.dashboard.iel.companies.byId(company.id),

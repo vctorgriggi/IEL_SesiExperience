@@ -183,6 +183,14 @@ export function ImportScreen({ jobId }: { jobId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Importar planilha do Empregare
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {vaga.title} · confira o que entra antes de gravar.
+        </p>
+      </div>
       <Trilha atual={passo} />
 
       {passo === 'enviar' ? (

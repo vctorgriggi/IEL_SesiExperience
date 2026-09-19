@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { ReferralReportScreen } from '@/components/iel-demo/referrals/referral-report-screen';
+
+export const metadata: Metadata = { title: 'Relatório da vaga' };
 
 type PageProps = {
   params: Promise<{ token: string }>;

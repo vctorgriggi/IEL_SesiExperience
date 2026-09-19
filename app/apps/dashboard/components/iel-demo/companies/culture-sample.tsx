@@ -10,13 +10,14 @@ import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import type { CultureInvitePerson } from '@/features/iel-demo/state/reducer';
 import {
-  DEMO_REFERENCE_DATE,
+  getCompany,
   getCultureInvites,
+  getCultureInviteStatus,
   type CultureInviteStatus
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { CultureRespondentInvite } from '@/features/iel-demo/types';
-import { MoreVertical, Plus, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, MoreVertical, Plus, Trash2 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -40,22 +41,33 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow
 } from '@workspace/ui/shadcn/table';
 
+import { SimularEnvioDialog } from '../chat/simular-envio-dialog';
+
 /**
  * Quem foi convidado e quem ainda falta (M2).
  *
  * Esta lista é da analista do IEL. A empresa não a vê — PRODUTO.md §5.2 diz
  * que quem responde sobre o próprio ambiente de trabalho não pode ficar
- * identificado para a gestão, e uma linha com "respondeu em 08/09" ao lado do
- * nome é exatamente essa identificação.
+ * identificado para a gestão.
  *
- * O que aparece aqui é operação do convite (nome, área, papel, estado), nunca
- * resposta: não há como saber, desta tela, o que qualquer pessoa respondeu.
+ * Privacidade por padrão, linha a linha:
+ *
+ * - **Sem nome.** O convite não guarda nome; a linha mostra o e-mail
+ *   corporativo, que é o que o reenvio precisa. O e-mail nasce mascarado
+ *   ("d•••@cerrado.example.com") e só aparece inteiro por ação da analista —
+ *   quem está olhando por cima do ombro dela não lê a lista.
+ * - **Sem data da resposta.** "Respondeu", "Aguardando" ou "Prazo vencido",
+ *   nunca "respondeu em 08/09 às 14h". Data exata + área pequena + a média do
+ *   ponto reidentificam quem respondeu o quê.
+ * - **Nunca resposta.** Não há como saber, desta tela, o que qualquer pessoa
+ *   respondeu.
  */
 
 /** Papel de quem responde, na palavra curta que cabe numa célula. */
@@ -67,35 +79,23 @@ const ROLE_LABEL: Record<CultureInviteRole, string> = {
 
 const ROLE_OPTIONS: CultureInviteRole[] = ['equipe', 'gestao', 'rh'];
 
-/** "DD/MM": a data como a linha a diz, sem o ano corrente. */
-function shortDate(iso: string): string {
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}
+/** O estado da linha, sem data: quando a pessoa respondeu não aparece. */
+const STATUS_LABEL: Record<CultureInviteStatus, string> = {
+  respondido: 'Respondeu',
+  aberto: 'Aguardando',
+  expirado: 'Prazo vencido'
+};
 
-/**
- * Estado do convite contra a data da demonstração.
- *
- * Repete a regra de `readInviteStatus` porque o seletor não a exporta; o que
- * ela decide é só o texto da linha — quem responde ou não continua sendo o
- * reducer.
- */
-function inviteStatus(invite: CultureRespondentInvite): CultureInviteStatus {
-  if (invite.answeredAt) return 'respondido';
-  return DEMO_REFERENCE_DATE > invite.expiresAt ? 'expirado' : 'aberto';
-}
-
-function statusLabel(invite: CultureRespondentInvite): string {
-  const status = inviteStatus(invite);
-  if (status === 'respondido') {
-    return `Respondeu em ${shortDate(invite.answeredAt ?? '')}`;
-  }
-  if (status === 'expirado') return `Venceu em ${shortDate(invite.expiresAt)}`;
-  return `Aguardando · vence em ${shortDate(invite.expiresAt)}`;
+/** "davi.rezende@cerrado.example.com" vira "d•••@cerrado.example.com". */
+function maskEmail(email: string): string {
+  const [local = '', domain = ''] = email.split('@');
+  if (!domain) return `${local.slice(0, 1)}•••`;
+  return `${local.slice(0, 1)}•••@${domain}`;
 }
 
 /** Uma linha em branco do formulário de convite. */
 function emptyRow(): CultureInvitePerson {
-  return { name: '', corporateEmail: '', role: 'equipe', area: '' };
+  return { corporateEmail: '', role: 'equipe', area: '' };
 }
 
 /** Endereço absoluto do link, para a pessoa colar num e-mail. */
@@ -107,10 +107,19 @@ function inviteUrl(token: string): string {
 }
 
 /** Menu da linha: o que dá para fazer com um convite já enviado. */
-function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
+function InviteActions({
+  invite,
+  label
+}: {
+  invite: CultureRespondentInvite;
+  /** Como a linha chama a pessoa: o e-mail, mascarado ou não. */
+  label: string;
+}) {
   const { dispatch } = useIelDemo();
   const [linkVisivel, setLinkVisivel] = useState<string | null>(null);
-  const respondido = inviteStatus(invite) === 'respondido';
+  const [simulando, setSimulando] = useState(false);
+  const respondido = getCultureInviteStatus(invite) === 'respondido';
+  const empresa = getCompany(invite.companyId)?.name;
 
   const copiar = async () => {
     const url = inviteUrl(invite.token);
@@ -136,8 +145,9 @@ function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-sm"
-            aria-label={`Ações do convite de ${invite.name}`}
+            size="icon"
+            aria-label={`Ações para o convite de ${label}`}
+            className="size-10"
           >
             <MoreVertical />
           </Button>
@@ -152,7 +162,7 @@ function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
                 at: nowIso()
               });
               toast.success(
-                `Link reenviado para ${invite.name.split(' ')[0]}, com mais ${CULTURE_INVITE_DEADLINE_DAYS} dias.`
+                `Link reenviado para ${label}, com mais ${CULTURE_INVITE_DEADLINE_DAYS} dias.`
               );
             }}
           >
@@ -161,8 +171,23 @@ function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
           <DropdownMenuItem onSelect={() => void copiar()}>
             Copiar link
           </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={respondido}
+            onSelect={() => setSimulando(true)}
+          >
+            Simular envio
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <SimularEnvioDialog
+        destinatario="colaborador"
+        link={routes.dashboard.iel.cultureInvite.conversationByToken(
+          invite.token
+        )}
+        contexto={{ empresa }}
+        open={simulando}
+        onOpenChange={setSimulando}
+      />
     </div>
   );
 }
@@ -170,6 +195,7 @@ function InviteActions({ invite }: { invite: CultureRespondentInvite }) {
 /** A amostra convidada, uma pessoa por linha. */
 export function CultureSampleTable({ companyId }: { companyId: string }) {
   const { state } = useIelDemo();
+  const [mostrarEmails, setMostrarEmails] = useState(false);
   const invites = getCultureInvites(state, companyId);
 
   if (invites.length === 0) {
@@ -182,37 +208,90 @@ export function CultureSampleTable({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table>
-        <TableHeader className="bg-muted/50">
-          <TableRow>
-            <TableHead>Pessoa</TableHead>
-            <TableHead className="w-[12rem]">Área</TableHead>
-            <TableHead className="w-[7rem]">Papel</TableHead>
-            <TableHead className="w-[14rem]">Estado</TableHead>
-            <TableHead className="w-[6rem] text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invites.map((invite) => (
-            <TableRow key={invite.id}>
-              <TableCell className="font-medium">{invite.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {invite.area}
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">{ROLE_LABEL[invite.role]}</Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {statusLabel(invite)}
-              </TableCell>
-              <TableCell className="text-right">
-                <InviteActions invite={invite} />
-              </TableCell>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          Sem nome e sem data da resposta: só quem foi convidado e se já
+          respondeu.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMostrarEmails((atual) => !atual)}
+        >
+          {mostrarEmails ? <EyeOff /> : <Eye />}
+          {mostrarEmails ? 'Ocultar e-mails' : 'Mostrar e-mails'}
+        </Button>
+      </div>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableCaption className="sr-only">
+            Colaboradores convidados a responder sobre a empresa: e-mail{' '}
+            {mostrarEmails ? 'completo' : 'mascarado'}, área, papel e estado
+          </TableCaption>
+          <TableHeader className="bg-muted">
+            <TableRow>
+              <TableHead scope="col">E-mail corporativo</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[12rem]"
+              >
+                Área
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[7rem]"
+              >
+                Papel
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[10rem]"
+              >
+                Estado
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-12"
+              >
+                <span className="sr-only">Ações</span>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {invites.map((invite) => {
+              const email = mostrarEmails
+                ? invite.corporateEmail
+                : maskEmail(invite.corporateEmail);
+              return (
+                <TableRow key={invite.id}>
+                  <TableCell className="font-medium">{email}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {invite.area}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="px-1.5 text-muted-foreground"
+                    >
+                      {ROLE_LABEL[invite.role]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {STATUS_LABEL[getCultureInviteStatus(invite)]}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <InviteActions
+                      invite={invite}
+                      label={email}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -242,8 +321,7 @@ export function CultureInviteForm({
 
   const sugerido = getSuggestedSampleSize(Number.parseInt(headcount, 10));
   const preenchidas = linhas.filter(
-    (linha) =>
-      linha.name.trim().length > 0 && linha.corporateEmail.trim().length > 0
+    (linha) => linha.corporateEmail.trim().length > 0
   );
 
   const atualizar = (index: number, patch: Partial<CultureInvitePerson>) =>
@@ -287,7 +365,7 @@ export function CultureInviteForm({
       <div className="flex flex-col gap-4">
         {linhas.map((linha, index) => (
           <div
-            // A posição é a identidade da linha: nome e e-mail começam vazios
+            // A posição é a identidade da linha: e-mail e área começam vazios
             // e mudam a cada tecla, então não servem de chave.
             key={index}
             className="flex flex-col gap-2 rounded-lg border p-3"
@@ -310,14 +388,6 @@ export function CultureInviteForm({
               ) : null}
             </div>
 
-            <Input
-              aria-label={`Nome da pessoa ${index + 1}`}
-              placeholder="Nome"
-              value={linha.name}
-              onChange={(event) =>
-                atualizar(index, { name: event.target.value })
-              }
-            />
             <Input
               aria-label={`E-mail corporativo da pessoa ${index + 1}`}
               type="email"
@@ -385,8 +455,9 @@ export function CultureInviteForm({
             : 'convites'}
         </Button>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Guardamos só nome e e-mail corporativo. As respostas entram agregadas
-          na média da empresa: nem a gestão vê quem respondeu o quê.
+          Guardamos só e-mail corporativo, área e papel — nome não entra. As
+          respostas entram agregadas na média da empresa: nem a gestão vê quem
+          respondeu o quê.
         </p>
       </div>
     </div>

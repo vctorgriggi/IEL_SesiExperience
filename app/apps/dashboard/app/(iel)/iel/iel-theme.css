@@ -9,7 +9,17 @@
  *   marfim     #F4F1EA  → sidebar, muted, secondary, accent
  *   areia      #E9E5DB  → border, input, sidebar-accent
  *   ardósia    #5B6072  → muted-foreground (textos de apoio e legendas)
- *   laranja    #FF5A36  → ring e `--brand-accent`, só como ponto de atenção
+ *   laranja    #FF5A36  → `--brand-accent`, só como ponto de atenção
+ *
+ * Acessibilidade (WCAG 2.1 AA, medido em sRGB):
+ *   ardósia sobre branco 6,3:1 · sobre marfim 5,6:1 · sobre areia 5,0:1 —
+ *   passa 4,5:1 para texto; `--muted-foreground` fica como está.
+ *   `--input` (contorno de checkbox, rádio e campo) era a areia, 1,25:1 sobre
+ *   o branco: o controle não se distinguia do fundo (1.4.11 pede 3:1). Passa
+ *   a um cinza quente de 3,4:1 (3,0:1 sobre o marfim). A borda de cartão
+ *   (`--border`) continua areia — ela separa, não identifica controle.
+ *   `--ring` era o laranja da marca, 3,1:1 sobre branco e 2,7:1 sobre marfim;
+ *   o anel de foco passa a um laranja queimado de 4,5:1 / 4,0:1.
  *
  * Escopado na área do protótipo para não tocar no tema âmbar do restante do
  * produto. Nenhuma classe utilitária nova, nenhuma escala de elevação
@@ -38,8 +48,8 @@ body:has([data-iel-theme]),
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
   --border: 43 24% 89%;
-  --input: 43 24% 89%;
-  --ring: 11 100% 61%;
+  --input: 43 12% 52%;
+  --ring: 11 100% 45%;
 
   /* Laranja da marca: haste da logo, marca do 35%, ponto de atenção. */
   --brand-accent: 11 100% 61%;
@@ -58,7 +68,7 @@ body:has([data-iel-theme]),
   --sidebar-accent: 43 24% 89%;
   --sidebar-accent-foreground: 226 41% 12%;
   --sidebar-border: 43 24% 89%;
-  --sidebar-ring: 11 100% 61%;
+  --sidebar-ring: 11 100% 45%;
 
   /*
    * Estado. O kit do Arki aponta `--success`/`--warning`/`--info` para a

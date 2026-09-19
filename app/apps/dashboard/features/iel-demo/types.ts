@@ -549,16 +549,19 @@ export type DemoUiState = {
 /**
  * Convite a um colaborador para responder o traçado cultural da empresa (M2).
  *
- * A analista cadastra nome e e-mail corporativo de uma amostra da área; cada
- * pessoa recebe um link próprio, sem login, válido por três dias. O que se
- * guarda é o mínimo que a consulta exige — ver `analysis/culture-invites.ts`
- * para as decisões de privacidade.
+ * A analista cadastra e-mail corporativo, área e papel de uma amostra da
+ * área; cada pessoa recebe um link próprio, sem login, válido por três dias.
+ * Não há campo de nome, e não por esquecimento: a média não usa o nome, e um
+ * nome ao lado de "respondeu" é o primeiro passo para ligar alguém à própria
+ * resposta. Ver `analysis/culture-invites.ts` para as decisões de privacidade.
  */
 export type CultureRespondentInvite = {
   id: string;
   companyId: string;
-  name: string;
-  /** E-mail corporativo. É a chave de unicidade dentro da empresa. */
+  /**
+   * E-mail corporativo. É a chave de unicidade dentro da empresa e o único
+   * contato que o reenvio e a cobrança precisam.
+   */
   corporateEmail: string;
   role: CultureInviteRole;
   /** Área da pessoa, nas palavras da empresa. Ordena a leitura, não filtra. */

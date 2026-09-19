@@ -202,6 +202,15 @@ function ResumeDialog({ person }: { person: ReferralReportPerson }) {
  * resolve. O que muda no papel é o que não faz sentido nele — os botões — e o
  * que o papel perde — a cor de fundo das barrinhas.
  */
+/**
+ * Para onde a empresa escreve quando quer falar com a analista.
+ *
+ * O botão "Falar com a analista" abria um e-mail para `company.contactEmail`
+ * — o contato da própria empresa. Quem lia o relatório escrevia para si mesmo.
+ * O endereço é o do Centro de Empregos do IEL; na demonstração, fictício.
+ */
+const IEL_CONTACT_EMAIL = 'centro.empregos@iel.example.org';
+
 const PRINT_CSS = `@media print {
   [data-report-actions] { display: none !important; }
   [data-report-page] { background: #fff !important; }
@@ -277,7 +286,7 @@ export function ReferralReportScreen({ token }: { token: string }) {
             size="sm"
             asChild
           >
-            <a href={`mailto:${company.contactEmail}?subject=${assunto}`}>
+            <a href={`mailto:${IEL_CONTACT_EMAIL}?subject=${assunto}`}>
               Falar com a analista
             </a>
           </Button>

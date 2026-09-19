@@ -14,7 +14,7 @@ import {
   BreadcrumbSeparator
 } from '@workspace/ui/shadcn/breadcrumb';
 import { Separator } from '@workspace/ui/shadcn/separator';
-import { SidebarTrigger } from '@workspace/ui/shadcn/sidebar';
+import { SidebarTrigger, useSidebar } from '@workspace/ui/shadcn/sidebar';
 
 import {
   usePageHeaderContent,
@@ -38,7 +38,9 @@ function caminhoDaRota(pathname: string): PageHeaderCrumb[] {
     return [{ label: 'Perguntas' }];
   if (pathname.startsWith(iel.referrals.index))
     return [{ label: 'Encaminhamentos' }];
-  if (pathname.startsWith(iel.dataSources)) return [{ label: 'De onde vem' }];
+  if (pathname.startsWith(iel.dataSources)) return [{ label: 'Integrações' }];
+  if (pathname.startsWith(iel.candidates)) return [{ label: 'Candidatos' }];
+  if (pathname.startsWith(iel.bi)) return [{ label: 'BI' }];
   return [{ label: 'Hoje' }];
 }
 
@@ -46,18 +48,28 @@ function caminhoDaRota(pathname: string): PageHeaderCrumb[] {
 export function SiteHeader() {
   const pathname = usePathname();
   const { breadcrumb, actions } = usePageHeaderContent();
+  const { isMobile, open, openMobile } = useSidebar();
   const trilha =
     breadcrumb && breadcrumb.length > 0 ? breadcrumb : caminhoDaRota(pathname);
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        {/* O kit traz o nome em inglês ("Toggle Sidebar"); o `aria-label`
+            o substitui, e o `aria-expanded` diz se o menu está aberto. */}
+        <SidebarTrigger
+          className="-ml-1"
+          aria-label="Menu principal"
+          aria-expanded={isMobile ? openMobile : open}
+        />
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <Breadcrumb className="min-w-0 flex-1">
+        <Breadcrumb
+          aria-label="Onde você está"
+          className="min-w-0 flex-1"
+        >
           {/*
            * Em 390px o caminho não pode quebrar em três linhas e empurrar o
            * título: a lista fica numa linha só, os degraus do meio somem no

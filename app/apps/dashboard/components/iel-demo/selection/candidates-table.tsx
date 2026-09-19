@@ -38,6 +38,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -54,12 +55,22 @@ import {
 import { CandidateStateBadge } from './candidate-state-badge';
 
 /** As quatro leituras da mesma lista. Sugeridos é a que abre. */
-type Aba = 'sugeridos' | 'todos' | 'resgate' | 'sem-resposta';
+export type CandidatesTab = 'sugeridos' | 'todos' | 'resgate' | 'sem-resposta';
+
+type Aba = CandidatesTab;
 
 /** Quantas linhas a aba de sugeridos mostra. */
 const SUGERIDOS = 5;
 
 const ABAS: Aba[] = ['sugeridos', 'todos', 'resgate', 'sem-resposta'];
+
+/** Como cada aba se chama na legenda da tabela, lida pelo leitor de tela. */
+const ABA_LEGENDA: Record<Aba, string> = {
+  sugeridos: 'Sugeridos',
+  todos: 'Todos',
+  resgate: 'Resgate',
+  'sem-resposta': 'Sem resposta'
+};
 
 type Coluna = 'combina' | 'requisitos' | 'estado';
 
@@ -72,6 +83,23 @@ const COLUNA_LABEL: Record<Coluna, string> = {
 };
 
 type Ordem = { coluna: 'combina' | 'requisitos'; direcao: 'asc' | 'desc' };
+
+/** O `aria-sort` do cabeçalho: diz ao leitor de tela como a coluna está. */
+function ariaSort(
+  ordem: Ordem | null,
+  coluna: Ordem['coluna']
+): 'ascending' | 'descending' | 'none' {
+  if (!ordem || ordem.coluna !== coluna) return 'none';
+  return ordem.direcao === 'asc' ? 'ascending' : 'descending';
+}
+
+/** O que o próximo clique no botão de ordenar faz, dito por extenso. */
+function proximaOrdem(ordem: Ordem | null, coluna: Ordem['coluna']): string {
+  if (!ordem || ordem.coluna !== coluna) return 'do maior para o menor';
+  return ordem.direcao === 'desc'
+    ? 'do menor para o maior'
+    : 'tirar a ordenação';
+}
 
 /** Quem não tem medida vai para o fim, ordene-se como se ordenar. */
 function comparar(
@@ -95,6 +123,12 @@ export type CandidatesTableProps = {
   onToggleComparison: (applicationId: string) => void;
   onOpenPerson: (entry: JobRankingEntry) => void;
   onAskPerson: (entry: JobRankingEntry) => void;
+  /**
+   * Aba controlada por fora: o cartão "Resgate" da vaga abre esta tabela já
+   * na aba Resgate. Sem ela, a tabela guarda a própria aba.
+   */
+  tab?: CandidatesTab;
+  onTabChange?: (tab: CandidatesTab) => void;
 };
 
 /**
@@ -115,9 +149,16 @@ export function CandidatesTable({
   onToggleReferral,
   onToggleComparison,
   onOpenPerson,
-  onAskPerson
+  onAskPerson,
+  tab,
+  onTabChange
 }: CandidatesTableProps) {
-  const [aba, setAba] = useState<Aba>('sugeridos');
+  const [abaInterna, setAbaInterna] = useState<Aba>('sugeridos');
+  const aba = tab ?? abaInterna;
+  const setAba = (valor: Aba) => {
+    setAbaInterna(valor);
+    onTabChange?.(valor);
+  };
   const [busca, setBusca] = useState('');
   const [ordem, setOrdem] = useState<Ordem | null>(null);
   const [pagina, setPagina] = useState(0);
@@ -210,7 +251,10 @@ export function CandidatesTable({
 
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            />
             <Label
               htmlFor="filtrar-por-nome"
               className="sr-only"
@@ -236,9 +280,9 @@ export function CandidatesTable({
                 variant="outline"
                 size="sm"
               >
-                <Columns3 />
+                <Columns3 aria-hidden="true" />
                 Colunas
-                <ChevronDown />
+                <ChevronDown aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -263,12 +307,36 @@ export function CandidatesTable({
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Candidatos da vaga, aba {ABA_LEGENDA[aba]}:{' '}
+            {filtradas.length === 1
+              ? '1 pessoa'
+              : `${filtradas.length} pessoas`}
+            , página {paginaAtual + 1} de {totalPaginas}.
+            {ordem
+              ? ` Ordenada por ${COLUNA_LABEL[ordem.coluna].toLowerCase()}, ${
+                  ordem.direcao === 'desc'
+                    ? 'do maior para o menor'
+                    : 'do menor para o maior'
+                }.`
+              : ''}{' '}
+            Marque até {referralLimit} pessoas para envio.
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead className="w-10" />
-              <TableHead>Pessoa</TableHead>
+              <TableHead
+                scope="col"
+                className="w-10"
+              >
+                <span className="sr-only">Marcar para envio</span>
+              </TableHead>
+              <TableHead scope="col">Pessoa</TableHead>
               {colunas.combina ? (
-                <TableHead className="w-[220px]">
+                <TableHead
+                  scope="col"
+                  aria-sort={ariaSort(ordem, 'combina')}
+                  className="w-[220px]"
+                >
                   {/*
                    * "Combina com a empresa" por extenso empurrava as colunas
                    * de largura fixa e mudava de tamanho quando as colunas
@@ -282,11 +350,17 @@ export function CandidatesTable({
                         <button
                           type="button"
                           onClick={() => ordenar('combina')}
-                          className="inline-flex items-center gap-1 font-medium hover:text-foreground"
+                          className="-mx-2 inline-flex min-h-10 items-center gap-1 px-2 font-medium hover:text-foreground"
                         >
                           Combina
+                          <span className="sr-only">
+                            {' '}
+                            com a empresa. Ordenar{' '}
+                            {proximaOrdem(ordem, 'combina')}
+                          </span>
                           {ordem?.coluna === 'combina' ? (
                             <ChevronDown
+                              aria-hidden="true"
                               className={
                                 ordem.direcao === 'asc'
                                   ? 'size-3.5 rotate-180'
@@ -304,15 +378,24 @@ export function CandidatesTable({
                 </TableHead>
               ) : null}
               {colunas.requisitos ? (
-                <TableHead className="w-[140px] text-right">
+                <TableHead
+                  scope="col"
+                  aria-sort={ariaSort(ordem, 'requisitos')}
+                  className="w-[140px] text-right"
+                >
                   <button
                     type="button"
                     onClick={() => ordenar('requisitos')}
-                    className="ml-auto inline-flex items-center gap-1 font-medium hover:text-foreground"
+                    className="-mx-2 ml-auto inline-flex min-h-10 items-center gap-1 px-2 font-medium hover:text-foreground"
                   >
                     Requisitos
+                    <span className="sr-only">
+                      {' '}
+                      da vaga. Ordenar {proximaOrdem(ordem, 'requisitos')}
+                    </span>
                     {ordem?.coluna === 'requisitos' ? (
                       <ChevronDown
+                        aria-hidden="true"
                         className={
                           ordem.direcao === 'asc'
                             ? 'size-3.5 rotate-180'
@@ -324,16 +407,31 @@ export function CandidatesTable({
                 </TableHead>
               ) : null}
               {colunas.estado ? (
-                <TableHead className="w-[180px]">Estado</TableHead>
+                <TableHead
+                  scope="col"
+                  className="w-[180px]"
+                >
+                  Estado
+                </TableHead>
               ) : null}
-              <TableHead className="w-12" />
+              <TableHead
+                scope="col"
+                className="w-12"
+              >
+                <span className="sr-only">Ações</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visiveis.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={
+                    3 +
+                    Number(colunas.combina) +
+                    Number(colunas.requisitos) +
+                    Number(colunas.estado)
+                  }
                   className="h-24 text-center text-muted-foreground"
                 >
                   Ninguém nesta lista com esse nome.
@@ -349,20 +447,31 @@ export function CandidatesTable({
                     key={entry.application.id}
                     data-state={marcada ? 'selected' : undefined}
                   >
-                    <TableCell className="pl-3">
-                      <Checkbox
-                        checked={marcada}
-                        disabled={!marcada && listaCheia}
-                        aria-label={`Marcar ${nome} para envio`}
-                        onCheckedChange={() =>
-                          onToggleReferral(entry.application.id)
-                        }
-                      />
+                    <TableCell className="py-0 pl-1">
+                      {/*
+                       * O quadradinho tem 16px; o rótulo em volta dá a ele
+                       * uma área de toque de 44px sem mudar o desenho.
+                       */}
+                      <label className="flex size-11 cursor-pointer items-center justify-center has-disabled:cursor-not-allowed">
+                        <Checkbox
+                          checked={marcada}
+                          disabled={!marcada && listaCheia}
+                          aria-label={
+                            !marcada && listaCheia
+                              ? `Marcar ${nome} para envio (a remessa já tem ${referralLimit})`
+                              : `Marcar ${nome} para envio`
+                          }
+                          onCheckedChange={() =>
+                            onToggleReferral(entry.application.id)
+                          }
+                        />
+                      </label>
                     </TableCell>
                     <TableCell>
                       <Button
+                        id={`abrir-pessoa-${entry.application.id}`}
                         variant="link"
-                        className="h-auto w-fit px-0 py-0 text-left text-foreground"
+                        className="h-auto min-h-6 w-fit px-0 py-0 text-left text-foreground"
                         onClick={() => onOpenPerson(entry)}
                       >
                         {nome}
@@ -375,20 +484,44 @@ export function CandidatesTable({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress
+                            aria-hidden="true"
                             value={total ?? 0}
                             className="h-2 w-28 bg-muted"
                           />
-                          <span className="tabular-nums">
-                            {total === null ? '—' : `${Math.round(total)}%`}
-                          </span>
+                          {total === null ? (
+                            <span className="tabular-nums">
+                              <span aria-hidden="true">—</span>
+                              <span className="sr-only">
+                                Ainda sem medida de combinação com a empresa
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="tabular-nums">
+                              {Math.round(total)}%
+                              <span className="sr-only">
+                                {' '}
+                                combina com a empresa
+                              </span>
+                            </span>
+                          )}
                         </div>
                       </TableCell>
                     ) : null}
                     {colunas.requisitos ? (
                       <TableCell className="text-right tabular-nums">
-                        {entry.technicalMatch === null
-                          ? '—'
-                          : `${entry.technicalMatch}%`}
+                        {entry.technicalMatch === null ? (
+                          <>
+                            <span aria-hidden="true">—</span>
+                            <span className="sr-only">
+                              Sem percentual de requisitos
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            {entry.technicalMatch}%
+                            <span className="sr-only"> dos requisitos</span>
+                          </>
+                        )}
                       </TableCell>
                     ) : null}
                     {colunas.estado ? (
@@ -402,10 +535,10 @@ export function CandidatesTable({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+                            aria-label={`Ações para ${nome}`}
+                            className="flex size-10 text-muted-foreground data-[state=open]:bg-muted"
                           >
-                            <MoreVertical />
-                            <span className="sr-only">Abrir menu</span>
+                            <MoreVertical aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -485,7 +618,10 @@ export function CandidatesTable({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-fit items-center justify-center text-sm font-medium">
+          <div
+            aria-live="polite"
+            className="flex w-fit items-center justify-center text-sm font-medium"
+          >
             Página {paginaAtual + 1} de {totalPaginas}
           </div>
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -497,7 +633,7 @@ export function CandidatesTable({
               disabled={paginaAtual === 0}
             >
               <span className="sr-only">Primeira página</span>
-              <ChevronsLeft />
+              <ChevronsLeft aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -507,7 +643,7 @@ export function CandidatesTable({
               disabled={paginaAtual === 0}
             >
               <span className="sr-only">Página anterior</span>
-              <ChevronLeft />
+              <ChevronLeft aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -519,7 +655,7 @@ export function CandidatesTable({
               disabled={paginaAtual >= totalPaginas - 1}
             >
               <span className="sr-only">Próxima página</span>
-              <ChevronRight />
+              <ChevronRight aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -529,7 +665,7 @@ export function CandidatesTable({
               disabled={paginaAtual >= totalPaginas - 1}
             >
               <span className="sr-only">Última página</span>
-              <ChevronsRight />
+              <ChevronsRight aria-hidden="true" />
             </Button>
           </div>
         </div>

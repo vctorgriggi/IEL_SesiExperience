@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { getReportTokenForJob } from '@/features/iel-demo/state/selectors';
+import {
+  getCompany,
+  getJob,
+  getReportTokenForJob
+} from '@/features/iel-demo/state/selectors';
 import { Copy } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
 import { Button } from '@workspace/ui/shadcn/button';
+
+import { SimularEnvioButton } from '../chat/simular-envio-dialog';
 
 /**
  * O link do relatório, para a analista mandar à empresa (S3).
@@ -18,6 +24,8 @@ import { Button } from '@workspace/ui/shadcn/button';
  */
 export function ReferralReportLink({ jobId }: { jobId: string }) {
   const [visivel, setVisivel] = useState(false);
+  const job = getJob(jobId);
+  const empresa = job ? getCompany(job.companyId)?.name : undefined;
   const path = routes.dashboard.iel.report.byToken(getReportTokenForJob(jobId));
   const url =
     typeof window === 'undefined' ? path : `${window.location.origin}${path}`;
@@ -63,6 +71,11 @@ export function ReferralReportLink({ jobId }: { jobId: string }) {
             Abrir o que a empresa vê
           </a>
         </Button>
+        <SimularEnvioButton
+          destinatario="empresa"
+          link={path}
+          contexto={{ empresa, vaga: job?.title }}
+        />
       </div>
       {visivel ? (
         <p className="break-all text-xs text-muted-foreground">{url}</p>

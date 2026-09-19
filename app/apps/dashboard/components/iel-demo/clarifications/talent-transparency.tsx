@@ -68,7 +68,8 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
         <CardHeader>
           <CardDescription>Seus dados</CardDescription>
           <CardTitle className="text-base">
-            O que está registrado sobre você
+            {/* Seção da página do candidato: abaixo do título da tela. */}
+            <h2>O que está registrado sobre você</h2>
           </CardTitle>
           <CardAction>
             <CollapsibleTrigger asChild>
@@ -95,6 +96,10 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
           <CardContent className="flex flex-col gap-6 pt-4">
             <Secao titulo="Informações a seu respeito">
               <Table>
+                <caption className="sr-only">
+                  Informações a seu respeito, de onde vieram e quando foram
+                  atualizadas
+                </caption>
                 <TableHeader>
                   <TableRow>
                     <TableHead scope="col">Informação</TableHead>
@@ -123,6 +128,9 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
             {transparency.preferences.length > 0 ? (
               <Secao titulo="O que você declarou sobre como prefere trabalhar">
                 <Table>
+                  <caption className="sr-only">
+                    O que você declarou sobre como prefere trabalhar
+                  </caption>
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Ponto</TableHead>
@@ -158,6 +166,9 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
                 </p>
               ) : (
                 <Table>
+                  <caption className="sr-only">
+                    Para quem seu perfil foi enviado
+                  </caption>
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Vaga</TableHead>

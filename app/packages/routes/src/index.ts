@@ -135,7 +135,13 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (applicationId: string) => {
           const applicationBase = `/iel/candidatura/${encodeSegment(applicationId)}`;
           return {
-            fit: resolve(`${applicationBase}/fit`)
+            fit: resolve(`${applicationBase}/fit`),
+            /**
+             * O mesmo questionário em forma de conversa guiada (C2): uma fala
+             * por vez, respostas por botão e leitura em voz alta. Grava o
+             * mesmo que `fit`; muda só a forma.
+             */
+            conversation: resolve(`${applicationBase}/conversa`)
           };
         }
       },
@@ -149,7 +155,13 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        */
       cultureInvite: {
         byToken: (token: string) =>
-          resolve(`/iel/consulta/${encodeSegment(token)}`)
+          resolve(`/iel/consulta/${encodeSegment(token)}`),
+        /**
+         * A mesma consulta em forma de conversa guiada (C2). Irmã de
+         * `byToken`, que continua devolvendo a string da tela em passos.
+         */
+        conversationByToken: (token: string) =>
+          resolve(`/iel/consulta/${encodeSegment(token)}/conversa`)
       },
       /**
        * Relatório que a empresa recebe com os currículos enviados (S3).
@@ -173,8 +185,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
+      /** Mapa de cultura: empresas e candidatos no mesmo plano. */
       cultureMap: resolve('/iel/mapa-de-cultura'),
-      dataSources: resolve('/iel/fontes-de-dados')
+      /** Integrações: o que entra, o que sai e o que fica de fora. */
+      dataSources: resolve('/iel/fontes-de-dados'),
+      /** Comunicação, questionário e consentimento dos candidatos. */
+      candidates: resolve('/iel/candidatos'),
+      /** Análises com dado agregado. */
+      bi: resolve('/iel/bi')
     },
     openEvents: {
       bySlug: (slug: string) => {

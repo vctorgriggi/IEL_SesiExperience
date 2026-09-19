@@ -1,21 +1,19 @@
 'use client';
 
-import Link from 'next/link';
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   CANDIDATE_FIT_DEADLINE_DAYS,
-  getCompanyCultureProfile,
-  getCultureSampleProgress,
   getJobRanking,
   getReferralListSelection,
-  REFERRAL_LIMIT
+  getRescueCandidates,
+  REFERRAL_LIMIT,
+  RESCUE_TECHNICAL_CEILING
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
-import { CircleAlert, Clock, TrendingUp } from 'lucide-react';
+import { Activity, Clock, TrendingUp } from 'lucide-react';
 
-import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import {
   Card,
@@ -37,7 +35,7 @@ function prazoEm(base: string, dias: number): string {
 }
 
 /**
- * Os quatro números que abrem a vaga.
+ * Os quatro números que abrem a vaga — todos **desta vaga**.
  *
  * O rótulo é curto de propósito: com o selo ocupando o canto direito do
  * cartão, uma descrição longa quebrava em duas linhas e desalinhava os quatro
@@ -45,13 +43,25 @@ function prazoEm(base: string, dias: number): string {
  * basta, e o rodapé do cartão diz o resto.
  *
  * Nenhum deles é um indicador de desempenho: os quatro são pendências. Quantos
- * já dá para enviar, quantos ainda não responderam, quantos estão marcados e
- * o quanto da empresa já foi descrito. Quem abre a tela precisa saber o que
- * falta para fechar a remessa, e não como a vaga vai.
+ * já dá para enviar, quantos ainda não responderam, quantos estão marcados
+ * (o limite de 5 é por vaga, R6) e quantos o filtro técnico descartaria mas
+ * combinam com a empresa. Quem abre a tela precisa saber o que falta para
+ * fechar a remessa, e não como a vaga vai.
+ *
+ * O andamento da consulta à equipe já esteve aqui como quarto cartão, e saiu:
+ * "7 de 10 colaboradores responderam" é dado da empresa, igual em todas as
+ * vagas dela, e "cobrar" é ação da tela da empresa. Na vaga ele virou uma
+ * linha de contexto abaixo do subtítulo, com link para a empresa.
  */
-export function JobSectionCards({ job }: { job: Job }) {
+export function JobSectionCards({
+  job,
+  onOpenRescue
+}: {
+  job: Job;
+  /** Leva a tabela de candidatos para a aba Resgate. */
+  onOpenRescue: () => void;
+}) {
   const { state } = useIelDemo();
-  const iel = routes.dashboard.iel;
 
   const ranking = getJobRanking(state, job.id);
   const responderam = ranking.filter(
@@ -65,26 +75,38 @@ export function JobSectionCards({ job }: { job: Job }) {
   const marcados = getReferralListSelection(state, job.id).length;
   const faltamParaFechar = Math.max(0, REFERRAL_LIMIT - marcados);
 
-  const amostra = getCultureSampleProgress(state, job.companyId);
-  const perfil = getCompanyCultureProfile(state, job.companyId);
-  const pontosAbertos = perfil.filter((axis) => !axis.ready).length;
-  const faltamResponder = amostra.total - amostra.answered;
+  const resgate = getRescueCandidates(state, job.id).length;
 
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       <Card className="@container/card">
-        <CardHeader>
+        {/* O cartão é número, selo e rodapé soltos; lido em sequência vira
+            "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só,
+            e o desenho fica para os olhos. */}
+        <p className="sr-only">
+          Compatíveis: {plural(combinam, 'pessoa', 'pessoas')} com{' '}
+          {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa, acima do
+          mínimo do IEL, de {responderam} que responderam.
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Compatíveis</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {combinam}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <TrendingUp />≥ {ADHERENCE_THRESHOLD}%
+              <TrendingUp aria-hidden="true" />
+              <span aria-hidden="true">≥ {ADHERENCE_THRESHOLD}%</span>
+              <span className="sr-only">
+                com {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa
+              </span>
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             Acima do mínimo do IEL
           </div>
@@ -95,19 +117,29 @@ export function JobSectionCards({ job }: { job: Job }) {
       </Card>
 
       <Card className="@container/card">
-        <CardHeader>
+        <p className="sr-only">
+          Sem resposta: {plural(semResposta, 'pessoa', 'pessoas')}. O prazo de
+          resposta, de {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')},
+          termina em {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem
+          não responde sai do processo.
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Sem resposta</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {semResposta}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <Clock />
+              <Clock aria-hidden="true" />
+              <span className="sr-only">Prazo de </span>
               {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             Prazo de resposta termina{' '}
             {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}
@@ -119,7 +151,13 @@ export function JobSectionCards({ job }: { job: Job }) {
       </Card>
 
       <Card className="@container/card">
-        <CardHeader>
+        <p className="sr-only">
+          Marcados para envio: {marcados} de {REFERRAL_LIMIT}.{' '}
+          {faltamParaFechar === 0
+            ? 'Remessa fechada.'
+            : `Faltam ${faltamParaFechar} para fechar a remessa.`}
+        </p>
+        <CardHeader aria-hidden="true">
           <CardDescription>Marcados</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {marcados}{' '}
@@ -128,7 +166,10 @@ export function JobSectionCards({ job }: { job: Job }) {
             </span>
           </CardTitle>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter
+          aria-hidden="true"
+          className="flex-col items-start gap-1.5 text-sm"
+        >
           <div className="line-clamp-1 flex gap-2 font-medium">
             {faltamParaFechar === 0
               ? 'Remessa fechada'
@@ -140,40 +181,44 @@ export function JobSectionCards({ job }: { job: Job }) {
         </CardFooter>
       </Card>
 
-      <Card className="@container/card">
+      <Card
+        className="@container/card cursor-pointer transition-colors hover:border-foreground/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        role="button"
+        tabIndex={0}
+        aria-label={`Resgate: ${plural(resgate, 'pessoa combina', 'pessoas combinam')} com a empresa e ${
+          resgate === 1 ? 'fica' : 'ficam'
+        } abaixo de ${RESCUE_TECHNICAL_CEILING}% nos requisitos. Ver na aba Resgate`}
+        onClick={onOpenRescue}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpenRescue();
+          }
+        }}
+      >
         <CardHeader>
-          <CardDescription>Perfil da empresa</CardDescription>
+          <CardDescription>Resgate</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {amostra.answered}{' '}
+            {resgate}{' '}
             <span className="text-sm font-normal text-muted-foreground">
-              de {amostra.total}
+              {resgate === 1 ? 'pessoa' : 'pessoas'}
             </span>
           </CardTitle>
-          {pontosAbertos > 0 ? (
-            <CardAction>
-              <Badge variant="outline">
-                <CircleAlert className="text-[hsl(var(--brand-accent))]" />
-                {pontosAbertos} abertos
-              </Badge>
-            </CardAction>
-          ) : null}
+          <CardAction>
+            <Badge variant="outline">
+              <Activity aria-hidden="true" />
+              combinam
+            </Badge>
+          </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {faltamResponder === 0
-              ? 'Todos os colaboradores responderam'
-              : `${plural(faltamResponder, 'colaborador ainda não respondeu', 'colaboradores ainda não responderam')}`}
+            Abaixo de {RESCUE_TECHNICAL_CEILING}% nos requisitos
           </div>
           <div className="text-muted-foreground">
-            {amostra.deadline
-              ? `prazo até ${formatarDataCurta(amostra.deadline)} · `
-              : null}
-            <Link
-              href={iel.companies.byId(job.companyId)}
-              className="text-foreground underline underline-offset-[3px]"
-            >
-              cobrar
-            </Link>
+            {resgate === 0
+              ? 'ninguém para rever agora'
+              : 'vale uma segunda olhada'}
           </div>
         </CardFooter>
       </Card>

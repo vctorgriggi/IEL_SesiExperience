@@ -48,6 +48,7 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -104,7 +105,10 @@ function Trilho({ entry }: { entry: AdherenceAxisEntry | null }) {
   const cinza = empresa === null || pessoa === null;
 
   return (
-    <div className="relative mr-6 h-1 rounded-full bg-border">
+    <div
+      aria-hidden="true"
+      className="relative mr-6 h-1 rounded-full bg-border"
+    >
       {empresa === null ? null : (
         <span
           aria-hidden="true"
@@ -260,7 +264,14 @@ export function FitCards({
         <CardHeader>
           <CardDescription>{COPY.fit.label}</CardDescription>
           <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-            {percentual === null ? '—' : `${Math.round(percentual)}%`}
+            {percentual === null ? (
+              <>
+                <span aria-hidden="true">—</span>
+                <span className="sr-only">Ainda sem medida</span>
+              </>
+            ) : (
+              `${Math.round(percentual)}%`
+            )}
           </CardTitle>
           {percentual === null ? null : (
             <CardAction>
@@ -278,7 +289,9 @@ export function FitCards({
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
           <div className="relative">
+            {/* O número acima já diz o valor: a barra é só desenho. */}
             <Progress
+              aria-hidden="true"
               value={percentual ?? 0}
               className="h-1.5 bg-muted"
             />
@@ -304,7 +317,14 @@ export function FitCards({
         <CardHeader>
           <CardDescription>{COPY.technical.label}</CardDescription>
           <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-            {technicalMatch === null ? '—' : `${technicalMatch}%`}
+            {technicalMatch === null ? (
+              <>
+                <span aria-hidden="true">—</span>
+                <span className="sr-only">Sem percentual</span>
+              </>
+            ) : (
+              `${technicalMatch}%`
+            )}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">Empregare</Badge>
@@ -312,6 +332,7 @@ export function FitCards({
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
           <Progress
+            aria-hidden="true"
             value={technicalMatch ?? 0}
             className="h-1.5 bg-muted *:data-[slot=progress-indicator]:bg-muted-foreground"
           />
@@ -388,13 +409,25 @@ export function TalentFitView({
         <TabsContent value="pontos">
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">{`Pontos do dia a dia: onde a empresa e ${primeiroNome} estão em cada um`}</TableCaption>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Ponto do dia a dia</TableHead>
-                  <TableHead className="w-[200px]">
-                    Empresa ■ · {primeiroNome} ●
+                  <TableHead scope="col">Ponto do dia a dia</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[200px]"
+                  >
+                    <span aria-hidden="true">Empresa ■ · {primeiroNome} ●</span>
+                    <span className="sr-only">
+                      Posição da empresa e de {primeiroNome}
+                    </span>
                   </TableHead>
-                  <TableHead className="w-[140px]">Estado</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[140px]"
+                  >
+                    Estado
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -449,10 +482,18 @@ export function TalentFitView({
         <TabsContent value="requisitos">
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">
+                Requisitos desta vaga e se são obrigatórios
+              </TableCaption>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Requisito da vaga</TableHead>
-                  <TableHead className="w-[160px]">Obrigatoriedade</TableHead>
+                  <TableHead scope="col">Requisito da vaga</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[160px]"
+                  >
+                    Obrigatoriedade
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -486,10 +527,16 @@ export function TalentFitView({
           <p className="text-muted-foreground">{talent.summary}</p>
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">{`Experiências de ${primeiroNome}`}</TableCaption>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Experiência</TableHead>
-                  <TableHead className="w-[160px]">Período</TableHead>
+                  <TableHead scope="col">Experiência</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[160px]"
+                  >
+                    Período
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -530,10 +577,16 @@ export function TalentFitView({
         >
           <div className="overflow-x-auto rounded-lg border">
             <Table>
+              <TableCaption className="sr-only">{`Candidaturas de ${primeiroNome} e o resultado de cada uma`}</TableCaption>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Vaga</TableHead>
-                  <TableHead className="w-[220px]">Resultado</TableHead>
+                  <TableHead scope="col">Vaga</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[220px]"
+                  >
+                    Resultado
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -64,6 +64,7 @@ import type {
   Company,
   CriterionRef,
   CriterionState,
+  CultureAnswer,
   CultureRespondentInvite,
   CultureSuggestion,
   DataSourceId,
@@ -128,12 +129,29 @@ export function getPersona(state: DemoState): Persona {
   );
 }
 
+/*
+ * Índices do catálogo estático. Com ~2.500 empresas, `find` a cada linha de
+ * tabela vira custo real; o catálogo não muda em tempo de execução, então os
+ * mapas são montados uma vez no carregamento do módulo.
+ */
+const COMPANY_BY_ID = new Map(
+  ALL_COMPANIES.map((company) => [company.id, company])
+);
+const JOB_BY_ID = new Map(ALL_JOBS.map((job) => [job.id, job]));
+const TALENT_BY_ID = new Map(ALL_TALENTS.map((talent) => [talent.id, talent]));
+const JOBS_BY_COMPANY_ID = ALL_JOBS.reduce((mapa, job) => {
+  const lista = mapa.get(job.companyId);
+  if (lista) lista.push(job);
+  else mapa.set(job.companyId, [job]);
+  return mapa;
+}, new Map<string, Job[]>());
+
 export function getCompany(companyId: string): Company | null {
-  return ALL_COMPANIES.find((company) => company.id === companyId) ?? null;
+  return COMPANY_BY_ID.get(companyId) ?? null;
 }
 
 export function getJob(jobId: string): Job | null {
-  return ALL_JOBS.find((job) => job.id === jobId) ?? null;
+  return JOB_BY_ID.get(jobId) ?? null;
 }
 
 /**
@@ -145,7 +163,7 @@ export function getJob(jobId: string): Job | null {
  */
 export function getTalent(talentId: string, state?: DemoState): Talent | null {
   return (
-    ALL_TALENTS.find((talent) => talent.id === talentId) ??
+    TALENT_BY_ID.get(talentId) ??
     state?.importedTalents?.find((talent) => talent.id === talentId) ??
     null
   );
@@ -195,7 +213,7 @@ export function getApplicationsByTalent(
 }
 
 export function getJobsByCompany(companyId: string): Job[] {
-  return ALL_JOBS.filter((job) => job.companyId === companyId);
+  return JOBS_BY_COMPANY_ID.get(companyId) ?? [];
 }
 
 export function getCriterion(
@@ -1474,6 +1492,133 @@ export function getCultureFit(
 }
 
 /**
+ * Quem aparece como marcador no trilho de um ponto. `lideranca` é gestão e RH
+ * juntos, quando um dos dois sozinho seria uma pessoa só.
+ */
+export type CultureDisplayRespondent = 'gestao' | 'rh' | 'lideranca' | 'equipe';
+
+export const CULTURE_DISPLAY_RESPONDENT_LABEL: Record<
+  CultureDisplayRespondent,
+  string
+> = {
+  gestao: 'Gestão',
+  rh: 'RH',
+  lideranca: 'Gestão/RH',
+  equipe: 'Equipe'
+};
+
+/** Menos que isso num papel e o papel é uma pessoa: não aparece sozinho. */
+export const MIN_ROLE_RESPONSES_TO_SHOW = 2;
+
+export type CultureDisplayVoice = {
+  respondent: CultureDisplayRespondent;
+  /** Alternativa mais respondida pelo grupo. */
+  optionId: CultureOptionId;
+  optionLabel: string;
+  count: number;
+  total: number;
+};
+
+export type CultureDisplayVoices = {
+  voices: CultureDisplayVoice[];
+  /**
+   * Respostas que entram na média mas não viram marcador porque, sozinhas,
+   * identificariam quem respondeu.
+   */
+  withheld: number;
+};
+
+function topAnswer(
+  axisId: FitAxisId,
+  answers: CultureAnswer[]
+): Omit<CultureDisplayVoice, 'respondent'> | null {
+  const byOption = new Map<CultureOptionId, number>();
+  let total = 0;
+  for (const answer of answers) {
+    byOption.set(
+      answer.optionId,
+      (byOption.get(answer.optionId) ?? 0) + answer.count
+    );
+    total += answer.count;
+  }
+  if (total === 0) return null;
+  const [optionId, count] = [...byOption.entries()].sort(
+    (a, b) => b[1] - a[1]
+  )[0]!;
+  return {
+    optionId,
+    optionLabel: getCultureOptionLabel(axisId, optionId),
+    count,
+    total
+  };
+}
+
+/**
+ * O que a tela pode desenhar de cada papel num ponto (PRODUTO.md §5.1).
+ *
+ * A analista vê a dispersão gestão × equipe, mas nunca uma resposta
+ * individual — e "a gestão" quase sempre é uma pessoa só. Por isso:
+ *
+ * - **Equipe** só vira marcador com `MIN_TEAM_RESPONSES` ou mais respostas;
+ *   abaixo disso, a posição seria a de uma ou duas pessoas identificáveis.
+ * - **Gestão** e **RH** aparecem separados só quando cada um tem pelo menos
+ *   `MIN_ROLE_RESPONSES_TO_SHOW` respostas. Senão os dois viram um grupo só,
+ *   "Gestão/RH"; se nem juntos chegam a dois, o marcador não aparece.
+ *
+ * O que não vira marcador continua na média e no diagnóstico ("gestão e
+ * equipe respondem diferente") — o dado não some, só deixa de ter rosto.
+ */
+export function getCultureDisplayVoices(
+  state: DemoState,
+  companyId: string,
+  axisId: FitAxisId
+): CultureDisplayVoices {
+  const answers = state.cultureAnswers.filter(
+    (answer) => answer.companyId === companyId && answer.axisId === axisId
+  );
+  const of = (role: CultureRespondent) =>
+    answers.filter((answer) => answer.respondent === role);
+  const sum = (list: CultureAnswer[]) =>
+    list.reduce((total, answer) => total + answer.count, 0);
+
+  const gestao = of('gestao');
+  const rh = of('rh');
+  const equipe = of('equipe');
+  const gestaoN = sum(gestao);
+  const rhN = sum(rh);
+  const equipeN = sum(equipe);
+
+  const voices: CultureDisplayVoice[] = [];
+  let withheld = 0;
+
+  const push = (
+    respondent: CultureDisplayRespondent,
+    list: CultureAnswer[]
+  ) => {
+    const top = topAnswer(axisId, list);
+    if (top) voices.push({ respondent, ...top });
+  };
+
+  const separados =
+    (gestaoN === 0 || gestaoN >= MIN_ROLE_RESPONSES_TO_SHOW) &&
+    (rhN === 0 || rhN >= MIN_ROLE_RESPONSES_TO_SHOW);
+
+  if (separados) {
+    push('gestao', gestao);
+    push('rh', rh);
+  } else if (gestaoN + rhN >= MIN_ROLE_RESPONSES_TO_SHOW) {
+    push('lideranca', [...gestao, ...rh]);
+  } else {
+    withheld += gestaoN + rhN;
+  }
+
+  if (equipeN >= MIN_TEAM_RESPONSES) push('equipe', equipe);
+  else withheld += equipeN;
+
+  return { voices, withheld };
+}
+
+/**
  * Um envio do perfil, como o candidato pode vê-lo.
  *
  * Sem `companyName`, e não por esquecimento: R5 (00:22:21, 00:38:43) diz que
@@ -2047,6 +2192,62 @@ export function getCultureSampleProgress(
   };
 }
 
+/** Estado de um convite contra a data da demonstração, para a linha da tela. */
+export function getCultureInviteStatus(
+  invite: CultureRespondentInvite
+): CultureInviteStatus {
+  return readInviteStatus(invite, DEMO_REFERENCE_DATE);
+}
+
+/**
+ * Uma empresa na lista do analista, já com o que a tabela mostra.
+ *
+ * O IEL atende mais de 2.500 empresas; a lista precisa filtrar e paginar sem
+ * refazer, por linha, varreduras sobre todas as vagas e todos os convites.
+ * Por isso a leitura agrupa vagas, convites e respostas por empresa uma vez e
+ * só calcula perfil e amostra de quem tem consulta.
+ */
+export type CompanyListRow = {
+  company: Company;
+  /** Vagas que não estão encerradas. */
+  openJobs: number;
+  /** `null` quando nenhum colaborador foi convidado. */
+  sample: CultureSampleProgress | null;
+  /** Pontos do dia a dia que ainda não fecham. `null` sem consulta. */
+  openPoints: number | null;
+};
+
+export function getCompanyListRows(state: DemoState): CompanyListRow[] {
+  const openJobs = new Map<string, number>();
+  for (const job of ALL_JOBS) {
+    if (job.stage === 'encerrada') continue;
+    openJobs.set(job.companyId, (openJobs.get(job.companyId) ?? 0) + 1);
+  }
+  const withInvites = new Set(
+    (state.cultureInvites ?? []).map((invite) => invite.companyId)
+  );
+  const withAnswers = new Set(
+    state.cultureAnswers.map((answer) => answer.companyId)
+  );
+
+  return getVisibleCompanies(state).map((company) => {
+    const temConsulta =
+      withInvites.has(company.id) || withAnswers.has(company.id);
+    return {
+      company,
+      openJobs: openJobs.get(company.id) ?? 0,
+      sample: withInvites.has(company.id)
+        ? getCultureSampleProgress(state, company.id)
+        : null,
+      openPoints: temConsulta
+        ? getCompanyCultureProfile(state, company.id).filter(
+            (axis) => !axis.ready
+          ).length
+        : null
+    };
+  });
+}
+
 /**
  * O convite como a tela do colaborador pode vê-lo (PRODUTO.md §5).
  *
@@ -2056,13 +2257,12 @@ export function getCultureSampleProgress(
  * enviado volta daqui; o token não o carrega, e devolvê-lo transformaria um
  * link vazado em vazamento de dado pessoal.
  *
- * O primeiro nome fica porque a tela precisa cumprimentar quem chegou e
- * confirmar que o link é mesmo dela; o nome completo não acrescenta nada a
- * isso.
+ * Também não há nome: o convite não guarda nome nenhum. A tela se apresenta
+ * pela empresa ("Consulta à equipe · Cerrado Distribuição"), que é o que a
+ * pessoa precisa para reconhecer o link.
  */
 export type CultureInviteView = {
   inviteId: string;
-  firstName: string;
   companyName: string;
   expiresAt: string;
   daysLeft: number;
@@ -2080,7 +2280,6 @@ export function getInviteByToken(
 
   return {
     inviteId: invite.id,
-    firstName: invite.name.split(' ')[0] ?? invite.name,
     companyName: getCompany(invite.companyId)?.name ?? invite.companyId,
     expiresAt: invite.expiresAt,
     daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
@@ -2233,4 +2432,58 @@ export function getReferralReport(
     evaluatedCount,
     mostDivergentAxis: findMostDivergentAxis(people)
   };
+}
+
+/*
+ * Escala: listas e barra lateral com a carteira inteira do IEL.
+ *
+ * A base tem mais de 2.500 empresas, e a maioria não tem vaga aberta nem
+ * consulta de cultura. Os seletores abaixo existem para que nenhuma tela
+ * percorra a carteira inteira a cada render quando só uma fração importa.
+ */
+
+/**
+ * Empresas visíveis que já receberam alguma resposta de cultura.
+ *
+ * É o recorte que a fila do dia precisa: um ponto em aberto só existe quando
+ * alguém respondeu. Empresa sem resposta nenhuma não entra na fila — e, sem
+ * este filtro, a fila calcularia a leitura de cultura de 2.500 empresas para
+ * descartar quase todas.
+ */
+export function getCompaniesWithCultureAnswers(state: DemoState): Company[] {
+  const withAnswers = new Set(
+    state.cultureAnswers.map((answer) => answer.companyId)
+  );
+  return getVisibleCompanies(state).filter((company) =>
+    withAnswers.has(company.id)
+  );
+}
+
+/** Quantas pessoas passam do corte nesta vaga. */
+export function getCompatibleCount(state: DemoState, jobId: string): number {
+  return getJobRanking(state, jobId).filter(
+    (entry) => entry.adherence.compatible === true
+  ).length;
+}
+
+/**
+ * Onde a vaga está, do ponto de vista de quem trabalha nela.
+ *
+ * "Aguardando empresa" é a vaga que já teve currículos enviados: o próximo
+ * passo é a devolutiva da indústria, não da analista.
+ */
+export type JobListState = 'em-selecao' | 'aguardando-empresa' | 'encerrada';
+
+export const JOB_LIST_STATE_LABEL: Record<JobListState, string> = {
+  'em-selecao': 'Em seleção',
+  'aguardando-empresa': 'Aguardando empresa',
+  encerrada: 'Encerradas'
+};
+
+export function getJobListState(state: DemoState, job: Job): JobListState {
+  if (job.stage === 'encerrada') return 'encerrada';
+  const sent = state.referrals.some(
+    (referral) => referral.jobId === job.id && referral.state === 'registrado'
+  );
+  return sent ? 'aguardando-empresa' : 'em-selecao';
 }

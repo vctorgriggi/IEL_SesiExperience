@@ -28,6 +28,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -99,11 +100,24 @@ export function AxisWeights({ job }: { job: Job }) {
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>
+          <TableCaption className="sr-only">
+            Peso de cada ponto do dia a dia nesta vaga e a proposta da análise
+          </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead>Ponto do dia a dia</TableHead>
-              <TableHead className="w-[160px]">Peso nesta vaga</TableHead>
-              <TableHead className="w-[220px]">Proposta da análise</TableHead>
+              <TableHead scope="col">Ponto do dia a dia</TableHead>
+              <TableHead
+                scope="col"
+                className="w-[160px]"
+              >
+                Peso nesta vaga
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="w-[220px]"
+              >
+                Proposta da análise
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
