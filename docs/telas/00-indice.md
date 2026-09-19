@@ -41,6 +41,10 @@ data de **Última atualização** no cabeçalho.
 | 14  | [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md)       | `/iel/encaminhamentos/[referralId]` | Analista IEL, Gestor           |
 | 15  | [Mapa de Cultura](15-mapa-de-cultura.md)                           | `/iel/mapa-de-cultura`              | Analista IEL                   |
 | 16  | [Fontes de dados](16-fontes-de-dados.md)                           | `/iel/fontes-de-dados`              | Analista IEL                   |
+| 17  | [Questionário do candidato](17-questionario-do-candidato.md)       | `/iel/candidatura/[id]/fit`         | Candidato, sem login           |
+| 18  | [Consulta ao colaborador](18-consulta-ao-colaborador.md)           | `/iel/consulta/[token]`             | Colaborador, sem login         |
+| 19  | [Importação de planilha](19-importacao-de-planilha.md)             | `/iel/vagas/[jobId]/importar`       | Analista IEL                   |
+| 20  | [Relatório para a empresa](20-relatorio-para-a-empresa.md)         | `/iel/relatorio/[token]`            | Empresa, sem login             |
 
 ## Modelo para uma tela nova
 

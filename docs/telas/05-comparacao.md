@@ -13,9 +13,11 @@ currículo.
 
 ## O que aparece
 
-- **Cabeçalho**: "Os mesmos critérios da vaga. Cada célula abre a evidência que sustenta o estado."
-- **Grade de comparação** — critérios nas linhas, candidatos nas colunas, requisito obrigatório
-  marcado. Cada célula abre a evidência.
+- **Grade de comparação** — a pergunta é por linha ("em que ponto elas diferem?"), então a comparação
+  é por coluna: uma pessoa por coluna, um critério por linha. Uma lista por pessoa obrigaria a guardar
+  o valor de uma na cabeça para comparar com o da outra.
+- **Aderência de cada pessoa** à cultura da empresa, na mesma leitura da mesa de seleção, para que a
+  comparação não fique só no técnico.
 - **Leitura assistida** — o que difere entre os selecionados e o que ainda falta saber.
 - **Ações a partir da comparação** — adicionar à lista de encaminhamento ou abrir um esclarecimento
   dirigido ao critério que ficou em aberto.
@@ -53,3 +55,5 @@ Entra em: [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md),
 ## Histórico
 
 - 2026-09-19 — criada.
+- 2026-09-19 — a grade passou a trazer a aderência junto dos critérios, e o texto de cabeçalho saiu
+  da tela na interface Mind RH.

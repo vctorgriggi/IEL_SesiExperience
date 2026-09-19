@@ -1,57 +1,66 @@
 # Visão geral
 
 **Rota:** `/iel`
-**Componente:** `apps/dashboard/components/iel-demo/overview/overview-screen.tsx`
+**Componentes:** `apps/dashboard/components/iel-demo/overview/overview-screen.tsx`,
+`overview/pendencias.ts`
 **Persona:** Analista IEL (o gestor cai em [Painel da empresa](02-painel-da-empresa.md))
 **Última atualização:** 2026-09-19
 
 ## O que a tela faz
 
-Responde "por onde começo hoje". É a porta da Central: mostra o tamanho da base, onde há vaga
-parada, quanta informação já existe por dimensão e o que aconteceu recentemente.
+Responde **uma** pergunta: o que precisa de mim hoje?
+
+Ela já foi um painel administrativo — cinco números no herói, distribuição por etapa, cobertura por
+dimensão, atividade recente e a procedência dos registros. Nada daquilo dizia por onde começar, e era
+isso que a analista precisava. Ficou uma fila de no máximo cinco cartões, cada um com o verbo que o
+resolve.
 
 ## O que aparece
 
-- **Cabeçalho com o tamanho da base** — empresas, vagas, talentos únicos e candidaturas, recontados
-  a partir do estado, não escritos à mão.
-- **Filtro por empresa** — recorta os blocos abaixo e fica guardado em `ui.overviewCompanyId`, então
-  sobrevive à navegação.
-- **Vagas que precisam de ação** — as vagas visíveis com o resumo de cada uma. É daqui que se entra
-  na mesa de seleção.
-- **Candidaturas por etapa** — distribuição pelas etapas externas recebidas da origem.
-- **Cobertura por dimensão** — quanta informação existe nas dimensões técnica, profissional e
-  organizacional. Cobertura não é nota: mede informação disponível, não qualidade de candidato.
-- **Atividade recente** — histórico local das últimas ações da demonstração.
+- **Título e uma linha**: "A fila do dia, na ordem em que compensa resolver."
+- **Até cinco pendências** (`PENDENCIAS_VISIVEIS`), uma por cartão, com título, resumo e o verbo da
+  ação que a encerra.
+- **Estado vazio** quando não há nada em aberto, dizendo o que faria uma linha aparecer.
+
+## A ordem da fila
+
+`urgencia` existe para ordenar, e a ordem não é arbitrária:
+
+1. o que já tem **resposta esperando** para ser usada;
+2. o que está **parado à espera de alguém**;
+3. o que só precisa de **conferência**.
+
+Quem abre a tela de manhã deve conseguir descer a lista de cima para baixo.
 
 ## De onde vêm os dados hoje
 
-`getOverviewMetrics`, `getStageDistribution`, `getCoverageByDimension`, `getRecentHistory`,
-`getSourceBreakdown`, `getVisibleJobs` e `getJobSummary`, todos sobre o estado da demonstração.
+`montarPendencias`, em `overview/pendencias.ts`, monta a fila a partir do estado atual das vagas e
+das empresas — cobertura do perfil cultural, questionários pendentes, pedidos respondidos e listas de
+encaminhamento em aberto.
 
 ## Ações do usuário
 
-- Trocar o filtro de empresa — `set-ui`.
-- Abrir uma vaga — navega para a mesa de seleção.
+- Abrir uma pendência — navega para a tela que a resolve. Nenhuma ação de reducer nasce aqui.
 
 ## Backend futuro
 
-- Os contadores viram leitura agregada no servidor (RSC, via `features/<nome>/data/get-*.ts`), em
-  vez de um `reduce` sobre a base inteira no navegador.
-- "Atividade recente" vira tabela de auditoria com ator, ação, entidade e data — necessária de
-  qualquer forma para rastrear as decisões do processo seletivo.
-- O filtro por empresa passa a depender de permissão: o analista vê as empresas que atende, não
-  todas.
+- A fila passa a ser consultada no servidor, com o recorte do analista responsável.
+- Notificação por e-mail do que entrou na fila, com a mesma ordem.
 
 ## Regras e limites
 
-- Os números descrevem informação disponível. Nenhum deles ordena pessoas.
-- A faixa de dados fictícios fica visível.
+- **Não é painel de métrica.** A tela não pontua ninguém e não exibe ranking.
+- **Cada linha tem dono e verbo.** Pendência sem ação possível não entra na fila.
+- **O gestor não vê esta tela**: cai em [Painel da empresa](02-painel-da-empresa.md), com o recorte
+  da própria empresa.
 
 ## Ligações
 
-Entra em: [Vagas](03-vagas.md), [Mesa de seleção](04-mesa-de-selecao.md),
-[Pendências](11-pendencias.md).
+Entra em: [Mesa de seleção](04-mesa-de-selecao.md), [Contexto da empresa](10-contexto-da-empresa.md),
+[Pendências](11-pendencias.md), [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md).
 
 ## Histórico
 
 - 2026-09-19 — criada.
+- 2026-09-19 — reescrita: o painel de métricas deu lugar à fila do dia, com no máximo cinco
+  pendências ordenadas por urgência.
