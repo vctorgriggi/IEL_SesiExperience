@@ -17,6 +17,13 @@
  * textual. A cor é reforço, não é o canal principal.
  */
 
+/*
+ * Diálogos e toasts são renderizados em portais no fim do `body`, fora da
+ * árvore da página — então um escopo preso ao elemento não os alcança e eles
+ * voltavam ao âmbar do tema padrão. Marcar o `body` enquanto uma tela do IEL
+ * estiver montada cobre também os portais.
+ */
+body:has([data-iel-theme]),
 [data-iel-theme] {
   /* Marca institucional. */
   --primary: 207 100% 24%;
@@ -71,6 +78,7 @@
   --control-radius: 0.5rem;
 }
 
+.dark body:has([data-iel-theme]),
 [data-iel-theme].dark,
 .dark [data-iel-theme] {
   --primary: 207 85% 55%;

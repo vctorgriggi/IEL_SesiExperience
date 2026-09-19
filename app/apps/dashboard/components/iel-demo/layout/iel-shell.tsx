@@ -100,6 +100,9 @@ function DemoBar() {
   const { state, dispatch, persona, resetDemo } = useIelDemo();
   const [confirmReset, setConfirmReset] = useState(false);
   const [showScript, setShowScript] = useState(false);
+  const [scriptMode, setScriptMode] = useState<'completo' | 'curto'>(
+    'completo'
+  );
   const iel = routes.dashboard.iel;
 
   return (
@@ -206,106 +209,214 @@ function DemoBar() {
         visible={showScript}
         onHide={() => setShowScript(false)}
         size="lg"
-        header="Roteiro principal"
-        description="Sete passos para percorrer a jornada completa."
+        header="Roteiro da demonstração"
+        description="A jornada completa, ou o recorte de três minutos para apresentar."
       >
-        <ol className="space-y-3 text-sm text-muted-foreground">
-          <li>
-            <span className="font-medium text-foreground">
-              1. Encontrar o processo que precisa de atenção.
-            </span>{' '}
-            <Link
-              className="underline"
-              href={iel.index}
-              onClick={() => setShowScript(false)}
+        <div
+          role="tablist"
+          aria-label="Versão do roteiro"
+          className="mb-4 flex gap-1 border-b border-border"
+        >
+          {(
+            [
+              ['completo', 'Completo — 7 passos'],
+              ['curto', 'Curto — 3 minutos']
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={scriptMode === value}
+              onClick={() => setScriptMode(value)}
+              className={cn(
+                '-mb-px border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                scriptMode === value
+                  ? 'border-primary font-medium text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
             >
-              Visão geral
-            </Link>{' '}
-            → vaga Assistente de Logística.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">
-              2. Ver a integração dos dados.
-            </span>{' '}
-            <Link
-              className="underline"
-              href={iel.jobs.byId('VAG-01').index}
-              onClick={() => setShowScript(false)}
-            >
-              Mesa de seleção da vaga 1
-            </Link>{' '}
-            → abrir Ana Ribeiro e clicar numa conclusão para ver a evidência.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">3. Comparar.</span>{' '}
-            Selecionar Ana e Bruno na matriz e abrir{' '}
-            <Link
-              className="underline"
-              href={iel.jobs.byId('VAG-01').comparison}
-              onClick={() => setShowScript(false)}
-            >
-              comparação
-            </Link>
-            .
-          </li>
-          <li>
-            <span className="font-medium text-foreground">
-              4. Esclarecer com a pessoa certa.
-            </span>{' '}
-            Criar a pergunta ao gestor sobre apoio inicial, abrir a experiência
-            do destinatário em{' '}
-            <Link
-              className="underline"
-              href={iel.clarifications.index}
-              onClick={() => setShowScript(false)}
-            >
-              Pendências
-            </Link>{' '}
-            e incorporar a resposta.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">
-              5. Mesmo perfil, outra leitura.
-            </span>{' '}
-            Abrir{' '}
-            <Link
-              className="underline"
-              href={iel.jobs.byId('VAG-02').index}
-              onClick={() => setShowScript(false)}
-            >
-              a vaga 2
-            </Link>{' '}
-            e ver Ana com contexto organizacional diferente; esclarecer a
-            disponibilidade pendente.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">
-              6. Preparar e registrar o encaminhamento.
-            </span>{' '}
-            Adicionar Ana à lista da vaga 2 e registrar em{' '}
-            <Link
-              className="underline"
-              href={iel.jobs.byId('VAG-02').referral}
-              onClick={() => setShowScript(false)}
-            >
-              preparação do encaminhamento
-            </Link>
-            .
-          </li>
-          <li>
-            <span className="font-medium text-foreground">
-              7. Ver a resposta da empresa.
-            </span>{' '}
-            Trocar a persona para “Gestor — Horizonte Alimentos”, registrar
-            “Quero entrevistar” e voltar como analista para ver o histórico.
-          </li>
-        </ol>
-        <p className="mt-4 text-xs text-muted-foreground">
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {scriptMode === 'curto' ? (
+          <ShortScript onNavigate={() => setShowScript(false)} />
+        ) : (
+          <ol className="space-y-3 text-sm text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">
+                1. Encontrar o processo que precisa de atenção.
+              </span>{' '}
+              <Link
+                className="underline"
+                href={iel.index}
+                onClick={() => setShowScript(false)}
+              >
+                Visão geral
+              </Link>{' '}
+              → vaga Assistente de Logística.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">
+                2. Ver a integração dos dados.
+              </span>{' '}
+              <Link
+                className="underline"
+                href={iel.jobs.byId('VAG-01').index}
+                onClick={() => setShowScript(false)}
+              >
+                Mesa de seleção da vaga 1
+              </Link>{' '}
+              → abrir Ana Ribeiro e clicar numa conclusão para ver a evidência.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">3. Comparar.</span>{' '}
+              Selecionar Ana e Bruno na matriz e abrir{' '}
+              <Link
+                className="underline"
+                href={iel.jobs.byId('VAG-01').comparison}
+                onClick={() => setShowScript(false)}
+              >
+                comparação
+              </Link>
+              .
+            </li>
+            <li>
+              <span className="font-medium text-foreground">
+                4. Esclarecer com a pessoa certa.
+              </span>{' '}
+              Criar a pergunta ao gestor sobre apoio inicial, abrir a
+              experiência do destinatário em{' '}
+              <Link
+                className="underline"
+                href={iel.clarifications.index}
+                onClick={() => setShowScript(false)}
+              >
+                Pendências
+              </Link>{' '}
+              e incorporar a resposta.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">
+                5. Mesmo perfil, outra leitura.
+              </span>{' '}
+              Abrir{' '}
+              <Link
+                className="underline"
+                href={iel.jobs.byId('VAG-02').index}
+                onClick={() => setShowScript(false)}
+              >
+                a vaga 2
+              </Link>{' '}
+              e ver Ana com contexto organizacional diferente; esclarecer a
+              disponibilidade pendente.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">
+                6. Preparar e registrar o encaminhamento.
+              </span>{' '}
+              Adicionar Ana à lista da vaga 2 e registrar em{' '}
+              <Link
+                className="underline"
+                href={iel.jobs.byId('VAG-02').referral}
+                onClick={() => setShowScript(false)}
+              >
+                preparação do encaminhamento
+              </Link>
+              .
+            </li>
+            <li>
+              <span className="font-medium text-foreground">
+                7. Ver a resposta da empresa.
+              </span>{' '}
+              Trocar a persona para “Gestor — Horizonte Alimentos”, registrar
+              “Quero entrevistar” e voltar como analista para ver o histórico.
+            </li>
+          </ol>
+        )}
+
+        <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
           Estado atual: {state.clarifications.length} solicitações registradas,{' '}
           {plural(state.referrals.length, 'encaminhamento', 'encaminhamentos')}.
         </p>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Recorte de três minutos.
+ *
+ * O briefing pede uma versão curta para apresentar, e avisa que os passos
+ * abreviados precisam ter estado válido — nada de pular validação para
+ * encurtar. Por isso o caminho é o mesmo da jornada completa; o que muda é
+ * quais paradas se mostra.
+ */
+function ShortScript({ onNavigate }: { onNavigate: () => void }) {
+  const iel = routes.dashboard.iel;
+
+  const steps: { text: ReactNode; href?: string }[] = [
+    {
+      text: 'Abrir a mesa de seleção da vaga com 90 candidaturas.',
+      href: iel.jobs.byId('VAG-01').index
+    },
+    {
+      text: 'Filtrar por “Requisito obrigatório sem informação”: a triagem que substitui abrir perfil por perfil.'
+    },
+    {
+      text: 'Selecionar Ana e Bruno e abrir a comparação.',
+      href: iel.jobs.byId('VAG-01').comparison
+    },
+    {
+      text: 'Clicar numa conclusão e mostrar a evidência, com a fonte de onde veio.'
+    },
+    {
+      text: 'Esclarecer o apoio inicial com o gestor e incorporar a resposta.',
+      href: iel.clarifications.index
+    },
+    {
+      text: 'Abrir Ana na vaga 2: mesmo perfil, contexto da empresa diferente, leitura diferente.',
+      href: iel.jobs.byId('VAG-02').index
+    },
+    {
+      text: 'Registrar o encaminhamento e ver a trajetória dela entre os dois processos.',
+      href: iel.jobs.byId('VAG-02').referral
+    }
+  ];
+
+  return (
+    <ol className="space-y-2.5 text-sm text-muted-foreground">
+      {steps.map((step, index) => (
+        <li
+          key={index}
+          className="flex gap-2.5"
+        >
+          <span
+            aria-hidden="true"
+            className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-semibold text-foreground"
+          >
+            {index + 1}
+          </span>
+          <span>
+            {step.text}
+            {step.href ? (
+              <>
+                {' '}
+                <Link
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  href={step.href}
+                  onClick={onNavigate}
+                >
+                  abrir
+                </Link>
+              </>
+            ) : null}
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
 

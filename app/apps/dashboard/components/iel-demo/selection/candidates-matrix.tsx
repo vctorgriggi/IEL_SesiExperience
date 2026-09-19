@@ -167,9 +167,14 @@ export function CandidatesMatrix({
   }
 
   return (
-    <div className="overflow-x-auto">
+    // `overflow-x` cria um contexto de rolagem próprio, e dentro dele o
+    // cabeçalho grudaria na caixa da tabela em vez de grudar na página. Na
+    // largura em que a matriz cabe inteira, a rolagem horizontal é dispensada
+    // e o cabeçalho volta a acompanhar a rolagem da página, como o briefing
+    // pede para a leitura não se perder ao descer a lista.
+    <div className="overflow-x-auto xl:overflow-x-visible">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-card">
+        <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <TableRow>
             <TableHead
               scope="col"
