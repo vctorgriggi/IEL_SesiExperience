@@ -355,6 +355,46 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     await expect(page.getByText('Base local:', { exact: false })).toBeVisible();
   });
 
+  test('o mapa de cultura filtra, busca e destaca um nome', async ({
+    page
+  }) => {
+    await page.goto('/iel/mapa-de-cultura');
+
+    await expect(
+      page.getByRole('heading', { name: 'Mapa de Cultura', exact: true })
+    ).toBeVisible();
+    const plano = page.getByRole('img', { name: /Mapa de cultura/ });
+    await expect(plano).toBeVisible();
+
+    await page.getByLabel('Filtrar o mapa').selectOption('empresas');
+    await expect(page.getByRole('button', { name: /Ana Ribeiro/ })).toHaveCount(
+      0
+    );
+
+    await page.getByLabel('Filtrar o mapa').selectOption('todos');
+    await page.getByPlaceholder('Buscar nome').fill('Ana Ribeiro');
+
+    const linha = page.getByRole('button', { name: /Ana Ribeiro/ }).first();
+    await linha.click();
+
+    // O nome selecionado é rotulado dentro do plano, não só na lista.
+    await expect(plano.getByText('Ana Ribeiro')).toBeVisible();
+  });
+
+  test('o resultado talento x vaga mostra o encaixe cultural', async ({
+    page
+  }) => {
+    await page.goto('/iel/talentos/ANA?vaga=VAG-01');
+
+    await expect(
+      page.getByRole('heading', { name: 'Ambiente de trabalho, lado a lado' })
+    ).toBeVisible();
+    await expect(page.getByText('Onde vale alinhar')).toBeVisible();
+    await expect(
+      page.getByText('O mapa apoia a decisão humana e não descarta ninguém.')
+    ).toBeVisible();
+  });
+
   test('esclarecimento funciona em largura de celular e com teclado', async ({
     page
   }) => {

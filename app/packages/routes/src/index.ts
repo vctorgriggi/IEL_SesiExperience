@@ -173,6 +173,7 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
+      cultureMap: resolve('/iel/mapa-de-cultura'),
       dataSources: resolve('/iel/fontes-de-dados')
     },
     openEvents: {

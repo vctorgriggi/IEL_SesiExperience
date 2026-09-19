@@ -283,6 +283,25 @@ export type TalentPreference = {
   updatedAt: string;
 };
 
+/**
+ * Resposta do talento ao mesmo questionário respondido pelas empresas.
+ *
+ * Convive com `TalentPreference` em vez de substituí-la: o texto livre explica
+ * e guarda a origem, a alternativa posiciona no Mapa de Cultura.
+ *
+ * Sem `count` e sem `respondent` porque aqui responde uma pessoa por si, ao
+ * contrário da consulta à equipe, que entra agregada.
+ */
+export type TalentCultureAnswer = {
+  id: string;
+  talentId: string;
+  axisId: FitAxisId;
+  optionId: CultureOptionId;
+  origin: string;
+  sourceId: DataSourceId;
+  updatedAt: string;
+};
+
 export type Talent = {
   id: string;
   name: string;

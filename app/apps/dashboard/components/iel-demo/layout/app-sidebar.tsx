@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Inbox,
   ListOrdered,
+  ScatterChart,
   Search,
   Users
 } from 'lucide-react';
@@ -110,7 +111,18 @@ export function AppSidebar() {
           icon: Building2,
           badge: null
         },
-        { href: iel.talents.index, label: 'Pessoas', icon: Users, badge: null }
+        { href: iel.talents.index, label: 'Pessoas', icon: Users, badge: null },
+        /*
+         * O mapa reúne a base de talentos do IEL, então fica fora do menu do
+         * gestor pela mesma razão que "Pessoas": seria porta para o recorte de
+         * outras empresas (PRODUTO.md §5).
+         */
+        {
+          href: iel.cultureMap,
+          label: 'Mapa de cultura',
+          icon: ScatterChart,
+          badge: null
+        }
       ];
 
   return (
