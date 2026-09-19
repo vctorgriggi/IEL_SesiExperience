@@ -32,8 +32,10 @@ Na ordem da tela:
 - **Pessoa em foco** — posição, nome e "Candidatura para <vaga> · <empresa>", com o atalho "Ver
   leitura completa". Começa na primeira do ranking.
 - **O número dela** — o percentual em corpo grande com a frase que o interpreta, e as etiquetas de
-  cobertura ("3 de 5 pontos medidos"), percentual técnico e posição na vaga. Abaixo do mínimo o
-  número sai no laranja de atenção (`--brand-accent`).
+  cobertura ("3 de 5 pontos medidos"), percentual técnico e posição na vaga. A cor do número e das
+  barras vem de `metricas/cores.ts` (`textoDaAderencia`, `barraDaAderencia`), a mesma da mesa de
+  seleção e do perfil: verde acima de 60%, verde-azulado entre 35% e 59%, laranja de atenção abaixo
+  do corte.
 - **Radar dos cinco pontos** — o polígono da empresa e o da pessoa sobre a mesma escala de 1 a 3,
   com legenda dizendo que a escala são as três alternativas do questionário, não uma nota. Ponto sem
   um dos lados abre o polígono em vez de ser desenhado como mínimo, e um ponto medido entre dois
@@ -109,4 +111,6 @@ Entra em: [Perfil do talento](08-perfil-do-talento.md), [Comparação entre cand
   passou a ser o seletor de quem aparece em cima. A tela entrou na seção "Seleção" do menu lateral,
   junto de Hoje, Vagas e Empresas.
 - 2026-09-19 — estilização: cartões nos blocos, seletor de vaga e de pessoa com busca, navegação
-  anterior/próxima, filtros por status no ranking e os dois lados de cada ponto em números.
+  anterior/próxima, filtros por status no ranking e os dois lados de cada ponto em números. Cor de
+  dado passou a vir de `metricas/cores.ts`, e a posição no ranking perdeu o tom de pódio: cor aqui
+  diz estado, não classificação.

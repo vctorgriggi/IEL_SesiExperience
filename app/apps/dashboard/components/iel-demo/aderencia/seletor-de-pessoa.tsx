@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import type { JobRankingEntry } from '@/features/iel-demo/state/selectors';
 import {
   Check,
@@ -13,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ import {
 import { Input } from '@workspace/ui/shadcn/input';
 
 import { normalizarBusca } from '../jobs/busca';
+import { textoDaAderencia } from '../metricas/cores';
 
 function extrairIniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/);
@@ -82,8 +83,6 @@ export function SeletorDePessoa({
 
   const nomeAtual = selecionada.talent?.name ?? 'Pessoa fora da base';
   const totalAtual = selecionada.adherence.total;
-  const abaixoDoMinimo =
-    totalAtual !== null && totalAtual < ADHERENCE_THRESHOLD;
   const iniciaisAtual = extrairIniciais(nomeAtual);
 
   return (
@@ -116,11 +115,10 @@ export function SeletorDePessoa({
 
               {totalAtual !== null ? (
                 <span
-                  className={`shrink-0 text-xs font-semibold tabular-nums ${
-                    abaixoDoMinimo
-                      ? 'text-[hsl(var(--brand-accent))]'
-                      : 'text-foreground'
-                  }`}
+                  className={cn(
+                    'shrink-0 text-xs font-semibold tabular-nums',
+                    textoDaAderencia(totalAtual)
+                  )}
                 >
                   {Math.round(totalAtual)}%
                 </span>
@@ -179,7 +177,6 @@ export function SeletorDePessoa({
                   entrada.application.id === selecionada.application.id;
                 const nome = entrada.talent?.name ?? 'Pessoa fora da base';
                 const total = entrada.adherence.total;
-                const abaixo = total !== null && total < ADHERENCE_THRESHOLD;
                 const iniciais = extrairIniciais(nome);
 
                 return (
@@ -217,11 +214,10 @@ export function SeletorDePessoa({
                     <div className="flex items-center gap-2 shrink-0">
                       {total !== null ? (
                         <span
-                          className={`font-semibold tabular-nums text-xs ${
-                            abaixo
-                              ? 'text-[hsl(var(--brand-accent))]'
-                              : 'text-foreground'
-                          }`}
+                          className={cn(
+                            'text-xs font-semibold tabular-nums',
+                            textoDaAderencia(total)
+                          )}
                         >
                           {Math.round(total)}%
                         </span>

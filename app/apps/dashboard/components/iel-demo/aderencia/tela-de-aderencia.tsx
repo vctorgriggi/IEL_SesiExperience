@@ -18,11 +18,13 @@ import { ArrowRight } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
 import { Alert } from '@workspace/ui';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import { Card, CardContent, CardHeader } from '@workspace/ui/shadcn/card';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { textoDaAderencia } from '../metricas/cores';
 import { BarrasDeAderencia } from './barras-de-aderencia';
 import { PontosDoDia } from './pontos-do-dia';
 import { RadarDeAderencia } from './radar-de-aderencia';
@@ -244,7 +246,6 @@ function LeituraDaPessoa({
   const nome = entrada.talent?.name ?? 'Pessoa fora da base';
   const primeiroNome = nome.split(' ')[0] ?? nome;
   const total = entrada.adherence.total;
-  const abaixoDoMinimo = total !== null && total < ADHERENCE_THRESHOLD;
 
   return (
     <Card className="overflow-hidden border-border/80 shadow-xs">
@@ -292,11 +293,10 @@ function LeituraDaPessoa({
             <div className="rounded-lg border border-border/70 bg-muted/20 p-4 flex flex-col gap-2.5">
               <div className="flex items-baseline gap-2.5">
                 <span
-                  className={`text-4xl font-bold tracking-tight tabular-nums ${
-                    abaixoDoMinimo
-                      ? 'text-[hsl(var(--brand-accent))]'
-                      : 'text-foreground'
-                  }`}
+                  className={cn(
+                    'text-4xl font-bold tracking-tight tabular-nums',
+                    textoDaAderencia(total)
+                  )}
                 >
                   {total === null ? (
                     <>

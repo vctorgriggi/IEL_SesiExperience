@@ -6,7 +6,10 @@ import { getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
 import { COPY } from '@/features/iel-demo/copy';
 import { AXIS_WEIGHT_LABEL } from '@/features/iel-demo/state/selectors';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
+
+import { barraDaAderencia, textoDaAderencia, TRILHO } from '../metricas/cores';
 
 /**
  * Os cinco pontos do dia a dia numa lista com trilho e percentual.
@@ -30,8 +33,6 @@ export function PontosDoDia({
       {pontos.map((ponto) => {
         const faltaDaEmpresa = ponto.companyMean === null;
         const temMedida = ponto.adherence !== null;
-        const abaixoDoMinimo =
-          temMedida && (ponto.adherence ?? 0) < ADHERENCE_THRESHOLD;
 
         return (
           <li
@@ -55,11 +56,10 @@ export function PontosDoDia({
               <div className="flex items-center gap-1.5">
                 {temMedida ? (
                   <span
-                    className={`text-sm font-semibold tabular-nums ${
-                      abaixoDoMinimo
-                        ? 'text-[hsl(var(--brand-accent))]'
-                        : 'text-foreground'
-                    }`}
+                    className={cn(
+                      'text-sm font-semibold tabular-nums',
+                      textoDaAderencia(ponto.adherence)
+                    )}
                   >
                     {Math.round(ponto.adherence ?? 0)}%
                   </span>
@@ -78,22 +78,23 @@ export function PontosDoDia({
 
             <div
               aria-hidden="true"
-              className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
+              className={cn(
+                'relative h-2 w-full overflow-hidden rounded-full',
+                TRILHO.trilha
+              )}
             >
               {temMedida ? (
                 <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    abaixoDoMinimo
-                      ? 'bg-[hsl(var(--brand-accent))]'
-                      : 'bg-primary'
-                  }`}
+                  className={cn(
+                    'h-full rounded-full',
+                    barraDaAderencia(ponto.adherence)
+                  )}
                   style={{ width: `${ponto.adherence ?? 0}%` }}
                 />
               ) : null}
               <div
-                className="absolute inset-y-0 w-0.5 bg-foreground/30"
+                className={cn('absolute inset-y-0 w-0.5', TRILHO.minimo)}
                 style={{ left: `${ADHERENCE_THRESHOLD}%` }}
-                title={`Mínimo de ${ADHERENCE_THRESHOLD}%`}
               />
             </div>
 

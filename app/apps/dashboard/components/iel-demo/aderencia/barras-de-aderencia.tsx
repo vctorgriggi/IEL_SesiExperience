@@ -7,10 +7,12 @@ import { plural } from '@/features/iel-demo/format';
 import type { JobRankingEntry } from '@/features/iel-demo/state/selectors';
 import { Search, User, X } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
 import { Input } from '@workspace/ui/shadcn/input';
 
 import { normalizarBusca } from '../jobs/busca';
+import { barraDaAderencia, textoDaAderencia, TRILHO } from '../metricas/cores';
 
 const BARRAS_PADRAO = 12;
 
@@ -205,7 +207,6 @@ export function BarrasDeAderencia({
           >
             {visiveis.map((entrada) => {
               const total = entrada.adherence.total;
-              const abaixo = total !== null && total < ADHERENCE_THRESHOLD;
               const selecionada =
                 entrada.application.id === applicationSelecionada;
               const nome = entrada.talent?.name ?? 'Pessoa fora da base';
@@ -224,23 +225,9 @@ export function BarrasDeAderencia({
                     }`}
                   >
                     <div className="flex items-center justify-center">
-                      {entrada.rank === 1 ? (
-                        <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-[11px] font-bold text-amber-700 dark:text-amber-400">
-                          1º
-                        </span>
-                      ) : entrada.rank === 2 ? (
-                        <span className="flex size-6 items-center justify-center rounded-full bg-slate-500/15 text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          2º
-                        </span>
-                      ) : entrada.rank === 3 ? (
-                        <span className="flex size-6 items-center justify-center rounded-full bg-orange-700/15 text-[11px] font-bold text-orange-800 dark:text-orange-400">
-                          3º
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {entrada.rank}º
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {entrada.rank}º
+                      </span>
                     </div>
 
                     <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-muted text-xs font-semibold text-foreground/80">
@@ -260,32 +247,35 @@ export function BarrasDeAderencia({
 
                     <div
                       aria-hidden="true"
-                      className="relative h-2.5 rounded-full bg-muted overflow-hidden"
+                      className={cn(
+                        'relative h-2.5 overflow-hidden rounded-full',
+                        TRILHO.trilha
+                      )}
                     >
                       {total !== null ? (
                         <div
-                          className={`h-full rounded-full transition-all ${
-                            abaixo
-                              ? 'bg-[hsl(var(--brand-accent))]'
-                              : 'bg-primary'
-                          }`}
+                          className={cn(
+                            'h-full rounded-full',
+                            barraDaAderencia(total)
+                          )}
                           style={{ width: `${total}%` }}
                         />
                       ) : null}
                       <div
-                        className="absolute inset-y-0 w-0.5 bg-foreground/30"
+                        className={cn(
+                          'absolute inset-y-0 w-0.5',
+                          TRILHO.minimo
+                        )}
                         style={{ left: `${ADHERENCE_THRESHOLD}%` }}
-                        title={`Corte de ${ADHERENCE_THRESHOLD}%`}
                       />
                     </div>
 
                     <div className="flex flex-col items-end leading-tight">
                       <span
-                        className={`text-sm font-semibold tabular-nums ${
-                          abaixo
-                            ? 'text-[hsl(var(--brand-accent))]'
-                            : 'text-foreground'
-                        }`}
+                        className={cn(
+                          'text-sm font-semibold tabular-nums',
+                          textoDaAderencia(total)
+                        )}
                       >
                         {total === null ? (
                           <span className="text-xs font-normal text-muted-foreground">
