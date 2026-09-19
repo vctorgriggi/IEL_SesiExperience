@@ -110,6 +110,8 @@ export type QuadrantChartRing = {
   y: number;
   radius: number;
   color?: string;
+  /** Escrito na borda do anel. Sem ele o raio é grandeza sem legenda. */
+  label?: string | null;
 };
 
 /** Linha entre dois pontos, com rótulo opcional no meio. */
@@ -142,6 +144,11 @@ export type QuadrantChartProps = Omit<
     domain?: [number, number];
     /** Círculo tracejado no centro, em unidades do domínio. */
     neutralRadius?: number;
+    /**
+     * As duas linhas centrais. Desligue quando o plano não for de quadrantes:
+     * elas nomeiam os eixos, e sem eixos viram só duas riscas.
+     */
+    showCrosshair?: boolean;
     onSelect?: (id: string) => void;
     onHoverChange?: (id: string | null) => void;
     /** Conteúdo do balão de hover. Sem isso, o gráfico não mostra balão. */
@@ -212,6 +219,7 @@ const QuadrantChart = forwardRef<HTMLDivElement, QuadrantChartProps>(
       axisLabels,
       domain = [-1, 1],
       neutralRadius,
+      showCrosshair = true,
       onSelect,
       onHoverChange,
       renderTooltip,
@@ -270,17 +278,32 @@ const QuadrantChart = forwardRef<HTMLDivElement, QuadrantChartProps>(
           ) : null}
 
           {rings.map((anel) => (
-            <circle
-              cx={ex(anel.x)}
-              cy={ey(anel.y)}
-              fill="none"
-              key={anel.id}
-              r={emPixels(anel.radius)}
-              stroke={anel.color ?? 'currentColor'}
-              strokeDasharray="3 4"
-              strokeOpacity={0.22}
-              strokeWidth={1}
-            />
+            <g key={anel.id}>
+              <circle
+                cx={ex(anel.x)}
+                cy={ey(anel.y)}
+                fill="none"
+                r={emPixels(anel.radius)}
+                stroke={anel.color ?? 'currentColor'}
+                strokeDasharray="3 4"
+                strokeOpacity={0.3}
+                strokeWidth={1}
+              />
+              {/*
+                Na base do anel, não no topo: o rótulo fixo do ponto central
+                sobe, e no topo os dois se atropelavam.
+              */}
+              {anel.label ? (
+                <text
+                  className="fill-muted-foreground text-[9px] font-medium"
+                  textAnchor="middle"
+                  x={ex(anel.x)}
+                  y={ey(anel.y) + emPixels(anel.radius) + 10}
+                >
+                  {anel.label}
+                </text>
+              ) : null}
+            </g>
           ))}
 
           {points.map((ponto) =>
@@ -451,16 +474,20 @@ const QuadrantChart = forwardRef<HTMLDivElement, QuadrantChartProps>(
               ))}
 
               {/* Eixos centrais: hairline sólido, um passo fora da superfície. */}
-              <ReferenceLine
-                className="stroke-border"
-                strokeWidth={1}
-                x={0}
-              />
-              <ReferenceLine
-                className="stroke-border"
-                strokeWidth={1}
-                y={0}
-              />
+              {showCrosshair ? (
+                <ReferenceLine
+                  className="stroke-border"
+                  strokeWidth={1}
+                  x={0}
+                />
+              ) : null}
+              {showCrosshair ? (
+                <ReferenceLine
+                  className="stroke-border"
+                  strokeWidth={1}
+                  y={0}
+                />
+              ) : null}
 
               <Customized component={camadaDeFundo} />
 

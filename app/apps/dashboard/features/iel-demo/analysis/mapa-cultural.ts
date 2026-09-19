@@ -349,6 +349,23 @@ export function temBaseParaRanquear(aderencia: {
   );
 }
 
+/**
+ * O raio em que uma pessoa é desenhada, no plano centrado na empresa.
+ *
+ * É a única grandeza que o mapa usa para distância quando há empresa de
+ * referência, e por isso precisa ser estritamente monotônica: mais aderência,
+ * menos raio, sem exceção. Era exatamente o que a projeção dos cinco eixos em
+ * duas dimensões não conseguia garantir.
+ *
+ * O máximo fica abaixo de 1 para que ninguém com 0% seja desenhado na borda do
+ * plano, onde a marca sairia cortada.
+ */
+export const RAIO_MAXIMO_NO_PLANO = 0.92;
+
+export function raioDaAderenciaNoPlano(total: number): number {
+  return ((100 - total) / 100) * RAIO_MAXIMO_NO_PLANO;
+}
+
 /** `total` em pontos percentuais, como `AdherenceResult.total`. */
 export function faixaDeAderencia(total: number): FaixaDeEncaixe {
   return (

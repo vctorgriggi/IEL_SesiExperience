@@ -8,8 +8,9 @@ import {
 import {
   FAIXA_DE_ENCAIXE_LABEL,
   faixaDeAderencia,
-  FAIXAS_DE_ENCAIXE,
+  FAIXAS_DE_ADERENCIA,
   LIMITE_SEM_PREDOMINANCIA,
+  raioDaAderenciaNoPlano,
   TIPO_DE_CULTURA_LABEL,
   type ClassificacaoCultural
 } from '@/features/iel-demo/analysis/mapa-cultural';
@@ -45,9 +46,44 @@ import { cn } from '@workspace/ui';
 export const COR_DO_TALENTO = 'hsl(var(--chart-1))';
 export const COR_DA_EMPRESA = 'hsl(var(--chart-3))';
 
-/** Limite da faixa "muito próximo", na mesma escala do plano. */
-const RAIO_MUITO_PROXIMO =
-  FAIXAS_DE_ENCAIXE.find((f) => f.faixa === 'muito-proximo')?.ate ?? 0.5;
+/**
+ * Com uma empresa de referência, o plano deixa de ser um mapa de posições
+ * absolutas e passa a ser um alvo: a empresa no centro, e cada pessoa a uma
+ * distância que **é** a aderência dela.
+ *
+ * A versão anterior desenhava a posição absoluta dos dois lados e deixava a
+ * distância cair onde caísse. Medido na base, metade dos pares aparecia
+ * invertida — alguém com 88% mais longe que alguém com 81% —, porque o plano
+ * tem duas dimensões e a aderência mede cinco eixos ponderados. Projetar cinco
+ * em duas destrói a ordem, e nenhuma escolha de projeção conserta isso.
+ *
+ * Aqui o raio carrega o percentual e o ângulo carrega a direção da diferença:
+ * de que lado do ambiente a pessoa puxa em relação à empresa. Quem está mais
+ * perto tem mais aderência, sempre, porque é a mesma grandeza.
+ *
+ * No modo Panorama da Base não há contra quem medir, então o plano volta a ser
+ * de posições absolutas e os quadrantes voltam a valer.
+ */
+/**
+ * Direção em que a pessoa difere da empresa, preservada da posição absoluta.
+ *
+ * Empatados no mesmo ponto, o ângulo vem do identificador — determinístico,
+ * para que dois talentos idênticos não se sobreponham e a tela não mude de
+ * desenho entre recarregamentos.
+ */
+function anguloDaDiferenca(
+  posicao: { x: number; y: number },
+  referencia: { x: number; y: number },
+  id: string
+): number {
+  const dx = posicao.x - referencia.x;
+  const dy = posicao.y - referencia.y;
+  if (Math.abs(dx) > 1e-6 || Math.abs(dy) > 1e-6) return Math.atan2(dy, dx);
+
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return ((hash >>> 0) % 360) * (Math.PI / 180);
+}
 
 const QUADRANTES: QuadrantChartQuadrant[] = [
   { id: 'colaborativa', label: 'Colaborativa', corner: 'top-left' },
@@ -111,29 +147,57 @@ export function PlanoCultural({
     return 'default';
   }
 
+  /** Modo alvo: há uma empresa no centro e percentuais para medir contra ela. */
+  const modoAlvo = Boolean(pontoReferencia && aderenciaPorTalento?.size);
+
+  /**
+   * Onde cada ponto é desenhado.
+   *
+   * No modo alvo a empresa vai ao centro do plano e cada pessoa recebe o raio
+   * da própria aderência. Fora dele, todo mundo fica na posição absoluta que
+   * as respostas produzem.
+   */
+  function coordenadaDe(ponto: CultureMapPoint): { x: number; y: number } {
+    if (!modoAlvo || !pontoReferencia) return ponto.position;
+    if (ponto.id === pontoReferencia.id) return { x: 0, y: 0 };
+
+    const total = aderenciaPorTalento?.get(ponto.id)?.total;
+    if (total === null || total === undefined) return ponto.position;
+
+    const raio = raioDaAderenciaNoPlano(total);
+    const angulo = anguloDaDiferenca(
+      ponto.position,
+      pontoReferencia.position,
+      ponto.id
+    );
+    return { x: raio * Math.cos(angulo), y: raio * Math.sin(angulo) };
+  }
+
   const pontosDoGrafico: QuadrantChartPoint[] = points.map((ponto) => ({
     id: ponto.id,
-    x: ponto.position.x,
-    y: ponto.position.y,
+    ...coordenadaDe(ponto),
     color: ponto.kind === 'talento' ? COR_DO_TALENTO : COR_DA_EMPRESA,
     symbol: ponto.kind === 'talento' ? 'circle' : 'square',
     tone: tomDe(ponto),
     // Uma etiqueta fixa por gráfico: a empresa de referência. O resto vive no
     // balão de hover e na lista ao lado — um nome por ponto tapava vizinhos.
     label: ponto.id === referenceId ? ponto.name : null,
-    tether: ponto.teamPosition
-      ? { x: ponto.teamPosition.x, y: ponto.teamPosition.y }
-      : null
+    /*
+     * A voz da equipe só cabe no plano de posições absolutas: no modo alvo o
+     * raio já está ocupado pela aderência, e desenhar um segundo ponto ali
+     * sugeriria uma segunda medida que não existe.
+     */
+    tether:
+      !modoAlvo && ponto.teamPosition
+        ? { x: ponto.teamPosition.x, y: ponto.teamPosition.y }
+        : null
   }));
 
   const conexao =
     pontoReferencia && pontoAlvo && pontoReferencia.id !== pontoAlvo.id
       ? {
-          from: {
-            x: pontoReferencia.position.x,
-            y: pontoReferencia.position.y
-          },
-          to: { x: pontoAlvo.position.x, y: pontoAlvo.position.y },
+          from: coordenadaDe(pontoReferencia),
+          to: coordenadaDe(pontoAlvo),
           color: COR_DO_TALENTO,
           label: (() => {
             const a = aderenciaPorTalento?.get(pontoAlvo.id)?.total;
@@ -144,17 +208,22 @@ export function PlanoCultural({
         }
       : null;
 
+  /**
+   * Os anéis são a escala do plano no modo alvo: cada um marca onde começa uma
+   * faixa. Sem eles o raio seria uma grandeza sem legenda.
+   */
   const aneis =
-    pontoReferencia && showProximityRings
-      ? [
-          {
-            id: 'muito-proximo',
-            x: pontoReferencia.position.x,
-            y: pontoReferencia.position.y,
-            radius: RAIO_MUITO_PROXIMO,
-            color: COR_DA_EMPRESA
-          }
-        ]
+    modoAlvo && showProximityRings
+      ? FAIXAS_DE_ADERENCIA.filter((faixa) =>
+          Number.isFinite(faixa.aPartirDe)
+        ).map((faixa) => ({
+          id: faixa.faixa,
+          x: 0,
+          y: 0,
+          radius: raioDaAderenciaNoPlano(faixa.aPartirDe),
+          label: `${Math.round(faixa.aPartirDe)}%`,
+          color: COR_DA_EMPRESA
+        }))
       : [];
 
   function renderBalao(ponto: QuadrantChartPoint) {
@@ -216,20 +285,34 @@ export function PlanoCultural({
 
   return (
     <QuadrantChart
-      ariaLabel="Mapa de cultura: posição de talentos e empresas em dois eixos de ambiente de trabalho"
-      axisLabels={ROTULOS_DOS_EIXOS}
+      ariaLabel={
+        modoAlvo
+          ? 'Mapa de cultura: empresa de referência no centro, cada pessoa a uma distância proporcional à aderência'
+          : 'Mapa de cultura: posição de talentos e empresas em dois eixos de ambiente de trabalho'
+      }
       className={cn('mx-auto', className)}
       connection={conexao}
-      neutralRadius={LIMITE_SEM_PREDOMINANCIA}
+      axisLabels={modoAlvo ? undefined : ROTULOS_DOS_EIXOS}
+      neutralRadius={modoAlvo ? undefined : LIMITE_SEM_PREDOMINANCIA}
       onHoverChange={setHoveredId}
       onSelect={onSelect}
       points={pontosDoGrafico}
-      quadrants={QUADRANTES.map((q) => ({
-        ...q,
-        highlighted: highlightQuadrant === q.id,
-        dimmed: Boolean(highlightQuadrant) && highlightQuadrant !== q.id
-      }))}
+      /*
+       * Os quadrantes nomeiam regiões de posição absoluta. No modo alvo o
+       * ponto está onde a aderência o coloca, não onde a cultura dele cai —
+       * manter os rótulos faria a tela afirmar o que o desenho não diz.
+       */
+      quadrants={
+        modoAlvo
+          ? []
+          : QUADRANTES.map((q) => ({
+              ...q,
+              highlighted: highlightQuadrant === q.id,
+              dimmed: Boolean(highlightQuadrant) && highlightQuadrant !== q.id
+            }))
+      }
       renderTooltip={renderBalao}
+      showCrosshair={!modoAlvo}
       rings={aneis}
     />
   );

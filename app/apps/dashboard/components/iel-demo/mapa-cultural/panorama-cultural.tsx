@@ -327,12 +327,17 @@ export function PanoramaCultural() {
   }
 
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Mapeamento de ambiente de trabalho com base nos eixos respondidos. O
-        mapa aproxima perfis semelhantes e orienta conexões em escala sem
-        descartar ninguém.
-      </p>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Mapa de cultura
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Mapeamento de ambiente de trabalho com base nos eixos respondidos. O
+          mapa aproxima perfis semelhantes e orienta conexões em escala sem
+          descartar ninguém.
+        </p>
+      </div>
 
       {/* Painel Central do Mapa */}
       <Card>
@@ -345,9 +350,11 @@ export function PanoramaCultural() {
           <CardDescription>
             Exibindo{' '}
             <strong className="text-foreground">{pontosExibidos.length}</strong>{' '}
-            registros. O plano mostra em que região cada lado descreve o próprio
-            ambiente; o percentual de aderência está na lista, ao lado de cada
-            nome. O mapa orienta a conversa e não descarta ninguém.
+            registros.{' '}
+            {modoVisualizacao === 'empresa-talentos'
+              ? 'A empresa fica no centro e a distância de cada pessoa é a aderência dela: quanto mais perto, maior o percentual. A direção diz de que lado do ambiente ela puxa.'
+              : 'Cada ponto fica na região que as próprias respostas descrevem.'}{' '}
+            O mapa orienta a conversa e não descarta ninguém.
           </CardDescription>
           <CardAction>
             {modoVisualizacao === 'panorama-geral' ? (

@@ -15,7 +15,9 @@ import {
   CONTRIBUICAO_POR_ALTERNATIVA,
   FAIXA_DE_ENCAIXE_RECOMENDACAO,
   faixaDeAderencia,
+  FAIXAS_DE_ADERENCIA,
   MINIMO_DE_EIXOS_PARA_RANQUEAR,
+  raioDaAderenciaNoPlano,
   resumirDivergencia,
   temBaseParaRanquear,
   TIPO_DE_CULTURA_TENDENCIA,
@@ -336,5 +338,42 @@ describe('mapa cultural — piso de eixos para ranquear', () => {
 
     expect(doisEixos.coverage.answeredAxes).toBe(MINIMO_DE_EIXOS_PARA_RANQUEAR);
     expect(temBaseParaRanquear(doisEixos)).toBe(true);
+  });
+});
+
+describe('mapa cultural — o raio é a aderência', () => {
+  /*
+   * A regra que o desenho precisa cumprir, e que a projeção anterior não
+   * cumpria: quem tem mais aderência aparece mais perto da empresa. Antes
+   * metade dos pares saía invertida, porque a posição vinha dos cinco eixos
+   * projetados em duas dimensões e a aderência vinha da medida ponderada.
+   */
+  it('é monotônica: mais aderência, menos raio, sem exceção', () => {
+    const amostras = [0, 12.5, 35, 50, 64.9, 65, 84.9, 85, 99.9, 100];
+
+    for (let i = 1; i < amostras.length; i++) {
+      expect(raioDaAderenciaNoPlano(amostras[i]!)).toBeLessThan(
+        raioDaAderenciaNoPlano(amostras[i - 1]!)
+      );
+    }
+  });
+
+  it('põe quem tem aderência total no centro, junto da empresa', () => {
+    expect(raioDaAderenciaNoPlano(100)).toBe(0);
+  });
+
+  it('não empurra ninguém para fora do plano', () => {
+    expect(raioDaAderenciaNoPlano(0)).toBeLessThan(1);
+  });
+
+  it('os anéis caem nas bordas das faixas', () => {
+    for (const faixa of FAIXAS_DE_ADERENCIA) {
+      if (!Number.isFinite(faixa.aPartirDe)) continue;
+      const raio = raioDaAderenciaNoPlano(faixa.aPartirDe);
+      // Um fio para dentro do anel já é a faixa de cima.
+      expect(faixaDeAderencia(faixa.aPartirDe)).toBe(faixa.faixa);
+      expect(raio).toBeGreaterThan(0);
+      expect(raio).toBeLessThan(1);
+    }
   });
 });
