@@ -72,8 +72,8 @@ body:has([data-iel-theme]),
 
   /*
    * Estado. O kit do Arki aponta `--success`/`--warning`/`--info` para a
-   * série âmbar; aqui os três precisam ser distinguíveis num relance, e a
-   * cor aparece só em ícone e ponto, nunca como fundo de bloco.
+   * série âmbar; aqui os três precisam ser distinguíveis num relance. Para
+   * dado e estado, use as `--estado-*` e `--data-*` abaixo (via `cores.ts`).
    */
   --success: 142 71% 35%;
   --success-foreground: 0 0% 98%;
@@ -82,6 +82,43 @@ body:has([data-iel-theme]),
   --info: 227 11% 40%;
   --info-foreground: 0 0% 98%;
   --border-strong: 43 20% 80%;
+
+  /*
+   * Cor nos dados. Uma cor significa sempre a mesma coisa, em qualquer tela:
+   *   azul          → lado da empresa (média da equipe, ações da analista)
+   *   verde-azulado → lado da pessoa (resposta do candidato, séries de dado)
+   *   verde / laranja / vermelho → estado: combina / atenção / difere
+   * Cada estado tem três tons: `-fg` (texto e ícone, ≥ 4,5:1 sobre o
+   * próprio fundo), `-bg` (fundo tingido de badge) e o preenchimento puro
+   * (barras). O laranja de preenchimento é o da marca; o de texto é mais
+   * escuro para passar contraste.
+   */
+  --data-empresa: 217 68% 36%;
+  --data-empresa-bg: 217 70% 94%;
+  --data-empresa-escuro: 219 72% 22%;
+  --data-empresa-claro: 214 62% 62%;
+  --data-pessoa: 176 80% 28%;
+  --data-pessoa-claro: 175 40% 56%;
+  --data-pessoa-bg: 173 45% 91%;
+
+  --estado-combina: 150 59% 30%;
+  --estado-combina-fg: 150 59% 26%;
+  --estado-combina-bg: 146 41% 92%;
+  --estado-atencao: 11 100% 61%;
+  --estado-atencao-fg: 13 71% 38%;
+  --estado-atencao-bg: 17 100% 95%;
+  --estado-difere: 3 71% 41%;
+  --estado-difere-fg: 3 71% 36%;
+  --estado-difere-bg: 3 76% 94%;
+  --estado-neutro-fg: 227 11% 40%;
+  --estado-neutro-bg: 43 24% 91%;
+
+  /* Escala sequencial do lado da pessoa (funil, intensidade), do claro ao escuro. */
+  --escala-1: 173 45% 85%;
+  --escala-2: 174 42% 68%;
+  --escala-3: 175 48% 50%;
+  --escala-4: 176 70% 36%;
+  --escala-5: 177 80% 24%;
 
   --radius: 0.625rem;
 

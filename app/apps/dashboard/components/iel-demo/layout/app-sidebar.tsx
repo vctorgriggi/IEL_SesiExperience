@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { getStatusIntegracoes } from '@/features/iel-demo/analysis/analytics';
 import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -23,7 +24,6 @@ import {
   Building2,
   ChartColumn,
   ChevronsUpDown,
-  CirclePlus,
   HelpCircle,
   Inbox,
   ListOrdered,
@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 
 import { routes } from '@workspace/routes';
+import { cn } from '@workspace/ui/lib/utils';
 import {
   Command,
   CommandEmpty,
@@ -51,6 +52,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@workspace/ui/shadcn/dialog';
+import { Kbd } from '@workspace/ui/shadcn/kbd';
 import {
   Sidebar,
   SidebarContent,
@@ -66,6 +68,11 @@ import {
 } from '@workspace/ui/shadcn/sidebar';
 
 import { normalizarBusca } from '../jobs/busca';
+import {
+  BADGE_DE_ESTADO,
+  ITEM_ATIVO,
+  PREENCHIMENTO_DE_ESTADO
+} from '../metricas/cores';
 import { montarPendencias } from '../overview/pendencias';
 import { ComoFuncionaDialog, RoteiroDialog } from './demo-dialogs';
 import { NavUser } from './nav-user';
@@ -125,7 +132,6 @@ export function AppSidebar() {
         .length,
     [vagas, state]
   );
-  const primeiraVaga = vagas.find((job) => job.stage !== 'encerrada');
 
   /*
    * O gestor entra pela mesma casca, mas não faz o trabalho da analista:
@@ -251,38 +257,34 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent className="flex flex-col gap-2">
-            {eGestor ? null : (
-              <SidebarMenu>
-                <SidebarMenuItem className="flex items-center gap-2">
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Importar planilha"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-                  >
-                    <Link
-                      href={
-                        primeiraVaga
-                          ? iel.jobs.byId(primeiraVaga.id).import
-                          : iel.jobs.index
-                      }
-                    >
-                      <CirclePlus />
-                      <span>Importar planilha</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  <SidebarMenuButton
-                    onClick={() => setBusca(true)}
-                    aria-label="Buscar vaga, empresa ou pessoa"
-                    aria-keyshortcuts="Meta+K Control+K"
-                    aria-haspopup="dialog"
-                    title="Buscar (⌘K)"
-                    className="size-8 shrink-0 justify-center border bg-background group-data-[collapsible=icon]:hidden"
-                  >
-                    <Search />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            )}
+            {/*
+             * A busca é o atalho principal: com milhares de vagas, empresas e
+             * pessoas, chegar pelo nome é mais rápido que navegar. A
+             * importação deixou de ser ação da barra: o Empregare sincroniza
+             * sozinho todo dia às 06:00, e a planilha virou plano B (no menu
+             * da vaga e em Integrações).
+             */}
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  variant="outline"
+                  onClick={() => setBusca(true)}
+                  aria-label="Buscar vaga, empresa ou pessoa"
+                  aria-keyshortcuts="Meta+K Control+K"
+                  aria-haspopup="dialog"
+                  tooltip="Buscar (⌘K)"
+                  className="text-muted-foreground"
+                >
+                  <Search />
+                  <span className="flex-1 truncate text-xs">
+                    Vaga, empresa, pessoa…
+                  </span>
+                  <Kbd className="ml-auto group-data-[collapsible=icon]:hidden">
+                    ⌘K
+                  </Kbd>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
 
             <SidebarMenu>
               {principais.map((item) => (
@@ -294,6 +296,7 @@ export function AppSidebar() {
                     // O kit marca o item ativo só com `data-active`; o
                     // leitor de tela precisa do `aria-current`.
                     aria-current={item.ativo ? 'page' : undefined}
+                    className={ITEM_ATIVO}
                   >
                     <Link href={item.href}>
                       <item.icon />
@@ -301,7 +304,12 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                   {item.badge ? (
-                    <SidebarMenuBadge className="tabular-nums">
+                    <SidebarMenuBadge
+                      className={cn(
+                        'tabular-nums',
+                        item.label === 'Hoje' && BADGE_DE_ESTADO.atencao
+                      )}
+                    >
                       {item.badge}
                     </SidebarMenuBadge>
                   ) : null}
@@ -316,6 +324,7 @@ export function AppSidebar() {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              {eGestor ? null : <StatusDaSincronizacao />}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => setComoFunciona(true)}
@@ -344,6 +353,7 @@ export function AppSidebar() {
                     aria-current={
                       pathname === iel.dataSources ? 'page' : undefined
                     }
+                    className={ITEM_ATIVO}
                   >
                     <Link href={iel.dataSources}>
                       <Plug />
@@ -374,6 +384,57 @@ export function AppSidebar() {
         onOpenChange={setRoteiro}
       />
     </Sidebar>
+  );
+}
+
+/**
+ * A linha discreta que diz que o dado chega sozinho: "Empregare ·
+ * sincronizado hoje 06:00", com um ponto verde. Se a última execução deixou
+ * aviso, o ponto fica laranja e o texto diz. Leva a Integrações. Recolhida, a
+ * barra mostra só o ponto, e o texto vai para a dica.
+ */
+function StatusDaSincronizacao() {
+  const iel = routes.dashboard.iel;
+  const empregare = getStatusIntegracoes().find(
+    (integracao) => integracao.id === 'empregare'
+  );
+  if (!empregare) return null;
+
+  const quando = empregare.detalhe.replace(/^Sincronizado · /, '');
+  const atencao = empregare.estado === 'atencao';
+  const texto = atencao
+    ? `Empregare · sincronização de ${quando} com aviso`
+    : // Curto para caber numa linha: "hoje" fica implícito no horário.
+      `Empregare sincronizado · ${quando.replace(/^hoje /, '')}`;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        tooltip={texto}
+        className="h-auto min-h-8 items-start py-1.5 text-xs text-muted-foreground"
+      >
+        <Link href={iel.dataSources}>
+          {/* O ponto ocupa o lugar do ícone: é ele que fica na barra recolhida. */}
+          <span
+            aria-hidden="true"
+            className="flex size-4 shrink-0 items-center justify-center"
+          >
+            <span
+              className={cn(
+                'size-2 rounded-full',
+                atencao
+                  ? PREENCHIMENTO_DE_ESTADO.atencao
+                  : PREENCHIMENTO_DE_ESTADO.combina
+              )}
+            />
+          </span>
+          {/* `div`, e não `span`: o kit trunca o último `span` do botão, e a
+              frase cabe inteira em duas linhas. */}
+          <div className="min-w-0 flex-1 leading-4">{texto}</div>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
 
@@ -434,6 +495,7 @@ function NavRecentes({ vagas }: { vagas: Job[] }) {
                 asChild
                 isActive={pathname.startsWith(href)}
                 aria-current={pathname.startsWith(href) ? 'page' : undefined}
+                className={ITEM_ATIVO}
                 title={empresa ? `${job.title} · ${empresa}` : job.title}
               >
                 {/*

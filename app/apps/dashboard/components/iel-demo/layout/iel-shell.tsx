@@ -117,7 +117,7 @@ export function IelShell({ children }: { children: ReactNode }) {
             <div
               id="conteudo"
               tabIndex={-1}
-              className="flex flex-1 flex-col gap-4 p-4 outline-none md:gap-6 lg:p-6"
+              className="flex flex-1 flex-col gap-4 p-4 pb-24 outline-none md:gap-6 lg:p-6 lg:pb-24"
             >
               {children}
             </div>

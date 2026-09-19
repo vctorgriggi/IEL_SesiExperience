@@ -12,18 +12,19 @@ import {
   RESCUE_TECHNICAL_CEILING
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
-import { Activity, Clock, TrendingUp } from 'lucide-react';
+import { Clock, LifeBuoy, Send, UserCheck } from 'lucide-react';
 
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@workspace/ui/shadcn/card';
 
+import {
+  BADGE_DE_ESTADO,
+  LADO,
+  PREENCHIMENTO_DE_ESTADO,
+  SELO,
+  TRILHO
+} from '../metricas/cores';
+import { CartaoDeIndicador } from '../metricas/kpi-card';
 import { formatarDataCurta } from '../shared/datas';
 
 /** Data de referência mais N dias, no formato curto da tela. */
@@ -77,112 +78,107 @@ export function JobSectionCards({
 
   const resgate = getRescueCandidates(state, job.id).length;
 
+  const selo = cn(SELO, BADGE_DE_ESTADO.neutro);
+
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4 dark:*:data-[slot=card]:bg-card">
-      <Card className="@container/card">
-        {/* O cartão é número, selo e rodapé soltos; lido em sequência vira
-            "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só,
-            e o desenho fica para os olhos. */}
-        <p className="sr-only">
-          Compatíveis: {plural(combinam, 'pessoa', 'pessoas')} com{' '}
-          {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa, acima do
-          mínimo do IEL, de {responderam} que responderam.
-        </p>
-        <CardHeader aria-hidden="true">
-          <CardDescription>Compatíveis</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {combinam}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <TrendingUp aria-hidden="true" />
-              <span aria-hidden="true">≥ {ADHERENCE_THRESHOLD}%</span>
-              <span className="sr-only">
-                com {ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa
-              </span>
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter
-          aria-hidden="true"
-          className="flex-col items-start gap-1.5 text-sm"
-        >
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Acima do mínimo do IEL
+    <div className="grid grid-cols-1 gap-4 @xl/vaga:grid-cols-2 @5xl/vaga:grid-cols-4">
+      {/* Cada cartão é número, selo e rodapé soltos; lido em sequência vira
+          "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só
+          (`leitura`), e o desenho fica para os olhos. */}
+      <CartaoDeIndicador
+        leitura={`Compatíveis: ${plural(combinam, 'pessoa', 'pessoas')} com ${ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa, acima do mínimo do IEL, de ${responderam} que responderam.`}
+        icone={UserCheck}
+        tom="combina"
+        rotulo="Compatíveis"
+        valor={combinam}
+        selo={
+          <Badge
+            variant="outline"
+            className={selo}
+          >
+            ≥ {ADHERENCE_THRESHOLD}%
+          </Badge>
+        }
+        indicador={
+          <div
+            className={cn(
+              'h-1.5 w-full overflow-hidden rounded-full',
+              TRILHO.trilha
+            )}
+          >
+            <div
+              className={cn(
+                'h-full rounded-full',
+                PREENCHIMENTO_DE_ESTADO.combina
+              )}
+              style={{
+                width: `${responderam === 0 ? 0 : (combinam / responderam) * 100}%`
+              }}
+            />
           </div>
-          <div className="text-muted-foreground">
-            de {responderam} que responderam
-          </div>
-        </CardFooter>
-      </Card>
+        }
+        rodape="Acima do mínimo do IEL"
+        apoio={`de ${responderam} que responderam`}
+      />
 
-      <Card className="@container/card">
-        <p className="sr-only">
-          Sem resposta: {plural(semResposta, 'pessoa', 'pessoas')}. O prazo de
-          resposta, de {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')},
-          termina em {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem
-          não responde sai do processo.
-        </p>
-        <CardHeader aria-hidden="true">
-          <CardDescription>Sem resposta</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {semResposta}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <Clock aria-hidden="true" />
-              <span className="sr-only">Prazo de </span>
-              {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter
-          aria-hidden="true"
-          className="flex-col items-start gap-1.5 text-sm"
-        >
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Prazo de resposta termina{' '}
-            {prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}
-          </div>
-          <div className="text-muted-foreground">
-            quem não responde sai do processo
-          </div>
-        </CardFooter>
-      </Card>
+      <CartaoDeIndicador
+        leitura={`Sem resposta: ${plural(semResposta, 'pessoa', 'pessoas')}. O prazo de resposta, de ${plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}, termina em ${prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem não responde sai do processo.`}
+        icone={Clock}
+        tom="atencao"
+        rotulo="Sem resposta"
+        valor={semResposta}
+        selo={
+          <Badge
+            variant="outline"
+            className={selo}
+          >
+            {plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}
+          </Badge>
+        }
+        rodape={`Prazo de resposta termina ${prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}`}
+        apoio="quem não responde sai do processo"
+      />
 
-      <Card className="@container/card">
-        <p className="sr-only">
-          Marcados para envio: {marcados} de {REFERRAL_LIMIT}.{' '}
-          {faltamParaFechar === 0
+      <CartaoDeIndicador
+        leitura={`Marcados para envio: ${marcados} de ${REFERRAL_LIMIT}. ${
+          faltamParaFechar === 0
             ? 'Remessa fechada.'
-            : `Faltam ${faltamParaFechar} para fechar a remessa.`}
-        </p>
-        <CardHeader aria-hidden="true">
-          <CardDescription>Marcados</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            : `Faltam ${faltamParaFechar} para fechar a remessa.`
+        }`}
+        icone={Send}
+        tom="empresa"
+        rotulo="Marcados"
+        valor={
+          <>
             {marcados}{' '}
             <span className="text-sm font-normal text-muted-foreground">
               de {REFERRAL_LIMIT}
             </span>
-          </CardTitle>
-        </CardHeader>
-        <CardFooter
-          aria-hidden="true"
-          className="flex-col items-start gap-1.5 text-sm"
-        >
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {faltamParaFechar === 0
-              ? 'Remessa fechada'
-              : `Faltam ${faltamParaFechar} para fechar a remessa`}
+          </>
+        }
+        indicador={
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: REFERRAL_LIMIT }, (_, indice) => (
+              <span
+                key={indice}
+                className={cn(
+                  'size-2.5 rounded-full',
+                  indice < marcados ? LADO.empresa.preenchimento : TRILHO.trilha
+                )}
+              />
+            ))}
           </div>
-          <div className="text-muted-foreground">
-            máximo de {REFERRAL_LIMIT} currículos por vaga
-          </div>
-        </CardFooter>
-      </Card>
+        }
+        rodape={
+          faltamParaFechar === 0
+            ? 'Remessa fechada'
+            : `Faltam ${faltamParaFechar} para fechar a remessa`
+        }
+        apoio={`máximo de ${REFERRAL_LIMIT} currículos por vaga`}
+      />
 
-      <Card
-        className="@container/card cursor-pointer transition-colors hover:border-foreground/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+      <CartaoDeIndicador
+        className="cursor-pointer transition-colors hover:border-foreground/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
         role="button"
         tabIndex={0}
         aria-label={`Resgate: ${plural(resgate, 'pessoa combina', 'pessoas combinam')} com a empresa e ${
@@ -195,33 +191,30 @@ export function JobSectionCards({
             onOpenRescue();
           }
         }}
-      >
-        <CardHeader>
-          <CardDescription>Resgate</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+        icone={LifeBuoy}
+        tom="pessoa"
+        rotulo="Resgate"
+        valor={
+          <>
             {resgate}{' '}
             <span className="text-sm font-normal text-muted-foreground">
               {resgate === 1 ? 'pessoa' : 'pessoas'}
             </span>
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <Activity aria-hidden="true" />
-              combinam
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Abaixo de {RESCUE_TECHNICAL_CEILING}% nos requisitos
-          </div>
-          <div className="text-muted-foreground">
-            {resgate === 0
-              ? 'ninguém para rever agora'
-              : 'vale uma segunda olhada'}
-          </div>
-        </CardFooter>
-      </Card>
+          </>
+        }
+        selo={
+          <Badge
+            variant="outline"
+            className={selo}
+          >
+            combinam
+          </Badge>
+        }
+        rodape={`Abaixo de ${RESCUE_TECHNICAL_CEILING}% nos requisitos`}
+        apoio={
+          resgate === 0 ? 'ninguém para rever agora' : 'vale uma segunda olhada'
+        }
+      />
     </div>
   );
 }

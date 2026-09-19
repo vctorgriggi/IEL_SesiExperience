@@ -13,15 +13,31 @@ import {
 
 import { cn } from '@workspace/ui';
 
+import {
+  BADGE_DE_ESTADO,
+  PREENCHIMENTO_DE_ESTADO,
+  TEXTO_DE_ESTADO,
+  type EstadoDeCor
+} from '../metricas/cores';
+
 type Tone = CriterionStateMeta['tone'];
+
+/** Tom do critério → estado de cor: combina, atenção, difere ou sem dado. */
+const TOM: Record<Tone, EstadoDeCor> = {
+  positivo: 'combina',
+  atencao: 'atencao',
+  conflito: 'difere',
+  neutro: 'neutro',
+  desativado: 'neutro'
+};
 
 /** Só a cor do texto: para títulos de estado, sem o peso de uma pill. */
 export const criterionStateTextClass: Record<Tone, string> = {
-  positivo: 'text-success',
-  atencao: 'text-[hsl(var(--brand-accent))]',
-  conflito: 'text-destructive',
-  neutro: 'text-muted-foreground',
-  desativado: 'text-muted-foreground'
+  positivo: TEXTO_DE_ESTADO.combina,
+  atencao: TEXTO_DE_ESTADO.atencao,
+  conflito: TEXTO_DE_ESTADO.difere,
+  neutro: TEXTO_DE_ESTADO.neutro,
+  desativado: TEXTO_DE_ESTADO.neutro
 };
 
 /**
@@ -29,9 +45,9 @@ export const criterionStateTextClass: Record<Tone, string> = {
  * vazado, tracejado), então continua legível sem percepção de cor.
  */
 const toneDotClass: Record<Tone, string> = {
-  positivo: 'bg-success',
-  atencao: 'bg-[hsl(var(--brand-accent))]',
-  conflito: 'bg-destructive',
+  positivo: PREENCHIMENTO_DE_ESTADO.combina,
+  atencao: PREENCHIMENTO_DE_ESTADO.atencao,
+  conflito: PREENCHIMENTO_DE_ESTADO.difere,
   neutro: 'border border-muted-foreground/50 bg-transparent',
   desativado: 'border border-dashed border-muted-foreground/40 bg-transparent'
 };
@@ -44,7 +60,7 @@ const toneIcon: Record<Tone, typeof CircleHelp> = {
   desativado: Info
 };
 
-/** Estado como título: ícone + rótulo coloridos, sem fundo. */
+/** Estado como selo: fundo tingido, ícone e rótulo no mesmo tom. */
 export function CriterionStateHeadline({
   state,
   className
@@ -58,8 +74,8 @@ export function CriterionStateHeadline({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-semibold',
-        criterionStateTextClass[meta.tone],
+        'inline-flex w-fit items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-xs font-semibold',
+        BADGE_DE_ESTADO[TOM[meta.tone]],
         className
       )}
       title={meta.description}

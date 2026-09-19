@@ -1,22 +1,136 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import type { Kpi } from '@/features/iel-demo/analysis/analytics';
-import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Minus, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import {
   Card,
-  CardAction,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
 
+import {
+  BADGE_DE_ESTADO,
+  corDaVariacao,
+  ICONE_TINGIDO,
+  SELO,
+  type TomDeCor
+} from './cores';
 import { formatarValorKpi, lerValorKpi, lerVariacao } from './formato';
 import { MarcadorHistorico } from './marcador-historico';
+
+export type CartaoDeIndicadorProps = Omit<
+  ComponentProps<typeof Card>,
+  'children'
+> & {
+  /** Rótulo curto, no topo. Pode quebrar em duas linhas. */
+  rotulo: ReactNode;
+  /** O número. Fica sempre na cor do texto: a cor mora no ícone e no selo. */
+  valor: ReactNode;
+  /** Selo no canto direito do topo (variação ou etiqueta). */
+  selo?: ReactNode;
+  /** Ícone de contexto, num quadradinho tingido no canto esquerdo do topo. */
+  icone?: LucideIcon;
+  /** Tom do quadradinho do ícone. Padrão: `neutro`. */
+  tom?: TomDeCor;
+  /** Mini indicador visual logo abaixo do número (pontos, barra fina). */
+  indicador?: ReactNode;
+  /** Linha forte do rodapé. */
+  rodape?: ReactNode;
+  /** Linha de apoio do rodapé, em `text-muted-foreground`. */
+  apoio?: ReactNode;
+  /**
+   * Frase inteira para o leitor de tela. Quando existe, o desenho do cartão
+   * fica `aria-hidden` e o leitor ouve só a frase.
+   */
+  leitura?: string;
+};
+
+/**
+ * O esqueleto de todo cartão de número do /iel: ícone tingido e rótulo no
+ * topo, selo à direita, número grande, mini indicador opcional e rodapé.
+ *
+ * Fundo branco com borda: a cor vem do ícone e do selo, no máximo dois pontos
+ * de cor por cartão. O topo tem altura mínima de duas linhas de rótulo, para
+ * os números de uma mesma fileira ficarem na mesma altura.
+ */
+export function CartaoDeIndicador({
+  rotulo,
+  valor,
+  selo,
+  icone: Icone,
+  tom = 'neutro',
+  indicador,
+  rodape,
+  apoio,
+  leitura,
+  className,
+  ...props
+}: CartaoDeIndicadorProps) {
+  const oculto = leitura ? true : undefined;
+
+  return (
+    <Card
+      className={cn('@container/card gap-4 shadow-xs', className)}
+      {...props}
+    >
+      {leitura ? <p className="sr-only">{leitura}</p> : null}
+      <CardHeader
+        aria-hidden={oculto}
+        className="flex flex-col gap-2"
+      >
+        <div className="flex min-h-10 w-full items-start gap-3">
+          {Icone ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                ICONE_TINGIDO[tom]
+              )}
+            >
+              <Icone className="size-4" />
+            </span>
+          ) : null}
+          <CardDescription
+            className={cn(
+              'line-clamp-2 min-w-0 flex-1 leading-5',
+              Icone && 'pt-1.5'
+            )}
+          >
+            {rotulo}
+          </CardDescription>
+          {selo ? (
+            <div className={cn('shrink-0', Icone && 'pt-1')}>{selo}</div>
+          ) : null}
+        </div>
+        <CardTitle className="text-3xl font-semibold tabular-nums">
+          {valor}
+        </CardTitle>
+        {indicador}
+      </CardHeader>
+      {rodape || apoio ? (
+        <CardFooter
+          aria-hidden={oculto}
+          className="mt-auto flex-col items-start gap-1.5 pt-2 text-sm"
+        >
+          {rodape ? (
+            <span className="line-clamp-1 flex items-center gap-2 font-medium">
+              {rodape}
+            </span>
+          ) : null}
+          {apoio ? (
+            <span className="line-clamp-2 text-muted-foreground">{apoio}</span>
+          ) : null}
+        </CardFooter>
+      ) : null}
+    </Card>
+  );
+}
 
 export type KpiCardProps = {
   kpi: Kpi;
@@ -27,17 +141,27 @@ export type KpiCardProps = {
   valor?: ReactNode;
   /**
    * Linha forte do rodapé. Padrão: a direção da variação em palavras
-   * ("Subiu em relação aos 90 dias anteriores"), ou "Sem comparação" quando
-   * `variacao` é `null`.
+   * ("Subiu no período"), ou "Sem comparação" quando `variacao` é `null`.
    */
   rodape?: ReactNode;
   /** Linha de apoio do rodapé, em `text-muted-foreground`. Padrão: `kpi.descricao`. */
   apoio?: ReactNode;
+  /**
+   * Indicador em que cair é o resultado desejado (reabertura, tempo do
+   * ciclo): o selo de variação fica verde quando cai e vermelho quando sobe.
+   */
+  quedaEBoa?: boolean;
+  /** Ícone de contexto, no canto, num quadradinho tingido. */
+  icone?: LucideIcon;
+  /** Tom do quadradinho do ícone. Padrão: `neutro`. */
+  tom?: TomDeCor;
+  /** Mini indicador visual abaixo do número. */
+  indicador?: ReactNode;
   /** Classe extra no `Card`, para o grid (ex.: `lg:col-span-2`). */
   className?: string;
 };
 
-function direcao(kpi: Kpi): { texto: string; Icone: typeof TrendingUp } {
+function direcao(kpi: Kpi): { texto: string; Icone: LucideIcon } {
   if (kpi.variacao === null) {
     return { texto: 'Sem comparação no período', Icone: Minus };
   }
@@ -45,33 +169,34 @@ function direcao(kpi: Kpi): { texto: string; Icone: typeof TrendingUp } {
     return { texto: 'Subiu no período', Icone: TrendingUp };
   }
   if (kpi.variacao < 0) {
-    return {
-      texto: 'Caiu no período',
-      Icone: TrendingDown
-    };
+    return { texto: 'Caiu no período', Icone: TrendingDown };
   }
   return { texto: 'Estável no período', Icone: Minus };
 }
 
 /**
  * O *section card* do `dashboard-01` alimentado por um `Kpi` de
- * `analytics.ts`: rótulo → número em 24px tabular → `Badge outline` com a
- * variação → rodapé em duas linhas.
+ * `analytics.ts`, sobre o `CartaoDeIndicador`: ícone e rótulo → número em
+ * 30px tabular → selo da variação → rodapé em duas linhas.
+ *
+ * O selo da variação é o único lugar em que o cartão diz "bom" ou "ruim":
+ * verde quando melhorou, vermelho quando piorou, cinza sem variação. Quem
+ * decide o que é melhorar é `quedaEBoa` — "tempo do ciclo" caindo é bom, e a
+ * cor não pode dizer o contrário. A palavra ("Subiu no período") continua no
+ * rodapé: a cor nunca fala sozinha.
  *
  * Número do histórico simulado (`fonte: 'historico'`) leva o
- * `MarcadorHistorico` ao lado do rótulo. A seta da variação é neutra, sem
- * verde nem vermelho: "tempo para completar o perfil" caindo é bom, e a cor
- * não pode dizer o contrário.
+ * `MarcadorHistorico` ao lado do rótulo.
  *
  * Use num grid `grid gap-4 sm:grid-cols-2 xl:grid-cols-4`. Cinco cartões não
- * cabem numa linha a 1440px (o selo espreme o rótulo): use `lg:grid-cols-6`
- * com `className="lg:col-span-2"` nos três primeiros e `lg:col-span-3` nos dois
+ * cabem numa linha a 1440px: use `lg:grid-cols-6` com
+ * `className="lg:col-span-2"` nos três primeiros e `lg:col-span-3` nos dois
  * últimos, como na lista de Empresas.
  *
  * ```tsx
  * const kpis = getInicioKpis(state, periodo);
- * <KpiCard kpi={kpis.retornoEmpresas} />
- * <KpiCard kpi={kpis.roteirosUsados} valor={`${usados} de ${gerados}`} rodape="gerados no período" />
+ * <KpiCard kpi={kpis.retornoEmpresas} icone={Building2} tom="empresa" />
+ * <KpiCard kpi={kpis.tempoCiclo} quedaEBoa icone={Clock} tom="atencao" />
  * ```
  */
 export function KpiCard({
@@ -79,20 +204,24 @@ export function KpiCard({
   valor,
   rodape,
   apoio,
+  quedaEBoa = false,
+  icone,
+  tom,
+  indicador,
   className
 }: KpiCardProps) {
   const { texto, Icone } = direcao(kpi);
   const variacaoFalada = lerVariacao(kpi);
+  const estado = corDaVariacao(kpi.variacao, quedaEBoa);
 
   return (
-    <Card
-      className={cn(
-        '@container/card from-primary/5 to-card bg-gradient-to-t shadow-xs',
-        className
-      )}
-    >
-      <CardHeader>
-        <CardDescription>
+    <CartaoDeIndicador
+      className={className}
+      icone={icone}
+      tom={tom}
+      indicador={indicador}
+      rotulo={
+        <>
           {kpi.rotulo}
           {kpi.fonte === 'historico' ? (
             <>
@@ -100,54 +229,47 @@ export function KpiCard({
               <MarcadorHistorico className="align-[-1px]" />
             </>
           ) : null}
-        </CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums">
-          {valor ?? (
-            <>
-              <span aria-hidden="true">{formatarValorKpi(kpi)}</span>
-              <span className="sr-only">{lerValorKpi(kpi)}</span>
-            </>
-          )}
-        </CardTitle>
-        {kpi.variacaoTexto ? (
-          <CardAction>
-            <Badge
-              variant="outline"
-              className="gap-1 font-normal"
-            >
-              {/*
-               * "↗ +10 p.p." não se lê: o selo fica para os olhos e o leitor
-               * de tela ouve a frase inteira.
-               */}
-              <Icone
-                aria-hidden="true"
-                className="size-3"
-              />
-              <span aria-hidden="true">{kpi.variacaoTexto}</span>
-              <span className="sr-only">{variacaoFalada}</span>
-            </Badge>
-          </CardAction>
-        ) : null}
-      </CardHeader>
-      <CardFooter className="flex-col items-start gap-1.5 text-sm">
-        <span className="line-clamp-1 flex items-center gap-2 font-medium">
-          {rodape ?? (
-            <>
-              {/* Com o selo, a frase já foi lida por extenso logo acima. */}
-              <span aria-hidden={variacaoFalada ? 'true' : undefined}>
-                {texto}
-              </span>{' '}
-              <Icone
-                aria-hidden="true"
-                className="size-4 shrink-0"
-              />
-            </>
-          )}
-        </span>
-        <span className="line-clamp-2 text-muted-foreground">
-          {apoio ?? kpi.descricao}
-        </span>
-      </CardFooter>
-    </Card>
+        </>
+      }
+      valor={
+        valor ?? (
+          <>
+            <span aria-hidden="true">{formatarValorKpi(kpi)}</span>
+            <span className="sr-only">{lerValorKpi(kpi)}</span>
+          </>
+        )
+      }
+      selo={
+        kpi.variacaoTexto ? (
+          <Badge
+            variant="outline"
+            className={cn(SELO, BADGE_DE_ESTADO[estado])}
+          >
+            {/*
+             * "↗ +10 p.p." não se lê: o selo fica para os olhos e o leitor
+             * de tela ouve a frase inteira.
+             */}
+            <Icone aria-hidden="true" />
+            <span aria-hidden="true">{kpi.variacaoTexto}</span>
+            <span className="sr-only">{variacaoFalada}</span>
+          </Badge>
+        ) : null
+      }
+      rodape={
+        rodape ?? (
+          <>
+            {/* Com o selo, a frase já foi lida por extenso logo acima. */}
+            <span aria-hidden={variacaoFalada ? 'true' : undefined}>
+              {texto}
+            </span>{' '}
+            <Icone
+              aria-hidden="true"
+              className="size-4 shrink-0"
+            />
+          </>
+        )
+      }
+      apoio={apoio ?? kpi.descricao}
+    />
   );
 }

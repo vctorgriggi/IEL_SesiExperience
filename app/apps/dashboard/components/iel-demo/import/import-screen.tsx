@@ -31,6 +31,7 @@ import {
 } from '@workspace/ui/shadcn/card';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { TEXTO_DE_ESTADO } from '../metricas/cores';
 import { ImportHistory } from './import-history';
 import { ReviewStep } from './review-step';
 import { UploadStep } from './upload-step';
@@ -216,7 +217,7 @@ export function ImportScreen({ jobId }: { jobId: string }) {
             <CardHeader>
               <CircleCheckIcon
                 aria-hidden="true"
-                className="size-6 text-success"
+                className={cn('size-6', TEXTO_DE_ESTADO.combina)}
               />
               <CardTitle className="text-xl">Pronto</CardTitle>
               <CardDescription>

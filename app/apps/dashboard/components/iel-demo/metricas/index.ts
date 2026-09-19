@@ -5,7 +5,12 @@
  */
 export { formatarNumero, formatarValorKpi } from './formato';
 export { Funil } from './funil';
-export { KpiCard, type KpiCardProps } from './kpi-card';
+export {
+  CartaoDeIndicador,
+  KpiCard,
+  type CartaoDeIndicadorProps,
+  type KpiCardProps
+} from './kpi-card';
 export { MarcadorHistorico, TEXTO_HISTORICO } from './marcador-historico';
 export { PERIODO_PADRAO, SeletorPeriodo } from './seletor-periodo';
 export { TEXTO_OCULTO, ValorOculto } from './valor-oculto';

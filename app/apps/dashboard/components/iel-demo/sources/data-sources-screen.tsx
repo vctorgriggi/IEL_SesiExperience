@@ -44,6 +44,11 @@ import {
 
 import { ImportEntry } from '../import/import-entry';
 import { usePageHeader } from '../layout/page-header-context';
+import {
+  BADGE_DE_ESTADO,
+  TEXTO_DE_ESTADO,
+  type EstadoDeCor
+} from '../metricas/cores';
 import { formatarNumero } from '../metricas/formato';
 import { MarcadorHistorico } from '../metricas/marcador-historico';
 
@@ -189,25 +194,21 @@ const CONEXAO: Record<IntegracaoId, { nome: string }> = {
 
 const ESTADO: Record<
   IntegracaoEstado,
-  { rotulo: string; icone: LucideIcon; cor: string }
+  { rotulo: string; icone: LucideIcon; tom: EstadoDeCor }
 > = {
-  ok: { rotulo: 'Conectado', icone: CircleCheck, cor: 'text-success' },
-  atencao: { rotulo: 'Atenção', icone: CircleAlert, cor: 'text-warning' },
-  configurando: {
-    rotulo: 'Em configuração',
-    icone: Clock,
-    cor: 'text-muted-foreground'
-  }
+  ok: { rotulo: 'Conectado', icone: CircleCheck, tom: 'combina' },
+  atencao: { rotulo: 'Atenção', icone: CircleAlert, tom: 'atencao' },
+  configurando: { rotulo: 'Em configuração', icone: Clock, tom: 'neutro' }
 };
 
 function EstadoBadge({ estado }: { estado: IntegracaoEstado }) {
-  const { rotulo, icone: Icone, cor } = ESTADO[estado];
+  const { rotulo, icone: Icone, tom } = ESTADO[estado];
   return (
     <Badge
       variant="outline"
-      className="shrink-0 px-1.5 text-muted-foreground"
+      className={cn('shrink-0 px-1.5', BADGE_DE_ESTADO[tom])}
     >
-      <Icone className={cor} />
+      <Icone aria-hidden="true" />
       {rotulo}
     </Badge>
   );
@@ -286,7 +287,10 @@ function DetalheEmpregare() {
                 >
                   {item.entra ? (
                     <Check
-                      className="mt-0.5 size-4 shrink-0 text-success"
+                      className={cn(
+                        'mt-0.5 size-4 shrink-0',
+                        TEXTO_DE_ESTADO.combina
+                      )}
                       aria-label="Entra"
                     />
                   ) : (
@@ -321,8 +325,8 @@ function DetalheEmpregare() {
               ]}
             />
             <p className="text-xs text-muted-foreground">
-              A entrada de hoje é a planilha. A sincronização por API e webhook
-              está documentada e depende da Empregare.
+              A sincronização roda sozinha. Se ela falhar, a planilha manual
+              logo abaixo resolve o dia.
             </p>
           </div>
         </CardContent>
@@ -564,30 +568,34 @@ const PASSOS_WHATSAPP: {
 
 const ICONE_DO_PASSO: Record<EstadoPasso, { icone: LucideIcon; cor: string }> =
   {
-    feito: { icone: CircleCheck, cor: 'text-success' },
-    andamento: { icone: Clock, cor: 'text-warning' },
-    pendente: { icone: CircleDashed, cor: 'text-muted-foreground' }
+    feito: { icone: CircleCheck, cor: TEXTO_DE_ESTADO.combina },
+    andamento: { icone: Clock, cor: TEXTO_DE_ESTADO.atencao },
+    pendente: { icone: CircleDashed, cor: TEXTO_DE_ESTADO.neutro }
   };
 
 const REGRAS_WHATSAPP: {
   regra: string;
   estado: string;
   icone: LucideIcon;
+  tom: EstadoDeCor;
 }[] = [
   {
     regra: 'Enviar só para quem autorizou',
     estado: 'Sempre ligado',
-    icone: Lock
+    icone: Lock,
+    tom: 'combina'
   },
   {
     regra: 'Se não entregar, tentar por e-mail',
     estado: 'Ligado',
-    icone: Check
+    icone: Check,
+    tom: 'combina'
   },
   {
     regra: 'Aceitar resposta em áudio',
     estado: 'Próxima fase',
-    icone: Clock
+    icone: Clock,
+    tom: 'neutro'
   }
 ];
 
@@ -638,9 +646,9 @@ function DetalheWhatsapp() {
                 <span>{item.regra}</span>
                 <Badge
                   variant="outline"
-                  className="shrink-0 px-1.5 text-muted-foreground"
+                  className={cn('shrink-0 px-1.5', BADGE_DE_ESTADO[item.tom])}
                 >
-                  <item.icone />
+                  <item.icone aria-hidden="true" />
                   {item.estado}
                 </Badge>
               </li>

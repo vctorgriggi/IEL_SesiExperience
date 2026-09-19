@@ -22,7 +22,13 @@ import {
   type ReaberturasPorMes,
   type TempoPorEtapa
 } from '@/features/iel-demo/analysis/analytics';
-import { Download, History } from 'lucide-react';
+import {
+  Download,
+  History,
+  Repeat,
+  TrendingDown,
+  TrendingUp
+} from 'lucide-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
@@ -62,6 +68,18 @@ import {
 } from '@workspace/ui/shadcn/tooltip';
 
 import { usePageHeader } from '../layout/page-header-context';
+import {
+  BADGE_DE_ESTADO,
+  barraDaAderencia,
+  corDaVariacao,
+  ESCALA,
+  LADO,
+  PREENCHIMENTO_CLARO,
+  PREENCHIMENTO_DE_ESTADO,
+  PREENCHIMENTO_PARCIAL,
+  TEXTO_DE_ESTADO,
+  TRACO_ATENCAO
+} from './cores';
 import { formatarNumero } from './formato';
 import { KpiCard } from './kpi-card';
 import { MarcadorHistorico } from './marcador-historico';
@@ -69,6 +87,10 @@ import { SeletorPeriodo } from './seletor-periodo';
 import { ValorOculto } from './valor-oculto';
 
 const TODOS = 'todos';
+
+const PREENCHIMENTO_NEUTRO_CLARO = PREENCHIMENTO_CLARO.neutro;
+const PREENCHIMENTO_ATENCAO_CLARO = PREENCHIMENTO_CLARO.atencao;
+const PREENCHIMENTO_PESSOA_CLARO = PREENCHIMENTO_CLARO.pessoa;
 
 /**
  * O BI olha para trás: permanência, reabertura e tempo de ciclo só existem
@@ -273,6 +295,30 @@ function Dica({ children, linhas }: { children: ReactNode; linhas: string[] }) {
   );
 }
 
+/**
+ * Item de legenda em pílula: amostra da marca e o nome da série. A amostra é
+ * só desenho; o nome é o texto.
+ */
+function Pilula({
+  amostra,
+  children
+}: {
+  amostra: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <span className="inline-flex h-5 items-center gap-1.5 rounded-full border bg-card px-2 text-xs text-muted-foreground">
+      <span
+        aria-hidden="true"
+        className="flex items-center"
+      >
+        {amostra}
+      </span>
+      {children}
+    </span>
+  );
+}
+
 /** "Últimos 12 meses · Frigorífico" ou "· todos os setores". */
 function recorte(setor: string | null, periodo = 'últimos 12 meses'): string {
   return `${periodo} · ${setor ?? 'todos os setores'}`;
@@ -323,6 +369,7 @@ function Reabertura({
   const base = (lista: ReaberturaMes[]) =>
     `${intervalo(lista)}: ${soma(lista, 'reaberturas')} reaberturas em ${soma(lista, 'vagas')} vagas.`;
   const variacao = dados.variacaoPct;
+  const estadoDaVariacao = corDaVariacao(variacao, true);
   const taxa = (valor: number | null) =>
     valor === null ? '—' : formatarNumero(valor);
 
@@ -338,6 +385,8 @@ function Reabertura({
           )}
           valor={taxa(dados.taxaAntes)}
           rodape="reaberturas a cada 100 vagas"
+          icone={Repeat}
+          tom="neutro"
         />
         <KpiCard
           kpi={kpiHistorico(
@@ -348,6 +397,8 @@ function Reabertura({
           )}
           valor={taxa(dados.taxaDepois)}
           rodape="reaberturas a cada 100 vagas"
+          icone={Repeat}
+          tom="pessoa"
         />
         <KpiCard
           kpi={kpiHistorico(
@@ -356,10 +407,18 @@ function Reabertura({
             variacao,
             'Taxa com o Mind RH contra a taxa antes, só meses fechados.'
           )}
+          // Aqui cair é bom: menos reabertura é o resultado que o IEL quer.
+          quedaEBoa
+          icone={variacao !== null && variacao > 0 ? TrendingUp : TrendingDown}
+          tom={estadoDaVariacao}
           valor={
-            variacao === null
-              ? '—'
-              : `${variacao > 0 ? '+' : variacao < 0 ? '−' : ''}${Math.abs(variacao)}%`
+            variacao === null ? (
+              '—'
+            ) : (
+              <span className={TEXTO_DE_ESTADO[estadoDaVariacao]}>
+                {`${variacao > 0 ? '+' : variacao < 0 ? '−' : ''}${Math.abs(variacao)}%`}
+              </span>
+            )
           }
           rodape={
             variacao === null
@@ -426,9 +485,9 @@ function GraficoDeReabertura({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="pt-6">
+        <div className="pt-8">
           <div
-            className="relative h-56 border-b"
+            className="relative h-56 border-b border-border/60"
             role="img"
             aria-label={descricaoAcessivel}
           >
@@ -441,11 +500,17 @@ function GraficoDeReabertura({
                     key={mes.mes}
                     className={cn(
                       'relative flex h-full flex-col items-center justify-end gap-1 px-0.5 sm:px-1',
-                      marco && 'border-l border-dashed border-foreground/50'
+                      marco &&
+                        cn('border-l-2 border-dashed', LADO.empresa.borda)
                     )}
                   >
                     {marco ? (
-                      <span className="absolute -top-6 left-1 text-xs font-medium whitespace-nowrap">
+                      <span
+                        className={cn(
+                          'absolute -top-7 -left-px rounded-full rounded-bl-none px-2 py-0.5 text-xs font-medium whitespace-nowrap text-white',
+                          LADO.empresa.preenchimento
+                        )}
+                      >
                         Mind RH entra
                       </span>
                     ) : null}
@@ -474,9 +539,12 @@ function GraficoDeReabertura({
                       <div
                         tabIndex={0}
                         className={cn(
-                          'w-full max-w-10 rounded-t outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                          mes.aposMindRh ? 'bg-primary' : 'bg-muted-foreground',
-                          mes.parcial && 'opacity-35'
+                          'w-full max-w-10 rounded-t-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                          mes.parcial
+                            ? PREENCHIMENTO_PARCIAL
+                            : mes.aposMindRh
+                              ? LADO.pessoa.preenchimento
+                              : PREENCHIMENTO_NEUTRO_CLARO
                         )}
                         style={{
                           height: `${altura(valor ?? 0)}%`,
@@ -497,8 +565,8 @@ function GraficoDeReabertura({
               <polyline
                 points={pontosDaLinha.map((p) => `${p.x},${p.y}`).join(' ')}
                 fill="none"
-                stroke="hsl(var(--brand-accent))"
-                strokeWidth={2}
+                stroke={TRACO_ATENCAO}
+                strokeWidth={3}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
@@ -508,7 +576,10 @@ function GraficoDeReabertura({
               <span
                 key={p.mes.mes}
                 aria-hidden
-                className="pointer-events-none absolute size-2 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-card bg-[hsl(var(--brand-accent))]"
+                className={cn(
+                  'pointer-events-none absolute size-2.5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-card',
+                  PREENCHIMENTO_DE_ESTADO.atencao
+                )}
                 style={{ left: `${p.x}%`, bottom: `${100 - p.y}%` }}
               />
             ))}
@@ -524,23 +595,49 @@ function GraficoDeReabertura({
             </span>
           ))}
         </div>
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-muted-foreground" />
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Pilula
+            amostra={
+              <span
+                className={cn(
+                  'size-2.5 rounded-sm',
+                  PREENCHIMENTO_NEUTRO_CLARO
+                )}
+              />
+            }
+          >
             Antes do Mind RH
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-primary" />
+          </Pilula>
+          <Pilula
+            amostra={
+              <span
+                className={cn('size-2.5 rounded-sm', LADO.pessoa.preenchimento)}
+              />
+            }
+          >
             Com o Mind RH
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-primary opacity-35" />
+          </Pilula>
+          <Pilula
+            amostra={
+              <span
+                className={cn('size-2.5 rounded-sm', PREENCHIMENTO_PARCIAL)}
+              />
+            }
+          >
             Mês em curso
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 rounded-full bg-[hsl(var(--brand-accent))]" />
+          </Pilula>
+          <Pilula
+            amostra={
+              <span
+                className={cn(
+                  'h-[3px] w-4 rounded-full',
+                  PREENCHIMENTO_DE_ESTADO.atencao
+                )}
+              />
+            }
+          >
             Média dos últimos 3 meses
-          </span>
+          </Pilula>
         </div>
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground">
@@ -571,6 +668,18 @@ function leituraDasFaixas(faixas: FaixaPermanencia[]): string {
     : 'Neste recorte a permanência não sobe junto com o quanto combinava. Vale olhar com mais meses ou todos os setores.';
 }
 
+/**
+ * A barra de cada faixa na mesma régua do "combina" do resto do produto
+ * (abaixo de 35 laranja, 35–59 verde-azulado, 60 ou mais verde), mas só a
+ * faixa de cima vai no tom forte: é ela que dá o recado "quem combina mais,
+ * fica". As outras ficam no claro do mesmo tom.
+ */
+const TOM_DA_FAIXA: Record<FaixaPermanencia['faixa'], string> = {
+  'abaixo-35': PREENCHIMENTO_ATENCAO_CLARO,
+  '35-59': PREENCHIMENTO_PESSOA_CLARO,
+  '60-mais': barraDaAderencia(60)
+};
+
 function AderenciaVsPermanencia({
   faixas,
   periodo,
@@ -593,7 +702,7 @@ function AderenciaVsPermanencia({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-end">
         <div
-          className="grid h-64 items-end gap-6 border-b px-4"
+          className="grid h-64 items-end gap-6 border-b border-border/60 px-4"
           style={{ gridTemplateColumns: `repeat(${faixas.length}, 1fr)` }}
           role="img"
           aria-label={faixas
@@ -608,7 +717,7 @@ function AderenciaVsPermanencia({
               key={faixa.faixa}
               className="flex h-full flex-col items-center justify-end gap-1"
             >
-              <span className="text-sm font-medium tabular-nums">
+              <span className="text-2xl font-semibold tabular-nums">
                 {faixa.permanencia90Pct === null ? (
                   <ValorOculto />
                 ) : (
@@ -625,8 +734,11 @@ function AderenciaVsPermanencia({
                 >
                   <div
                     tabIndex={0}
-                    className="w-full max-w-20 rounded-t bg-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    style={{ height: `${faixa.permanencia90Pct * 0.8}%` }}
+                    className={cn(
+                      'w-full max-w-20 rounded-t-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                      TOM_DA_FAIXA[faixa.faixa]
+                    )}
+                    style={{ height: `${faixa.permanencia90Pct * 0.7}%` }}
                   />
                 </Dica>
               )}
@@ -677,24 +789,49 @@ function OCorteNumaFrase({
   periodo: Periodo;
   setor: string | null;
 }) {
-  const lados =
-    leitura.permanenciaAcimaPct === null ||
-    leitura.permanenciaAbaixoPct === null
-      ? null
-      : `${leitura.permanenciaAcimaPct}% contra ${leitura.permanenciaAbaixoPct}% ficaram 90 dias (n=${leitura.nAcima} e n=${leitura.nAbaixo}).`;
+  const acima = leitura.permanenciaAcimaPct;
+  const abaixo = leitura.permanenciaAbaixoPct;
   return (
-    <Card className="shadow-xs">
+    <Card className={cn('border-transparent shadow-xs', LADO.pessoa.fundo)}>
       <CardHeader>
         <TituloHistorico>{`O corte de ${ADHERENCE_THRESHOLD}%`}</TituloHistorico>
         <CardDescription>
           {recorte(setor, PERIODO_LABEL[periodo].toLowerCase())}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-1">
-        <p className="text-base leading-relaxed">{fraseDoCorte(leitura)}</p>
-        {lados ? (
-          <p className="text-xs text-muted-foreground tabular-nums">{lados}</p>
-        ) : null}
+      <CardContent className="flex flex-col gap-4">
+        <p className="text-lg leading-relaxed font-medium text-balance">
+          {fraseDoCorte(leitura)}
+        </p>
+        {acima === null || abaixo === null ? null : (
+          <div className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+            <span
+              className={cn(
+                'inline-flex items-baseline gap-1.5 rounded-full px-3 py-1',
+                BADGE_DE_ESTADO.combina
+              )}
+            >
+              <span className="text-lg font-semibold">{acima}%</span>
+              ficaram, entre quem passa (n={leitura.nAcima})
+            </span>
+            <span
+              aria-hidden="true"
+              className="text-muted-foreground"
+            >
+              ×
+            </span>
+            <span className="sr-only">contra</span>
+            <span
+              className={cn(
+                'inline-flex items-baseline gap-1.5 rounded-full px-3 py-1',
+                BADGE_DE_ESTADO.atencao
+              )}
+            >
+              <span className="text-lg font-semibold">{abaixo}%</span>
+              entre quem não passa (n={leitura.nAbaixo})
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -716,6 +853,7 @@ function PontoQueMaisPesa({
   const comLeitura = pontos.filter((p) => !p.oculto);
   const linhas = todos ? pontos : comLeitura.slice(0, SETORES_VISIVEIS);
   const ocultos = pontos.length - comLeitura.length;
+  const maiorPp = Math.max(1, ...pontos.map((p) => p.diferencaPp ?? 0));
 
   return (
     <Card className="shadow-xs">
@@ -740,7 +878,10 @@ function PontoQueMaisPesa({
                 key={linha.setor}
                 className="py-2 first:pt-0 last:pb-0"
               >
-                <LinhaDoPonto linha={linha} />
+                <LinhaDoPonto
+                  linha={linha}
+                  maiorPp={maiorPp}
+                />
               </li>
             ))}
           </ul>
@@ -768,7 +909,14 @@ function PontoQueMaisPesa({
   );
 }
 
-function LinhaDoPonto({ linha }: { linha: PontoQueMaisSepara }) {
+function LinhaDoPonto({
+  linha,
+  maiorPp
+}: {
+  linha: PontoQueMaisSepara;
+  /** Maior diferença da lista: a barra é relativa a ela. */
+  maiorPp: number;
+}) {
   if (linha.oculto) {
     return (
       <span className="text-muted-foreground">
@@ -796,16 +944,29 @@ function LinhaDoPonto({ linha }: { linha: PontoQueMaisSepara }) {
     );
   }
   return (
-    <span>
-      <span className="font-medium">{linha.setor}</span> · {linha.ponto} ·{' '}
-      <span className="text-muted-foreground">
-        quem ficou combinava{' '}
-        <span className="font-medium text-foreground tabular-nums">
-          {linha.diferencaPp} p.p.
-        </span>{' '}
-        a mais
+    <div className="flex flex-col gap-1.5">
+      <span>
+        <span className="font-medium">{linha.setor}</span> ·{' '}
+        <span className="font-semibold">{linha.ponto}</span>
       </span>
-    </span>
+      <div className="grid grid-cols-[1fr_4.5rem] items-center gap-3">
+        <div
+          aria-hidden="true"
+          className="h-2 overflow-hidden rounded-full bg-muted/70"
+        >
+          <div
+            className={cn('h-full rounded-full', LADO.pessoa.preenchimento)}
+            style={{ width: `${(100 * linha.diferencaPp) / maiorPp}%` }}
+          />
+        </div>
+        <span className="ml-2 text-right font-medium tabular-nums">
+          <span aria-hidden="true">+{linha.diferencaPp} p.p.</span>
+          <span className="sr-only">
+            quem ficou combinava {linha.diferencaPp} p.p. a mais
+          </span>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -832,6 +993,36 @@ function leituraDoTempo(tempo: TempoPorEtapa): string {
   return `${parte} vai em ${gargalo.rotulo.toLowerCase()} (${dias(gargalo.dias)} de ${dias(tempo.totalDias)}).`;
 }
 
+/**
+ * Tom de cada etapa do tempo da vaga: o gargalo em laranja e as demais em
+ * degraus da `ESCALA`, na ordem do ciclo. `texto` é a cor do rótulo dentro
+ * do segmento, escolhida pelo contraste (≥ 4,5:1) com o fundo.
+ */
+function tonsDoTempo(
+  tempo: TempoPorEtapa
+): Record<string, { fundo: string; texto: string }> {
+  // Degraus claros: o laranja do gargalo é a única cor forte da barra.
+  const degraus = [0, 1, 2, 1, 0] as const;
+  const tons: Record<string, { fundo: string; texto: string }> = {};
+  let proximo = 0;
+  for (const etapa of tempo.etapas) {
+    if (etapa.id === tempo.gargalo) {
+      tons[etapa.id] = {
+        fundo: PREENCHIMENTO_DE_ESTADO.atencao,
+        texto: 'text-foreground'
+      };
+      continue;
+    }
+    const degrau = degraus[proximo % degraus.length] ?? 1;
+    proximo += 1;
+    tons[etapa.id] = {
+      fundo: ESCALA[degrau],
+      texto: 'text-foreground'
+    };
+  }
+  return tons;
+}
+
 function TempoDaVaga({
   tempo,
   filtrado
@@ -839,6 +1030,7 @@ function TempoDaVaga({
   tempo: TempoPorEtapa;
   filtrado: boolean;
 }) {
+  const tons = tonsDoTempo(tempo);
   return (
     <Card className="shadow-xs">
       <CardHeader>
@@ -850,7 +1042,7 @@ function TempoDaVaga({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        <div className="flex h-8 w-full gap-0.5 overflow-hidden rounded-md">
+        <div className="flex h-10 w-full gap-0.5 overflow-hidden rounded-lg">
           {tempo.etapas.map((etapa) => (
             <Dica
               key={etapa.id}
@@ -860,13 +1052,17 @@ function TempoDaVaga({
                 tabIndex={0}
                 aria-label={`${etapa.rotulo}: ${dias(etapa.dias)}`}
                 className={cn(
-                  'h-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                  etapa.id === tempo.gargalo
-                    ? 'bg-[hsl(var(--brand-accent))]'
-                    : 'bg-primary'
+                  'flex h-full items-center justify-center text-xs font-semibold tabular-nums outline-none first:rounded-l-lg last:rounded-r-lg focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  tons[etapa.id]?.fundo,
+                  tons[etapa.id]?.texto
                 )}
                 style={{ width: `${etapa.pct}%` }}
-              />
+              >
+                {/* Só cabe o rótulo em segmento largo; a lista abaixo tem todos. */}
+                {etapa.pct >= 12 ? (
+                  <span aria-hidden="true">{dias(etapa.dias)}</span>
+                ) : null}
+              </div>
             </Dica>
           ))}
         </div>
@@ -878,14 +1074,23 @@ function TempoDaVaga({
             >
               <span className="flex items-center gap-2">
                 <span
+                  aria-hidden="true"
                   className={cn(
-                    'size-2 shrink-0 rounded-full',
-                    etapa.id === tempo.gargalo
-                      ? 'bg-[hsl(var(--brand-accent))]'
-                      : 'bg-primary'
+                    'size-3 shrink-0 rounded-sm',
+                    tons[etapa.id]?.fundo
                   )}
                 />
                 {etapa.rotulo}
+                {etapa.id === tempo.gargalo ? (
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-xs font-medium',
+                      BADGE_DE_ESTADO.atencao
+                    )}
+                  >
+                    gargalo
+                  </span>
+                ) : null}
               </span>
               <span className="font-medium tabular-nums">
                 {dias(etapa.dias)}
@@ -918,6 +1123,9 @@ function EmpresasComMaisReabertura({
   empresas: EmpresaReabertura[];
   setor: string | null;
 }) {
+  // A barrinha é relativa à maior taxa da lista; o % escrito é o real.
+  // Só a maior taxa vai no laranja cheio; as outras no laranja claro.
+  const maiorTaxa = Math.max(1, ...empresas.map((e) => e.taxaPct ?? 0));
   return (
     <Card className="shadow-xs">
       <CardHeader>
@@ -978,8 +1186,32 @@ function EmpresasComMaisReabertura({
                     <TableCell className="text-right tabular-nums">
                       {empresa.vagas}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {empresa.taxaPct === null ? '—' : `${empresa.taxaPct}%`}
+                    <TableCell className="w-44">
+                      <div className="flex items-center justify-end gap-2 tabular-nums">
+                        {empresa.taxaPct === null ? null : (
+                          <div
+                            aria-hidden="true"
+                            className="h-2 w-24 overflow-hidden rounded-full bg-muted/70"
+                          >
+                            <div
+                              className={cn(
+                                'h-full rounded-full',
+                                empresa.taxaPct === maiorTaxa
+                                  ? PREENCHIMENTO_DE_ESTADO.atencao
+                                  : PREENCHIMENTO_ATENCAO_CLARO
+                              )}
+                              style={{
+                                width: `${(100 * empresa.taxaPct) / maiorTaxa}%`
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span className="w-10 text-right font-medium">
+                          {empresa.taxaPct === null
+                            ? '—'
+                            : `${empresa.taxaPct}%`}
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
