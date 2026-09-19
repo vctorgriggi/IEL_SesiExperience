@@ -53,6 +53,7 @@
     "exceljs": "4.4.0",
     "file-saver": "2.0.5",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.544.0",
     "mapbox-gl": "^3.8.0",
     "markdown-it": "14.1.0",
     "next": "15.5.20",

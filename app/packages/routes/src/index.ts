@@ -94,7 +94,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
           return {
             index: resolve(jobBase),
             comparison: resolve(`${jobBase}/comparar`),
-            referral: resolve(`${jobBase}/encaminhamento`)
+            referral: resolve(`${jobBase}/encaminhamento`),
+            /**
+             * Importação da planilha exportada da Empregare (M6).
+             *
+             * Fica sob a vaga porque a planilha é sempre de uma vaga: é a
+             * vaga que decide com o que cada linha é comparada.
+             */
+            import: resolve(`${jobBase}/importar`)
           };
         }
       },
@@ -114,6 +121,47 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         index: resolve('/iel/empresas'),
         byId: (companyId: string) =>
           resolve(`/iel/empresas/${encodeSegment(companyId)}`)
+      },
+      /**
+       * Superfície do candidato.
+       *
+       * O questionário de fit abre por candidatura, não por talento: o fit é
+       * respondido para aquela vaga daquela empresa, e a mesma pessoa pode
+       * responder diferente em dois processos. A rota não carrega vaga nem
+       * empresa no caminho — o que o candidato vê da vaga vem de
+       * `getCandidateJobView`, sem nome de empresa (R5).
+       */
+      applications: {
+        byId: (applicationId: string) => {
+          const applicationBase = `/iel/candidatura/${encodeSegment(applicationId)}`;
+          return {
+            fit: resolve(`${applicationBase}/fit`)
+          };
+        }
+      },
+      /**
+       * Link do colaborador que responde a consulta de cultura (M2).
+       *
+       * A chave do caminho é o token opaco do convite, e não o id da empresa
+       * nem o da pessoa: quem intercepta a URL não descobre de quem ela é.
+       * PRODUTO.md §5.4 — link sem login é credencial portadora, então o
+       * escopo é um convite só e a validade é de três dias.
+       */
+      cultureInvite: {
+        byToken: (token: string) =>
+          resolve(`/iel/consulta/${encodeSegment(token)}`)
+      },
+      /**
+       * Relatório que a empresa recebe com os currículos enviados (S3).
+       *
+       * Mesma natureza do link do colaborador: sem login, com o token opaco
+       * no lugar do id da vaga. O que a página abre é o recorte do que já foi
+       * enviado àquela empresa — nunca outros candidatos, nunca resposta
+       * individual de colaborador (PRODUTO.md §5.1).
+       */
+      report: {
+        byToken: (token: string) =>
+          resolve(`/iel/relatorio/${encodeSegment(token)}`)
       },
       clarifications: {
         index: resolve('/iel/pendencias'),

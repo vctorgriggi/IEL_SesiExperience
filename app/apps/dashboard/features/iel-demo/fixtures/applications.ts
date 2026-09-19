@@ -1,4 +1,9 @@
-import type { AnalysisByApplication, Application } from '../types';
+import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
+import type {
+  AnalysisByApplication,
+  Application,
+  CandidateFitResponse
+} from '../types';
 
 /**
  * Dez candidaturas para oito talentos: Ana (vagas 1 e 2) e Carla (vagas 1 e 3)
@@ -13,6 +18,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 82,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Cerrado Distribuição',
@@ -27,6 +33,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 76,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Cerrado Distribuição',
@@ -41,6 +48,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 64,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Cerrado Distribuição',
@@ -55,6 +63,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'triagem',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 71,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Cerrado Distribuição',
@@ -69,6 +78,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 88,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Horizonte Alimentos',
@@ -83,6 +93,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 79,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Horizonte Alimentos',
@@ -97,6 +108,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 45,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Horizonte Alimentos',
@@ -111,6 +123,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 58,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Oficina Pantanal',
@@ -125,6 +138,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 66,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Oficina Pantanal',
@@ -139,6 +153,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
+    technicalMatch: 52,
     externalRef: {
       system: 'Empregare — demonstração',
       account: 'Oficina Pantanal',
@@ -151,6 +166,175 @@ export const DEMO_APPLICATIONS: Application[] = [
  * Estado inicial da análise, definido previamente critério por critério.
  * Nenhum valor é calculado por sorteio: cada estado tem nota e evidências.
  */
+/**
+ * Respostas de fit das candidaturas curadas (M3, R4).
+ *
+ * Fixas e coerentes com as histórias que o roteiro conta, porque é delas que
+ * sai o percentual que aparece na demonstração. Ana espera orientação nas
+ * primeiras semanas e a Cerrado quase não tem apoio estruturado — a aderência
+ * dela cai justamente no eixo em que a leitura por estado já apontava
+ * divergência, e é isso que torna o número explicável em vez de mágico.
+ * Bruno, que prefere organizar o próprio trabalho, sobe pelo mesmo motivo.
+ *
+ * Diego não responde os cinco eixos iguais a ninguém: a disponibilidade dele
+ * está em esclarecimento aberto (ESC-02), e a resposta "pode mudar, desde que
+ * eu saiba com antecedência" é o que o esclarecimento veio confirmar.
+ *
+ * O aceite acompanha cada resposta, com data e versão do texto — sem ele não
+ * há base legal para a resposta existir (LGPD, art. 7º, I). Nenhuma resposta
+ * carrega empresa: R5.
+ */
+export const DEMO_FIT_RESPONSES: CandidateFitResponse[] = [
+  {
+    // Ana: espera acompanhamento (apoio-inicial = 3) e rotina combinada.
+    applicationId: 'CAND-01',
+    answers: {
+      'apoio-inicial': 3,
+      autonomia: 1,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 3,
+      aprendizado: 2
+    },
+    answeredAt: '2026-09-05T14:10:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-05T14:08:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Bruno: prefere autonomia ampla (autonomia = 3) e pouco apoio formal.
+    applicationId: 'CAND-02',
+    answers: {
+      'apoio-inicial': 1,
+      autonomia: 3,
+      'comunicacao-prioridades': 2,
+      'ritmo-turno': 2,
+      aprendizado: 2
+    },
+    answeredAt: '2026-09-04T19:30:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-04T19:28:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Carla: quer aprender controle de materiais e trabalha bem com lista.
+    applicationId: 'CAND-03',
+    answers: {
+      'apoio-inicial': 2,
+      autonomia: 2,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 2,
+      aprendizado: 3
+    },
+    answeredAt: '2026-09-06T08:45:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-06T08:44:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Diego: disponibilidade negociável — o ponto do esclarecimento ESC-02.
+    applicationId: 'CAND-04',
+    answers: {
+      'apoio-inicial': 2,
+      autonomia: 2,
+      'comunicacao-prioridades': 2,
+      'ritmo-turno': 2,
+      aprendizado: 2
+    },
+    answeredAt: '2026-09-02T21:05:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-02T21:02:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Ana na vaga 2: mesma pessoa, outra candidatura, outro registro (R4).
+    applicationId: 'CAND-05',
+    answers: {
+      'apoio-inicial': 3,
+      autonomia: 1,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 3,
+      aprendizado: 2
+    },
+    answeredAt: '2026-07-02T13:20:00.000Z',
+    consent: {
+      acceptedAt: '2026-07-02T13:18:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Elisa: procedimentos por escrito, apoio moderado.
+    applicationId: 'CAND-06',
+    answers: {
+      'apoio-inicial': 2,
+      autonomia: 2,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 3,
+      aprendizado: 2
+    },
+    answeredAt: '2026-08-28T17:40:00.000Z',
+    consent: {
+      acceptedAt: '2026-08-28T17:38:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Fábio: espera treinamento formal antes de assumir a rotina. Match
+    // técnico baixo e aderência alta — é o caso de resgate da dor R10.
+    applicationId: 'CAND-07',
+    answers: {
+      'apoio-inicial': 3,
+      autonomia: 1,
+      'comunicacao-prioridades': 2,
+      'ritmo-turno': 2,
+      aprendizado: 3
+    },
+    answeredAt: '2026-09-01T09:15:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-01T09:12:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Carla na vaga 3: candidatura própria, resposta própria.
+    applicationId: 'CAND-08',
+    answers: {
+      'apoio-inicial': 2,
+      autonomia: 2,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 2,
+      aprendizado: 3
+    },
+    answeredAt: '2026-09-06T08:52:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-06T08:51:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  },
+  {
+    // Gabriela: autonomia após o período inicial, prioridades por escrito.
+    applicationId: 'CAND-09',
+    answers: {
+      'apoio-inicial': 2,
+      autonomia: 3,
+      'comunicacao-prioridades': 3,
+      'ritmo-turno': 3,
+      aprendizado: 2
+    },
+    answeredAt: '2026-09-07T11:00:00.000Z',
+    consent: {
+      acceptedAt: '2026-09-07T10:58:00.000Z',
+      version: CANDIDATE_CONSENT_VERSION
+    }
+  }
+  // CAND-10 (Hugo) fica sem resposta de propósito: a mesa de seleção precisa
+  // mostrar como é uma candidatura sem fit medido — R7, quem não responde
+  // sai do processo, mas sai por decisão do analista, não por sumiço.
+];
+
 export const DEMO_ANALYSIS: AnalysisByApplication = {
   // Ana Ribeiro — Assistente de Logística (Cerrado Distribuição)
   'CAND-01': {

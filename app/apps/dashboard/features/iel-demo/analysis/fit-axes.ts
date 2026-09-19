@@ -31,6 +31,14 @@ export type FitAxisId =
 
 export type FitAxis = {
   id: FitAxisId;
+  /**
+   * O que a pessoa lê na tela.
+   *
+   * Palavra comum, não nome de eixo: quem usa o produto é a analista, o RH de
+   * uma indústria e um candidato operacional no celular. "Autonomia na
+   * execução" é vocabulário de quem desenhou o instrumento; "quem organiza o
+   * trabalho" é a mesma pergunta em português corrente. O `id` não muda.
+   */
   label: string;
   /** O que o eixo descreve, para a leitura não virar julgamento de pessoa. */
   description: string;
@@ -43,7 +51,7 @@ export type FitAxis = {
 export const FIT_AXES: FitAxis[] = [
   {
     id: 'apoio-inicial',
-    label: 'Apoio nas primeiras atividades',
+    label: 'Apoio no início',
     description:
       'Se há alguém acompanhando nas primeiras semanas, e o que a pessoa espera nesse período.',
     companyQuestion:
@@ -53,7 +61,7 @@ export const FIT_AXES: FitAxis[] = [
   },
   {
     id: 'autonomia',
-    label: 'Autonomia na execução',
+    label: 'Quem organiza o trabalho',
     description:
       'Quanto da rotina é executado sem supervisão direta, e como a pessoa prefere trabalhar.',
     companyQuestion:
@@ -63,7 +71,7 @@ export const FIT_AXES: FitAxis[] = [
   },
   {
     id: 'comunicacao-prioridades',
-    label: 'Comunicação de prioridades',
+    label: 'Como chegam as tarefas do dia',
     description:
       'Como as prioridades chegam à pessoa no dia a dia, e como ela prefere recebê-las.',
     companyQuestion: 'Como as prioridades do dia chegam até a equipe?',
@@ -72,7 +80,7 @@ export const FIT_AXES: FitAxis[] = [
   },
   {
     id: 'ritmo-turno',
-    label: 'Turno e previsibilidade',
+    label: 'Horário e mudanças de turno',
     description:
       'O turno praticado e o quanto a disponibilidade da pessoa é firme ou negociável.',
     companyQuestion:
@@ -82,7 +90,7 @@ export const FIT_AXES: FitAxis[] = [
   },
   {
     id: 'aprendizado',
-    label: 'Aprendizado na função',
+    label: 'O que se aprende na função',
     description:
       'O que a função exige aprender no início e o que a pessoa espera aprender.',
     companyQuestion: 'O que a pessoa precisa aprender nas primeiras semanas?',

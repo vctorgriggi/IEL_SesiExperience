@@ -7,16 +7,26 @@ import {
   getDimensionSummary,
   getRequiredAttentionPoints
 } from '../analysis/criterion-states';
-import { buildInitialDemoState, DEMO_SCHEMA_VERSION } from '../fixtures';
+import {
+  buildImportPlan,
+  parseSpreadsheet
+} from '../analysis/spreadsheet-import';
+import {
+  buildInitialDemoState,
+  DEMO_SCHEMA_VERSION,
+  loadExampleSpreadsheet
+} from '../fixtures';
 import type { DemoState } from '../types';
 import { demoReducer } from './reducer';
 import {
   getApplication,
   getClarificationsByJob,
   getCompany,
+  getCompanyCultureProfile,
   getCoverageByDimension,
   getCriterion,
   getCriterionStateCounts,
+  getCultureInvites,
   getEvidencesForCriterion,
   getJob,
   getJobSummary,
@@ -352,6 +362,53 @@ describe('persistência local versionada', () => {
     expect(readPersistedState()).toBeNull();
   });
 
+  it('grava no delta o que a importação e a consulta de cultura criaram', () => {
+    stubWindow();
+    const inicial = buildInitialDemoState();
+    const plan = buildImportPlan(
+      inicial,
+      parseSpreadsheet(loadExampleSpreadsheet()),
+      'VAG-01',
+      '2026-09-19T12:00:00.000Z'
+    );
+    const importado = demoReducer(inicial, {
+      type: 'import-spreadsheet',
+      jobId: 'VAG-01',
+      plan,
+      at: '2026-09-19T12:00:00.000Z'
+    });
+    const convite = getCultureInvites(importado, 'EMP-01').find(
+      (entry) => !entry.answeredAt
+    )!;
+    const respondido = demoReducer(importado, {
+      type: 'answer-culture-invite',
+      token: convite.token,
+      answers: {
+        'apoio-inicial': 'troca-informal',
+        autonomia: 'parcial',
+        'comunicacao-prioridades': 'por-escrito',
+        'ritmo-turno': 'fixo',
+        aprendizado: 'rotina-propria'
+      },
+      consentVersion: '2026-09-19',
+      at: '2026-09-14T12:00:00.000Z'
+    });
+
+    persistState(respondido);
+    const lido = readPersistedState()!;
+
+    expect(lido.importedTalents).toHaveLength(8);
+    expect(lido.spreadsheetImports).toHaveLength(1);
+    expect(lido.applications).toHaveLength(respondido.applications.length);
+    expect(
+      getCultureInvites(lido, 'EMP-01').find((entry) => entry.id === convite.id)
+        ?.answeredAt
+    ).toBe('2026-09-14T12:00:00.000Z');
+    expect(getCompanyCultureProfile(lido, 'EMP-01')).toEqual(
+      getCompanyCultureProfile(respondido, 'EMP-01')
+    );
+  });
+
   it('descarta estado de outra versão de schema', () => {
     stubWindow();
     storage.set(
@@ -361,10 +418,11 @@ describe('persistência local versionada', () => {
 
     expect(readPersistedState()).toBeNull();
     expect(storage.has(DEMO_STORAGE_KEY)).toBe(false);
-    // Sobe a cada campo novo no estado persistido — aqui, os pesos por eixo
-    // confirmados pela empresa. Estado gravado na versão anterior é
-    // descartado em vez de remendado.
-    expect(DEMO_SCHEMA_VERSION).toBe(3);
+    // Sobe a cada campo novo no estado persistido — aqui, os convites da
+    // amostra de colaboradores, os talentos vindos de planilha e o histórico
+    // de importações. Estado gravado na versão anterior é descartado em vez
+    // de remendado.
+    expect(DEMO_SCHEMA_VERSION).toBe(5);
   });
 
   it('ignora conteúdo corrompido sem quebrar a demonstração', () => {

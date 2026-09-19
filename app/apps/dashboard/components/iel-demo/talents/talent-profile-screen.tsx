@@ -1,76 +1,80 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import {
-  DIMENSION_META,
-  getCoverage,
-  getCriterionAnalysis
-} from '@/features/iel-demo/analysis/criterion-states';
+import { COPY } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplicationsByTalent,
-  getAssessments,
   getCompany,
-  getEvidencesByTalent,
-  getEvidencesForApplication,
-  getEvidencesForCriterion,
   getJob,
   getReferralListSelection,
-  getSourceBreakdown,
-  getTalent
+  getTalent,
+  getTalentJourney,
+  JOURNEY_OUTCOME_LABEL,
+  REFERRAL_LIMIT
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import type { Dimension, JobCriterion } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, Textarea, toast } from '@workspace/ui';
-
-import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
+import { Alert, toast } from '@workspace/ui';
+import { Avatar, AvatarFallback } from '@workspace/ui/shadcn/avatar';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
 import {
-  CriterionStateDot,
-  CriterionStateHeadline
-} from '../shared/criterion-state-badge';
-import { EvidenceCard, EvidencePanel } from '../shared/evidence-panel';
-import {
-  Chip,
-  CoverageMeter,
-  formatDate,
-  IelPageHeader,
-  InfoHint,
-  Panel,
-  PanelHeader,
-  SourceBreakdownBar,
-  SourceDot
-} from '../shared/ui';
-import { FitReading } from './fit-reading';
-import { TalentJourney } from './talent-journey';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
 
+import { usePageHeader } from '../layout/page-header-context';
+import { formatarData } from '../shared/datas';
+import { TalentFitView } from './talent-fit-view';
+
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] ?? '';
+  const ultima =
+    partes.length > 1 ? (partes[partes.length - 1]?.[0] ?? '') : '';
+  return `${primeira}${ultima}`.toUpperCase();
+}
+
+/**
+ * O perfil completo, em página.
+ *
+ * É o mesmo conteúdo da gaveta — os dois cartões e as quatro abas —, porque
+ * seria outra leitura da mesma pessoa se fosse escrito duas vezes. O que muda
+ * é o entorno: aqui cabe o cabeçalho da casca, e o rodapé fixo vira uma linha
+ * de ações no topo.
+ */
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('vaga');
-  const [activeCriterionId, setActiveCriterionId] = useState<string | null>(
-    null
-  );
-  const [clarificationCriterion, setClarificationCriterion] =
-    useState<JobCriterion | null>(null);
-  const [internalNote, setInternalNote] = useState('');
 
   const iel = routes.dashboard.iel;
-  const talent = getTalent(talentId);
+  const talent = getTalent(talentId, state);
+
+  usePageHeader({
+    breadcrumb: [
+      { label: 'Pessoas', href: iel.talents.index },
+      { label: talent?.name ?? 'Pessoa' }
+    ]
+  });
 
   if (!talent) {
     return (
       <Alert variant="destructive">
-        Talento não encontrado nesta base de demonstração.{' '}
+        Pessoa não encontrada nesta base de demonstração.{' '}
         <Link
           className="underline"
           href={iel.talents.index}
         >
-          Ver talentos
+          Ver pessoas
         </Link>
         .
       </Alert>
@@ -80,13 +84,13 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
   if (persona.kind === 'gestor') {
     return (
       <Alert variant="warning">
-        No perfil de gestor, os dados de um talento só aparecem dentro de um
-        encaminhamento compartilhado pelo IEL.{' '}
+        No perfil de gestor, os dados de uma pessoa só aparecem dentro de uma
+        lista enviada pelo IEL.{' '}
         <Link
           className="underline"
           href={iel.referrals.index}
         >
-          Ver perfis encaminhados
+          Ver currículos enviados
         </Link>
         .
       </Alert>
@@ -94,431 +98,157 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
   }
 
   const job = jobId ? getJob(jobId) : null;
-  const applications = getApplicationsByTalent(state, talent.id);
-  const contextApplication = job
-    ? applications.find((application) => application.jobId === job.id)
-    : null;
   const company = job ? getCompany(job.companyId) : null;
-  const assessments = getAssessments(talent.id);
-  const evidences = getEvidencesByTalent(state, talent.id);
-  const sharedEvidences = evidences.filter(
-    (evidence) => evidence.visibility === 'compartilhavel'
+  const candidaturas = getApplicationsByTalent(state, talent.id);
+  const application = job
+    ? (candidaturas.find((entry) => entry.jobId === job.id) ?? null)
+    : null;
+
+  const contexto =
+    job && application
+      ? ` · candidatura a ${job.title} na ${company?.name ?? 'empresa'}`
+      : '';
+
+  const cabecalho = (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="size-10">
+          <AvatarFallback className="text-[13px] font-semibold">
+            {iniciais(talent.name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">
+            {talent.name}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {talent.headline} · {talent.city} ·{' '}
+            {plural(candidaturas.length, 'candidatura', 'candidaturas')}
+            {contexto}
+          </p>
+        </div>
+      </div>
+      {job && application ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link href={iel.jobs.byId(job.id).index}>
+              Voltar para {job.title}
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link href={iel.applications.byId(application.id).fit}>
+              {COPY.questions.ask}
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              const lista = getReferralListSelection(state, job.id);
+              if (lista.includes(application.id)) {
+                dispatch({
+                  type: 'remove-from-referral-list',
+                  jobId: job.id,
+                  applicationId: application.id,
+                  at: nowIso()
+                });
+                return;
+              }
+              if (lista.length >= REFERRAL_LIMIT) {
+                toast.error(COPY.referral.limit);
+                return;
+              }
+              dispatch({
+                type: 'add-to-referral-list',
+                jobId: job.id,
+                applicationId: application.id,
+                at: nowIso()
+              });
+              toast.success(`${talent.name} entrou na lista desta vaga.`);
+            }}
+          >
+            Marcar para envio
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
-  const internalNotes = evidences.filter(
-    (evidence) => evidence.visibility === 'interno'
-  );
-  const referralList = job ? getReferralListSelection(state, job.id) : [];
-  const activeCriterion =
-    job && activeCriterionId
-      ? (job.criteria.find((criterion) => criterion.id === activeCriterionId) ??
-        null)
-      : null;
+
+  // Sem vaga não há pergunta a responder: combinar é sempre com alguém. O
+  // perfil abre pelo que descreve a pessoa, e a tela diz o que falta.
+  if (!job || !application) {
+    const journey = getTalentJourney(state, talent.id);
+    return (
+      <div className="flex flex-col gap-6">
+        {cabecalho}
+        <Alert variant="default">
+          Para ver se ela combina com uma empresa, abra este perfil a partir de
+          uma vaga: o percentual depende da oportunidade.
+        </Alert>
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader className="bg-muted">
+              <TableRow>
+                <TableHead>Candidatura</TableHead>
+                <TableHead className="w-[220px]">Resultado</TableHead>
+                <TableHead className="w-[140px]">Desde</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {journey.map((item) => (
+                <TableRow key={item.application.id}>
+                  <TableCell className="whitespace-normal">
+                    {item.job ? (
+                      <Link
+                        href={iel.talents
+                          .byId(talent.id)
+                          .inJob(item.application.jobId)}
+                        className="font-medium underline-offset-4 hover:underline"
+                      >
+                        {item.job.title}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">Vaga fora da base</span>
+                    )}
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {item.company?.name ?? '—'}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="px-1.5 text-muted-foreground"
+                    >
+                      {JOURNEY_OUTCOME_LABEL[item.outcome]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatarData(item.application.appliedAt)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={
-          job && company
-            ? `Análise para ${job.title} — ${company.name}`
-            : 'Perfil consolidado (sem contexto de vaga)'
-        }
-        title={talent.name}
-        description={talent.summary}
-        actions={
-          <>
-            {job ? (
-              <Link
-                href={iel.jobs.byId(job.id).index}
-                className="self-center text-sm font-medium text-primary underline-offset-2 hover:underline"
-              >
-                ← Voltar para a vaga
-              </Link>
-            ) : null}
-            {job && contextApplication ? (
-              <Button
-                disabled={referralList.includes(contextApplication.id)}
-                onClick={() => {
-                  dispatch({
-                    type: 'add-to-referral-list',
-                    jobId: job.id,
-                    applicationId: contextApplication.id,
-                    at: nowIso()
-                  });
-                  toast.success('Perfil adicionado à lista de encaminhamento.');
-                }}
-              >
-                {referralList.includes(contextApplication.id)
-                  ? 'Já está na lista'
-                  : 'Adicionar à lista de encaminhamento'}
-              </Button>
-            ) : null}
-            {job ? (
-              <Link href={iel.jobs.byId(job.id).comparison}>
-                <Button variant="outline">Abrir comparação</Button>
-              </Link>
-            ) : null}
-          </>
-        }
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip>{talent.city}</Chip>
-          <Chip>{talent.email}</Chip>
-          <Chip tone="info">
-            {plural(applications.length, 'candidatura', 'candidaturas')} na base
-            demo
-          </Chip>
-          <span className="text-xs text-muted-foreground">
-            Perfil único: a pessoa não é duplicada quando participa de mais de
-            um processo.
-          </span>
-        </div>
-      </IelPageHeader>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="min-w-0 space-y-4">
-          {job && contextApplication ? (
-            <Panel>
-              <PanelHeader
-                eyebrow="Compatibilidade"
-                title={`Análise por critério — ${job.title}`}
-                hint="A leitura depende desta oportunidade: o mesmo perfil tem outra análise em outra vaga."
-              />
-              <div className="mt-4 space-y-4">
-                <SourceBreakdownBar
-                  breakdown={getSourceBreakdown(
-                    getEvidencesForApplication(state, job, contextApplication)
-                  )}
-                  total={
-                    getEvidencesForApplication(state, job, contextApplication)
-                      .length
-                  }
-                  className="border-b border-border pb-3"
-                />
-                <CoverageMeter
-                  coverage={getCoverage(
-                    job,
-                    state.analysis,
-                    contextApplication.id
-                  )}
-                />
-                {(
-                  ['tecnica', 'profissional', 'organizacional'] as Dimension[]
-                ).map((dimension) => {
-                  const criteria = job.criteria.filter(
-                    (criterion) => criterion.dimension === dimension
-                  );
-                  if (criteria.length === 0) return null;
-                  const dimensionCoverage = getCoverage(
-                    job,
-                    state.analysis,
-                    contextApplication.id,
-                    dimension
-                  );
-                  return (
-                    <section key={dimension}>
-                      <div className="flex items-baseline justify-between gap-3 border-b border-border-strong pb-1.5">
-                        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                          {DIMENSION_META[dimension].label}
-                          <InfoHint
-                            label={DIMENSION_META[dimension].description}
-                          />
-                        </h3>
-                        <p className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                          {dimensionCoverage.withInformation}/
-                          {dimensionCoverage.total} com dados
-                        </p>
-                      </div>
-                      <ul className="divide-y divide-border">
-                        {criteria.map((criterion) => {
-                          const analysis = getCriterionAnalysis(
-                            state.analysis,
-                            contextApplication.id,
-                            criterion.id
-                          );
-                          const evidences = getEvidencesForCriterion(
-                            state,
-                            contextApplication,
-                            criterion.id
-                          );
-                          return (
-                            <li key={criterion.id}>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setActiveCriterionId(criterion.id)
-                                }
-                                aria-label={`${criterion.label}: ver evidências`}
-                                className="w-full px-1 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                              >
-                                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                  <CriterionStateDot state={analysis.state} />
-                                  <span className="text-sm font-medium text-foreground">
-                                    {criterion.label}
-                                  </span>
-                                  {criterion.required ? (
-                                    <abbr
-                                      title="Requisito obrigatório"
-                                      className="text-xs font-semibold text-muted-foreground no-underline"
-                                    >
-                                      *
-                                    </abbr>
-                                  ) : null}
-                                  <CriterionStateHeadline
-                                    state={analysis.state}
-                                    className="ml-auto"
-                                  />
-                                </span>
-                                <span className="mt-0.5 block pl-4 text-xs leading-relaxed text-muted-foreground">
-                                  {analysis.note}
-                                </span>
-                                {evidences.length > 0 ? (
-                                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 pl-4 text-[11px] text-muted-foreground">
-                                    {getSourceBreakdown(evidences).map(
-                                      (entry) => (
-                                        <span
-                                          key={entry.sourceId}
-                                          className="inline-flex items-center gap-1"
-                                        >
-                                          <SourceDot
-                                            sourceId={entry.sourceId}
-                                          />
-                                          {entry.shortName}
-                                          {entry.count > 1 ? (
-                                            <span className="tabular-nums">
-                                              ({entry.count})
-                                            </span>
-                                          ) : null}
-                                        </span>
-                                      )
-                                    )}
-                                    <span className="font-medium text-primary">
-                                      ver evidência
-                                      {evidences.length === 1 ? '' : 's'}
-                                    </span>
-                                  </span>
-                                ) : null}
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </section>
-                  );
-                })}
-              </div>
-            </Panel>
-          ) : (
-            <Alert variant="default">
-              Este perfil está aberto sem contexto de vaga. A compatibilidade
-              depende da oportunidade: abra o perfil a partir de uma vaga para
-              ver a análise por critério.
-            </Alert>
-          )}
-
-          {job && contextApplication ? (
-            <FitReading
-              job={job}
-              talentId={talent.id}
-            />
-          ) : null}
-
-          <Panel>
-            <PanelHeader
-              eyebrow="Percurso profissional"
-              title="Experiências declaradas"
-            />
-            <div className="mt-4 space-y-3">
-              <ul className="space-y-3">
-                {talent.experiences.map((experience) => (
-                  <li
-                    key={experience.id}
-                    className="rounded-[var(--control-radius)] border border-border p-3"
-                  >
-                    <p className="text-sm font-medium text-foreground">
-                      {experience.role} — {experience.organization}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {experience.period}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {experience.activities}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Competências declaradas
-                  </p>
-                  <ul className="mt-1 flex flex-wrap gap-1">
-                    {talent.declaredSkills.map((skill) => (
-                      <li key={skill}>
-                        <Chip>{skill}</Chip>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Expectativas registradas
-                  </p>
-                  {talent.expectations.length === 0 ? (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Nenhuma expectativa registrada até agora.
-                    </p>
-                  ) : (
-                    <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
-                      {talent.expectations.map((expectation) => (
-                        <li key={expectation}>{expectation}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHeader
-              eyebrow="Fontes externas"
-              title="Avaliações existentes"
-              hint="Resultados de origem, com escala, método e data preservados. Nenhuma avaliação nova é aplicada nesta demonstração."
-            />
-            <div className="mt-4 space-y-3">
-              {assessments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Avaliação não disponível — o que não equivale a nota zero.
-                </p>
-              ) : (
-                assessments.map((assessment) => (
-                  <div
-                    key={assessment.id}
-                    className="space-y-2 rounded-[var(--control-radius)] border border-border p-3"
-                  >
-                    <p className="text-sm font-medium text-foreground">
-                      {assessment.method}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Aplicada em {formatDate(assessment.appliedAt)} ·{' '}
-                      {assessment.scale}
-                    </p>
-                    <ul className="space-y-1 text-sm text-foreground">
-                      {assessment.results.map((result) => (
-                        <li key={result.label}>
-                          {result.label}: <strong>{result.value}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs text-muted-foreground">
-                      {assessment.note}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </Panel>
-
-          <TalentJourney talentId={talent.id} />
-
-          <Panel>
-            <PanelHeader
-              eyebrow="Rastreabilidade"
-              title={`Registros e origens (${sharedEvidences.length})`}
-              hint="Informações compartilháveis usadas na análise."
-            />
-            <div className="mt-4 space-y-3">
-              {sharedEvidences.map((evidence) => (
-                <EvidenceCard
-                  key={evidence.id}
-                  evidence={evidence}
-                />
-              ))}
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHeader
-              eyebrow="Uso interno"
-              title="Notas internas do IEL"
-              hint="Separadas dos dados compartilháveis: não entram no encaminhamento."
-            />
-            <div className="mt-4 space-y-3">
-              {internalNotes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma nota interna registrada.
-                </p>
-              ) : (
-                internalNotes.map((note) => (
-                  <EvidenceCard
-                    key={note.id}
-                    evidence={note}
-                  />
-                ))
-              )}
-              <div className="space-y-2">
-                <label
-                  htmlFor="internal-note"
-                  className="block text-sm font-medium text-foreground"
-                >
-                  Nova nota interna
-                </label>
-                <Textarea
-                  id="internal-note"
-                  rows={3}
-                  value={internalNote}
-                  placeholder="Ex.: combinar retorno sobre a disponibilidade antes do encaminhamento."
-                  onChange={(event) => setInternalNote(event.target.value)}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={internalNote.trim().length === 0}
-                  onClick={() => {
-                    dispatch({
-                      type: 'add-internal-note',
-                      talentId: talent.id,
-                      jobId: job?.id ?? 'sem-vaga',
-                      note: internalNote.trim(),
-                      at: nowIso()
-                    });
-                    setInternalNote('');
-                    toast.success(
-                      'Nota interna registrada (não compartilhada).'
-                    );
-                  }}
-                >
-                  Registrar nota interna
-                </Button>
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        {job && contextApplication && activeCriterion ? (
-          <div className="xl:w-[26rem]">
-            <EvidencePanel
-              job={job}
-              application={contextApplication}
-              criterion={activeCriterion}
-              onClose={() => setActiveCriterionId(null)}
-              onRequestClarification={() =>
-                setClarificationCriterion(activeCriterion)
-              }
-            />
-          </div>
-        ) : null}
-      </div>
-
-      {job && clarificationCriterion ? (
-        <CreateClarificationDialog
-          job={job}
-          criterion={clarificationCriterion}
-          application={contextApplication ?? null}
-          visible
-          onHide={() => setClarificationCriterion(null)}
-        />
-      ) : null}
+    <div className="flex flex-col gap-6">
+      {cabecalho}
+      <TalentFitView
+        job={job}
+        talent={talent}
+        application={application}
+      />
     </div>
   );
 }

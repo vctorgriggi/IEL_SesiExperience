@@ -13,163 +13,199 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Clarification } from '@/features/iel-demo/types';
+import {
+  CircleAlertIcon,
+  CircleCheckIcon,
+  MoreHorizontalIcon,
+  SearchIcon
+} from 'lucide-react';
 
 import { routes } from '@workspace/routes';
-import { Alert, Button, FilterNativeSelect, toast } from '@workspace/ui';
-
+import { toast } from '@workspace/ui';
+import { Badge } from '@workspace/ui/shadcn/badge';
+import { Button } from '@workspace/ui/shadcn/button';
 import {
-  Chip,
-  formatDateTime,
-  IelPageHeader,
-  Panel,
-  PanelHeader
-} from '../shared/ui';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@workspace/ui/shadcn/dropdown-menu';
+import { Input } from '@workspace/ui/shadcn/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@workspace/ui/shadcn/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@workspace/ui/shadcn/table';
+
+import { usePageHeader } from '../layout/page-header-context';
+import { formatarData } from '../shared/datas';
 import { IncorporateClarificationDialog } from './incorporate-clarification-dialog';
 
-type GroupBy = 'destinatario' | 'vaga';
+/**
+ * Estado da pergunta, em etiqueta de fábrica.
+ *
+ * Cor só no ícone — "respondida" e "incorporada" ganham um sinal verde,
+ * "solicitada" um sinal âmbar de que alguém está esperando. Rascunho e
+ * cancelada não recebem ícone: não há nada acontecendo com elas.
+ */
+function EstadoDaPergunta({ clarification }: { clarification: Clarification }) {
+  const icone =
+    clarification.state === 'respondida' ||
+    clarification.state === 'incorporada' ? (
+      <CircleCheckIcon className="text-success" />
+    ) : clarification.state === 'solicitada' ? (
+      <CircleAlertIcon className="text-warning" />
+    ) : null;
 
-function stateTone(clarification: Clarification) {
-  switch (clarification.state) {
-    case 'respondida':
-      return 'info' as const;
-    case 'incorporada':
-      return 'positivo' as const;
-    case 'cancelada':
-      return 'neutro' as const;
-    case 'rascunho':
-      return 'neutro' as const;
-    default:
-      return 'atencao' as const;
-  }
+  return (
+    <Badge
+      variant="outline"
+      className="text-muted-foreground"
+    >
+      {icone}
+      {CLARIFICATION_STATE_LABEL[clarification.state]}
+    </Badge>
+  );
 }
 
+/**
+ * As perguntas em aberto, numa lista só.
+ *
+ * O analista chega aqui para saber de quem ele está esperando resposta, e é
+ * isso que a tabela ordena: quem, sobre qual vaga, em que estado. A pergunta
+ * inteira fica na linha, porque ler "Sobre o apoio nas primeiras semanas…" é
+ * o que permite decidir sem abrir.
+ */
 export function ClarificationsScreen() {
   const { state, dispatch, persona } = useIelDemo();
-  const [groupBy, setGroupBy] = useState<GroupBy>('vaga');
-  const [stateFilter, setStateFilter] = useState<string>('todas');
+  const [busca, setBusca] = useState('');
+  const [stateFilter, setStateFilter] = useState('todas');
   const [incorporating, setIncorporating] = useState<Clarification | null>(
     null
   );
   const iel = routes.dashboard.iel;
+  const analista = persona.kind === 'analista';
+
+  usePageHeader({ breadcrumb: [{ label: 'Perguntas' }] });
 
   const visible = useMemo(() => {
-    let items = state.clarifications;
-    if (persona.kind === 'gestor' && persona.companyId) {
-      items = items.filter(
-        (clarification) =>
+    const termo = busca.trim().toLowerCase();
+    return state.clarifications.filter((clarification) => {
+      if (
+        persona.kind === 'gestor' &&
+        persona.companyId &&
+        !(
           clarification.recipient.kind === 'gestor' &&
           clarification.recipient.companyId === persona.companyId
-      );
-    }
-    if (stateFilter !== 'todas') {
-      items = items.filter(
-        (clarification) => clarification.state === stateFilter
-      );
-    }
-    return items;
-  }, [state.clarifications, persona, stateFilter]);
-
-  const groups = useMemo(() => {
-    const map = new Map<string, Clarification[]>();
-    for (const clarification of visible) {
+        )
+      ) {
+        return false;
+      }
+      if (stateFilter !== 'todas' && clarification.state !== stateFilter) {
+        return false;
+      }
+      if (!termo) return true;
       const job = getJob(clarification.jobId);
-      const key =
-        groupBy === 'vaga'
-          ? `${job?.title ?? clarification.jobId} — ${getCompany(job?.companyId ?? '')?.name ?? ''}`
-          : `${clarification.recipient.name} (${clarification.recipient.kind === 'gestor' ? 'gestor' : 'candidato'})`;
-      map.set(key, [...(map.get(key) ?? []), clarification]);
-    }
-    return [...map.entries()];
-  }, [visible, groupBy]);
+      return (
+        clarification.question.toLowerCase().includes(termo) ||
+        clarification.recipient.name.toLowerCase().includes(termo) ||
+        (job?.title.toLowerCase().includes(termo) ?? false)
+      );
+    });
+  }, [state.clarifications, persona, stateFilter, busca]);
 
   return (
-    <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={
-          persona.kind === 'gestor'
-            ? 'Perguntas do IEL para a sua equipe'
-            : 'Solicitações e esclarecimentos'
-        }
-        title={persona.kind === 'gestor' ? 'Perguntas recebidas' : 'Pendências'}
-        description="O envio é simulado: a experiência do destinatário abre aqui mesmo."
-        actions={
-          persona.kind === 'analista' ? (
-            <>
-              <label
-                className="sr-only"
-                htmlFor="clarifications-group"
-              >
-                Agrupar por
-              </label>
-              <FilterNativeSelect
-                id="clarifications-group"
-                className="w-48"
-                value={groupBy}
-                onValueChange={(value) => setGroupBy(value as GroupBy)}
-              >
-                <option value="vaga">Agrupar por vaga</option>
-                <option value="destinatario">Agrupar por destinatário</option>
-              </FilterNativeSelect>
-              <label
-                className="sr-only"
-                htmlFor="clarifications-state"
-              >
-                Filtrar por estado
-              </label>
-              <FilterNativeSelect
-                id="clarifications-state"
-                className="w-48"
-                value={stateFilter}
-                onValueChange={setStateFilter}
-              >
-                <option value="todas">Todos os estados</option>
-                <option value="rascunho">Rascunho</option>
-                <option value="solicitada">Solicitada</option>
-                <option value="respondida">Respondida</option>
-                <option value="incorporada">Incorporada</option>
-                <option value="cancelada">Cancelada</option>
-              </FilterNativeSelect>
-            </>
-          ) : null
-        }
-      />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">
+          {analista ? 'Perguntas' : 'Perguntas recebidas'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {analista
+            ? 'De quem o IEL está esperando resposta. O envio é simulado: a tela de quem recebe abre aqui mesmo.'
+            : 'O que o IEL perguntou sobre a sua equipe.'}
+        </p>
+      </div>
 
-      {visible.length === 0 ? (
-        <Panel padding="lg">
-          <PanelHeader
-            eyebrow="Sem resultados"
-            title="Nenhuma solicitação com esse filtro"
-          />
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            {persona.kind === 'gestor'
-              ? 'Quando o IEL enviar uma pergunta sobre a sua equipe, ela aparece aqui.'
-              : 'Crie uma solicitação a partir de um critério na mesa de seleção ou no contexto da empresa.'}
-          </p>
-          {persona.kind === 'analista' ? (
-            <div className="mt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setStateFilter('todas')}
-              >
-                Limpar filtro
-              </Button>
-            </div>
-          ) : null}
-        </Panel>
-      ) : (
-        <div className="space-y-6">
-          {groups.map(([groupLabel, items]) => (
-            <section
-              key={groupLabel}
-              className="space-y-3"
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="relative w-full max-w-xs">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              aria-label="Buscar pergunta, pessoa ou vaga"
+              placeholder="Buscar pergunta, pessoa ou vaga"
+              className="h-8 pl-8"
+              value={busca}
+              onChange={(evento) => setBusca(evento.target.value)}
+            />
+          </div>
+          {analista ? (
+            <Select
+              value={stateFilter}
+              onValueChange={setStateFilter}
             >
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {groupLabel} · {items.length}
-              </h2>
-              <ul className="space-y-3">
-                {items.map((clarification) => {
+              <SelectTrigger
+                size="sm"
+                aria-label="Filtrar por estado"
+                className="w-48"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todos os estados</SelectItem>
+                <SelectItem value="rascunho">Rascunho</SelectItem>
+                <SelectItem value="solicitada">Solicitada</SelectItem>
+                <SelectItem value="respondida">Respondida</SelectItem>
+                <SelectItem value="incorporada">Incorporada</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="rounded-lg border p-6">
+            <p className="text-sm text-muted-foreground">
+              {analista
+                ? 'Nenhuma pergunta com esse filtro. Uma pergunta nasce de um critério, na mesa de seleção da vaga.'
+                : 'Quando o IEL enviar uma pergunta sobre a sua equipe, ela aparece aqui.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead scope="col">Pergunta</TableHead>
+                  <TableHead scope="col">Para quem</TableHead>
+                  <TableHead scope="col">Vaga</TableHead>
+                  <TableHead scope="col">Criada em</TableHead>
+                  <TableHead scope="col">Estado</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="text-right"
+                  >
+                    Ação
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visible.map((clarification) => {
                   const job = getJob(clarification.jobId);
+                  const company = job ? getCompany(job.companyId) : null;
                   const criterion = job
                     ? getCriterion(job, clarification.criterionId)
                     : null;
@@ -181,180 +217,157 @@ export function ClarificationsScreen() {
                     : null;
 
                   return (
-                    <li key={clarification.id}>
-                      <Panel className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip tone={stateTone(clarification)}>
-                            {CLARIFICATION_STATE_LABEL[clarification.state]}
-                          </Chip>
-                          <span className="text-xs text-muted-foreground">
-                            {clarification.id} · {job?.title} · critério{' '}
-                            {criterion?.label}
-                          </span>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="space-y-1.5">
-                            <p className="text-xs text-muted-foreground">
-                              Para{' '}
-                              <span className="font-medium text-foreground">
-                                {clarification.recipient.name}
-                              </span>{' '}
-                              · {clarification.recipient.role}
-                            </p>
-                            <blockquote className="border-l-2 border-border pl-3 text-sm leading-relaxed text-foreground">
-                              {clarification.question}
-                            </blockquote>
-                          </div>
-
-                          <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                            <div>
-                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                Por que estamos perguntando
-                              </dt>
-                              <dd className="mt-0.5 text-xs leading-relaxed text-foreground/80">
-                                {clarification.reason}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                O destinatário verá
-                              </dt>
-                              <dd className="mt-0.5 text-xs leading-relaxed text-foreground/80">
-                                {clarification.sharedInfo}
-                              </dd>
-                            </div>
-                            {talent ? (
-                              <div>
-                                <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Candidatura afetada
-                                </dt>
-                                <dd className="mt-0.5 text-xs">
-                                  <Link
-                                    className="font-medium text-primary underline-offset-2 hover:underline"
-                                    href={iel.talents
-                                      .byId(talent.id)
-                                      .inJob(clarification.jobId)}
-                                  >
-                                    {talent.name}
-                                  </Link>
-                                </dd>
-                              </div>
-                            ) : null}
-                          </dl>
-
-                          <p className="text-[11px] text-muted-foreground">
-                            Criada em {formatDateTime(clarification.createdAt)}
-                            {clarification.answeredAt
-                              ? ` · respondida em ${formatDateTime(clarification.answeredAt)}`
-                              : ''}
-                            {clarification.incorporatedAt
-                              ? ` · incorporada em ${formatDateTime(clarification.incorporatedAt)}`
-                              : ''}
-                          </p>
-                        </div>
-
+                    <TableRow key={clarification.id}>
+                      <TableCell className="max-w-[40ch] whitespace-normal align-top">
+                        <p className="font-medium text-foreground">
+                          {clarification.question}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Sobre {criterion?.label ?? clarification.criterionId}
+                          {talent ? (
+                            <>
+                              {' · '}
+                              <Link
+                                className="underline underline-offset-2"
+                                href={iel.talents
+                                  .byId(talent.id)
+                                  .inJob(clarification.jobId)}
+                              >
+                                {talent.name}
+                              </Link>
+                            </>
+                          ) : null}
+                        </p>
                         {clarification.answer ? (
-                          <div className="rounded-[var(--control-radius)] border border-border bg-muted/50 p-3">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                              Resposta
-                            </p>
-                            <p className="text-sm text-foreground">
-                              “{clarification.answer}”
-                            </p>
-                          </div>
+                          <p className="border-l-2 pl-2 text-xs italic text-muted-foreground">
+                            {clarification.answer}
+                          </p>
                         ) : null}
-
-                        <div className="flex flex-wrap gap-2">
-                          {clarification.state === 'rascunho' &&
-                          persona.kind === 'analista' ? (
+                      </TableCell>
+                      <TableCell className="whitespace-normal align-top">
+                        <p className="text-foreground">
+                          {clarification.recipient.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {clarification.recipient.role}
+                        </p>
+                      </TableCell>
+                      <TableCell className="whitespace-normal align-top">
+                        {job ? (
+                          <Link
+                            className="text-foreground underline underline-offset-2"
+                            href={iel.jobs.byId(job.id).index}
+                          >
+                            {job.title}
+                          </Link>
+                        ) : (
+                          clarification.jobId
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {company?.name}
+                        </p>
+                      </TableCell>
+                      <TableCell className="align-top tabular-nums text-muted-foreground">
+                        {formatarData(clarification.createdAt)}
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <EstadoDaPergunta clarification={clarification} />
+                      </TableCell>
+                      <TableCell className="align-top text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {clarification.state === 'solicitada' ? (
                             <Button
                               size="sm"
-                              onClick={() => {
-                                dispatch({
-                                  type: 'send-clarification',
-                                  clarificationId: clarification.id,
-                                  at: nowIso()
-                                });
-                                toast.success(
-                                  'Solicitação enviada (envio simulado).'
-                                );
-                              }}
+                              variant="outline"
+                              asChild
                             >
-                              Enviar solicitação
+                              <Link
+                                href={iel.clarifications.respond(
+                                  clarification.id
+                                )}
+                              >
+                                {analista ? 'Abrir o link' : 'Responder'}
+                              </Link>
                             </Button>
                           ) : null}
-
-                          {clarification.state === 'solicitada' ? (
-                            <Link
-                              href={iel.clarifications.respond(
-                                clarification.id
-                              )}
-                            >
-                              <Button size="sm">
-                                {persona.kind === 'gestor'
-                                  ? 'Responder'
-                                  : 'Abrir experiência do destinatário'}
-                              </Button>
-                            </Link>
-                          ) : null}
-
-                          {clarification.state === 'respondida' &&
-                          persona.kind === 'analista' ? (
+                          {clarification.state === 'respondida' && analista ? (
                             <Button
                               size="sm"
                               onClick={() => setIncorporating(clarification)}
                             >
-                              Incorporar à análise
+                              Incorporar
                             </Button>
                           ) : null}
-
-                          {job && persona.kind === 'analista' ? (
-                            <Link href={iel.jobs.byId(job.id).index}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                              >
-                                Abrir a vaga
-                              </Button>
-                            </Link>
-                          ) : null}
-
-                          {(clarification.state === 'solicitada' ||
-                            clarification.state === 'rascunho') &&
-                          persona.kind === 'analista' ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                dispatch({
-                                  type: 'cancel-clarification',
-                                  clarificationId: clarification.id,
-                                  at: nowIso()
-                                });
-                                toast.success(
-                                  'Solicitação cancelada. A análise não mudou.'
-                                );
-                              }}
-                            >
-                              Cancelar solicitação
-                            </Button>
+                          {analista ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label="Mais ações"
+                                >
+                                  <MoreHorizontalIcon />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {clarification.state === 'rascunho' ? (
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      dispatch({
+                                        type: 'send-clarification',
+                                        clarificationId: clarification.id,
+                                        at: nowIso()
+                                      });
+                                      toast.success(
+                                        'Pergunta enviada (envio simulado).'
+                                      );
+                                    }}
+                                  >
+                                    Enviar pergunta
+                                  </DropdownMenuItem>
+                                ) : null}
+                                {job ? (
+                                  <DropdownMenuItem asChild>
+                                    <Link href={iel.jobs.byId(job.id).index}>
+                                      Abrir a vaga
+                                    </Link>
+                                  </DropdownMenuItem>
+                                ) : null}
+                                {clarification.state === 'solicitada' ||
+                                clarification.state === 'rascunho' ? (
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      dispatch({
+                                        type: 'cancel-clarification',
+                                        clarificationId: clarification.id,
+                                        at: nowIso()
+                                      });
+                                      toast.success(
+                                        'Pergunta cancelada. A análise não mudou.'
+                                      );
+                                    }}
+                                  >
+                                    Cancelar pergunta
+                                  </DropdownMenuItem>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           ) : null}
                         </div>
-                      </Panel>
-                    </li>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-      <Alert variant="default">
-        Nada é enviado por e-mail ou mensagem neste ambiente. “Abrir experiência
-        do destinatário” mostra exatamente a tela que a pessoa veria.
-      </Alert>
+        <p className="text-xs text-muted-foreground">
+          Nada é enviado por e-mail ou mensagem neste ambiente. “Abrir o link”
+          mostra exatamente a tela que a pessoa veria no celular.
+        </p>
+      </div>
 
       {incorporating ? (
         <IncorporateClarificationDialog

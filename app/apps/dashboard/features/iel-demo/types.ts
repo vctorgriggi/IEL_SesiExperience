@@ -1,4 +1,9 @@
-import type { CultureOptionId, CultureRespondent } from './analysis/culture';
+import type {
+  CultureOptionId,
+  CultureOptionValue,
+  CultureRespondent
+} from './analysis/culture';
+import type { CultureInviteRole } from './analysis/culture-invites';
 import type { FitAxisId } from './analysis/fit-axes';
 
 /**
@@ -139,6 +144,15 @@ export type CultureAnswer = {
   respondent: CultureRespondent;
   count: number;
   answeredAt: string;
+  /**
+   * Convite que originou esta resposta (M2).
+   *
+   * Opcional porque nem toda resposta vem de convite: a gestão responde pela
+   * própria tela da empresa, e a base demo traz respostas de equipe já
+   * agregadas. Quando existe, é o que permite marcar o convite como usado sem
+   * guardar, do lado da resposta, quem a escreveu.
+   */
+  inviteId?: string;
 };
 
 export type TeamConditionStatus = 'confirmado' | 'da-descricao' | 'a-confirmar';
@@ -313,7 +327,61 @@ export type Application = {
   externalStage: ExternalStage;
   analysisStage: AnalysisStage;
   referralStage: ReferralStage;
+  /**
+   * Percentual de match técnico calculado pelo Empregare (M6).
+   *
+   * Chega pela planilha que o IEL já exporta; a central não o recalcula nem o
+   * corrige. Fica ao lado da aderência cultural, nunca somado a ela: são duas
+   * medidas de naturezas diferentes, e foi somar tudo numa nota só que
+   * produziu o Excel de três relatórios que a mesa de seleção substitui.
+   *
+   * `null` quando a planilha não trouxe o valor — o filtro do Empregare
+   * configurado errado expurga candidato aderente (R10), e tratar ausência
+   * como zero reproduziria o problema dentro da central.
+   *
+   * Opcional porque há recortes de candidatura montados por contratos que não
+   * leem match técnico (o pedido da análise assistida, validado por schema
+   * próprio). Ausente e `null` significam a mesma coisa aqui: não veio valor.
+   */
+  technicalMatch?: number | null;
   externalRef: ExternalRef;
+};
+
+/**
+ * Situação da resposta do candidato ao questionário de fit.
+ *
+ * Derivada, nunca gravada: sai da existência da resposta e do prazo. R7 diz
+ * que o candidato tem 1 a 2 dias e que "quem não responde sai do processo" —
+ * mas quem sai do processo por não responder não é o mesmo que quem ainda tem
+ * prazo, e a mesa de seleção precisa distinguir os dois para saber se cobra
+ * ou se encerra.
+ */
+export type FitStatus = 'respondido' | 'pendente' | 'expirado';
+
+/**
+ * Resposta do candidato ao questionário de fit, com o aceite (M3, M7, R4).
+ *
+ * **Vinculada à candidatura, não ao talento.** O cliente corrigiu isso na
+ * reunião: o fit é aplicado quando a pessoa se candidata àquela vaga daquela
+ * empresa (R4, 00:39:02). A mesma pessoa pode responder diferente para duas
+ * vagas, e reaproveitar a resposta de um processo em outro seria tratamento
+ * para finalidade diversa da informada.
+ *
+ * **Não carrega empresa.** Nem `companyId`, nem nome, nem nada que permita
+ * reconstruí-los a partir daqui. R5 (00:22:21, 00:38:43): o nome da empresa
+ * não aparece para o candidato antes da entrevista. O que ele vê da vaga vem
+ * de `getCandidateJobView`: atividade, localidade, segmento e turno.
+ *
+ * **O aceite mora junto da resposta.** Consentimento é base legal (LGPD, art.
+ * 7º, I) e precisa ser demonstrável com a versão do texto aceito e o momento
+ * — um registro por finalidade, e a finalidade aqui é esta candidatura.
+ */
+export type CandidateFitResponse = {
+  applicationId: string;
+  /** Uma escolha por eixo, na escala ordinal comum aos dois lados. */
+  answers: Record<FitAxisId, CultureOptionValue>;
+  answeredAt: string;
+  consent: { acceptedAt: string; version: string };
 };
 
 export type CriterionAnalysis = {
@@ -459,6 +527,59 @@ export type DemoUiState = {
   overviewCompanyId: string | 'todas';
 };
 
+/**
+ * Convite a um colaborador para responder o traçado cultural da empresa (M2).
+ *
+ * A analista cadastra nome e e-mail corporativo de uma amostra da área; cada
+ * pessoa recebe um link próprio, sem login, válido por três dias. O que se
+ * guarda é o mínimo que a consulta exige — ver `analysis/culture-invites.ts`
+ * para as decisões de privacidade.
+ */
+export type CultureRespondentInvite = {
+  id: string;
+  companyId: string;
+  name: string;
+  /** E-mail corporativo. É a chave de unicidade dentro da empresa. */
+  corporateEmail: string;
+  role: CultureInviteRole;
+  /** Área da pessoa, nas palavras da empresa. Ordena a leitura, não filtra. */
+  area: string;
+  /** Opaco: 16 hexadecimais derivados do id. Nunca contém dado pessoal. */
+  token: string;
+  sentAt: string;
+  /** `sentAt` + 3 dias, ou estendido por reenvio. */
+  expiresAt: string;
+  answeredAt: string | null;
+  /** Versão do texto de aceite. `null` enquanto não houver resposta. */
+  consentVersion: string | null;
+  /** Quantas vezes o convite foi reenviado (S4). */
+  resendCount: number;
+};
+
+/**
+ * Uma importação de planilha já aplicada (M6).
+ *
+ * Guarda a impressão digital do arquivo porque é ela que torna a reimportação
+ * um no-op explícito: o analista que sobe a mesma planilha duas vezes vê "já
+ * importada", e não a base duplicada.
+ */
+export type SpreadsheetImportRecord = {
+  id: string;
+  jobId: string;
+  fingerprint: string;
+  at: string;
+  /** Origem dos registros: hoje a planilha da Empregare. */
+  origin: string;
+  sourceId: DataSourceId;
+  counts: {
+    newTalents: number;
+    newApplications: number;
+    updatedMatches: number;
+    ignored: number;
+    errors: number;
+  };
+};
+
 export type DemoState = {
   schemaVersion: number;
   personaId: string;
@@ -468,6 +589,24 @@ export type DemoState = {
   evidences: Evidence[];
   teams: Team[];
   cultureAnswers: CultureAnswer[];
+  /**
+   * Convites da amostra de colaboradores, por empresa (M2).
+   *
+   * Opcional pelo mesmo motivo de `axisWeights`: há recortes parciais de
+   * `DemoState` montados para operações que não leem convite nenhum. Ausente
+   * equivale a "nenhuma consulta foi aberta".
+   */
+  cultureInvites?: CultureRespondentInvite[];
+  /**
+   * Talentos criados por importação de planilha (M6).
+   *
+   * Ficam no estado, e não no catálogo, porque o catálogo é estático: quem
+   * chegou pela planilha chegou durante a demonstração e precisa sobreviver ao
+   * recarregamento junto do resto do progresso.
+   */
+  importedTalents?: Talent[];
+  /** Importações de planilha já aplicadas, em ordem de aplicação. */
+  spreadsheetImports?: SpreadsheetImportRecord[];
   /**
    * Pesos confirmados ou corrigidos pela empresa durante a demonstração,
    * por vaga. Ficam no estado, e não na fixture, porque a vaga é catálogo
@@ -480,6 +619,15 @@ export type DemoState = {
    * leitura cai no peso declarado na vaga.
    */
   axisWeights?: Record<string, Partial<Record<FitAxisId, AxisWeight>>>;
+  /**
+   * Respostas de fit dos candidatos, por candidatura.
+   *
+   * Opcional pelo mesmo motivo de `axisWeights`: há recortes parciais de
+   * `DemoState` montados para operações que não leem resposta nenhuma (o
+   * provedor determinístico do assistente, por exemplo). Ausente equivale a
+   * "ninguém respondeu ainda".
+   */
+  fitResponses?: CandidateFitResponse[];
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

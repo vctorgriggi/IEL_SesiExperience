@@ -27,9 +27,12 @@ export const DEMO_CLARIFICATIONS: Clarification[] = [
       talentId: 'ANA'
     },
     question:
-      'Você segue disponível para o horário das 8h às 17h nesta oportunidade na Horizonte Alimentos?',
+      // R5: o candidato conversa com o IEL, não com a empresa. A pergunta
+      // situa a vaga pela atividade e pelo horário — nunca pelo nome de quem
+      // contrata, que só aparece quando a empresa decide se apresentar.
+      'Você segue disponível para o horário das 8h às 17h nesta vaga de assistente de estoque numa indústria de alimentos?',
     sharedInfo:
-      'Nome da empresa, título da vaga e horário previsto. Nada sobre outros candidatos ou anotações internas.',
+      'Título da vaga, setor da empresa e horário previsto. Sem o nome de quem contrata, sem outros candidatos e sem anotações internas.',
     reason:
       'A disponibilidade registrada é da inscrição de 02/07/2026 e precisa de reconfirmação antes do encaminhamento.',
     state: 'solicitada',
