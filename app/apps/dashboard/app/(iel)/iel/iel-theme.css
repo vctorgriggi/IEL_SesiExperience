@@ -1,11 +1,12 @@
 /*
  * Identidade visual da Central IEL.
  *
- * Direção: produto moderno de people analytics — fundo claro, sem-serifa,
- * azul como marca e violeta como segunda voz, superfícies planas com sombra
- * mínima, espaçamento generoso. É o vocabulário que o mercado da categoria
- * usa hoje, e é o que a apresentação precisa transmitir: não um painel
- * interno, um produto.
+ * Direção: claro, com profundidade de verdade. O fundo é uma camada — não um
+ * cinza chapado — para que o branco dos cartões tenha contra o que se elevar,
+ * e a elevação é uma escala de três níveis usada por intenção: rente,
+ * cartão, herói. Azul é marca (ação primária e foco), violeta é a segunda
+ * voz (dado categórico e gradiente do herói), e verde/âmbar/vermelho ficam
+ * reservados a estado. Superfícies são neutras; cor decorativa não existe.
  *
  * Duas heranças ficam para trás.
  *
@@ -15,8 +16,10 @@
  * então os estados ganham verde, âmbar e vermelho de verdade. O violeta e o
  * teal ficam para dados categóricos, sem competir com os estados.
  *
- * O vocabulário de painel administrativo — barra lateral escura, fundo
- * cinza-azulado, tudo em cartão pesado — saiu por completo.
+ * E o painel administrativo genérico — cabeçalho, fileira de indicadores
+ * iguais, grade de painéis iguais, tabela — saiu como gramática: cada tela
+ * abre por uma área-herói com o instrumento que ela existe para operar, e os
+ * painéis secundários descem um nível de elevação e sobem em densidade.
  *
  * Os estados nunca dependem só de cor: cada um carrega ícone e rótulo
  * textual. A cor é reforço, não é o canal principal.
@@ -84,6 +87,27 @@ body:has([data-iel-theme]),
   --control-radius: 0.5rem;
   --radius-pill: 9999px;
 
+  /*
+   * Escala de elevação, três níveis com intenção declarada.
+   *
+   * Um painel não escolhe sombra por gosto: escolhe o quanto ele está acima
+   * da página. Nível 1 é superfície rente (lista densa, tabela, bloco que
+   * pertence ao painel em volta); nível 2 é cartão (bloco autônomo); nível 3
+   * é herói ou flutuante (o instrumento principal da tela, e diálogos).
+   * Duas camadas de sombra em cada um: um contato curto e escuro que cola o
+   * bloco na página, e uma difusão larga que o levanta.
+   */
+  --iel-shadow-hue: 224 32% 16%;
+  --iel-elev-1: 0 1px 1px -1px hsl(var(--iel-shadow-hue) / 0.06);
+  --iel-elev-2:
+    0 1px 2px -1px hsl(var(--iel-shadow-hue) / 0.1),
+    0 6px 16px -8px hsl(var(--iel-shadow-hue) / 0.12);
+  --iel-elev-3:
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.9),
+    0 2px 4px -2px hsl(var(--iel-shadow-hue) / 0.12),
+    0 24px 48px -24px hsl(var(--iel-shadow-hue) / 0.22),
+    0 8px 20px -12px hsl(var(--iel-shadow-hue) / 0.14);
+
   /* Gradiente da marca, para o único lugar que merece destaque por tela. */
   --iel-gradient: linear-gradient(
     135deg,
@@ -126,6 +150,17 @@ body:has([data-iel-theme]),
   --chart-4: 34 92% 60%;
   --chart-5: 336 78% 66%;
 
+  /* No escuro a sombra não separa: quem separa é a borda interna clara. */
+  --iel-shadow-hue: 224 60% 2%;
+  --iel-elev-1: 0 1px 1px -1px hsl(var(--iel-shadow-hue) / 0.4);
+  --iel-elev-2:
+    0 1px 2px -1px hsl(var(--iel-shadow-hue) / 0.6),
+    0 6px 16px -8px hsl(var(--iel-shadow-hue) / 0.6);
+  --iel-elev-3:
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.06),
+    0 2px 4px -2px hsl(var(--iel-shadow-hue) / 0.6),
+    0 24px 48px -24px hsl(var(--iel-shadow-hue) / 0.8);
+
   --sidebar: 224 22% 11%;
   --sidebar-foreground: 220 20% 94%;
   --sidebar-primary: 221 90% 64%;
@@ -147,10 +182,52 @@ body:has([data-iel-theme]) {
     ui-sans-serif,
     system-ui,
     sans-serif;
-  background-color: hsl(var(--background));
   font-feature-settings:
     'cv11' 1,
     'ss01' 1;
+
+  /*
+   * Fundo em camadas.
+   *
+   * Um cinza chapado não é fundo, é ausência: o cartão branco fica boiando
+   * sem nada atrás dele. Dois campos radiais muito fracos — azul da marca e
+   * violeta da segunda voz, entre 4% e 6% — dão ao off-white uma variação
+   * lenta de luz. `fixed` mantém o campo parado enquanto a página rola, de
+   * modo que a luz pertence à janela e não ao documento.
+   */
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(
+      62rem 42rem at 8% -12%,
+      hsl(221 83% 53% / 0.06),
+      transparent 62%
+    ),
+    radial-gradient(
+      52rem 38rem at 96% 2%,
+      hsl(262 80% 58% / 0.05),
+      transparent 60%
+    ),
+    radial-gradient(
+      70rem 50rem at 50% 108%,
+      hsl(221 60% 50% / 0.04),
+      transparent 64%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.dark body:has([data-iel-theme]) {
+  background-image:
+    radial-gradient(
+      62rem 42rem at 8% -12%,
+      hsl(221 83% 60% / 0.1),
+      transparent 62%
+    ),
+    radial-gradient(
+      52rem 38rem at 96% 2%,
+      hsl(262 80% 64% / 0.08),
+      transparent 60%
+    );
 }
 
 [data-iel-theme] {
@@ -180,17 +257,91 @@ body:has([data-iel-theme]) {
 }
 
 /*
- * Superfície: branco sobre fundo claro, borda fina e sombra mínima. O cartão
- * flutuante com sombra pesada saiu; o que separa um bloco do outro é o fundo
- * levemente mais escuro da página.
+ * Superfície da Central. A base não tem sombra nenhuma: quem decide a altura
+ * é a classe de elevação, e ela vem da intenção do bloco, não do gosto.
  */
 [data-iel-theme] .iel-panel {
+  position: relative;
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--card-radius);
-  box-shadow:
-    0 1px 2px 0 hsl(224 22% 12% / 0.04),
-    0 1px 3px -1px hsl(224 22% 12% / 0.04);
+}
+
+/* Rente à página: separa por borda, para listas e tabelas dentro de um bloco. */
+[data-iel-theme] .iel-elev-1 {
+  box-shadow: var(--iel-elev-1);
+}
+
+/* Cartão: bloco autônomo, com assunto próprio. */
+[data-iel-theme] .iel-elev-2 {
+  box-shadow: var(--iel-elev-2);
+}
+
+/* Herói e flutuante: o instrumento principal da tela. */
+[data-iel-theme] .iel-elev-3 {
+  box-shadow: var(--iel-elev-3);
+  border-color: hsl(var(--border) / 0.8);
+}
+
+/*
+ * Área-herói: a faixa de marca é uma régua de 3px no topo do bloco, e o
+ * interior recebe uma lavagem quase imperceptível do azul e do violeta. É o
+ * único lugar por tela onde o gradiente aparece.
+ */
+[data-iel-theme] .iel-hero {
+  overflow: hidden;
+  background:
+    radial-gradient(
+      42rem 22rem at 100% 0%,
+      hsl(262 80% 58% / 0.06),
+      transparent 68%
+    ),
+    radial-gradient(
+      38rem 20rem at 0% 0%,
+      hsl(221 83% 53% / 0.05),
+      transparent 66%
+    ),
+    hsl(var(--card));
+}
+
+[data-iel-theme] .iel-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--iel-gradient);
+}
+
+/*
+ * Título de herói: a maior voz da tela, e a única em 28–32px. Fecha o
+ * tracking porque em peso 700 o Inter abre demais nesse corpo.
+ */
+[data-iel-theme] .iel-hero-title {
+  font-size: 1.5rem;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+
+@media (min-width: 640px) {
+  [data-iel-theme] .iel-hero-title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-iel-theme] .iel-hero-title {
+    font-size: 2rem;
+  }
+}
+
+/* Movimento contido: nada anima ao carregar, só ao apontar e ao focar. */
+[data-iel-theme] .iel-interactive {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 180ms ease,
+    color 150ms ease;
 }
 
 /* Faixa de navegação: clara, colada ao topo, separada por régua. */

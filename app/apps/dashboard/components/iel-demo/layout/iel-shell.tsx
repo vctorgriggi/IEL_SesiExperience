@@ -92,6 +92,12 @@ function useIsActive() {
     (href !== routes.dashboard.iel.index && pathname.startsWith(href));
 }
 
+/** Rótulo da seção aberta, para a barra dizer onde se está sem um breadcrumb. */
+function useActiveSectionLabel(items: NavItem[]): string | null {
+  const isActive = useIsActive();
+  return items.find((item) => isActive(item.href))?.label ?? null;
+}
+
 /**
  * Faixa de controle da demonstração. Fica deliberadamente fora da navegação
  * do produto: é andaime de apresentação, não funcionalidade.
@@ -106,7 +112,7 @@ function DemoBar() {
   const iel = routes.dashboard.iel;
 
   return (
-    <div className="border-b border-border bg-foreground/[0.03]">
+    <div className="border-b border-border bg-card/70 backdrop-blur-sm">
       <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-2 px-5 py-2">
         <p className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           <span
@@ -511,6 +517,7 @@ function TopNav({ items }: { items: NavItem[] }) {
 /** Casca da Central IEL: faixa de demonstração, navegação e conteúdo. */
 export function IelShell({ children }: { children: ReactNode }) {
   const navItems = useNavItems();
+  const activeSection = useActiveSectionLabel(navItems);
   const { persona } = useIelDemo();
 
   return (
@@ -518,9 +525,26 @@ export function IelShell({ children }: { children: ReactNode }) {
       data-iel-theme=""
       className="flex min-h-dvh flex-col bg-background text-foreground"
     >
-      <header className="iel-ink sticky top-0 z-30 border-b border-sidebar-border">
-        <div className="mx-auto flex w-full max-w-[1500px] flex-wrap items-center gap-x-8 gap-y-2 px-6 pt-3.5 lg:flex-nowrap">
+      <header className="iel-ink sticky top-0 z-30 border-b border-sidebar-border shadow-[0_1px_0_0_hsl(var(--sidebar-border)),0_8px_24px_-20px_hsl(var(--iel-shadow-hue)/0.5)]">
+        {/* Faixa de marca: 3px do gradiente, a única presença dele na casca. */}
+        <div
+          aria-hidden="true"
+          className="h-[3px] w-full"
+          style={{ background: 'var(--iel-gradient)' }}
+        />
+        <div className="mx-auto flex w-full max-w-[1500px] flex-wrap items-center gap-x-5 gap-y-2 px-6 pt-3.5 lg:flex-nowrap">
           <BrandMark />
+          {activeSection ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="hidden h-4 w-px bg-sidebar-border lg:block"
+              />
+              <span className="hidden truncate text-[13px] font-medium text-sidebar-foreground lg:block">
+                {activeSection}
+              </span>
+            </>
+          ) : null}
           <span className="ml-auto text-[11px] text-sidebar-foreground/50">
             {persona.label}
           </span>

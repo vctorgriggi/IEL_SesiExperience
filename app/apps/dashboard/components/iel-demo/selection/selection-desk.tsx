@@ -47,7 +47,7 @@ import {
   Chip,
   formatDate,
   formatDateTime,
-  IelPageHeader,
+  Hero,
   InfoHint,
   Panel,
   PanelHeader,
@@ -165,10 +165,40 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
 
   return (
     <div className="space-y-6">
-      <IelPageHeader
+      {/*
+        Herói da vaga.
+
+        O topo desta tela era um cabeçalho de página e, logo abaixo, um
+        painel com a triagem espremida entre a procedência e o contador. A
+        vaga é o objeto da tela: ela abre como instrumento, com os números
+        que definem o processo e a triagem que o opera, e só então vem a
+        matriz — densa, rente à página, onde o trabalho acontece.
+      */}
+      <Hero
         eyebrow={`${company?.name} · ${job.externalRef.system} · ${job.externalRef.id}`}
         title={`Mesa de seleção — ${job.title}`}
         description={job.summary}
+        figures={[
+          {
+            label: 'Candidaturas',
+            value: applications.length
+          },
+          {
+            label: 'Na triagem atual',
+            value: filteredApplications.length,
+            hint: `de ${applications.length} na vaga`
+          },
+          {
+            label: 'Respostas a incorporar',
+            value: answered.length,
+            tone: answered.length > 0 ? 'atencao' : 'default'
+          },
+          {
+            label: 'Selecionadas',
+            value: comparison.length,
+            hint: `até ${COMPARISON_LIMIT} por comparação`
+          }
+        ]}
         actions={
           <>
             <Link href={iel.jobs.byId(job.id).comparison}>
@@ -186,24 +216,68 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
             </Link>
           </>
         }
+        aside={
+          <div className="space-y-3 rounded-[var(--card-radius)] border border-border bg-card/70 p-4">
+            <p className="iel-eyebrow">Triagem</p>
+            <Input
+              label="Buscar candidato"
+              placeholder="Nome da pessoa"
+              value={candidateSearch}
+              onChange={(event) => {
+                setCandidateSearch(event.target.value);
+                setVisibleCount(PAGE_SIZE);
+              }}
+            />
+            <div className="space-y-2">
+              <label
+                htmlFor="candidate-filter"
+                className="block text-sm font-medium leading-none text-foreground"
+              >
+                Triagem por estado da análise
+              </label>
+              <FilterNativeSelect
+                id="candidate-filter"
+                value={candidateFilter}
+                onValueChange={(value) => {
+                  setCandidateFilter(value as CandidateFilter);
+                  setVisibleCount(PAGE_SIZE);
+                }}
+              >
+                {(Object.keys(CANDIDATE_FILTER_LABEL) as CandidateFilter[]).map(
+                  (value) => (
+                    <option
+                      key={value}
+                      value={value}
+                    >
+                      {CANDIDATE_FILTER_LABEL[value]} ({filterCounts[value]})
+                    </option>
+                  )
+                )}
+              </FilterNativeSelect>
+            </div>
+          </div>
+        }
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip tone="info">{JOB_STAGE_LABEL[job.stage]}</Chip>
-          <Chip>{job.workShift}</Chip>
-          <Chip>{job.location}</Chip>
-          <Chip>
-            {plural(applications.length, 'candidatura', 'candidaturas')}
-          </Chip>
-          <Chip tone={answered.length > 0 ? 'atencao' : 'neutro'}>
-            {answered.length > 0
-              ? `${plural(answered.length, 'resposta', 'respostas')} para incorporar`
-              : 'Nenhuma resposta pendente'}
-          </Chip>
-          <span className="text-xs text-muted-foreground">
-            Atualização da origem: {formatDate(job.updatedAt)}
-          </span>
+        <div className="space-y-3 border-t border-border pt-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip tone="info">{JOB_STAGE_LABEL[job.stage]}</Chip>
+            <Chip>{job.workShift}</Chip>
+            <Chip>{job.location}</Chip>
+            <Chip tone={answered.length > 0 ? 'atencao' : 'neutro'}>
+              {answered.length > 0
+                ? `${plural(answered.length, 'resposta', 'respostas')} para incorporar`
+                : 'Nenhuma resposta pendente'}
+            </Chip>
+            <span className="text-xs text-muted-foreground">
+              Atualização da origem: {formatDate(job.updatedAt)}
+            </span>
+          </div>
+          <SourceBreakdownBar
+            breakdown={jobSourceBreakdown}
+            total={jobEvidences.length}
+          />
         </div>
-      </IelPageHeader>
+      </Hero>
 
       {answered.length > 0 ? (
         <Alert variant="info">
@@ -251,80 +325,40 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
       {tab === 'candidatos' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
+            {/* ranking M5: RankRow por candidatura entra aqui quando
+                getJobRanking existir — a lista ordenada por técnico e fit,
+                com o corte marcado, fica acima da matriz por critério. */}
+
+            <div className="flex flex-col gap-2 px-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                Mostrando{' '}
+                <span className="font-medium text-foreground">
+                  {visibleApplications.length}
+                </span>{' '}
+                de {filteredApplications.length} candidaturas
+                {filteredApplications.length !== applications.length
+                  ? ` (${applications.length} na vaga)`
+                  : ''}
+                . Selecione de 2 a {COMPARISON_LIMIT} para comparar.
+              </p>
+              {comparison.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    dispatch({ type: 'clear-comparison', jobId: job.id })
+                  }
+                >
+                  Limpar seleção ({comparison.length})
+                </Button>
+              ) : null}
+            </div>
+
             <Panel
-              padding="sm"
-              className="flex flex-col gap-3"
+              padding="none"
+              elevation={1}
+              className="overflow-hidden"
             >
-              <SourceBreakdownBar
-                breakdown={jobSourceBreakdown}
-                total={jobEvidences.length}
-              />
-              <div className="grid gap-3 border-t border-border pt-3 md:grid-cols-[minmax(0,1fr)_20rem]">
-                <Input
-                  label="Buscar candidato"
-                  placeholder="Nome da pessoa"
-                  value={candidateSearch}
-                  onChange={(event) => {
-                    setCandidateSearch(event.target.value);
-                    setVisibleCount(PAGE_SIZE);
-                  }}
-                />
-                <div className="space-y-2">
-                  <label
-                    htmlFor="candidate-filter"
-                    className="block text-sm font-medium leading-none text-foreground"
-                  >
-                    Triagem por estado da análise
-                  </label>
-                  <FilterNativeSelect
-                    id="candidate-filter"
-                    value={candidateFilter}
-                    onValueChange={(value) => {
-                      setCandidateFilter(value as CandidateFilter);
-                      setVisibleCount(PAGE_SIZE);
-                    }}
-                  >
-                    {(
-                      Object.keys(CANDIDATE_FILTER_LABEL) as CandidateFilter[]
-                    ).map((value) => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {CANDIDATE_FILTER_LABEL[value]} ({filterCounts[value]})
-                      </option>
-                    ))}
-                  </FilterNativeSelect>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 border-t border-border pt-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                <p>
-                  Mostrando{' '}
-                  <span className="font-medium text-foreground">
-                    {visibleApplications.length}
-                  </span>{' '}
-                  de {filteredApplications.length} candidaturas
-                  {filteredApplications.length !== applications.length
-                    ? ` (${applications.length} na vaga)`
-                    : ''}
-                  . Selecione de 2 a {COMPARISON_LIMIT} para comparar.
-                </p>
-                {comparison.length > 0 ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      dispatch({ type: 'clear-comparison', jobId: job.id })
-                    }
-                  >
-                    Limpar seleção ({comparison.length})
-                  </Button>
-                ) : null}
-              </div>
-            </Panel>
-
-            <Panel padding="none">
               <CandidatesMatrix
                 job={job}
                 applications={visibleApplications}

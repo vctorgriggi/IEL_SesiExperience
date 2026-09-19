@@ -1,36 +1,28 @@
 'use client';
 
+import { getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
 import {
   FIT_INSIGHT_KIND_LABEL,
   type FitInsight,
   type FitInsightKind
 } from '@/features/iel-demo/analysis/fit-insights';
-import type { CriterionState } from '@/features/iel-demo/types';
 
-import { cn } from '@workspace/ui';
-
-import { CriterionStateDot } from '../shared/criterion-state-badge';
+import {
+  InsightCallout,
+  type InsightCalloutKind
+} from '../instruments/insight-callout';
 import { InfoHint } from '../shared/ui';
 
 /**
- * Cada tipo de insight herda a cor do estado que o originou.
- *
- * O vocabulário de cores da Central já está estabelecido nos estados de
- * critério; inventar um segundo para os insights faria a mesma informação
- * mudar de cor entre dois blocos da mesma tela.
+ * Os tipos coincidem hoje, e a tradução existe para que continuem podendo
+ * divergir: o instrumento é presentacional e não deve importar o vocabulário
+ * da regra de análise.
  */
-const KIND_STATE: Record<FitInsightKind, CriterionState> = {
-  atencao: 'divergencia',
-  lacuna: 'sem-informacao',
-  esclarecer: 'a-esclarecer',
-  forte: 'alinhamento'
-};
-
-const KIND_TEXT_CLASS: Record<FitInsightKind, string> = {
-  atencao: 'text-destructive',
-  lacuna: 'text-muted-foreground',
-  esclarecer: 'text-warning',
-  forte: 'text-success'
+const KIND: Record<FitInsightKind, InsightCalloutKind> = {
+  atencao: 'atencao',
+  lacuna: 'lacuna',
+  esclarecer: 'esclarecer',
+  forte: 'forte'
 };
 
 /**
@@ -57,37 +49,24 @@ export function FitInsights({ insights }: { insights: FitInsight[] }) {
           leitura. Não é um resultado desfavorável: é um espaço não mapeado.
         </p>
       ) : (
-        <ul className="mt-2 space-y-3">
+        <ul className="mt-2.5 space-y-2">
           {insights.map((insight) => (
-            <li
-              key={`${insight.kind}-${insight.axisId}`}
-              className="flex gap-2.5"
-            >
-              <CriterionStateDot
-                state={KIND_STATE[insight.kind]}
-                className="mt-1.5"
+            <li key={`${insight.kind}-${insight.axisId}`}>
+              <InsightCallout
+                kind={KIND[insight.kind]}
+                /* Título curto: o estado e o eixo, para a lista ser varrida
+                   de relance. A frase completa desce para o detalhe. */
+                title={`${FIT_INSIGHT_KIND_LABEL[insight.kind]} — ${getFitAxis(insight.axisId).label}`}
+                detail={
+                  <>
+                    <span className="block text-foreground">
+                      {insight.title}
+                    </span>
+                    <span className="mt-1 block">{insight.detail}</span>
+                  </>
+                }
+                evidence={insight.evidence}
               />
-              <div className="min-w-0">
-                <p
-                  className={cn(
-                    'text-[11px] font-semibold uppercase tracking-wide',
-                    KIND_TEXT_CLASS[insight.kind]
-                  )}
-                >
-                  {FIT_INSIGHT_KIND_LABEL[insight.kind]}
-                </p>
-                <p className="text-sm leading-snug text-foreground">
-                  {insight.title}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {insight.detail}
-                </p>
-                {insight.evidence ? (
-                  <blockquote className="mt-1.5 border-l-2 border-border pl-2.5 text-xs italic leading-relaxed text-muted-foreground">
-                    “{insight.evidence}”
-                  </blockquote>
-                ) : null}
-              </div>
             </li>
           ))}
         </ul>

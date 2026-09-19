@@ -2,7 +2,11 @@
 
 import {
   CULTURE_RESPONDENT_LABEL,
-  MIN_TEAM_RESPONSES
+  CULTURE_SCALE_MAX,
+  CULTURE_SCALE_MIN,
+  getCultureOptionValue,
+  MIN_TEAM_RESPONSES,
+  type CultureRespondent
 } from '@/features/iel-demo/analysis/culture';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -15,7 +19,7 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { Button, cn, FilterNativeSelect, toast } from '@workspace/ui';
 
-import { Chip, InfoHint, Panel, PanelHeader, SourceDot } from '../shared/ui';
+import { Chip, Hero, InfoHint, SourceDot } from '../shared/ui';
 
 const STATE_TONE: Record<
   CultureAxisState,
@@ -127,6 +131,153 @@ function SuggestionBlock({
   );
 }
 
+/** Marcador de um papel no trilho do eixo. */
+const RESPONDENT_MARK: Record<CultureRespondent, string> = {
+  gestao: 'rounded-[3px] bg-chart-2',
+  rh: 'rounded-[3px] bg-chart-3',
+  equipe: 'rounded-full bg-chart-1'
+};
+
+/**
+ * O eixo como instrumento, não como lista.
+ *
+ * Cada papel que respondeu ocupa a sua posição no trilho, entre os dois
+ * polos que a própria empresa respondeu — e a distância entre gestão e
+ * equipe passa a ser uma coisa que se vê. A dispersão da equipe é desenhada
+ * como um rastro em volta do marcador: proporcional a quantas respostas
+ * ficaram fora da alternativa mais votada. Uma equipe rachada e uma equipe
+ * unânime deixam de ter o mesmo desenho.
+ */
+function AxisTrack({ entry }: { entry: CultureAxisReading }) {
+  const low = entry.question.options.find(
+    (option) => option.value === CULTURE_SCALE_MIN
+  );
+  const high = entry.question.options.find(
+    (option) => option.value === CULTURE_SCALE_MAX
+  );
+
+  const marks = entry.voices
+    .map((voice) => ({
+      voice,
+      value: getCultureOptionValue(entry.question.axisId, voice.optionId)
+    }))
+    .filter(
+      (
+        mark
+      ): mark is { voice: (typeof entry.voices)[number]; value: 1 | 2 | 3 } =>
+        mark.value !== null
+    );
+
+  const percentOf = (value: number) =>
+    ((value - CULTURE_SCALE_MIN) / (CULTURE_SCALE_MAX - CULTURE_SCALE_MIN)) *
+    100;
+
+  const description =
+    marks.length === 0
+      ? `${entry.question.prompt} Ninguém respondeu ainda.`
+      : `${entry.question.prompt} ${marks
+          .map(
+            (mark) =>
+              `${CULTURE_RESPONDENT_LABEL[mark.voice.respondent]}: ${mark.voice.optionLabel}`
+          )
+          .join('. ')}.`;
+
+  return (
+    <div
+      role="img"
+      aria-label={description}
+      className="mt-3 flex items-center gap-2.5"
+    >
+      <p className="hidden w-[9rem] shrink-0 text-right text-[11px] leading-snug text-muted-foreground md:block">
+        {low?.label}
+      </p>
+
+      <div className="relative h-10 min-w-0 flex-1">
+        <div className="absolute inset-y-0 left-3 right-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-[var(--radius-pill)]',
+              entry.state === 'divergente' ? 'bg-destructive/20' : 'bg-muted'
+            )}
+          />
+          {entry.question.options.map((option) => (
+            <span
+              key={option.id}
+              aria-hidden="true"
+              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/20"
+              style={{ left: `${percentOf(option.value)}%` }}
+            />
+          ))}
+
+          {/* Corda entre gestão e equipe: a divergência, desenhada. */}
+          {marks.length > 1
+            ? (() => {
+                const values = marks.map((mark) => percentOf(mark.value));
+                const low = Math.min(...values);
+                const high = Math.max(...values);
+                if (low === high) return null;
+                return (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-foreground/25"
+                    style={{ left: `${low}%`, width: `${high - low}%` }}
+                  />
+                );
+              })()
+            : null}
+
+          {marks.length === 0 ? (
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] text-muted-foreground">
+              ninguém respondeu
+            </span>
+          ) : null}
+
+          {marks.map((mark) => {
+            // Dispersão: quanto da consulta ficou fora da alternativa mais
+            // votada. Só a equipe tem consulta agregada.
+            const spread =
+              mark.voice.respondent === 'equipe' && mark.voice.total > 0
+                ? 1 - mark.voice.count / mark.voice.total
+                : 0;
+
+            return (
+              <span
+                key={mark.voice.respondent}
+                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${percentOf(mark.value)}%` }}
+              >
+                {spread > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    title={`${Math.round(spread * 100)}% da equipe respondeu outra alternativa`}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-chart-1/20"
+                    style={{
+                      width: `${14 + spread * 40}px`,
+                      height: `${14 + spread * 40}px`
+                    }}
+                  />
+                ) : null}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'relative block size-3.5 ring-2 ring-card',
+                    RESPONDENT_MARK[mark.voice.respondent]
+                  )}
+                />
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="hidden w-[9rem] shrink-0 text-[11px] leading-snug text-muted-foreground md:block">
+        {high?.label}
+      </p>
+    </div>
+  );
+}
+
 function AxisBlock({
   entry,
   companyId
@@ -135,7 +286,7 @@ function AxisBlock({
   companyId: string;
 }) {
   return (
-    <li className="py-3.5">
+    <li className="py-4">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <h4 className="text-sm font-medium text-foreground">
           {entry.question.prompt}
@@ -148,19 +299,46 @@ function AxisBlock({
         </Chip>
       </div>
 
+      <AxisTrack entry={entry} />
+
+      {/* Os polos não cabem nas pontas em telas estreitas. */}
+      <p className="mt-1.5 flex justify-between gap-3 text-[11px] leading-snug text-muted-foreground md:hidden">
+        <span className="min-w-0">
+          {
+            entry.question.options.find(
+              (option) => option.value === CULTURE_SCALE_MIN
+            )?.label
+          }
+        </span>
+        <span className="min-w-0 text-right">
+          {
+            entry.question.options.find(
+              (option) => option.value === CULTURE_SCALE_MAX
+            )?.label
+          }
+        </span>
+      </p>
+
       {entry.voices.length > 0 ? (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
           {entry.voices.map((voice) => (
             <li
               key={voice.respondent}
-              className="flex flex-wrap items-baseline gap-x-2 text-xs"
+              className="flex items-baseline gap-1.5 text-xs"
             >
-              <span className="w-28 shrink-0 text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'size-2 shrink-0 translate-y-px',
+                  RESPONDENT_MARK[voice.respondent]
+                )}
+              />
+              <span className="text-muted-foreground">
                 {CULTURE_RESPONDENT_LABEL[voice.respondent]}
               </span>
               <span className="text-foreground/85">{voice.optionLabel}</span>
               {voice.respondent === 'equipe' ? (
-                <span className="text-muted-foreground tabular-nums">
+                <span className="tabular-nums text-muted-foreground">
                   {voice.count} de {voice.total} respostas
                 </span>
               ) : null}
@@ -209,22 +387,55 @@ export function CultureProfile({ companyId }: { companyId: string }) {
   ).length;
 
   return (
-    <Panel>
-      <PanelHeader
-        eyebrow="Voz da empresa"
-        title="Traçado cultural declarado"
-        hint="O que a empresa responde sobre como se trabalha nela, nos mesmos eixos usados para ler a aderência dos candidatos. Descreve prática de trabalho, nunca traço das pessoas."
-        meta={
-          <>
-            {answered} de {reading.length} eixos com resposta
-            {diverging > 0
-              ? ` · ${diverging} com divergência entre gestão e equipe`
-              : ''}
-            .
-          </>
+    <Hero
+      as="h2"
+      eyebrow="Voz da empresa"
+      title="Traçado cultural declarado"
+      description="O que a empresa responde sobre como se trabalha nela, nos mesmos eixos usados para ler a aderência dos candidatos. Descreve prática de trabalho, nunca traço das pessoas."
+      figures={[
+        {
+          label: 'Eixos com resposta',
+          value: `${answered}/${reading.length}`
+        },
+        {
+          label: 'Gestão e equipe divergem',
+          value: diverging,
+          tone: diverging > 0 ? 'atencao' : 'default',
+          hint:
+            diverging > 0
+              ? 'A diferença fica registrada: é ela que a pessoa encontra no dia a dia.'
+              : undefined
         }
-      />
-      <ul className="mt-4 divide-y divide-border">
+      ]}
+      aside={
+        <div className="rounded-[var(--card-radius)] border border-border bg-card/70 p-4">
+          <p className="iel-eyebrow">Como ler o traçado</p>
+          <ul className="mt-2.5 space-y-2 text-xs leading-relaxed text-muted-foreground">
+            <li className="flex items-baseline gap-2">
+              <span
+                aria-hidden="true"
+                className="size-2.5 shrink-0 translate-y-px rounded-[3px] bg-chart-2"
+              />
+              Onde a gestão (e o RH) posicionam a prática.
+            </li>
+            <li className="flex items-baseline gap-2">
+              <span
+                aria-hidden="true"
+                className="size-2.5 shrink-0 translate-y-px rounded-full bg-chart-1"
+              />
+              Onde a equipe posiciona, com o rastro em volta proporcional a
+              quanto a consulta se dispersou.
+            </li>
+            <li>
+              Os extremos do trilho são as próprias alternativas do
+              questionário. Um extremo não é melhor que o outro: é outra
+              condição de trabalho.
+            </li>
+          </ul>
+        </div>
+      }
+    >
+      <ul className="divide-y divide-border border-t border-border">
         {reading.map((entry) => (
           <AxisBlock
             key={entry.question.axisId}
@@ -234,11 +445,11 @@ export function CultureProfile({ companyId }: { companyId: string }) {
         ))}
       </ul>
 
-      <p className="mt-4 border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
         As respostas da equipe são agregadas e não identificam quem respondeu. A
         proposta da análise não substitui a resposta da empresa: ela reduz o
         tempo de preenchimento e fica sujeita a confirmação.
       </p>
-    </Panel>
+    </Hero>
   );
 }

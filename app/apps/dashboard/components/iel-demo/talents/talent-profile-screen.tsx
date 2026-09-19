@@ -176,8 +176,23 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0 space-y-4">
+          {/*
+            A aderência abre o perfil.
+
+            É o instrumento desta tela: o anel, o radar e os callouts dizem
+            em um relance o que a análise por critério confirma linha a
+            linha. Enquanto a leitura vinha depois da matriz de critérios,
+            ela era o último painel de uma pilha de painéis iguais.
+          */}
           {job && contextApplication ? (
-            <Panel>
+            <FitReading
+              job={job}
+              talentId={talent.id}
+            />
+          ) : null}
+
+          {job && contextApplication ? (
+            <Panel elevation={1}>
               <PanelHeader
                 eyebrow="Compatibilidade"
                 title={`Análise por critério — ${job.title}`}
@@ -314,13 +329,6 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
               ver a análise por critério.
             </Alert>
           )}
-
-          {job && contextApplication ? (
-            <FitReading
-              job={job}
-              talentId={talent.id}
-            />
-          ) : null}
 
           <Panel>
             <PanelHeader

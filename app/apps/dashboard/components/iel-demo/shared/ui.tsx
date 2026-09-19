@@ -62,35 +62,6 @@ export function SectionTitle({
   );
 }
 
-/** Indicador numérico compacto. */
-export function StatCard({
-  label,
-  value,
-  hint,
-  icon,
-  href
-}: {
-  label: string;
-  value: number | string;
-  hint?: string;
-  icon?: ReactNode;
-  href?: ReactNode;
-}) {
-  return (
-    <div className="iel-panel px-4 py-3.5">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <span className="text-xs font-medium leading-snug">{label}</span>
-        {hint ? <InfoHint label={hint} /> : null}
-      </div>
-      <p className="iel-figure mt-1.5 text-[1.75rem] leading-none text-foreground">
-        {value}
-      </p>
-      {href}
-    </div>
-  );
-}
-
 /**
  * Cobertura informacional. Mede quantos critérios têm dados suficientes — não
  * é probabilidade de sucesso nem qualidade da pessoa.
@@ -138,7 +109,12 @@ export function CoverageMeter({
   );
 }
 
-/** Cabeçalho de tela com contexto persistente de empresa e vaga. */
+/**
+ * Cabeçalho de tela com contexto persistente de empresa e vaga.
+ *
+ * Fica um degrau abaixo do `Hero` na escala tipográfica: nas telas que têm
+ * herói, ele é contexto, e o instrumento é que abre a página.
+ */
 export function IelPageHeader({
   eyebrow,
   title,
@@ -157,7 +133,7 @@ export function IelPageHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-1">
           {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
-          <h1 className="iel-display text-[1.75rem] leading-tight text-foreground">
+          <h1 className="iel-display text-[1.5rem] leading-tight text-foreground">
             {title}
           </h1>
           {description ? (
@@ -409,26 +385,41 @@ export function SourceDot({
 /**
  * Superfície da Central.
  *
- * Substitui o `Card` genérico: borda fina, sem sombra, sem canto arredondado
- * forte. A diferença entre blocos passa a vir do título e do espaço, não de
- * profundidade simulada.
+ * `elevation` é a única coisa que decide o quanto o bloco está acima da
+ * página, e é escolha de intenção, não de gosto: 1 para o que pertence ao
+ * bloco em volta (lista densa, tabela), 2 para um cartão com assunto
+ * próprio, 3 para o instrumento principal da tela. Quando tudo na tela usa o
+ * mesmo nível, a hierarquia desaparece e sobra a grade genérica.
+ *
+ * `tone="hero"` acrescenta a faixa de marca no topo e sobe para o nível 3.
  */
 export function Panel({
   children,
   className,
-  padding = 'md'
+  padding = 'md',
+  elevation = 2,
+  tone = 'default'
 }: {
   children: ReactNode;
   className?: string;
-  padding?: 'none' | 'sm' | 'md' | 'lg';
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  elevation?: 1 | 2 | 3;
+  tone?: 'default' | 'hero';
 }) {
+  const level = tone === 'hero' ? 3 : elevation;
+
   return (
     <section
       className={cn(
         'iel-panel',
+        level === 1 && 'iel-elev-1',
+        level === 2 && 'iel-elev-2',
+        level === 3 && 'iel-elev-3',
+        tone === 'hero' && 'iel-hero',
         padding === 'sm' && 'p-4',
         padding === 'md' && 'p-5',
         padding === 'lg' && 'p-6',
+        padding === 'xl' && 'p-6 lg:p-8',
         className
       )}
     >
@@ -466,12 +457,14 @@ export function PanelHeader({
     >
       <div className="min-w-0">
         {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
-        <h2 className="iel-display mt-0.5 flex items-center gap-1.5 text-lg text-foreground">
+        <h2 className="iel-display mt-1 flex items-center gap-1.5 text-[0.9375rem] leading-snug text-foreground">
           {title}
           {hint ? <InfoHint label={hint} /> : null}
         </h2>
         {meta ? (
-          <p className="mt-1 text-sm text-muted-foreground">{meta}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {meta}
+          </p>
         ) : null}
       </div>
       {actions ? (
@@ -492,4 +485,127 @@ export function Figure({
   className?: string;
 }) {
   return <span className={cn('iel-figure', className)}>{value}</span>;
+}
+
+export type HeroFigure = {
+  label: string;
+  value: ReactNode;
+  /** Uma linha curta abaixo do número: o que ele quer dizer, ou onde agir. */
+  hint?: ReactNode;
+  /** Estado, quando o número pede um: âmbar para o que espera ação. */
+  tone?: 'default' | 'atencao';
+};
+
+/**
+ * Área-herói de uma tela.
+ *
+ * Não é mais um cartão na grade: é o que se vê primeiro, e cada tela tem o
+ * seu. Os números vivem aqui, grandes e tabulares, no lugar da fileira de
+ * cartões de indicador iguais — que era a abertura padrão de qualquer painel
+ * administrativo e não dizia qual dos quatro importava. `aside` recebe o
+ * instrumento da tela (um anel, um radar, uma triagem), porque o herói tem
+ * de conter a operação, não só anunciá-la.
+ */
+export function Hero({
+  as: Title = 'h1',
+  eyebrow,
+  title,
+  description,
+  figures,
+  aside,
+  actions,
+  children,
+  className
+}: {
+  /** O nível do título. `h2` quando o herói vive dentro de uma tela que já tem `h1`. */
+  as?: 'h1' | 'h2';
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  figures?: HeroFigure[];
+  /** Slot do instrumento principal, à direita em telas largas. */
+  aside?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Panel
+      tone="hero"
+      padding="xl"
+      className={cn('space-y-6', className)}
+    >
+      <div className="flex flex-col gap-x-10 gap-y-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="space-y-2">
+            {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
+            <Title className="iel-hero-title text-balance text-foreground">
+              {title}
+            </Title>
+            {description ? (
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {description}
+              </p>
+            ) : null}
+          </div>
+
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          ) : null}
+
+          {figures && figures.length > 0 ? (
+            /*
+              O primeiro número é o assunto da tela e é lido primeiro; os
+              outros são contexto e ficam num degrau abaixo. Cinco números do
+              mesmo tamanho seriam a fileira de cartões de indicador de
+              novo — maior, e igualmente muda.
+            */
+            <dl className="flex flex-wrap items-start gap-x-6 gap-y-5 pt-1">
+              {figures.map((figure, index) => (
+                <div
+                  key={figure.label}
+                  className={cn(
+                    'min-w-0',
+                    // A régua entre o número principal e os demais só faz
+                    // sentido quando eles estão na mesma linha.
+                    index === 0 && figures.length > 1
+                      ? 'sm:mr-1 sm:border-r sm:border-border sm:pr-6'
+                      : ''
+                  )}
+                >
+                  <dt className="iel-eyebrow">{figure.label}</dt>
+                  <dd
+                    className={cn(
+                      'iel-figure mt-1.5 leading-[0.95]',
+                      index === 0
+                        ? 'text-[2.75rem]'
+                        : 'text-[1.75rem] text-foreground/90',
+                      figure.tone === 'atencao'
+                        ? 'text-warning'
+                        : 'text-foreground'
+                    )}
+                  >
+                    {figure.value}
+                  </dd>
+                  {figure.hint ? (
+                    <p className="mt-1.5 max-w-[12rem] text-xs leading-relaxed text-muted-foreground">
+                      {figure.hint}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+
+        {aside ? (
+          <div className="w-full shrink-0 lg:w-[22rem] xl:w-[26rem]">
+            {aside}
+          </div>
+        ) : null}
+      </div>
+
+      {children}
+    </Panel>
+  );
 }

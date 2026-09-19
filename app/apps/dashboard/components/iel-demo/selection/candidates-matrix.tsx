@@ -174,11 +174,13 @@ export function CandidatesMatrix({
     // pede para a leitura não se perder ao descer a lista.
     <div className="overflow-x-auto xl:overflow-x-visible">
       <Table>
+        {/* Cabeçalho em versalete: a matriz é densa, e o rótulo de coluna
+            não deve competir em peso com o nome da pessoa. */}
         <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <TableRow>
             <TableHead
               scope="col"
-              className="min-w-[17rem]"
+              className="iel-eyebrow min-w-[17rem]"
             >
               Candidato e etapa
             </TableHead>
@@ -186,7 +188,7 @@ export function CandidatesMatrix({
               <TableHead
                 key={dimension}
                 scope="col"
-                className="min-w-[12.5rem]"
+                className="iel-eyebrow min-w-[12.5rem]"
                 title={DIMENSION_META[dimension].description}
               >
                 {DIMENSION_META[dimension].label}
@@ -194,7 +196,7 @@ export function CandidatesMatrix({
             ))}
             <TableHead
               scope="col"
-              className="min-w-[13rem]"
+              className="iel-eyebrow min-w-[13rem]"
             >
               Cobertura e pendências
             </TableHead>
@@ -217,6 +219,7 @@ export function CandidatesMatrix({
               <TableRow
                 key={application.id}
                 data-state={isSelected ? 'selected' : undefined}
+                className="iel-interactive hover:bg-muted/40"
               >
                 <TableCell className="align-top">
                   <div className="flex items-start gap-2.5">
@@ -232,7 +235,7 @@ export function CandidatesMatrix({
                       <div>
                         <label
                           htmlFor={`compare-${application.id}`}
-                          className="block cursor-pointer text-sm font-semibold text-foreground"
+                          className="block cursor-pointer text-[0.9375rem] font-semibold leading-tight text-foreground"
                         >
                           {talent?.name}
                         </label>

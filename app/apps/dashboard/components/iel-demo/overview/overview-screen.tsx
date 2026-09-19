@@ -19,13 +19,6 @@ import {
   getVisibleJobs,
   JOB_STAGE_LABEL
 } from '@/features/iel-demo/state/selectors';
-import {
-  Briefcase01Icon,
-  Message01Icon,
-  SentIcon,
-  UserGroupIcon
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
 
 import { routes } from '@workspace/routes';
 import { Button, FilterNativeSelect } from '@workspace/ui';
@@ -35,12 +28,11 @@ import {
   BarList,
   Chip,
   formatDateTime,
-  IelPageHeader,
+  Hero,
   InfoHint,
   Panel,
   PanelHeader,
-  SourceBreakdownBar,
-  StatCard
+  SourceBreakdownBar
 } from '../shared/ui';
 
 export function OverviewScreen() {
@@ -84,10 +76,40 @@ export function OverviewScreen() {
 
   return (
     <div className="space-y-6">
-      <IelPageHeader
+      {/*
+        Herói do panorama.
+
+        A abertura desta tela era um cabeçalho seguido de quatro cartões de
+        indicador do mesmo tamanho — a gramática de qualquer painel
+        administrativo, e a razão de nada ali dizer por onde começar. Os
+        números passam a viver no herói, o primeiro deles é o único que pede
+        ação hoje, e a procedência dos registros — a afirmação central do
+        produto — ocupa o instrumento ao lado.
+      */}
+      <Hero
         eyebrow="IEL · Centro de Empregabilidade"
         title="Visão geral"
         description={`Base demo: ${ALL_COMPANIES.length} empresas, ${getVisibleJobs(state).length} vagas, ${new Set(state.applications.map((application) => application.talentId)).size} talentos únicos e ${state.applications.length} candidaturas.`}
+        figures={[
+          {
+            label: 'Precisam de ação',
+            value: jobsNeedingAction.length,
+            tone: jobsNeedingAction.length > 0 ? 'atencao' : 'default'
+          },
+          { label: 'Vagas abertas', value: metrics.openJobs },
+          {
+            label: 'Candidaturas em análise',
+            value: metrics.applicationsInAnalysis
+          },
+          {
+            label: 'Solicitações abertas',
+            value: metrics.openClarifications
+          },
+          {
+            label: 'Aguardando empresa',
+            value: metrics.referralsAwaitingReturn
+          }
+        ]}
         actions={
           <>
             <label
@@ -138,126 +160,88 @@ export function OverviewScreen() {
             </FilterNativeSelect>
           </>
         }
+        aside={
+          <div className="rounded-[var(--card-radius)] border border-border bg-card/70 p-4">
+            <p className="iel-eyebrow">Procedência dos registros</p>
+            <div className="mt-2.5">
+              <SourceBreakdownBar
+                breakdown={overviewSources}
+                total={state.evidences.length}
+              />
+            </div>
+          </div>
+        }
       />
 
-      <section
-        aria-label="Indicadores"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <StatCard
-          label="Vagas abertas"
-          value={metrics.openJobs}
-          icon={
-            <HugeiconsIcon
-              icon={Briefcase01Icon}
-              size={15}
-            />
-          }
-        />
-        <StatCard
-          label="Candidaturas em análise"
-          value={metrics.applicationsInAnalysis}
-          icon={
-            <HugeiconsIcon
-              icon={UserGroupIcon}
-              size={15}
-            />
-          }
-        />
-        <StatCard
-          label="Solicitações em aberto"
-          value={metrics.openClarifications}
-          hint="Perguntas enviadas a gestores ou candidatos que ainda não voltaram."
-          icon={
-            <HugeiconsIcon
-              icon={Message01Icon}
-              size={15}
-            />
-          }
-        />
-        <StatCard
-          label="Aguardando retorno da empresa"
-          value={metrics.referralsAwaitingReturn}
-          hint="Encaminhamentos já registrados, sem resposta do gestor."
-          icon={
-            <HugeiconsIcon
-              icon={SentIcon}
-              size={15}
-            />
-          }
-        />
-      </section>
-
-      <Panel padding="sm">
-        <SourceBreakdownBar
-          breakdown={overviewSources}
-          total={state.evidences.length}
-        />
-      </Panel>
-
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {/* Lista densa, rente à página: é uma fila de trabalho, não um cartaz. */}
         <Panel
-          padding="lg"
-          className="xl:col-span-2"
+          elevation={1}
+          padding="none"
+          className="min-w-0 overflow-hidden"
         >
-          <PanelHeader
-            eyebrow="Onde agir hoje"
-            title="Vagas que precisam de ação"
-            hint="O motivo vem do estado atual da análise de cada vaga, não de uma lista fixa."
-          />
-          <div className="mt-4 space-y-3">
-            {jobsNeedingAction.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma vaga pendente com os filtros atuais. Ajuste o filtro de
-                empresa ou status para ver outros processos.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {highlightedJobs.map((summary) => (
-                  <li
-                    key={summary.job.id}
-                    className="flex flex-col gap-2 rounded-[var(--control-radius)] border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {summary.job.title}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {summary.company?.name} · {summary.job.location} ·{' '}
-                        {JOB_STAGE_LABEL[summary.job.stage]}
-                      </p>
-                      <p className="mt-1 text-xs text-warning">
-                        {summary.actionReason}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Chip>
-                        {plural(
-                          summary.applicationsCount,
-                          'candidatura',
-                          'candidaturas'
-                        )}
-                      </Chip>
-                      <Link href={iel.jobs.byId(summary.job.id).index}>
-                        <Button size="sm">Abrir seleção</Button>
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {jobsNeedingAction.length > highlightedJobs.length ? (
-              <Link
-                href={iel.jobs.index}
-                className="inline-block pt-1 text-sm font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Ver as outras{' '}
-                {jobsNeedingAction.length - highlightedJobs.length} vagas com
-                pendência →
-              </Link>
-            ) : null}
+          <div className="px-5 pb-3 pt-4">
+            <PanelHeader
+              eyebrow="Onde agir hoje"
+              title="Vagas que precisam de ação"
+              hint="O motivo vem do estado atual da análise de cada vaga, não de uma lista fixa."
+            />
           </div>
+
+          {jobsNeedingAction.length === 0 ? (
+            <p className="px-5 pb-5 text-sm text-muted-foreground">
+              Nenhuma vaga pendente com os filtros atuais. Ajuste o filtro de
+              empresa ou status para ver outros processos.
+            </p>
+          ) : (
+            <ul className="border-t border-border">
+              {highlightedJobs.map((summary) => (
+                <li
+                  key={summary.job.id}
+                  className="iel-interactive flex flex-col gap-2 border-b border-border px-5 py-3 hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {summary.job.title}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {summary.company?.name} · {summary.job.location} ·{' '}
+                      {JOB_STAGE_LABEL[summary.job.stage]}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-warning">
+                      <span
+                        aria-hidden="true"
+                        className="size-1.5 shrink-0 rounded-full bg-warning"
+                      />
+                      {summary.actionReason}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Chip>
+                      {plural(
+                        summary.applicationsCount,
+                        'candidatura',
+                        'candidaturas'
+                      )}
+                    </Chip>
+                    <Link href={iel.jobs.byId(summary.job.id).index}>
+                      <Button size="sm">Abrir seleção</Button>
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {jobsNeedingAction.length > highlightedJobs.length ? (
+            <Link
+              href={iel.jobs.index}
+              className="iel-interactive block px-5 py-3 text-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Ver as outras {jobsNeedingAction.length - highlightedJobs.length}{' '}
+              vagas com pendência →
+            </Link>
+          ) : null}
         </Panel>
 
         <Panel padding="lg">
@@ -288,7 +272,7 @@ export function OverviewScreen() {
                   return (
                     <li key={applicationId}>
                       <Link
-                        className="flex items-center justify-between gap-2 rounded-[var(--control-radius)] px-2 py-1 text-xs hover:bg-muted"
+                        className="iel-interactive flex items-center justify-between gap-2 rounded-[var(--control-radius)] px-2 py-1 text-xs hover:bg-muted"
                         href={iel.jobs.byId(application.jobId).index}
                       >
                         <span className="truncate text-foreground">
