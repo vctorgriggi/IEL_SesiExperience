@@ -1,0 +1,83 @@
+{
+  "name": "arki",
+  "version": "2.2.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "dev": "FORCE_COLOR=1 bunx turbo dev --parallel",
+    "quickstart": "bun run tools/env-check/quickstart.ts",
+    "build": "bunx turbo build --cache-dir=.turbo",
+    "start": "FORCE_COLOR=1 bunx turbo start --parallel",
+    "clean": "git clean -xdf node_modules bun.lockb dist .next",
+    "format": "bunx turbo format --cache-dir=.turbo --continue -- --cache --cache-location=\"node_modules/.cache/.prettiercache\" --ignore-path=\"../../.prettierignore\"",
+    "format:fix": "bunx turbo format --cache-dir=.turbo --continue -- --write --cache --cache-location=\"node_modules/.cache/.prettiercache\" --ignore-path=\"../../.prettierignore\"",
+    "lint": "bunx turbo lint --cache-dir=.turbo --continue -- --cache --cache-location \"node_modules/.cache/.eslintcache\" && bunx manypkg check",
+    "lint:fix": "bunx turbo lint --cache-dir=.turbo --continue -- --fix --cache --cache-location \"node_modules/.cache/.eslintcache\" && bunx manypkg fix",
+    "typecheck": "bunx turbo typecheck --cache-dir=.turbo",
+    "analyze": "bunx turbo analyze --cache-dir=.turbo",
+    "test": "bunx turbo test --cache-dir=.turbo",
+    "test:coverage": "bunx vitest run --coverage",
+    "update": "bun update --latest --workspace-root",
+    "syncpack:list": "bunx syncpack list-mismatches",
+    "syncpack:fix": "bunx syncpack fix-mismatches",
+    "preinstall": "bunx turbo run requirements --filter=@workspace/requirements-check",
+    "postinstall": "echo 'Dependencies installed successfully'",
+    "lint-staged": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,cjs,mjs,ts,tsx}": [
+      "eslint --fix --cache --cache-location node_modules/.cache/.eslintcache",
+      "prettier --write --ignore-path .prettierignore"
+    ],
+    "*.{md,mdx,css,json}": [
+      "prettier --write --ignore-path .prettierignore"
+    ]
+  },
+  "overrides": {
+    "@opentelemetry/core": "1.25.1",
+    "@opentelemetry/resources": "1.25.1",
+    "drizzle-orm": "0.45.2"
+  },
+  "devDependencies": {
+    "@manypkg/cli": "0.24.0",
+    "@turbo/gen": "2.5.4",
+    "@vitest/coverage-v8": "^2.1.0",
+    "bcryptjs": "3.0.2",
+    "bun-types": "latest",
+    "lint-staged": "^15.4.3",
+    "next": "15.5.20",
+    "turbo": "2.5.4",
+    "typescript": "5.8.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2.1.0"
+  },
+  "bun": {
+    "overrides": {
+      "react": "19.0.0",
+      "react-dom": "19.0.0",
+      "react-is": "19.0.0",
+      "require-in-the-middle": "7.5.2",
+      "import-in-the-middle": "1.15.0",
+      "prettier": "3.8.1",
+      "archiver": "7.0.1",
+      "unzipper": "0.12.3",
+      "tree-sitter": "0.21.1",
+      "drizzle-orm": "0.45.2",
+      "@opentelemetry/core": "1.25.1",
+      "@opentelemetry/resources": "1.25.1"
+    }
+  },
+  "engines": {
+    "node": ">=20",
+    "bun": ">=1.1.0"
+  },
+  "optionalDependencies": {
+    "@emnapi/wasi-threads": "^1.1.0"
+  }
+}

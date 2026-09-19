@@ -1,0 +1,271 @@
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loader-bar {
+  0% {
+    background-position: -150% 0, -150% 0;
+  }
+
+  66% {
+    background-position: 250% 0, -150% 0;
+  }
+
+  100% {
+    background-position: 250% 0, 250% 0;
+  }
+}
+
+@keyframes ui-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-auth-fade-in {
+  animation: auth-fade-in 0.7s var(--ease-standard) forwards;
+}
+
+.animate-auth-fade-in-delay-1 {
+  opacity: 0;
+  animation: auth-fade-in 0.7s var(--ease-standard) 0.08s forwards;
+}
+
+.animate-auth-fade-in-delay-2 {
+  opacity: 0;
+  animation: auth-fade-in 0.7s var(--ease-standard) 0.16s forwards;
+}
+
+.animate-auth-fade-in-delay-3 {
+  opacity: 0;
+  animation: auth-fade-in 0.7s var(--ease-standard) 0.24s forwards;
+}
+
+.loader-bar {
+  height: 4px;
+  width: 130px;
+  --loader-segment: no-repeat linear-gradient(hsl(var(--primary)) 0 0);
+  background: var(--loader-segment), var(--loader-segment), hsl(var(--accent));
+  background-size: 60% 100%;
+  animation: loader-bar 3s infinite;
+}
+
+.ui-sidebar-backdrop {
+  background: hsl(var(--overlay) / var(--sidebar-backdrop-opacity));
+  backdrop-filter: blur(var(--overlay-blur));
+}
+
+.ui-pricing-card {
+  border-radius: var(--pricing-card-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-pricing-card--highlighted {
+  padding: var(--pricing-highlight-ring-width);
+  border-radius: var(--pricing-card-radius);
+  background: var(--pricing-highlight-gradient);
+  box-shadow: var(--shadow-md);
+}
+
+.ui-pricing-card__inner {
+  min-height: 100%;
+  border-radius: var(--pricing-card-inner-radius);
+}
+
+.ui-pricing-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.ui-pricing-toggle input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.ui-pricing-toggle__slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, hsl(var(--secondary-foreground)) 0%, hsl(var(--foreground)) 100%);
+  transition: background-color var(--duration-default) var(--ease-standard);
+}
+
+.ui-pricing-toggle__slider::before {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 20px;
+  height: 20px;
+  content: '';
+  border-radius: 50%;
+  background: hsl(var(--surface-elevated));
+  transition: transform var(--duration-default) var(--ease-standard);
+}
+
+.ui-pricing-toggle input:checked + .ui-pricing-toggle__slider::before {
+  transform: translateX(22px);
+}
+
+.ui-button {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.ui-button--mode-filled.ui-button--variant-default {
+  border-color: transparent !important;
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.ui-button--mode-filled.ui-button--variant-secondary {
+  border-color: transparent !important;
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.ui-button--mode-filled.ui-button--variant-destructive {
+  border-color: transparent !important;
+  background: hsl(var(--destructive)) !important;
+  color: hsl(var(--destructive-foreground)) !important;
+}
+
+.ui-button--mode-filled.ui-button--variant-ghost {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.ui-button--mode-filled.ui-button--variant-outline {
+  border-color: hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.ui-button--mode-outlined.ui-button--variant-default {
+  border-color: hsl(var(--primary) / 0.35) !important;
+  background: transparent !important;
+  color: hsl(var(--primary)) !important;
+}
+
+.ui-button--mode-outlined.ui-button--variant-secondary {
+  border-color: hsl(var(--border)) !important;
+  background: transparent !important;
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.ui-button--mode-outlined.ui-button--variant-destructive {
+  border-color: hsl(var(--destructive) / 0.35) !important;
+  background: transparent !important;
+  color: hsl(var(--destructive)) !important;
+}
+
+.ui-button--mode-outlined.ui-button--variant-ghost,
+.ui-button--mode-outlined.ui-button--variant-outline {
+  border-color: hsl(var(--border)) !important;
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.ui-button--mode-text {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+.ui-button--mode-text.ui-button--variant-default {
+  color: hsl(var(--primary)) !important;
+}
+
+.ui-button--mode-text.ui-button--variant-secondary {
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.ui-button--mode-text.ui-button--variant-destructive {
+  color: hsl(var(--destructive)) !important;
+}
+
+.ui-button--mode-text.ui-button--variant-ghost,
+.ui-button--mode-text.ui-button--variant-outline {
+  color: hsl(var(--foreground)) !important;
+}
+
+.ui-button--mode-link {
+  border-color: transparent !important;
+  background: transparent !important;
+  padding-inline: 0 !important;
+  text-underline-offset: 4px;
+}
+
+.ui-button--mode-link.ui-button--variant-default {
+  color: hsl(var(--primary)) !important;
+}
+
+.ui-button--mode-link.ui-button--variant-secondary {
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.ui-button--mode-link.ui-button--variant-destructive {
+  color: hsl(var(--destructive)) !important;
+}
+
+.ui-button--mode-link.ui-button--variant-ghost,
+.ui-button--mode-link.ui-button--variant-outline {
+  color: hsl(var(--foreground)) !important;
+}
+
+@media (hover: hover) {
+  .ui-button--mode-filled.ui-button--variant-default:hover {
+    border-color: transparent !important;
+    background: hsl(var(--primary) / 0.9) !important;
+  }
+
+  .ui-button--mode-filled.ui-button--variant-secondary:hover {
+    border-color: transparent !important;
+    background: hsl(var(--secondary) / 0.8) !important;
+  }
+
+  .ui-button--mode-filled.ui-button--variant-destructive:hover {
+    border-color: transparent !important;
+    background: hsl(var(--destructive) / 0.9) !important;
+  }
+
+  .ui-button--mode-filled.ui-button--variant-ghost:hover,
+  .ui-button--mode-filled.ui-button--variant-outline:hover {
+    background: hsl(var(--muted)) !important;
+  }
+
+  .ui-button--mode-outlined.ui-button--variant-default:hover,
+  .ui-button--mode-text.ui-button--variant-default:hover {
+    background: hsl(var(--primary) / 0.1) !important;
+  }
+
+  .ui-button--mode-outlined.ui-button--variant-destructive:hover,
+  .ui-button--mode-text.ui-button--variant-destructive:hover {
+    background: hsl(var(--destructive) / 0.1) !important;
+  }
+
+  .ui-button--mode-outlined.ui-button--variant-secondary:hover,
+  .ui-button--mode-outlined.ui-button--variant-outline:hover,
+  .ui-button--mode-outlined.ui-button--variant-ghost:hover,
+  .ui-button--mode-text.ui-button--variant-secondary:hover,
+  .ui-button--mode-text.ui-button--variant-outline:hover,
+  .ui-button--mode-text.ui-button--variant-ghost:hover {
+    background: hsl(var(--secondary) / 0.6) !important;
+  }
+
+  .ui-button--mode-link:hover {
+    text-decoration: underline;
+    background: transparent !important;
+  }
+}

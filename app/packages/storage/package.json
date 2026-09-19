@@ -1,0 +1,28 @@
+{
+  "name": "@workspace/storage",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo build dist node_modules",
+    "format": "prettier --check \"**/*.{js,cjs,mjs,ts,tsx}\" --ignore-path=\"../../.prettierignore\"",
+    "format:fix": "prettier --write \"**/*.{js,cjs,mjs,ts,tsx}\" --ignore-path=\"../../.prettierignore\"",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.826.0",
+    "cloudinary": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/prettier-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*"
+  },
+  "prettier": "@workspace/prettier-config",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

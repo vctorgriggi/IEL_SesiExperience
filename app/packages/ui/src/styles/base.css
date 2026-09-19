@@ -1,0 +1,117 @@
+:root {
+  --success: var(--chart-3);
+  --success-foreground: var(--primary-foreground);
+  --warning: var(--chart-4);
+  --warning-foreground: var(--foreground);
+  --info: var(--chart-2);
+  --info-foreground: var(--primary-foreground);
+
+  --border-strong: var(--border);
+
+  --surface: var(--card);
+  --surface-elevated: var(--popover);
+  --surface-muted: var(--muted);
+  --surface-accent: var(--accent);
+
+  --text-default: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --text-strong: var(--foreground);
+  --text-on-brand: var(--primary-foreground);
+  --display: var(--text-strong);
+
+  --overlay: var(--foreground);
+
+  --duration-fast: 150ms;
+  --duration-default: 240ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --control-height-sm: 2.25rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 3rem;
+  --control-padding-x: 0.75rem;
+  --control-padding-y: 0.5rem;
+  --control-radius: var(--radius-md);
+  --control-font-size: 0.875rem;
+  --control-line-height: 1.25rem;
+  --field-radius: var(--control-radius);
+  --radius-pill: 9999px;
+
+  --card-radius: 1rem;
+  --card-padding-sm: 1rem;
+  --card-padding-md: 1.5rem;
+  --card-padding-lg: 2rem;
+
+  --sidebar-width: 16rem;
+  --sidebar-backdrop-opacity: 0.56;
+  --overlay-blur: 6px;
+
+  --pricing-card-radius: 1.5rem;
+  --pricing-card-inner-radius: 1.25rem;
+  --pricing-highlight-ring-width: 3px;
+  --pricing-highlight-gradient: conic-gradient(from 180deg, hsl(var(--destructive)), hsl(var(--warning)), hsl(var(--info)), hsl(var(--destructive)));
+
+  --z-dropdown: 20;
+  --z-sidebar: 50;
+  --z-overlay: 60;
+}
+
+.dark {
+  --text-strong: 0 0% 100%;
+}
+
+@theme inline {
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-border-strong: hsl(var(--border-strong));
+  --color-surface: hsl(var(--surface));
+  --color-surface-elevated: hsl(var(--surface-elevated));
+  --color-surface-muted: hsl(var(--surface-muted));
+  --color-surface-accent: hsl(var(--surface-accent));
+  --color-text-default: hsl(var(--text-default));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-text-strong: hsl(var(--text-strong));
+  --color-text-on-brand: hsl(var(--text-on-brand));
+  --color-display: hsl(var(--display));
+  --color-overlay: hsl(var(--overlay));
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--text-strong));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

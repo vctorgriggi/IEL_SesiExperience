@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772773086060,
+      "tag": "20260306045806_curly_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773034885450,
+      "tag": "20260309054125_next_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784518819408,
+      "tag": "20260720034019_ai_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784563610964,
+      "tag": "20260720160650_ai_credit_refund",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786073682532,
+      "tag": "20260807033442_ai_knowledge",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786130449942,
+      "tag": "20260807192049_ai_demo_quota",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+    "name": "@workspace/database",
+    "version": "0.0.0",
+    "private": true,
+    "packageManager": "bun@1",
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./client": "./src/client.ts",
+        "./keys": "./src/keys.ts",
+        "./schema": "./src/schemas/index.ts"
+    },
+    "scripts": {
+        "clean": "git clean -xdf .cache .turbo build dist node_modules",
+        "typecheck": "tsc --noEmit",
+        "generate": "drizzle-kit generate --config=drizzle.config.ts",
+        "migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+        "push": "drizzle-kit push --config=drizzle.config.ts",
+        "studio": "drizzle-kit studio --config=drizzle.config.ts",
+        "seed-demo": "bun run scripts/seed-demo.ts",
+        "seed-events": "bun run scripts/seed-events.ts",
+        "lint": "bunx eslint . --max-warnings=0",
+        "fix:lint": "bunx eslint . --fix"
+    },
+    "dependencies": {
+        "bcryptjs": "3.0.2",
+        "dotenv": "^17.3.1",
+        "drizzle-orm": "0.45.2",
+        "drizzle-zod": "^0.8.3",
+        "postgres": "3.4.5",
+        "server-only": "0.0.1",
+        "zod": "4.4.3"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "2.4.6",
+        "@types/node": "22.15.30",
+        "@workspace/eslint-config": "workspace:*",
+        "@workspace/prettier-config": "workspace:*",
+        "@workspace/typescript-config": "workspace:*",
+        "bun-types": "latest",
+        "drizzle-kit": "0.31.10",
+        "tsx": "^4.21.0"
+    },
+    "prettier": "@workspace/prettier-config"
+}

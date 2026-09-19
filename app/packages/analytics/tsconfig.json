@@ -1,0 +1,1 @@
+{"extends":"@workspace/typescript-config/react-library.json","include":["."],"exclude":[".cache",".turbo","build","dist","node_modules"]}

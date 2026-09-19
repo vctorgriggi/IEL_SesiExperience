@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/* Comentário. */
+@source "../**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./components.css";

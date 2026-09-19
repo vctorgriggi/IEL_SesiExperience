@@ -1,0 +1,9 @@
+export { changePassword } from './change-password';
+export { deleteAvatarAction } from './delete-avatar';
+export { totpDisable } from './totp-disable';
+export { totpEnable } from './totp-enable';
+export { totpSetup } from './totp-setup';
+export { updateMarketingEmails } from './update-marketing-emails';
+export { updateProfile } from './update-profile';
+export { uploadAvatarAction } from './upload-avatar';
+export { updateTransactionalEmails } from './update-transactional-emails';

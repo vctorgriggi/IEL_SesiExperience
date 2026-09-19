@@ -1,0 +1,57 @@
+name: Deploy API
+
+on:
+  push:
+    tags:
+      - 'api-v*'
+
+concurrency:
+  group: deploy-api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Bun install
+        run: bun install --frozen-lockfile
+
+      - name: Deploy on VPS (SSH + Docker)
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: API_URL,VPS_DEPLOY_PATH
+          script: |
+            set -e
+            cd "${VPS_DEPLOY_PATH}"
+            PREV=$(git rev-parse HEAD)
+            git pull origin main
+            cd apps/api && TARGET=production docker compose up -d --build
+            echo "Waiting for API to start..."
+            sleep 15
+            if ! curl -sf --retry 3 --retry-delay 10 --retry-all-errors "${API_URL%/}/health" > /dev/null; then
+              echo "Health check failed, rolling back..."
+              cd "${VPS_DEPLOY_PATH}" && git reset --hard "$PREV"
+              cd apps/api && TARGET=production docker compose up -d --build
+              exit 1
+            fi
+            echo "Deploy successful"

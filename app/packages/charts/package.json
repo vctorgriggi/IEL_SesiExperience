@@ -1,0 +1,33 @@
+{
+  "name": "@workspace/charts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./line-chart": "./src/line-chart.tsx",
+    "./donut-chart": "./src/donut-chart.tsx"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint --fix .",
+    "types": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "recharts": "2.15.3",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.8",
+    "@types/react-dom": "19.0.3",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}
