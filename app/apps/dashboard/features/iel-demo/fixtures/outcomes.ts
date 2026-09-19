@@ -27,7 +27,9 @@
  *
  * Determinístico como o resto da base: gerador próprio, semeado com
  * `SEED + 101` — um gerador separado para que nada do que já existe mude de
- * valor —, e toda data relativa a `DEMO_REFERENCE_DATE`.
+ * valor —, e toda data relativa a `DEMO_REFERENCE_DATE`. A saída de quem foi
+ * contratado (`SEED + 106`) e as vagas em andamento no mês da referência
+ * (`SEED + 102`) têm geradores à parte, pelo mesmo motivo.
  */
 
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
@@ -286,10 +288,25 @@ export type EntregaEmailDia = {
   devolvidos: number;
 };
 
+/**
+ * Vaga aberta no mês da referência que ainda não teve lista enviada.
+ *
+ * As remessas param `HISTORY_MIN_DAYS` antes da referência, então o mês em
+ * curso não teria vaga nenhuma no denominador da taxa de reabertura. Estas
+ * são as vagas que entraram no mês e seguem em andamento: só contam como
+ * "vaga aberta no mês", sem lista, retorno nem contratação.
+ */
+export type VagaEmAndamento = {
+  companyId: string;
+  setor: string;
+  abertaEm: string;
+};
+
 export type OutcomesBase = {
   comunicacao: EventoComunicacao[];
   remessas: RemessaHistorica[];
   reaberturas: ReaberturaHistorica[];
+  vagasEmAndamento: VagaEmAndamento[];
   perfisEmpresa: PerfilEmpresaHistorico[];
   roteiros: RoteiroDeLigacao[];
   sincronizacoes: ExecucaoSincronizacao[];
@@ -316,6 +333,26 @@ function probFicar90(aderencia: number): number {
   if (aderencia < 60) return 0.67;
   if (aderencia < 80) return 0.82;
   return 0.9;
+}
+
+/**
+ * Nome único de setor para os recortes do histórico.
+ *
+ * A base gerada (`generated.ts`) usa dois nomes para o mesmo setor, conforme
+ * a empresa veio da lista principal ou das leves ("Têxtil" e "Têxtil e
+ * confecção"). No BI isso virava duas linhas para o mesmo setor, cada uma com
+ * metade do volume. O histórico usa sempre o nome longo; `generated.ts` fica
+ * como está, porque a tela da empresa mostra o setor que veio da origem.
+ */
+const SETOR_CANONICO: Record<string, string> = {
+  Têxtil: 'Têxtil e confecção',
+  Logística: 'Distribuição e logística',
+  Alimentos: 'Indústria de alimentos'
+};
+
+/** O setor com que a empresa aparece no histórico. */
+export function setorDoHistorico(setor: string): string {
+  return SETOR_CANONICO[setor] ?? setor;
 }
 
 /** Setores de alta rotatividade: o frigorífico é o caso que o IEL cita. */
@@ -505,10 +542,11 @@ function probRetorno(enviadaEm: string): number {
 /**
  * Viés de cada setor em cada ponto do dia a dia, em pontos de aderência.
  *
- * Sem ele o mapa de calor setor × ponto sairia uniforme, e o que a analista
- * procura ali é justamente o ponto que não fecha num setor: no frigorífico, o
- * turno e o apoio no início; na logística, como chegam as tarefas. Os demais
- * setores recebem um desvio pequeno e estável, derivado do nome.
+ * Sem ele todo setor combinaria igual em todos os pontos, e o que a analista
+ * procura no BI é justamente o ponto que não fecha num setor: no frigorífico,
+ * o turno e o apoio no início; na logística, como chegam as tarefas. Os
+ * demais setores recebem um desvio pequeno e estável, derivado do nome. O
+ * ponto de viés mais negativo também pesa na saída (`pontoCritico`).
  */
 const VIES_POR_SETOR: Record<string, Partial<Record<FitAxisId, number>>> = {
   Frigorífico: { 'ritmo-turno': -16, 'apoio-inicial': -10 },
@@ -528,6 +566,40 @@ function viesDoSetor(setor: string): number[] {
   return FIT_AXES.map(
     (axis, index) => fixo[axis.id] ?? ((hash >>> (index * 3)) % 9) - 4
   );
+}
+
+/**
+ * O ponto que decide quem fica em cada setor: o de viés mais negativo.
+ *
+ * Sem isso, quem sai só dependeria da aderência total, e todos os pontos
+ * separariam quem ficou de quem saiu na mesma medida — a lista "o ponto que
+ * mais pesa, por setor" sairia sorteada. No frigorífico quem sai é quem não
+ * fecha com o turno; na logística, com a forma como as tarefas chegam.
+ */
+function pontoCritico(vies: number[]): {
+  indice: number;
+  /** Quanto, em média, o ponto crítico fica abaixo da média dos cinco. */
+  folgaEsperada: number;
+} {
+  let indice = 0;
+  vies.forEach((valor, i) => {
+    if (valor < (vies[indice] ?? 0)) indice = i;
+  });
+  const mediaVies = vies.reduce((soma, v) => soma + v, 0) / vies.length;
+  return { indice, folgaEsperada: mediaVies - (vies[indice] ?? 0) };
+}
+
+/**
+ * Peso do ponto crítico na chance de sair: quem ficou abaixo do esperado
+ * nele sai mais; quem ficou acima, menos. Em média vale 1, para a
+ * permanência por faixa de aderência não mudar de patamar.
+ */
+function fatorDoPontoCritico(
+  envio: EnvioHistorico,
+  critico: { indice: number; folgaEsperada: number }
+): number {
+  const folga = envio.aderencia - (envio.porPonto[critico.indice] ?? 0);
+  return clamp(1 + (folga - critico.folgaEsperada) / 12, 0.45, 1.9);
 }
 
 function gerarEnvio(
@@ -554,8 +626,12 @@ function gerarEnvio(
 
 function build(): OutcomesBase {
   const random = createRandom(SEED + 101);
+  // Quando e como alguém sai tem gerador e difusor próprios: ajustar a saída
+  // não mexe no sorteio das remessas, do retorno, do funil nem dos convites.
+  const randomSaida = createRandom(SEED + 106);
   const empresas = escolherEmpresas(random);
   const decide = createDifusor(random);
+  const decideSaida = createDifusor(randomSaida);
 
   const remessas: RemessaHistorica[] = [];
   const reaberturas: ReaberturaHistorica[] = [];
@@ -564,7 +640,11 @@ function build(): OutcomesBase {
   let seq = 0;
   for (const empresa of empresas) {
     const { company } = empresa;
+    const setor = setorDoHistorico(company.sector);
+    // O viés segue o nome de origem: é ele que já moldava a aderência de
+    // cada ponto, e mudar o nome não deve mudar quem combinava com o quê.
     const vies = viesDoSetor(company.sector);
+    const critico = pontoCritico(vies);
     let ultimaConsulta: string | null = null;
 
     // Uma oportunidade por quinzena, com ritmo constante por empresa: o
@@ -662,21 +742,51 @@ function build(): OutcomesBase {
         const rotatividade = aposMindRh
           ? 1 + (empresa.rotatividade - 1) / 2
           : empresa.rotatividade;
-        const pSair = clamp((1 - pFicar) * rotatividade, 0.02, 0.9);
+        const pSairBase = clamp((1 - pFicar) * rotatividade, 0.02, 0.9);
         // A chave separa quem o painel vai enxergar (retorno registrado e 90
         // dias completos) do resto, para a taxa bater nos dois grupos.
         const observavel =
           devolveu && addDays(contratadoEm, 90) <= DEMO_REFERENCE_DATE;
-        const saiu = decide(
-          `saida:${faixaDe(envio.aderencia)}:${observavel}`,
-          pSair
+        const chaveSaida = `saida:${faixaDe(envio.aderencia)}:${observavel}`;
+        // O sorteio da primeira versão continua sendo feito, só para o
+        // gerador principal andar o mesmo tanto: as remessas, o retorno, os
+        // convites e os roteiros seguem idênticos. Quem sai de fato é
+        // decidido abaixo, no gerador da saída.
+        if (decide(chaveSaida, pSairBase)) {
+          random();
+          random();
+          random();
+        }
+        const saiu = decideSaida(
+          chaveSaida,
+          clamp(pSairBase * fatorDoPontoCritico(envio, critico), 0.02, 0.9)
         );
-        const saiuAntesDe30 = saiu && random() < 0.5;
-        const diasNaEmpresa = saiu
+        // Antes do Mind RH, quem não se adaptava saía cedo: o turno e o apoio
+        // do início não eram conversados antes, e a conta chegava no primeiro
+        // mês. Depois, as saídas que sobram se espalham pelos 90 dias.
+        const saiuAntesDe30 = saiu && randomSaida() < (aposMindRh ? 0.5 : 0.7);
+        let diasNaEmpresa = saiu
           ? saiuAntesDe30
-            ? between(random, 6, 29)
-            : between(random, 31, 85)
+            ? between(randomSaida, 6, 29)
+            : between(randomSaida, 31, 85)
           : null;
+        // Quem foi contratado antes da entrada e sairia depois dela, em quatro
+        // de cada cinco casos, sai antes: a defasagem da lista antiga aparece
+        // em janeiro e fevereiro, não como pico no mês em que o Mind RH entra.
+        // Só vale para quem teve ao menos uma semana de casa antes de março;
+        // o resto é a transição que ainda se vê em março e abril.
+        if (
+          diasNaEmpresa !== null &&
+          !aposMindRh &&
+          contratadoEm < MIND_RH_START_DATE
+        ) {
+          const diasAteEntrada =
+            daysBetweenRef(contratadoEm) - daysBetweenRef(MIND_RH_START_DATE);
+          const limite = diasAteEntrada - 6;
+          if (diasNaEmpresa >= limite && limite >= 6 && randomSaida() < 0.8) {
+            diasNaEmpresa = 6 + (diasNaEmpresa % (limite - 5));
+          }
+        }
         const saidaEm =
           diasNaEmpresa === null ? null : addDays(contratadoEm, diasNaEmpresa);
 
@@ -704,12 +814,12 @@ function build(): OutcomesBase {
         }
 
         if (saidaEm !== null && diasNaEmpresa !== null) {
-          const intervalo = between(random, 1, 5);
+          const intervalo = between(randomSaida, 1, 5);
           const reabertaEm = addDays(saidaEm, intervalo);
           if (reabertaEm <= DEMO_REFERENCE_DATE) {
             reaberturas.push({
               companyId: company.id,
-              setor: company.sector,
+              setor,
               remessaId: id,
               reabertaEm,
               diasAteReabrir: diasNaEmpresa + intervalo
@@ -741,7 +851,7 @@ function build(): OutcomesBase {
         vagaId: `HIST-VAG-${String(seq).padStart(4, '0')}`,
         cargo: CARGOS[Math.floor(random() * CARGOS.length)]!,
         companyId: company.id,
-        setor: company.sector,
+        setor,
         enviadaEm,
         curriculosRecebidos,
         questionariosRespondidos,
@@ -770,6 +880,7 @@ function build(): OutcomesBase {
     comunicacao: buildComunicacao(random),
     remessas,
     reaberturas,
+    vagasEmAndamento: buildVagasEmAndamento(empresas),
     perfisEmpresa,
     roteiros: buildRoteiros(random, empresas),
     sincronizacoes: buildSincronizacoes(random),
@@ -777,7 +888,7 @@ function build(): OutcomesBase {
     empresas: empresas.map(({ company }) => ({
       companyId: company.id,
       nome: company.name,
-      setor: company.sector
+      setor: setorDoHistorico(company.sector)
     }))
   };
 }
@@ -872,6 +983,31 @@ function buildComunicacao(random: () => number): EventoComunicacao[] {
       duracaoMin
     };
   });
+}
+
+/**
+ * Vagas abertas no mês da referência, ainda sem lista: o mesmo ritmo de cada
+ * empresa, dia a dia, do primeiro dia do mês até a referência. Gerador
+ * próprio (`SEED + 102`), para não deslocar nada do que já foi sorteado.
+ */
+function buildVagasEmAndamento(
+  empresas: EmpresaDoHistorico[]
+): VagaEmAndamento[] {
+  const random = createRandom(SEED + 102);
+  const diasNoMes = Number(DEMO_REFERENCE_DATE.slice(8, 10));
+  const vagas: VagaEmAndamento[] = [];
+  for (const { company, ritmo } of empresas) {
+    for (let dia = diasNoMes - 1; dia >= 0; dia -= 1) {
+      if (random() < ritmo / 30) {
+        vagas.push({
+          companyId: company.id,
+          setor: setorDoHistorico(company.sector),
+          abertaEm: dateBefore(dia)
+        });
+      }
+    }
+  }
+  return vagas.sort((a, b) => a.abertaEm.localeCompare(b.abertaEm));
 }
 
 /** Roteiro de ligação: só para empresas com vaga ativa, só o estado. */

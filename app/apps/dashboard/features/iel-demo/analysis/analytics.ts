@@ -1396,7 +1396,7 @@ export function getEntregaDeEmail(): EntregaDeEmail {
  * BI
  * ------------------------------------------------------------------ */
 
-export type FaixaAderenciaId = 'abaixo-35' | '35-59' | '60-79' | '80-mais';
+export type FaixaAderenciaId = 'abaixo-35' | '35-59' | '60-mais';
 
 export const FAIXAS_ADERENCIA: {
   id: FaixaAderenciaId;
@@ -1405,10 +1405,9 @@ export const FAIXAS_ADERENCIA: {
   /** Exclusivo. */
   max: number;
 }[] = [
-  { id: 'abaixo-35', rotulo: '< 35', min: 0, max: 35 },
-  { id: '35-59', rotulo: '35–59', min: 35, max: 60 },
-  { id: '60-79', rotulo: '60–79', min: 60, max: 80 },
-  { id: '80-mais', rotulo: '≥ 80', min: 80, max: 101 }
+  { id: 'abaixo-35', rotulo: '< 35', min: 0, max: ADHERENCE_THRESHOLD },
+  { id: '35-59', rotulo: '35–59', min: ADHERENCE_THRESHOLD, max: 60 },
+  { id: '60-mais', rotulo: '≥ 60', min: 60, max: 101 }
 ];
 
 export type FaixaPermanencia = Suprimivel & {
@@ -1423,21 +1422,43 @@ export type FaixaPermanencia = Suprimivel & {
 export type FiltrosBi = { setor?: string };
 
 /**
- * Aderência na entrada × permanência aos 90 dias (**histórico**), nas faixas
- * < 35, 35–59, 60–79 e ≥ 80. Conta os contratados cujo marco de 90 dias caiu
- * no período; `n` = apurados na faixa, e faixa com menos de 5 vem oculta.
+ * Setores que aparecem no histórico dos últimos 12 meses, em ordem
+ * alfabética: são as opções do filtro de setor do BI. Os nomes já vêm
+ * unificados (`setorDoHistorico`).
  */
-export function getAderenciaVsPermanencia(
+export function getSetoresDoHistorico(): string[] {
+  return [...new Set(remessas12Meses().map((r) => r.setor))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
+/** Contratados cujo marco de 90 dias caiu na janela, com o filtro de setor. */
+function apuradosDoPeriodo(
   periodo: Periodo,
   filtros?: FiltrosBi
-): FaixaPermanencia[] {
+): ContratacaoHistorica[] {
   const j = janela(periodo);
-  const contratados = getOutcomesBase()
+  return getOutcomesBase()
     .remessas.filter((r) => !filtros?.setor || r.setor === filtros.setor)
     .flatMap((r) => r.contratados)
     .filter(
       (c) => c.ficou90 !== null && naJanela(addDays(c.contratadoEm, 90), j)
     );
+}
+
+/**
+ * Aderência na entrada × permanência aos 90 dias (**histórico**), nas faixas
+ * < 35, 35–59 e ≥ 60. Conta os contratados cujo marco de 90 dias caiu no
+ * período; `n` = apurados na faixa, e faixa com menos de 5 vem oculta.
+ *
+ * Três faixas, não quatro: acima de 80 quase nunca passavam 5 contratados
+ * num ano, e a última barra ficava oculta ou oscilando por uma pessoa.
+ */
+export function getAderenciaVsPermanencia(
+  periodo: Periodo,
+  filtros?: FiltrosBi
+): FaixaPermanencia[] {
+  const contratados = apuradosDoPeriodo(periodo, filtros);
 
   const brutas: FaixaPermanencia[] = FAIXAS_ADERENCIA.map((faixa) => {
     const grupo = contratados.filter(
@@ -1462,11 +1483,85 @@ export function getAderenciaVsPermanencia(
   }));
 }
 
+export type LeituraDoCorte = {
+  corte: number;
+  /** % dos questionários respondidos que ficaram abaixo do corte. */
+  deFora: number | null;
+  /** Permanência 90d de quem passa do corte; `null` se oculto. */
+  permanenciaAcimaPct: number | null;
+  /** Permanência 90d de quem não passa; `null` se oculto. */
+  permanenciaAbaixoPct: number | null;
+  /** Acima ÷ abaixo, uma casa; `null` quando um dos lados está oculto. */
+  razao: number | null;
+  nAcima: number;
+  nAbaixo: number;
+};
+
+/**
+ * O corte de 35% numa frase (**histórico**): quanto ele deixa de fora e
+ * quantas vezes mais fica, aos 90 dias, quem passa dele.
+ *
+ * "De fora" sai do funil (questionários respondidos abaixo do corte, nas
+ * remessas do período). A permanência usa a mesma base de
+ * `getAderenciaVsPermanencia`. Lado com menos de 5 contratados fica oculto e
+ * a razão vem `null`; também vem `null` se ninguém abaixo do corte ficou.
+ */
+export function getLeituraDoCorte(
+  periodo: Periodo,
+  filtros?: FiltrosBi
+): LeituraDoCorte {
+  const remessas = remessasNaJanela(janela(periodo)).filter(
+    (r) => !filtros?.setor || r.setor === filtros.setor
+  );
+  const respondidos = remessas.reduce(
+    (t, r) => t + r.questionariosRespondidos,
+    0
+  );
+  const acimaNoFunil = remessas.reduce((t, r) => t + r.acimaDoCorte, 0);
+
+  const apurados = apuradosDoPeriodo(periodo, filtros);
+  const acima = apurados.filter((c) => c.aderencia >= ADHERENCE_THRESHOLD);
+  const abaixo = apurados.filter((c) => c.aderencia < ADHERENCE_THRESHOLD);
+  const permAcima = acima.length < MIN_RECORTE ? null : permanenciaPct(acima);
+  const permAbaixo =
+    abaixo.length < MIN_RECORTE ? null : permanenciaPct(abaixo);
+
+  // A razão sai das contagens, não dos percentuais já arredondados.
+  const taxa = (lista: ContratacaoHistorica[]) =>
+    lista.filter((c) => c.ficou90).length / lista.length;
+  const razao =
+    permAcima === null || permAbaixo === null || taxa(abaixo) === 0
+      ? null
+      : umaCasa(taxa(acima) / taxa(abaixo));
+
+  return {
+    corte: ADHERENCE_THRESHOLD,
+    deFora:
+      respondidos < MIN_RECORTE
+        ? null
+        : pct(respondidos - acimaNoFunil, respondidos),
+    permanenciaAcimaPct: permAcima,
+    permanenciaAbaixoPct: permAbaixo,
+    razao,
+    nAcima: acima.length,
+    nAbaixo: abaixo.length
+  };
+}
+
 export type ReaberturaMes = {
   /** `YYYY-MM`. */
   mes: string;
   rotulo: string;
   reaberturas: number;
+  /** Vagas abertas no mês: o denominador da taxa. */
+  vagas: number;
+  /** Reaberturas a cada 100 vagas abertas no mês, uma casa. */
+  taxaPor100: number | null;
+  /**
+   * Média móvel de 3 meses da taxa (o mês e os dois anteriores), uma casa.
+   * `null` no mês em curso: a linha para no último mês fechado.
+   */
+  mediaMovel3: number | null;
   /** O mês é o de entrada do Mind RH ou posterior. */
   aposMindRh: boolean;
   /** Mês da referência, ainda em curso. */
@@ -1477,163 +1572,172 @@ export type ReaberturasPorMes = {
   meses: ReaberturaMes[];
   /** `YYYY-MM` do mês de entrada, para a linha vertical do gráfico. */
   mesMindRh: string;
-  /** Média mensal dos meses fechados antes da entrada. */
-  mediaAntes: number | null;
-  /** Média mensal dos meses fechados a partir da entrada. */
-  mediaDepois: number | null;
-  /** Variação da média, em % (negativo = queda). */
+  /** Taxa a cada 100 vagas nos meses fechados antes da entrada. */
+  taxaAntes: number | null;
+  /** Taxa a cada 100 vagas nos meses fechados a partir da entrada. */
+  taxaDepois: number | null;
+  /** Variação da taxa, em % (negativo = queda). */
   variacaoPct: number | null;
 };
 
 /**
- * Vagas reabertas por mês (**histórico**): vagas que voltaram ao Empregare
- * em até 90 dias depois de uma contratação, pela data em que reabriram. É o
- * indicador que a diretoria acompanha e o critério de sucesso do MVP.
+ * Reabertura a cada 100 vagas, por mês (**histórico**).
  *
- * O efeito aparece com uma defasagem de um a dois meses depois de
- * `MIND_RH_START_DATE`: quem sai nos primeiros meses foi contratado antes.
- * Contagem de vagas, não de pessoas: sem supressão.
+ * Numerador: vagas que voltaram ao Empregare em até 90 dias depois de uma
+ * contratação, pela data em que reabriram. Denominador: vagas abertas no mês
+ * — as encerradas, pelo mês da lista, e, no mês em curso, as que ainda estão
+ * em andamento. É o indicador que a diretoria acompanha e o critério de
+ * sucesso do MVP; em taxa, um mês com menos vagas não parece melhor.
+ *
+ * Antes e depois são taxas agregadas (soma das reaberturas ÷ soma das vagas
+ * dos meses fechados), não a média das taxas mensais: mês pequeno não pesa
+ * como mês cheio. Contagem de vagas, não de pessoas: sem supressão.
  */
 export function getReaberturasPorMes(filtros?: FiltrosBi): ReaberturasPorMes {
-  const reaberturas = getOutcomesBase().reaberturas.filter(
-    (r) => !filtros?.setor || r.setor === filtros.setor
-  );
+  const base = getOutcomesBase();
+  const doSetor = (setor: string) => !filtros?.setor || setor === filtros.setor;
+  const reaberturas = base.reaberturas.filter((r) => doSetor(r.setor));
+  const remessas = base.remessas.filter((r) => doSetor(r.setor));
+  const emAndamento = base.vagasEmAndamento.filter((v) => doSetor(v.setor));
   const mesMindRh = MIND_RH_START_DATE.slice(0, 7);
   const mesReferencia = DEMO_REFERENCE_DATE.slice(0, 7);
 
-  const meses = ultimos12Meses().map((mes) => ({
-    mes,
-    rotulo: rotuloDoMes(mes),
-    reaberturas: reaberturas.filter((r) => r.reabertaEm.startsWith(mes)).length,
-    aposMindRh: mes >= mesMindRh,
-    parcial: mes === mesReferencia
-  }));
+  const taxa = (reab: number, vagas: number) =>
+    vagas === 0 ? null : umaCasa((100 * reab) / vagas);
+
+  const brutos = ultimos12Meses().map((mes) => {
+    const reab = reaberturas.filter((r) => r.reabertaEm.startsWith(mes)).length;
+    const vagas =
+      remessas.filter((r) => r.enviadaEm.startsWith(mes)).length +
+      emAndamento.filter((v) => v.abertaEm.startsWith(mes)).length;
+    return {
+      mes,
+      rotulo: rotuloDoMes(mes),
+      reaberturas: reab,
+      vagas,
+      taxaPor100: taxa(reab, vagas),
+      aposMindRh: mes >= mesMindRh,
+      parcial: mes === mesReferencia
+    };
+  });
+
+  const meses: ReaberturaMes[] = brutos.map((mes, index) => {
+    if (mes.parcial) return { ...mes, mediaMovel3: null };
+    const janela3 = brutos
+      .slice(Math.max(0, index - 2), index + 1)
+      .map((m) => m.taxaPor100)
+      .filter((t): t is number => t !== null);
+    return { ...mes, mediaMovel3: media(janela3) };
+  });
 
   const fechados = meses.filter((m) => !m.parcial);
-  const mediaDe = (lista: ReaberturaMes[]) =>
-    media(lista.map((m) => m.reaberturas));
-  const mediaAntes = mediaDe(fechados.filter((m) => !m.aposMindRh));
-  const mediaDepois = mediaDe(fechados.filter((m) => m.aposMindRh));
+  const taxaDe = (lista: ReaberturaMes[]) =>
+    taxa(
+      lista.reduce((t, m) => t + m.reaberturas, 0),
+      lista.reduce((t, m) => t + m.vagas, 0)
+    );
+  const taxaAntes = taxaDe(fechados.filter((m) => !m.aposMindRh));
+  const taxaDepois = taxaDe(fechados.filter((m) => m.aposMindRh));
 
   return {
     meses,
     mesMindRh,
-    mediaAntes,
-    mediaDepois,
+    taxaAntes,
+    taxaDepois,
     variacaoPct:
-      mediaAntes && mediaDepois !== null
-        ? Math.round((100 * (mediaDepois - mediaAntes)) / mediaAntes)
+      taxaAntes && taxaDepois !== null
+        ? Math.round((100 * (taxaDepois - taxaAntes)) / taxaAntes)
         : null
   };
 }
 
-export type SimulacaoDeCorte = {
-  corte: number;
-  /** % dos currículos enviados no ano que ficariam abaixo do corte. */
-  excluidosPct: number | null;
-  /** Permanência 90d dos contratados acima do corte simulado − acima de 35. */
-  ganhoPermanenciaPp: number | null;
-  /** % que o corte atual (35) já deixa abaixo. */
-  excluidosPctNoCorteAtual: number | null;
-  permanenciaNoCorteAtualPct: number | null;
-  permanenciaNoCorteSimuladoPct: number | null;
-  /** Contratados apurados acima do corte simulado. */
-  contratadosConsiderados: number;
-  /** Menos de 5 contratados acima do corte: sem estimativa. */
-  oculto: boolean;
-};
-
-/**
- * Calibração do corte (**histórico**, últimos 12 meses): simula um corte de
- * 25 a 60 (qualquer número 0–100 é aceito) e mostra quantos currículos
- * enviados ficariam de fora e quanto a permanência aos 90 dias dos
- * contratados acima do corte difere da dos acima de 35 hoje.
- *
- * É estimativa retrospectiva, não previsão: os contratados foram escolhidos
- * pela empresa, e o corte é decisão humana (PRODUTO.md §5.7).
- */
-export function simularCorte(corte: number): SimulacaoDeCorte {
-  const alvo = Math.min(100, Math.max(0, Math.round(corte)));
-  const lista = remessas12Meses();
-  const enviados = lista.flatMap((r) => r.enviados);
-  const apurados = lista
-    .flatMap((r) => r.contratados)
-    .filter((c) => c.ficou90 !== null);
-
-  const acima = (limite: number) =>
-    apurados.filter((c) => c.aderencia >= limite);
-  const noCorte = acima(alvo);
-  const noAtual = acima(ADHERENCE_THRESHOLD);
-  const permSimulada = permanenciaPct(noCorte);
-  const permAtual = permanenciaPct(noAtual);
-  const oculto = noCorte.length < MIN_RECORTE;
-
-  return {
-    corte: alvo,
-    excluidosPct: pct(
-      enviados.filter((e) => e.aderencia < alvo).length,
-      enviados.length
-    ),
-    ganhoPermanenciaPp: oculto ? null : diff(permSimulada, permAtual),
-    excluidosPctNoCorteAtual: pct(
-      enviados.filter((e) => e.aderencia < ADHERENCE_THRESHOLD).length,
-      enviados.length
-    ),
-    permanenciaNoCorteAtualPct: permAtual,
-    permanenciaNoCorteSimuladoPct: oculto ? null : permSimulada,
-    contratadosConsiderados: noCorte.length,
-    oculto
-  };
-}
-
-export type CelulaSetorPonto = { axisId: FitAxisId; media: number | null };
-
-export type LinhaSetorPonto = Suprimivel & {
+export type PontoQueMaisSepara = Suprimivel & {
   setor: string;
-  valores: CelulaSetorPonto[];
-};
-
-export type AderenciaPorSetorEPonto = {
-  pontos: { id: FitAxisId; rotulo: string }[];
-  linhas: LinhaSetorPonto[];
+  /** Rótulo do ponto do dia a dia; `null` quando oculto ou sem saída. */
+  ponto: string | null;
+  pontoId: FitAxisId | null;
+  /**
+   * Quanto quem ficou 90 dias combinava a mais que quem saiu, nesse ponto,
+   * em pontos percentuais. `null` quando oculto ou sem os dois grupos.
+   */
+  diferencaPp: number | null;
 };
 
 /**
- * Mapa de calor setor × ponto do dia a dia (**histórico**, últimos 12
- * meses): aderência média (0–100) dos currículos enviados, por ponto. `n` =
- * currículos do setor; setor com menos de 5 vem oculto. Linhas em ordem de
- * volume.
+ * O ponto que mais pesa, por setor (**histórico**, últimos 12 meses).
+ *
+ * Para cada setor, entre os contratados com os 90 dias apurados: a diferença
+ * de "combina" entre quem ficou e quem saiu, ponto a ponto, e o ponto em que
+ * ela é maior. É a pergunta que a analista leva para a ligação com a empresa.
+ *
+ * `n` = contratados apurados do setor; com menos de 5, a linha vem oculta.
+ * Setor sem ninguém que saiu (ou sem ninguém que ficou) não tem comparação e
+ * vem com `diferencaPp: null`. Ordem: maior diferença primeiro, sem
+ * comparação e ocultos no fim.
  */
-export function getAderenciaPorSetorEPonto(): AderenciaPorSetorEPonto {
-  const porSetor = new Map<string, number[][]>();
+export function getPontoQueMaisSeparaPorSetor(
+  filtros?: FiltrosBi
+): PontoQueMaisSepara[] {
+  const porSetor = new Map<string, { ficou: number[][]; saiu: number[][] }>();
   for (const r of remessas12Meses()) {
-    const atual = porSetor.get(r.setor) ?? [];
-    atual.push(...r.enviados.map((e) => e.porPonto));
-    porSetor.set(r.setor, atual);
+    if (filtros?.setor && r.setor !== filtros.setor) continue;
+    for (const c of r.contratados) {
+      if (c.ficou90 === null) continue;
+      const envio = r.enviados[c.indiceEnvio];
+      if (!envio) continue;
+      const grupo = porSetor.get(r.setor) ?? { ficou: [], saiu: [] };
+      (c.ficou90 ? grupo.ficou : grupo.saiu).push(envio.porPonto);
+      porSetor.set(r.setor, grupo);
+    }
   }
 
-  const brutas: LinhaSetorPonto[] = [...porSetor.entries()]
-    .map(([setor, linhas]) => ({
-      setor,
-      n: linhas.length,
-      oculto: false,
-      valores: FIT_AXES.map((axis, index) => {
-        const m = media(linhas.map((l) => l[index] ?? 0));
-        return { axisId: axis.id, media: m === null ? null : Math.round(m) };
-      })
-    }))
-    .sort((a, b) => b.n - a.n);
+  const brutas: PontoQueMaisSepara[] = [...porSetor.entries()].map(
+    ([setor, { ficou, saiu }]) => {
+      const n = ficou.length + saiu.length;
+      if (ficou.length === 0 || saiu.length === 0) {
+        return {
+          setor,
+          n,
+          oculto: false,
+          ponto: null,
+          pontoId: null,
+          diferencaPp: null
+        };
+      }
+      const mediaNoPonto = (lista: number[][], indice: number) =>
+        lista.reduce((t, l) => t + (l[indice] ?? 0), 0) / lista.length;
+      const diferencas = FIT_AXES.map((axis, indice) => ({
+        axis,
+        diferenca: mediaNoPonto(ficou, indice) - mediaNoPonto(saiu, indice)
+      }));
+      const maior = [...diferencas].sort(
+        (a, b) => b.diferenca - a.diferenca
+      )[0]!;
+      return {
+        setor,
+        n,
+        oculto: false,
+        ponto: AXIS_LABEL[maior.axis.id],
+        pontoId: maior.axis.id,
+        diferencaPp: Math.round(maior.diferenca)
+      };
+    }
+  );
 
-  return {
-    pontos: FIT_AXES.map((axis) => ({
-      id: axis.id,
-      rotulo: AXIS_LABEL[axis.id]
-    })),
-    linhas: suprimirPequenos(brutas, MIN_RECORTE, (l) => ({
-      ...l,
-      valores: l.valores.map((v) => ({ ...v, media: null }))
-    }))
-  };
+  const linhas = suprimirPequenos(brutas, MIN_RECORTE, (l) => ({
+    ...l,
+    ponto: null,
+    pontoId: null,
+    diferencaPp: null
+  }));
+  const ordem = (l: PontoQueMaisSepara) =>
+    l.oculto ? 2 : l.diferencaPp === null ? 1 : 0;
+  return linhas.sort(
+    (a, b) =>
+      ordem(a) - ordem(b) ||
+      (b.diferencaPp ?? 0) - (a.diferencaPp ?? 0) ||
+      b.n - a.n
+  );
 }
 
 export type EtapaDaVagaId =
