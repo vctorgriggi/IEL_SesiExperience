@@ -29,6 +29,7 @@ import {
   ListOrdered,
   MessageSquare,
   Plug,
+  ScatterChart,
   Search,
   Users,
   type LucideIcon
@@ -177,6 +178,18 @@ export function AppSidebar() {
           icon: Users,
           badge: null,
           ativo: pathname.startsWith(iel.talents.index)
+        },
+        /*
+         * O mapa reúne a base de talentos do IEL, então fica fora do menu do
+         * gestor pela mesma razão que "Pessoas": seria porta para o recorte de
+         * outras empresas (PRODUTO.md §5).
+         */
+        {
+          href: iel.cultureMap,
+          label: 'Mapa de cultura',
+          icon: ScatterChart,
+          badge: null,
+          ativo: pathname.startsWith(iel.cultureMap)
         },
         {
           href: iel.candidates,

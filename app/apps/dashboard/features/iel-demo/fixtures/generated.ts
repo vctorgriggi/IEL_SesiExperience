@@ -20,7 +20,11 @@
  */
 
 import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
-import type { CultureOptionValue } from '../analysis/culture';
+import {
+  CULTURE_QUESTIONS,
+  MIN_TEAM_RESPONSES,
+  type CultureOptionValue
+} from '../analysis/culture';
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
 import type {
   AnalysisByApplication,
@@ -30,12 +34,14 @@ import type {
   Company,
   CriterionAnalysis,
   CriterionState,
+  CultureAnswer,
   Evidence,
   ExternalStage,
   Job,
   JobCriterion,
   JobStage,
   Talent,
+  TalentCultureAnswer,
   Team
 } from '../types';
 import { DEMO_REFERENCE_DATE } from './companies';
@@ -362,6 +368,8 @@ export type GeneratedBase = {
   applications: Application[];
   analysis: AnalysisByApplication;
   evidences: Evidence[];
+  cultureAnswers: CultureAnswer[];
+  talentCultureAnswers: TalentCultureAnswer[];
   fitResponses: CandidateFitResponse[];
 };
 
@@ -812,8 +820,91 @@ function build(): GeneratedBase {
     applications,
     analysis,
     evidences,
-    fitResponses
+    fitResponses,
+    // Só as empresas com vaga têm consulta à equipe. As ~2.500 empresas leves
+    // da carteira não têm consulta por definição; gerar respostas para elas
+    // faria cada uma aparecer como "perfil aberto" na fila do dia.
+    ...buildCultureAnswers(
+      companies.filter((company) =>
+        jobs.some((job) => job.companyId === company.id)
+      ),
+      talents
+    )
   };
+}
+
+/**
+ * Semente própria: as respostas culturais são geradas fora dos laços acima
+ * para que acrescentá-las não desloque a sequência do gerador principal e
+ * mude nomes, etapas e datas de toda a base existente.
+ */
+const SEED_CULTURA = 20260921;
+
+/** Um talento a cada quatro responde: o mapa mostra a paisagem sem virar borrão. */
+const TALENTOS_POR_RESPOSTA_CULTURAL = 4;
+
+function buildCultureAnswers(
+  companies: Company[],
+  talents: Talent[]
+): Pick<GeneratedBase, 'cultureAnswers' | 'talentCultureAnswers'> {
+  const random = createRandom(SEED_CULTURA);
+  const cultureAnswers: CultureAnswer[] = [];
+  const talentCultureAnswers: TalentCultureAnswer[] = [];
+
+  companies.forEach((company, indice) => {
+    for (const question of CULTURE_QUESTIONS) {
+      const daGestao = pick(random, question.options).id;
+      cultureAnswers.push({
+        id: `GEN-CUL-${company.id}-${question.axisId}-GES`,
+        companyId: company.id,
+        axisId: question.axisId,
+        optionId: daGestao,
+        respondent: 'gestao',
+        count: 1,
+        answeredAt: dateBefore(20 + (indice % 25))
+      });
+
+      // Uma parte das equipes responde diferente da gestão, e outra parte não
+      // alcança o mínimo de respostas: são os dois casos que a tela precisa
+      // saber mostrar, e uma base só convergente nunca os exercitaria.
+      const daEquipe =
+        random() > 0.7 ? pick(random, question.options).id : daGestao;
+      const respostasDaEquipe =
+        random() > 0.85
+          ? MIN_TEAM_RESPONSES - 1
+          : MIN_TEAM_RESPONSES + Math.floor(random() * 5);
+
+      cultureAnswers.push({
+        id: `GEN-CUL-${company.id}-${question.axisId}-EQP`,
+        companyId: company.id,
+        axisId: question.axisId,
+        optionId: daEquipe,
+        respondent: 'equipe',
+        count: respostasDaEquipe,
+        answeredAt: dateBefore(16 + (indice % 20))
+      });
+    }
+  });
+
+  talents.forEach((talent, indice) => {
+    if (indice % TALENTOS_POR_RESPOSTA_CULTURAL !== 0) return;
+
+    const quantidade =
+      2 + Math.floor(random() * (CULTURE_QUESTIONS.length - 1));
+    for (const question of CULTURE_QUESTIONS.slice(0, quantidade)) {
+      talentCultureAnswers.push({
+        id: `GEN-CULT-${talent.id}-${question.axisId}`,
+        talentId: talent.id,
+        axisId: question.axisId,
+        optionId: pick(random, question.options).id,
+        origin: 'Currículo — informação declarada na inscrição',
+        sourceId: 'FONTE-EMPREGARE',
+        updatedAt: dateBefore(10 + (indice % 40))
+      });
+    }
+  });
+
+  return { cultureAnswers, talentCultureAnswers };
 }
 
 let cache: GeneratedBase | null = null;

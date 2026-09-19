@@ -185,6 +185,8 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
+      /** Mapa de cultura: empresas e candidatos no mesmo plano. */
+      cultureMap: resolve('/iel/mapa-de-cultura'),
       /** Integrações: o que entra, o que sai e o que fica de fora. */
       dataSources: resolve('/iel/fontes-de-dados'),
       /** Comunicação, questionário e consentimento dos candidatos. */

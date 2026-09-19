@@ -128,6 +128,7 @@ The root `docker-compose.yml` starts the local Postgres instance.
 - `README.md`
 - `PATTERNS.md`
 - `AGENTS.md`
+- `../docs/telas/00-indice.md` (uma doc por tela do protótipo IEL; atualizar junto com a tela)
 - `docs/boas-praticas-de-codigo.md`
 - `docs/padroes-de-git.md`
 - `docs/api-routes-nextjs.md`

@@ -48,6 +48,12 @@ Arki is a SaaS starter kit built as a Turborepo monorepo with Bun.
 3. Return `NextResponse.json(data)` or `NextResponse.json({ error }, { status })`. For webhooks (e.g. billing), re-export from the package when it exists (e.g. `export { POST } from '@workspace/billing/webhook'`).
 4. Docs: see `docs/api-routes-nextjs.md`.
 
+### Changing an IEL prototype screen (`/iel`)
+
+1. Screens live in `apps/dashboard/app/(iel)/iel/` and `apps/dashboard/components/iel-demo/`.
+2. Every change that alters what a screen shows or does updates that screen's file in `docs/telas/` in the same PR. A new screen needs a new numbered file there plus a line in `docs/telas/00-indice.md`.
+3. Keep the prototype out of the boilerplate: do not change `packages/ui`, `packages/charts` or other shared packages for it.
+
 ### Adding a new shared package
 
 1. Create directory in `packages/<name>/`

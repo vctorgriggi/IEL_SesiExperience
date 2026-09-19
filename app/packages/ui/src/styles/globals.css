@@ -4,6 +4,13 @@
 /* Comentário. */
 @source "../**/*.{ts,tsx}";
 
+/*
+ * Os gráficos moram em `@workspace/charts` e usam utilitários do Tailwind como
+ * qualquer outro componente. Sem esta linha nenhuma classe que só aparece lá é
+ * gerada, e o componente chega ao navegador sem posicionamento nenhum.
+ */
+@source "../../../charts/src/**/*.{ts,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 @import "./tokens.css";
