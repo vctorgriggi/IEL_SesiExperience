@@ -42,5 +42,16 @@ export default [
         }))
       ]
     }
+  },
+  {
+    /*
+     * Componentes shadcn: vêm do registry oficial e ficam iguais à origem.
+     * As restrições acima existem para o kit próprio; aqui elas impediriam
+     * atualizar um componente a partir do `shadcn add`.
+     */
+    files: ['src/components/shadcn/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off'
+    }
   }
 ];
