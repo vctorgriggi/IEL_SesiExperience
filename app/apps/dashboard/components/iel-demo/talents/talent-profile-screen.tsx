@@ -16,6 +16,7 @@ import {
   getAssessments,
   getCompany,
   getEvidencesByTalent,
+  getEvidencesForCriterion,
   getJob,
   getReferralListSelection,
   getTalent,
@@ -37,9 +38,18 @@ import {
 } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
-import { CriterionStateBadge } from '../shared/criterion-state-badge';
+import {
+  CriterionStateDot,
+  CriterionStateHeadline
+} from '../shared/criterion-state-badge';
 import { EvidenceCard, EvidencePanel } from '../shared/evidence-panel';
-import { Chip, CoverageMeter, formatDate, IelPageHeader } from '../shared/ui';
+import {
+  Chip,
+  CoverageMeter,
+  formatDate,
+  IelPageHeader,
+  InfoHint
+} from '../shared/ui';
 
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const { state, dispatch, persona } = useIelDemo();
@@ -120,8 +130,11 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
         actions={
           <>
             {job ? (
-              <Link href={iel.jobs.byId(job.id).index}>
-                <Button variant="outline">Voltar para a vaga</Button>
+              <Link
+                href={iel.jobs.byId(job.id).index}
+                className="self-center text-sm font-medium text-primary underline-offset-2 hover:underline"
+              >
+                ← Voltar para a vaga
               </Link>
             ) : null}
             {job && contextApplication ? (
@@ -169,13 +182,10 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
           {job && contextApplication ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
+                <CardTitle className="flex items-center gap-1.5 text-base">
                   Análise por critério — {job.title}
+                  <InfoHint label="A leitura depende desta oportunidade: o mesmo perfil tem outra análise em outra vaga." />
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  A leitura depende desta oportunidade. Clique em um critério
-                  para abrir as evidências.
-                </p>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 <CoverageMeter
@@ -192,19 +202,36 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                     (criterion) => criterion.dimension === dimension
                   );
                   if (criteria.length === 0) return null;
+                  const dimensionCoverage = getCoverage(
+                    job,
+                    state.analysis,
+                    contextApplication.id,
+                    dimension
+                  );
                   return (
-                    <div
-                      key={dimension}
-                      className="space-y-2"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {DIMENSION_META[dimension].label}
-                      </p>
-                      <ul className="space-y-2">
+                    <section key={dimension}>
+                      <div className="flex items-baseline justify-between gap-3 border-b border-border-strong pb-1.5">
+                        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                          {DIMENSION_META[dimension].label}
+                          <InfoHint
+                            label={DIMENSION_META[dimension].description}
+                          />
+                        </h3>
+                        <p className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {dimensionCoverage.withInformation}/
+                          {dimensionCoverage.total} com dados
+                        </p>
+                      </div>
+                      <ul className="divide-y divide-border">
                         {criteria.map((criterion) => {
                           const analysis = getCriterionAnalysis(
                             state.analysis,
                             contextApplication.id,
+                            criterion.id
+                          );
+                          const evidences = getEvidencesForCriterion(
+                            state,
+                            contextApplication,
                             criterion.id
                           );
                           return (
@@ -214,26 +241,47 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
                                 onClick={() =>
                                   setActiveCriterionId(criterion.id)
                                 }
-                                className="w-full space-y-1 rounded-[var(--control-radius)] border border-border p-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                                aria-label={`${criterion.label}: ver evidências`}
+                                className="w-full px-1 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                               >
-                                <span className="flex flex-wrap items-center gap-2">
+                                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <CriterionStateDot state={analysis.state} />
                                   <span className="text-sm font-medium text-foreground">
                                     {criterion.label}
                                   </span>
-                                  <CriterionStateBadge
+                                  {criterion.required ? (
+                                    <abbr
+                                      title="Requisito obrigatório"
+                                      className="text-xs font-semibold text-muted-foreground no-underline"
+                                    >
+                                      *
+                                    </abbr>
+                                  ) : null}
+                                  <CriterionStateHeadline
                                     state={analysis.state}
-                                    size="sm"
+                                    className="ml-auto"
                                   />
                                 </span>
-                                <span className="block text-xs text-muted-foreground">
+                                <span className="mt-0.5 block pl-4 text-xs leading-relaxed text-muted-foreground">
                                   {analysis.note}
                                 </span>
+                                {evidences.length > 0 ? (
+                                  <span className="mt-1 block pl-4 text-[11px] font-medium text-primary">
+                                    {plural(
+                                      evidences.length,
+                                      'evidência',
+                                      'evidências'
+                                    )}{' '}
+                                    registrada
+                                    {evidences.length === 1 ? '' : 's'} — abrir
+                                  </span>
+                                ) : null}
                               </button>
                             </li>
                           );
                         })}
                       </ul>
-                    </div>
+                    </section>
                   );
                 })}
               </CardContent>
@@ -306,17 +354,15 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Avaliações existentes</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Resultados de origem, com escala, método e data preservados.
-              </p>
+              <CardTitle className="flex items-center gap-1.5 text-base">
+                Avaliações existentes
+                <InfoHint label="Resultados de origem, com escala, método e data preservados. Nenhuma avaliação nova é aplicada nesta demonstração." />
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-4">
               {assessments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Avaliação não disponível para este perfil. Isso não equivale a
-                  nota zero e nenhuma nova avaliação foi aplicada nesta
-                  demonstração.
+                  Avaliação não disponível — o que não equivale a nota zero.
                 </p>
               ) : (
                 assessments.map((assessment) => (

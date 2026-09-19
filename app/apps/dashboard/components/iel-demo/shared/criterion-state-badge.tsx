@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import {
   CRITERION_STATE_META,
   type CriterionStateMeta
@@ -16,14 +15,6 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { cn } from '@workspace/ui';
 
 type Tone = CriterionStateMeta['tone'];
-
-const toneClass: Record<Tone, string> = {
-  positivo: 'border-success/35 bg-success/10 text-success',
-  atencao: 'border-warning/35 bg-warning/10 text-warning',
-  conflito: 'border-destructive/35 bg-destructive/10 text-destructive',
-  neutro: 'border-border bg-muted text-muted-foreground',
-  desativado: 'border-dashed border-border bg-transparent text-muted-foreground'
-};
 
 /** Só a cor do texto: para títulos de estado, sem o peso de uma pill. */
 export const criterionStateTextClass: Record<Tone, string> = {
@@ -53,52 +44,6 @@ const toneIcon: Record<Tone, typeof HelpCircleIcon> = {
   neutro: MinusSignIcon,
   desativado: InformationCircleIcon
 };
-
-export function getCriterionStateIcon(state: CriterionState) {
-  return toneIcon[CRITERION_STATE_META[state].tone];
-}
-
-type CriterionStateBadgeProps = {
-  state: CriterionState;
-  /** Texto adicional após o rótulo, ex.: nome do critério. */
-  suffix?: ReactNode;
-  size?: 'sm' | 'md';
-  className?: string;
-};
-
-/**
- * Estado de critério com ícone, marcador textual e rótulo: a leitura nunca
- * depende apenas de cor.
- */
-export function CriterionStateBadge({
-  state,
-  suffix,
-  size = 'md',
-  className
-}: CriterionStateBadgeProps) {
-  const meta = CRITERION_STATE_META[state];
-
-  return (
-    <span
-      className={cn(
-        'inline-flex max-w-full items-center gap-1.5 rounded-[var(--radius-pill)] border px-2 py-0.5 font-medium',
-        size === 'sm' ? 'text-[11px]' : 'text-xs',
-        toneClass[meta.tone],
-        className
-      )}
-      title={meta.description}
-    >
-      <HugeiconsIcon
-        icon={toneIcon[meta.tone]}
-        size={size === 'sm' ? 13 : 15}
-        aria-hidden="true"
-      />
-      <span aria-hidden="true">{meta.marker}</span>
-      <span className="truncate">{meta.label}</span>
-      {suffix ? <span className="truncate font-normal">{suffix}</span> : null}
-    </span>
-  );
-}
 
 /** Estado como título: ícone + rótulo coloridos, sem fundo. */
 export function CriterionStateHeadline({

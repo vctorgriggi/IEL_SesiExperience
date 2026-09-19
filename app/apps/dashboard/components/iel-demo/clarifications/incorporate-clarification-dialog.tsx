@@ -27,7 +27,7 @@ import {
   toast
 } from '@workspace/ui';
 
-import { CriterionStateBadge } from '../shared/criterion-state-badge';
+import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 
 type Row = IncorporationDecision & { apply: boolean };
 
@@ -163,15 +163,9 @@ export function IncorporateClarificationDialog({
                       </label>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>Estado atual:</span>
-                        <CriterionStateBadge
-                          state={previous.state}
-                          size="sm"
-                        />
+                        <CriterionStateHeadline state={previous.state} />
                         <span aria-hidden="true">→</span>
-                        <CriterionStateBadge
-                          state={row.state}
-                          size="sm"
-                        />
+                        <CriterionStateHeadline state={row.state} />
                       </div>
 
                       <div className="space-y-1">

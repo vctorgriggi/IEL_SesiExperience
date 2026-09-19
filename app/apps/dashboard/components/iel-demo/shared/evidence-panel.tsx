@@ -13,7 +13,7 @@ import type {
 
 import { Alert, Button, Card, cn } from '@workspace/ui';
 
-import { CriterionStateBadge } from './criterion-state-badge';
+import { CriterionStateHeadline } from './criterion-state-badge';
 import { Chip, formatDate, SourceTag } from './ui';
 
 export const NATURE_LABEL: Record<EvidenceNature, string> = {
@@ -130,7 +130,10 @@ export function EvidencePanel({
       </div>
 
       <div className="space-y-2">
-        <CriterionStateBadge state={analysis.state} />
+        <CriterionStateHeadline
+          state={analysis.state}
+          className="text-sm"
+        />
         <p className="text-sm text-foreground">{analysis.note}</p>
         <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
           <Chip>

@@ -40,7 +40,7 @@ import {
 } from '@workspace/ui';
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
-import { CriterionStateBadge } from '../shared/criterion-state-badge';
+import { CriterionStateHeadline } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
 import { Chip, CoverageMeter, IelPageHeader } from '../shared/ui';
 
@@ -213,9 +213,8 @@ export function ComparisonScreen({ jobId }: { jobId: string }) {
                                       isActive && 'ring-2 ring-ring/50'
                                     )}
                                   >
-                                    <CriterionStateBadge
+                                    <CriterionStateHeadline
                                       state={analysis.state}
-                                      size="sm"
                                     />
                                     <span className="block text-xs text-muted-foreground">
                                       {analysis.note}
