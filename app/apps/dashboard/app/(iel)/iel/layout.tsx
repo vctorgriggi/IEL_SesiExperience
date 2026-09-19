@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import type { Metadata } from 'next';
 import { Red_Hat_Display } from 'next/font/google';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
+import { VLibras } from '@/components/iel-demo/layout/vlibras';
 import { IelDemoProvider } from '@/features/iel-demo/state/demo-provider';
 
 import './iel-theme.css';
@@ -36,6 +37,7 @@ export default function IelDemoLayout({ children }: PropsWithChildren) {
       <IelDemoProvider>
         <IelShell>{children}</IelShell>
       </IelDemoProvider>
+      <VLibras />
     </div>
   );
 }
