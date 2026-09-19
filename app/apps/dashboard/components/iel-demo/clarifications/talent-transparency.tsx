@@ -33,7 +33,7 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
   return (
     <Panel padding="sm">
       <PanelHeader
-        eyebrow="Transparência dos dados"
+        eyebrow="Seus dados"
         title="O que está registrado sobre você"
         hint="Você pode ver a informação que a central reuniu a seu respeito, de onde ela veio e para quais empresas foi enviada. Se algum registro estiver errado, é possível corrigi-lo antes que ele pese numa decisão."
         meta={

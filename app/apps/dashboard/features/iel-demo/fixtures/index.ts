@@ -12,12 +12,13 @@ import {
   DEMO_TEAMS
 } from './companies';
 import { DEMO_CULTURE_ANSWERS } from './culture';
+import { DEMO_CULTURE_INVITES } from './culture-invites';
 import { DEMO_EVIDENCES } from './evidences';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 4;
+export const DEMO_SCHEMA_VERSION = 5;
 
 const GENERATED = getGeneratedBase();
 
@@ -136,6 +137,9 @@ export function buildInitialDemoState(): DemoState {
     evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
     teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
     cultureAnswers: clone(DEMO_CULTURE_ANSWERS),
+    cultureInvites: clone(DEMO_CULTURE_INVITES),
+    importedTalents: [],
+    spreadsheetImports: [],
     fitResponses: [
       ...clone(DEMO_FIT_RESPONSES),
       ...clone(GENERATED.fitResponses)
@@ -175,6 +179,8 @@ export {
   DEMO_TEAMS
 } from './companies';
 export { DEMO_CULTURE_ANSWERS } from './culture';
+export { DEMO_CULTURE_INVITES } from './culture-invites';
+export { loadExampleSpreadsheet } from './planilha-exemplo';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';
 export { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';

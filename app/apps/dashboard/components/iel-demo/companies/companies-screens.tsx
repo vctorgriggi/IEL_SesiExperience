@@ -27,7 +27,9 @@ import {
   Panel,
   PanelHeader
 } from '../shared/ui';
+import { CollapsibleSection } from '../talents/collapsible-section';
 import { CultureProfile } from './culture-profile';
+import { CultureSampleSection } from './culture-sample';
 
 export function CompaniesScreen() {
   const { state } = useIelDemo();
@@ -103,6 +105,9 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
     jobId: string;
     criterion: JobCriterion;
   } | null>(null);
+  // O botão que abre o formulário de convite está no herói, e o formulário
+  // fica na seção da amostra: quem guarda o estado é a tela que tem as duas.
+  const [inviteFormOpen, setInviteFormOpen] = useState(false);
   const iel = routes.dashboard.iel;
   const company = getCompany(companyId);
 
@@ -136,31 +141,69 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
     ? jobs.find((job) => job.id === clarificationTarget.jobId)
     : null;
 
+  const ehAnalista = persona.kind === 'analista';
+
   return (
     <div className="space-y-6">
-      <IelPageHeader
-        eyebrow={`${company.sector} · ${company.location}`}
-        title={company.name}
-        description={company.institutionalDescription}
-        actions={
-          persona.kind === 'analista' ? (
-            <Link href={iel.companies.index}>
-              <Button variant="outline">Voltar para empresas</Button>
-            </Link>
-          ) : null
-        }
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip>{`Contato: ${company.contactName}`}</Chip>
-          <Chip>{company.contactEmail}</Chip>
-          <span className="text-xs text-muted-foreground">
-            Origem: Contexto da empresa — demonstração · atualizado em{' '}
-            {formatDate(company.updatedAt)}
-          </span>
-        </div>
-      </IelPageHeader>
+      {ehAnalista ? (
+        <Link
+          href={iel.companies.index}
+          className="inline-flex text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Voltar para empresas
+        </Link>
+      ) : null}
 
-      <CultureProfile companyId={company.id} />
+      {/*
+        O herói da tela é a leitura da empresa: a pergunta ("como se trabalha
+        nesta empresa?"), o número ("responderam X de N") e o verbo ("cobrar
+        quem falta"). Contato, descrição institucional e data de atualização
+        não ajudam a responder isso e desceram para a seção recolhida.
+      */}
+      <CultureProfile
+        companyId={company.id}
+        onInvite={
+          ehAnalista
+            ? () => {
+                setInviteFormOpen(true);
+                document
+                  .getElementById('convidar-colaboradores')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            : null
+        }
+      />
+
+      {ehAnalista ? (
+        <div
+          id="convidar-colaboradores"
+          className="scroll-mt-6"
+        >
+          <CultureSampleSection
+            companyId={company.id}
+            formOpen={inviteFormOpen}
+            onFormOpenChange={setInviteFormOpen}
+          />
+        </div>
+      ) : null}
+
+      <CollapsibleSection
+        title="Contato"
+        meta={`${company.sector} · ${company.location} · atualizado em ${formatDate(company.updatedAt)}`}
+      >
+        <div className="space-y-2">
+          <p className="iel-prose text-sm leading-relaxed text-muted-foreground">
+            {company.institutionalDescription}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip>{`Contato: ${company.contactName}`}</Chip>
+            <Chip>{company.contactEmail}</Chip>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Origem: Contexto da empresa — demonstração.
+          </p>
+        </div>
+      </CollapsibleSection>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel>

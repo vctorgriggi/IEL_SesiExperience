@@ -19,6 +19,10 @@ import {
   type CultureQuestion,
   type CultureRespondent
 } from '../analysis/culture';
+import {
+  getSuggestedSampleSize,
+  type CultureInviteRole
+} from '../analysis/culture-invites';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
   ALL_COMPANIES,
@@ -39,6 +43,7 @@ import type {
   Company,
   CriterionRef,
   CriterionState,
+  CultureRespondentInvite,
   CultureSuggestion,
   DataSourceId,
   DemoState,
@@ -51,11 +56,14 @@ import type {
   JobCriterion,
   Persona,
   Referral,
+  SpreadsheetImportRecord,
   Talent,
   TalentPreference,
   Team,
   TeamCondition
 } from '../types';
+
+export { getSuggestedSampleSize };
 
 export const EXTERNAL_STAGE_LABEL: Record<ExternalStage, string> = {
   inscrito: 'Inscrito',
@@ -107,8 +115,19 @@ export function getJob(jobId: string): Job | null {
   return ALL_JOBS.find((job) => job.id === jobId) ?? null;
 }
 
-export function getTalent(talentId: string): Talent | null {
-  return ALL_TALENTS.find((talent) => talent.id === talentId) ?? null;
+/**
+ * O talento, no catálogo ou entre os que chegaram por importação (M6).
+ *
+ * `state` é opcional para não quebrar as chamadas que só precisam do catálogo
+ * estático. Sem ele, quem entrou pela planilha não é encontrado — por isso
+ * toda leitura que possa alcançar uma candidatura importada passa o estado.
+ */
+export function getTalent(talentId: string, state?: DemoState): Talent | null {
+  return (
+    ALL_TALENTS.find((talent) => talent.id === talentId) ??
+    state?.importedTalents?.find((talent) => talent.id === talentId) ??
+    null
+  );
 }
 
 export function getTeam(state: DemoState, teamId: string): Team | null {
@@ -1006,7 +1025,7 @@ export function getFitReading(
   talentId: string
 ): FitReadingEntry[] {
   const team = getTeam(state, job.teamId);
-  const talent = getTalent(talentId);
+  const talent = getTalent(talentId, state);
 
   return FIT_AXES.map((axis) => {
     const weight = getAxisWeight(job, axis.id, state);
@@ -1311,7 +1330,7 @@ export function getTalentTransparency(
     records: evidences.filter(
       (evidence) => evidence.visibility === 'compartilhavel'
     ),
-    preferences: getTalent(talentId)?.preferences ?? [],
+    preferences: getTalent(talentId, state)?.preferences ?? [],
     sharedWith,
     internalCount: evidences.filter(
       (evidence) => evidence.visibility === 'interno'
@@ -1609,7 +1628,7 @@ export function getJobRanking(
       const adherence = getAdherence(state, application.id);
       return {
         application,
-        talent: getTalent(application.talentId),
+        talent: getTalent(application.talentId, state),
         technicalMatch: application.technicalMatch ?? null,
         adherence: adherence ?? {
           byAxis: [],
@@ -1671,4 +1690,161 @@ export function getRescueCandidates(
       entry.adherence.total !== null &&
       entry.adherence.total >= ADHERENCE_THRESHOLD
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * Amostra de colaboradores da empresa (M2, R2)
+ * ------------------------------------------------------------------ */
+
+/** Convites daquela empresa, na ordem em que foram enviados. */
+export function getCultureInvites(
+  state: DemoState,
+  companyId: string
+): CultureRespondentInvite[] {
+  return (state.cultureInvites ?? []).filter(
+    (invite) => invite.companyId === companyId
+  );
+}
+
+export type CultureInviteStatus = 'aberto' | 'respondido' | 'expirado';
+
+export type CultureSampleRoleProgress = {
+  answered: number;
+  total: number;
+};
+
+export type CultureSampleProgress = {
+  answered: number;
+  total: number;
+  /** Prazo que a tela mostra: o do convite em aberto que vence por último. */
+  deadline: string | null;
+  /** Dias até o prazo, contra a data de referência. Negativo quando venceu. */
+  daysLeft: number | null;
+  overdue: boolean;
+  byRole: Record<CultureInviteRole, CultureSampleRoleProgress>;
+  requiredForProfile: typeof MIN_TEAM_RESPONSES;
+  /** A consulta já sustenta o perfil da empresa? */
+  ready: boolean;
+};
+
+function readInviteStatus(
+  invite: CultureRespondentInvite,
+  referenceDate: string
+): CultureInviteStatus {
+  if (invite.answeredAt) return 'respondido';
+  return referenceDate > invite.expiresAt ? 'expirado' : 'aberto';
+}
+
+/**
+ * "N de M responderam", com prazo e leitura por papel (M2).
+ *
+ * O prazo exibido é o do convite **em aberto** que vence por último, e não o
+ * maior prazo de todos: a consulta pode sair em levas — três pessoas
+ * acrescentadas depois têm prazo próprio —, e mostrar o prazo de quem já
+ * respondeu faria a tela cobrar um vencimento que não cobra mais ninguém.
+ * Sem nenhum convite em aberto, o prazo é o último que existiu, só para a
+ * tela ter data; `overdue` já é falso porque não há o que esperar.
+ *
+ * `ready` olha para as respostas de **equipe**, não para o total: é o piso de
+ * `MIN_TEAM_RESPONSES` que impede tratar duas pessoas como "a equipe", e é
+ * ele que `getCompanyCultureProfile` usa para fechar ou não o perfil.
+ */
+export function getCultureSampleProgress(
+  state: DemoState,
+  companyId: string
+): CultureSampleProgress {
+  const invites = getCultureInvites(state, companyId);
+
+  const byRole: Record<CultureInviteRole, CultureSampleRoleProgress> = {
+    gestao: { answered: 0, total: 0 },
+    rh: { answered: 0, total: 0 },
+    equipe: { answered: 0, total: 0 }
+  };
+
+  let answered = 0;
+  let latestOpenDeadline: string | null = null;
+  let latestDeadline: string | null = null;
+
+  for (const invite of invites) {
+    byRole[invite.role].total += 1;
+    if (invite.answeredAt) {
+      byRole[invite.role].answered += 1;
+      answered += 1;
+    } else if (!latestOpenDeadline || invite.expiresAt > latestOpenDeadline) {
+      latestOpenDeadline = invite.expiresAt;
+    }
+    if (!latestDeadline || invite.expiresAt > latestDeadline) {
+      latestDeadline = invite.expiresAt;
+    }
+  }
+
+  const deadline = latestOpenDeadline ?? latestDeadline;
+
+  return {
+    answered,
+    total: invites.length,
+    deadline,
+    daysLeft: deadline ? daysBetween(DEMO_REFERENCE_DATE, deadline) : null,
+    overdue:
+      latestOpenDeadline !== null && DEMO_REFERENCE_DATE > latestOpenDeadline,
+    byRole,
+    requiredForProfile: MIN_TEAM_RESPONSES,
+    ready: byRole.equipe.answered >= MIN_TEAM_RESPONSES
+  };
+}
+
+/**
+ * O convite como a tela do colaborador pode vê-lo (PRODUTO.md §5).
+ *
+ * É deliberadamente magro. Quem abre o link responde sobre o próprio ambiente
+ * de trabalho: não precisa — e não pode — ver quem mais foi convidado, quem já
+ * respondeu ou o que responderam. Nem o e-mail para o qual o convite foi
+ * enviado volta daqui; o token não o carrega, e devolvê-lo transformaria um
+ * link vazado em vazamento de dado pessoal.
+ *
+ * O primeiro nome fica porque a tela precisa cumprimentar quem chegou e
+ * confirmar que o link é mesmo dela; o nome completo não acrescenta nada a
+ * isso.
+ */
+export type CultureInviteView = {
+  inviteId: string;
+  firstName: string;
+  companyName: string;
+  expiresAt: string;
+  daysLeft: number;
+  status: CultureInviteStatus;
+};
+
+export function getInviteByToken(
+  state: DemoState,
+  token: string
+): CultureInviteView | null {
+  const invite = (state.cultureInvites ?? []).find(
+    (entry) => entry.token === token
+  );
+  if (!invite) return null;
+
+  return {
+    inviteId: invite.id,
+    firstName: invite.name.split(' ')[0] ?? invite.name,
+    companyName: getCompany(invite.companyId)?.name ?? invite.companyId,
+    expiresAt: invite.expiresAt,
+    daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
+    status: readInviteStatus(invite, DEMO_REFERENCE_DATE)
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Importação de planilha (M6)
+ * ------------------------------------------------------------------ */
+
+/** Importações já aplicadas naquela vaga, da mais recente para a mais antiga. */
+export function getImportHistory(
+  state: DemoState,
+  jobId: string
+): SpreadsheetImportRecord[] {
+  return (state.spreadsheetImports ?? [])
+    .filter((record) => record.jobId === jobId)
+    .slice()
+    .reverse();
 }

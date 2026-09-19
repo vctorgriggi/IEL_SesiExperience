@@ -1,18 +1,26 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useId, useState, type ReactNode } from 'react';
 import type { CoverageSummary } from '@/features/iel-demo/analysis/criterion-states';
-import { InformationCircleIcon } from '@hugeicons/core-free-icons';
+import { COPY, type EstadoDeLeitura } from '@/features/iel-demo/copy';
+import {
+  ArrowDown01Icon,
+  InformationCircleIcon
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 
 import { cn } from '@workspace/ui';
 
 /**
- * Definição de um termo, disponível sem ocupar uma linha de texto.
+ * Explicação de um termo, disponível sem ocupar uma linha de texto.
  *
  * O domínio tem distinções que precisam estar ao alcance (cobertura não é
  * afinidade, etapa de origem não é etapa do IEL), mas escrever cada uma
- * delas como parágrafo abaixo do título transforma a tela num manual.
+ * delas como parágrafo abaixo do título transforma a tela num manual. Aqui
+ * cabe uma frase curta; método e ressalva vivem no painel `HowItWorks`, uma
+ * vez por tela.
  */
-export function InfoHint({
+export function Explain({
   label,
   className
 }: {
@@ -39,6 +47,8 @@ export function InfoHint({
   );
 }
 
+export { Explain as InfoHint };
+
 /** Título de bloco: uma linha, com a definição atrás de um ícone. */
 export function SectionTitle({
   children,
@@ -57,7 +67,7 @@ export function SectionTitle({
       )}
     >
       {children}
-      {hint ? <InfoHint label={hint} /> : null}
+      {hint ? <Explain label={hint} /> : null}
     </h2>
   );
 }
@@ -333,7 +343,7 @@ export function SourceBreakdownBar({
         <span className="font-semibold text-foreground">
           {breakdown.length} {breakdown.length === 1 ? 'fonte' : 'fontes'}
         </span>
-        <InfoHint
+        <Explain
           className="ml-1"
           label="Em produção, cada fonte é um sistema ou etapa diferente: consultá-las separadamente e juntar o resultado é o trabalho manual que a central substitui."
         />
@@ -459,7 +469,7 @@ export function PanelHeader({
         {eyebrow ? <p className="iel-eyebrow">{eyebrow}</p> : null}
         <h2 className="iel-display mt-1 flex items-center gap-1.5 text-[0.9375rem] leading-snug text-foreground">
           {title}
-          {hint ? <InfoHint label={hint} /> : null}
+          {hint ? <Explain label={hint} /> : null}
         </h2>
         {meta ? (
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -497,6 +507,30 @@ export type HeroFigure = {
 };
 
 /**
+ * No máximo três números no herói, garantidos pelo tipo.
+ *
+ * Cinco números do mesmo tamanho é a fileira de cartões de indicador de
+ * novo: ninguém sabe qual dos cinco importa, e a tela deixa de ter assunto.
+ * O limite é uma tupla, e não uma validação em tempo de execução, porque a
+ * quarta figura precisa falhar antes de chegar à tela.
+ */
+export type HeroFigures =
+  | readonly [HeroFigure]
+  | readonly [HeroFigure, HeroFigure]
+  | readonly [HeroFigure, HeroFigure, HeroFigure];
+
+const HERO_DESCRIPTION_MAX = 90;
+
+function avisarDescricaoLonga(description: ReactNode): void {
+  if (process.env.NODE_ENV === 'production') return;
+  if (typeof description !== 'string') return;
+  if (description.length <= HERO_DESCRIPTION_MAX) return;
+  console.warn(
+    `[iel] A frase de contexto do herói tem ${description.length} caracteres; o limite de leitura é ${HERO_DESCRIPTION_MAX}: "${description}"`
+  );
+}
+
+/**
  * Área-herói de uma tela.
  *
  * Não é mais um cartão na grade: é o que se vê primeiro, e cada tela tem o
@@ -511,6 +545,7 @@ export function Hero({
   eyebrow,
   title,
   description,
+  verdict,
   figures,
   aside,
   actions,
@@ -521,14 +556,19 @@ export function Hero({
   as?: 'h1' | 'h2';
   eyebrow?: ReactNode;
   title: ReactNode;
+  /** Uma frase de contexto, de até 90 caracteres. */
   description?: ReactNode;
-  figures?: HeroFigure[];
+  /** A frase que interpreta o número principal, logo abaixo do título. */
+  verdict?: ReactNode;
+  figures?: HeroFigures;
   /** Slot do instrumento principal, à direita em telas largas. */
   aside?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
   className?: string;
 }) {
+  avisarDescricaoLonga(description);
+
   return (
     <Panel
       tone="hero"
@@ -543,15 +583,12 @@ export function Hero({
               {title}
             </Title>
             {description ? (
-              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              <p className="iel-prose text-sm leading-relaxed text-muted-foreground">
                 {description}
               </p>
             ) : null}
+            {verdict ? <div className="pt-1">{verdict}</div> : null}
           </div>
-
-          {actions ? (
-            <div className="flex flex-wrap items-center gap-2">{actions}</div>
-          ) : null}
 
           {figures && figures.length > 0 ? (
             /*
@@ -596,6 +633,10 @@ export function Hero({
               ))}
             </dl>
           ) : null}
+
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          ) : null}
         </div>
 
         {aside ? (
@@ -607,5 +648,216 @@ export function Hero({
 
       {children}
     </Panel>
+  );
+}
+
+/**
+ * Painel "Como funciona", recolhido, um por tela.
+ *
+ * O design manda que explicação não seja parágrafo inline: ou vira um `?`
+ * (`Explain`), ou vem para cá. É aqui que moram as ressalvas de método — não
+ * é teste psicométrico, não produz nota, o perfil é média da amostra — que
+ * antes se repetiam em cada bloco e transformavam a tela num manual.
+ */
+export function HowItWorks({
+  title = 'Como funciona',
+  children,
+  className
+}: {
+  title?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const painelId = useId();
+
+  return (
+    <section className={cn('border-t border-border pt-3', className)}>
+      <button
+        type="button"
+        aria-expanded={aberto}
+        aria-controls={painelId}
+        onClick={() => setAberto((atual) => !atual)}
+        className="iel-interactive flex w-full items-center gap-2 rounded-[var(--control-radius)] px-1 py-2 text-left text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+      >
+        <HugeiconsIcon
+          icon={ArrowDown01Icon}
+          size={16}
+          aria-hidden="true"
+          className={cn(
+            'shrink-0 text-muted-foreground transition-transform',
+            aberto && 'rotate-180'
+          )}
+        />
+        {title}
+      </button>
+      <div
+        id={painelId}
+        hidden={!aberto}
+        className="iel-prose space-y-2 px-1 pb-2 pt-1 text-sm leading-relaxed text-muted-foreground"
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+const ESTADO_DOT_CLASS: Record<EstadoDeLeitura, string> = {
+  combina: 'bg-success',
+  difere: 'bg-destructive',
+  faltando: 'bg-warning',
+  'sem-resposta': 'bg-muted-foreground'
+};
+
+const ESTADO_TEXT_CLASS: Record<EstadoDeLeitura, string> = {
+  combina: 'text-success',
+  difere: 'text-destructive',
+  faltando: 'text-warning',
+  'sem-resposta': 'text-muted-foreground'
+};
+
+/**
+ * Resumo → detalhe: o padrão de toda lista da Central.
+ *
+ * A linha diz o suficiente para decidir se vale abrir — nome, estado em
+ * palavra e uma frase — e o resto fica atrás de um clique. Cor nunca é o
+ * único canal: o estado vem escrito ao lado do ponto colorido, porque quem
+ * não distingue verde de vermelho continua precisando da informação.
+ */
+export function SummaryRow({
+  title,
+  status,
+  summary,
+  children,
+  defaultOpen = false,
+  className
+}: {
+  title: ReactNode;
+  status: EstadoDeLeitura;
+  /** Uma frase. Se precisa de duas, a segunda é detalhe. */
+  summary?: ReactNode;
+  children?: ReactNode;
+  defaultOpen?: boolean;
+  className?: string;
+}) {
+  const [aberto, setAberto] = useState(defaultOpen);
+  const detalheId = useId();
+  const temDetalhe = Boolean(children);
+
+  const cabecalho = (
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className="text-sm font-medium text-foreground">{title}</span>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-medium',
+            ESTADO_TEXT_CLASS[status]
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              'size-1.5 shrink-0 rounded-full',
+              ESTADO_DOT_CLASS[status]
+            )}
+          />
+          {COPY.estado(status)}
+        </span>
+      </span>
+      {summary ? (
+        <span className="iel-prose text-xs leading-relaxed text-muted-foreground">
+          {summary}
+        </span>
+      ) : null}
+    </span>
+  );
+
+  return (
+    <div className={cn('border-b border-border last:border-0', className)}>
+      {temDetalhe ? (
+        <button
+          type="button"
+          aria-expanded={aberto}
+          aria-controls={detalheId}
+          onClick={() => setAberto((atual) => !atual)}
+          className="iel-interactive flex w-full items-start gap-3 px-1 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          {cabecalho}
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            size={16}
+            aria-hidden="true"
+            className={cn(
+              'mt-1 shrink-0 text-muted-foreground transition-transform',
+              aberto && 'rotate-180'
+            )}
+          />
+        </button>
+      ) : (
+        <div className="flex w-full items-start gap-3 px-1 py-3">
+          {cabecalho}
+        </div>
+      )}
+      {temDetalhe ? (
+        <div
+          id={detalheId}
+          hidden={!aberto}
+          className="px-1 pb-4 pt-1"
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * O número principal com a frase que o interpreta.
+ *
+ * "49%" isolado é dado bruto; "49% — combina com a empresa" é a resposta que
+ * a tela existe para dar. Ausência de resposta não vira zero: vem sem
+ * número, em cinza, dizendo que a pessoa ainda não respondeu.
+ */
+export function Verdict({
+  total,
+  threshold,
+  size = 'md',
+  caption,
+  className
+}: {
+  /** 0..100, ou `null` quando a pessoa ainda não respondeu. */
+  total: number | null;
+  threshold: number;
+  size?: 'md' | 'lg';
+  /** Linha de apoio abaixo da frase: denominador, prazo, origem. */
+  caption?: ReactNode;
+  className?: string;
+}) {
+  const estado = COPY.verdictState(total, threshold);
+
+  return (
+    <div className={cn('space-y-1', className)}>
+      <p
+        className={cn(
+          'iel-figure leading-none',
+          size === 'lg' ? 'text-[3rem]' : 'text-[2.25rem]',
+          ESTADO_TEXT_CLASS[estado]
+        )}
+      >
+        {total === null ? '—' : `${Math.round(total)}%`}
+      </p>
+      <p
+        className={cn(
+          'font-medium',
+          size === 'lg' ? 'text-base' : 'text-sm',
+          ESTADO_TEXT_CLASS[estado]
+        )}
+      >
+        {COPY.verdictSentence(total, threshold)}
+      </p>
+      {caption ? (
+        <p className="text-xs text-muted-foreground">{caption}</p>
+      ) : null}
+    </div>
   );
 }

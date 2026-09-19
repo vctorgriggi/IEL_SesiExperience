@@ -18,30 +18,40 @@ test.describe('Central de Seleção IEL — demonstração', () => {
   test('percorre a jornada completa da demonstração', async ({ page }) => {
     // Cena 1 — a visão geral aponta onde agir.
     await expect(
-      page.getByRole('heading', { name: 'Visão geral', exact: true })
+      page.getByRole('heading', {
+        name: 'O que precisa de mim hoje?',
+        exact: true
+      })
     ).toBeVisible();
+    await expect(page.getByText('Dados fictícios').first()).toBeVisible();
+    // A tela é uma fila de trabalho: o que precisa continuar visível é a
+    // lista do que resolver agora, não o tamanho da base.
     await expect(
-      page.getByText('Dados fictícios — demonstração').first()
+      page.getByRole('heading', { name: 'Para resolver agora' })
     ).toBeVisible();
-    // A base tem volume: o texto anuncia centenas de candidaturas, não as 10
-    // do roteiro. O que precisa continuar visível é o rótulo da base demo.
-    await expect(page.getByText('Base demo:', { exact: false })).toBeVisible();
 
     await page
       .getByRole('listitem')
       .filter({ hasText: 'Assistente de Logística' })
-      .getByRole('button', { name: 'Abrir seleção' })
+      .getByRole('button', { name: 'Abrir a vaga' })
       .first()
       .click();
 
     // Cena 2 — mesa de seleção com candidaturas de fontes diferentes.
     await expect(
       page.getByRole('heading', {
-        name: /Mesa de seleção — Assistente de Logística/
+        name: 'Assistente de Logística',
+        exact: true
       })
     ).toBeVisible();
-    await expect(page.getByText('Ana Ribeiro').first()).toBeVisible();
-    await expect(page.getByText('Bruno Costa').first()).toBeVisible();
+    // As duas candidaturas aparecem no detalhamento por critério, que é a
+    // aba aberta por padrão abaixo da decisão de envio.
+    await expect(
+      page.getByRole('row').filter({ hasText: 'Ana Ribeiro' }).first()
+    ).toBeVisible();
+    await expect(
+      page.getByRole('row').filter({ hasText: 'Bruno Costa' }).first()
+    ).toBeVisible();
 
     // A conclusão abre a evidência de origem.
     await page
@@ -68,9 +78,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     // Cena 3 — comparação de Ana e Bruno.
     await page.locator('#compare-CAND-01').check();
     await page.locator('#compare-CAND-02').check();
-    await page
-      .getByRole('button', { name: 'Comparar selecionados (2)' })
-      .click();
+    await page.getByRole('button', { name: 'Comparar (2)' }).click();
     await expect(
       page.getByRole('heading', { name: 'Comparação entre candidatos' })
     ).toBeVisible();
@@ -101,7 +109,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     await dialog.getByRole('button', { name: 'Enviar solicitação' }).click();
 
     // A experiência do destinatário responde com o texto preparado.
-    await page.getByRole('link', { name: 'Pendências' }).click();
+    await page.getByRole('link', { name: 'Perguntas pendentes' }).click();
     const request = page
       .getByRole('listitem')
       .filter({ hasText: 'Quem poderá orientar a pessoa' })
@@ -186,9 +194,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
       .filter({ hasText: 'Ana Ribeiro' })
       .getByRole('button', { name: 'Adicionar à lista' })
       .click();
-    await page
-      .getByRole('button', { name: /Preparar encaminhamento \(1\)/ })
-      .click();
+    await page.getByRole('button', { name: 'Enviar 1 currículo' }).click();
     await expect(
       page.getByRole('heading', { name: 'Preparação do encaminhamento' })
     ).toBeVisible();
@@ -269,7 +275,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     await page.locator('#compare-CAND-03').check();
     await expect(page.locator('#compare-CAND-04')).toBeDisabled();
     await expect(
-      page.getByRole('button', { name: 'Comparar selecionados (3)' })
+      page.getByRole('button', { name: 'Comparar (3)' })
     ).toBeVisible();
 
     // Abrir um perfil e voltar mantém a seleção.
@@ -278,10 +284,10 @@ test.describe('Central de Seleção IEL — demonstração', () => {
       .filter({ hasText: 'Ana Ribeiro' })
       .getByRole('link', { name: 'Ver perfil consolidado' })
       .click();
+    // A pessoa abre lida no contexto desta vaga; a asserção fica no caminho
+    // de volta, que é o que esta cena guarda.
     await expect(
-      page.getByText(
-        'Análise para Assistente de Logística — Cerrado Distribuição'
-      )
+      page.getByRole('link', { name: 'Voltar para a vaga' })
     ).toBeVisible();
     await page.getByRole('link', { name: 'Voltar para a vaga' }).click();
     await expect(page.locator('#compare-CAND-01')).toBeChecked();
@@ -433,5 +439,108 @@ test.describe('Central de Seleção IEL — demonstração', () => {
     await expect(
       page.getByRole('heading', { name: 'O que está registrado sobre você' })
     ).toBeVisible();
+  });
+
+  /**
+   * A entrada de hoje é uma planilha exportada da Empregare (M6).
+   *
+   * O teste usa o atalho "Usar planilha de exemplo" porque o que precisa
+   * ficar guardado é o percurso — conferir antes de gravar e ver as pessoas
+   * na vaga —, não o diálogo de arquivo do sistema operacional.
+   */
+  test('importa a planilha de exemplo e os candidatos aparecem na vaga', async ({
+    page
+  }) => {
+    await page.goto('/iel/vagas/VAG-01/importar');
+    await expect(
+      page.getByRole('heading', { name: 'Entrou tudo certo?' })
+    ).toBeVisible();
+
+    await page
+      .getByRole('button', { name: 'Usar planilha de exemplo' })
+      .click();
+
+    // Passo 2: o plano é mostrado antes de qualquer gravação.
+    await expect(
+      page.getByRole('heading', { name: 'O que vai entrar' })
+    ).toBeVisible();
+    await expect(page.getByText('8 pessoas novas')).toBeVisible();
+    await expect(
+      page.getByText('1 requisito da vaga atualizado')
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: 'Confirmar importação' }).click();
+
+    // Passo 3: confirmação, com a contagem do que entrou.
+    await expect(page.getByRole('heading', { name: 'Pronto' })).toBeVisible();
+    await expect(
+      page.getByText(
+        '10 pessoas novas entraram na vaga Assistente de Logística'
+      )
+    ).toBeVisible();
+
+    await page.getByRole('link', { name: 'Ver a vaga' }).click();
+    // Quem entrou pela planilha chega à mesa da vaga. A asserção é de
+    // presença, e não de visibilidade, porque a lista da mesa recolhe grupos
+    // e o que este teste guarda é a chegada do registro.
+    await expect(page.getByText('Marcos Vieira').first()).toBeAttached();
+  });
+
+  /**
+   * M2: a consulta aos colaboradores fecha o circuito.
+   *
+   * A empresa cobra quem falta olhando um número — "responderam X de N" — e
+   * esse número só avança quando alguém responde pelo próprio link, sem
+   * login. O token abaixo é o de um convite em aberto da Cerrado
+   * (`fixtures/culture-invites.ts`); se a semente do produto ou a derivação
+   * do token mudarem, este teste avisa.
+   */
+  test('colaborador responde pelo link e o contador da empresa avança', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await page.goto('/iel/empresas/EMP-01');
+    await expect(
+      page.getByRole('heading', { name: 'Cerrado Distribuição' })
+    ).toBeVisible();
+    // O número principal do herói: quantas respostas chegaram, de quantas
+    // foram pedidas.
+    await expect(page.getByText('7 de 10', { exact: true })).toBeVisible();
+
+    // O link do colaborador: só o token opaco, sem login e sem dado pessoal.
+    await page.goto('/iel/consulta/418c781c386bb301');
+    await expect(
+      page.getByRole('heading', { name: 'Como é trabalhar aqui?' })
+    ).toBeVisible();
+
+    // Sem rolagem horizontal na largura de celular.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    // Passo 0: sem aceite o questionário não abre (LGPD, art. 7º, I).
+    await expect(page.getByRole('button', { name: 'Começar' })).toBeDisabled();
+    await page.locator('#culture-consent').check();
+    await page.getByRole('button', { name: 'Começar' }).click();
+
+    for (let step = 1; step <= 5; step += 1) {
+      await expect(page.getByText(`${step} de 5`)).toBeVisible();
+      await page.getByRole('radio').first().click();
+      await page
+        .getByRole('button', {
+          name: step === 5 ? 'Enviar respostas' : 'Próxima'
+        })
+        .click();
+    }
+
+    await expect(
+      page.getByRole('heading', { name: 'Resposta registrada' })
+    ).toBeVisible();
+
+    // A resposta entra agregada: a empresa vê o contador, não quem respondeu.
+    await page.goto('/iel/empresas/EMP-01');
+    await expect(page.getByText('8 de 10', { exact: true })).toBeVisible();
   });
 });

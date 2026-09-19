@@ -8,6 +8,7 @@ import {
 } from '@/features/iel-demo/analysis/candidate-questionnaire';
 import type { CultureOptionValue } from '@/features/iel-demo/analysis/culture';
 import type { FitAxisId } from '@/features/iel-demo/analysis/fit-axes';
+import { AXIS_LABEL } from '@/features/iel-demo/copy';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getApplication,
@@ -141,17 +142,21 @@ export function FitQuestionnaireScreen({
         segmento e turno. Nada além disso sai de `getCandidateJobView`.
       */}
       <header className="space-y-2 border-b border-border pb-4">
-        <p className="iel-eyebrow">Questionário de fit</p>
+        <p className="iel-eyebrow">Questionário da vaga</p>
         <h1 className="iel-display text-[1.375rem] leading-tight text-foreground">
-          {jobView.activity}
+          Como você prefere trabalhar?
         </h1>
+        <p className="text-sm font-medium text-foreground">
+          Vaga de {jobView.activity}
+        </p>
         <div className="flex flex-wrap items-center gap-1.5">
           <Chip>{jobView.location}</Chip>
           <Chip>{jobView.sector}</Chip>
           <Chip>{jobView.shift}</Chip>
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          O nome da empresa aparece para você só a partir da entrevista.
+          São 5 perguntas, sem resposta certa. O nome da empresa aparece para
+          você só a partir da entrevista.
         </p>
       </header>
 
@@ -163,6 +168,12 @@ export function FitQuestionnaireScreen({
             </h2>
             <p className="mt-2 text-base leading-relaxed text-foreground">
               Você não precisa fazer mais nada agora.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              O IEL vai usar suas respostas só nesta vaga, para ver o quanto
+              você combina com o jeito de trabalhar da empresa. Se o seu
+              currículo for enviado, a empresa vê esse resultado por ponto —
+              nunca as suas respostas uma a uma.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Se quiser mudar alguma resposta, pode responder de novo: fica
@@ -265,7 +276,8 @@ export function FitQuestionnaireScreen({
                   className="iel-eyebrow"
                   aria-live="polite"
                 >
-                  {step.index + 1} de {TOTAL_QUESTIONS}
+                  {step.index + 1} de {TOTAL_QUESTIONS} ·{' '}
+                  {AXIS_LABEL[question.axisId]}
                 </p>
                 <span
                   aria-hidden="true"

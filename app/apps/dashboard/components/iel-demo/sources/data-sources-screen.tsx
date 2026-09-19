@@ -20,6 +20,7 @@ import {
   toast
 } from '@workspace/ui';
 
+import { ImportEntry } from '../import/import-entry';
 import {
   Chip,
   formatDateTime,
@@ -55,6 +56,8 @@ export function DataSourcesScreen() {
         retorno ao processo original, quando suportado. Cada conector depende de
         permissões próprias e ainda não está confirmado para o IEL.
       </Alert>
+
+      <ImportEntry />
 
       <Panel padding="none">
         <div className="overflow-x-auto">

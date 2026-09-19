@@ -357,3 +357,40 @@ body:has([data-iel-theme]) {
   background-clip: text;
   color: transparent;
 }
+
+/*
+ * Corpo de texto em 15px.
+ *
+ * O design system nasceu com 14px como tamanho de leitura, e quem lê estas
+ * telas é uma analista o dia inteiro e um candidato operacional no celular.
+ * O ajuste é no utilitário e não em cada tela porque o texto corrido está
+ * espalhado por dezenas de componentes; corrigir um a um deixaria metade
+ * para trás. Os 12 e 13px continuam existindo para apoio (legenda, origem,
+ * versalete), que é onde eles devem estar.
+ */
+body:has([data-iel-theme]) {
+  font-size: 0.9375rem;
+}
+
+[data-iel-theme] .text-sm {
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+/*
+ * Medida de linha do texto corrido.
+ *
+ * Linha longa demais faz o olho perder o começo da seguinte; 70 caracteres é
+ * o teto que a literatura de legibilidade repete e que o GOV.UK aplica. Vale
+ * só para parágrafo — tabela, lista e rótulo usam a largura que têm.
+ */
+[data-iel-theme] .iel-prose {
+  max-width: 70ch;
+}
+
+/* Apoio: legenda, origem e contagem. Cinza e menor, nunca competindo. */
+[data-iel-theme] .iel-support {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  color: hsl(var(--muted-foreground));
+}

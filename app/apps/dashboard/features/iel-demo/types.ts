@@ -3,6 +3,7 @@ import type {
   CultureOptionValue,
   CultureRespondent
 } from './analysis/culture';
+import type { CultureInviteRole } from './analysis/culture-invites';
 import type { FitAxisId } from './analysis/fit-axes';
 
 /**
@@ -143,6 +144,15 @@ export type CultureAnswer = {
   respondent: CultureRespondent;
   count: number;
   answeredAt: string;
+  /**
+   * Convite que originou esta resposta (M2).
+   *
+   * Opcional porque nem toda resposta vem de convite: a gestão responde pela
+   * própria tela da empresa, e a base demo traz respostas de equipe já
+   * agregadas. Quando existe, é o que permite marcar o convite como usado sem
+   * guardar, do lado da resposta, quem a escreveu.
+   */
+  inviteId?: string;
 };
 
 export type TeamConditionStatus = 'confirmado' | 'da-descricao' | 'a-confirmar';
@@ -517,6 +527,59 @@ export type DemoUiState = {
   overviewCompanyId: string | 'todas';
 };
 
+/**
+ * Convite a um colaborador para responder o traçado cultural da empresa (M2).
+ *
+ * A analista cadastra nome e e-mail corporativo de uma amostra da área; cada
+ * pessoa recebe um link próprio, sem login, válido por três dias. O que se
+ * guarda é o mínimo que a consulta exige — ver `analysis/culture-invites.ts`
+ * para as decisões de privacidade.
+ */
+export type CultureRespondentInvite = {
+  id: string;
+  companyId: string;
+  name: string;
+  /** E-mail corporativo. É a chave de unicidade dentro da empresa. */
+  corporateEmail: string;
+  role: CultureInviteRole;
+  /** Área da pessoa, nas palavras da empresa. Ordena a leitura, não filtra. */
+  area: string;
+  /** Opaco: 16 hexadecimais derivados do id. Nunca contém dado pessoal. */
+  token: string;
+  sentAt: string;
+  /** `sentAt` + 3 dias, ou estendido por reenvio. */
+  expiresAt: string;
+  answeredAt: string | null;
+  /** Versão do texto de aceite. `null` enquanto não houver resposta. */
+  consentVersion: string | null;
+  /** Quantas vezes o convite foi reenviado (S4). */
+  resendCount: number;
+};
+
+/**
+ * Uma importação de planilha já aplicada (M6).
+ *
+ * Guarda a impressão digital do arquivo porque é ela que torna a reimportação
+ * um no-op explícito: o analista que sobe a mesma planilha duas vezes vê "já
+ * importada", e não a base duplicada.
+ */
+export type SpreadsheetImportRecord = {
+  id: string;
+  jobId: string;
+  fingerprint: string;
+  at: string;
+  /** Origem dos registros: hoje a planilha da Empregare. */
+  origin: string;
+  sourceId: DataSourceId;
+  counts: {
+    newTalents: number;
+    newApplications: number;
+    updatedMatches: number;
+    ignored: number;
+    errors: number;
+  };
+};
+
 export type DemoState = {
   schemaVersion: number;
   personaId: string;
@@ -526,6 +589,24 @@ export type DemoState = {
   evidences: Evidence[];
   teams: Team[];
   cultureAnswers: CultureAnswer[];
+  /**
+   * Convites da amostra de colaboradores, por empresa (M2).
+   *
+   * Opcional pelo mesmo motivo de `axisWeights`: há recortes parciais de
+   * `DemoState` montados para operações que não leem convite nenhum. Ausente
+   * equivale a "nenhuma consulta foi aberta".
+   */
+  cultureInvites?: CultureRespondentInvite[];
+  /**
+   * Talentos criados por importação de planilha (M6).
+   *
+   * Ficam no estado, e não no catálogo, porque o catálogo é estático: quem
+   * chegou pela planilha chegou durante a demonstração e precisa sobreviver ao
+   * recarregamento junto do resto do progresso.
+   */
+  importedTalents?: Talent[];
+  /** Importações de planilha já aplicadas, em ordem de aplicação. */
+  spreadsheetImports?: SpreadsheetImportRecord[];
   /**
    * Pesos confirmados ou corrigidos pela empresa durante a demonstração,
    * por vaga. Ficam no estado, e não na fixture, porque a vaga é catálogo

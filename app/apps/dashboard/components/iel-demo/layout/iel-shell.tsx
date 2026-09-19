@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { COPY } from '@/features/iel-demo/copy';
 import { DEMO_PERSONAS } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -71,17 +72,17 @@ function useNavItems(): NavItem[] {
     { href: iel.companies.index, label: 'Empresas', icon: Building01Icon },
     {
       href: iel.clarifications.index,
-      label: 'Pendências',
+      label: COPY.questions.label,
       icon: Message01Icon,
       badge: openClarifications
     },
     {
       href: iel.referrals.index,
-      label: 'Encaminhamentos',
+      label: COPY.referral.label,
       icon: SentIcon,
       badge: referrals
     },
-    { href: iel.dataSources, label: 'Fontes de dados', icon: Database01Icon }
+    { href: iel.dataSources, label: COPY.sources.label, icon: Database01Icon }
   ];
 }
 
@@ -119,12 +120,7 @@ function DemoBar() {
             aria-hidden="true"
             className="size-1.5 shrink-0 rounded-full bg-warning"
           />
-          <span className="font-medium text-foreground">
-            Dados fictícios — demonstração.
-          </span>
-          <span className="hidden truncate sm:inline">
-            Nenhuma mensagem é enviada e nenhum sistema externo é alterado.
-          </span>
+          <span className="font-medium text-foreground">Dados fictícios</span>
         </p>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -132,7 +128,7 @@ function DemoBar() {
             htmlFor="demo-persona"
             className="text-xs text-muted-foreground"
           >
-            Visualizar como
+            Ver como
           </label>
           <FilterNativeSelect
             id="demo-persona"
@@ -300,7 +296,7 @@ function DemoBar() {
                 href={iel.clarifications.index}
                 onClick={() => setShowScript(false)}
               >
-                Pendências
+                Perguntas pendentes
               </Link>{' '}
               e incorporar a resposta.
             </li>
@@ -430,6 +426,112 @@ function ShortScript({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
+/**
+ * O método, explicado uma vez para o produto inteiro.
+ *
+ * Antes, cada tela repetia suas ressalvas ("não é teste psicométrico", "o
+ * perfil é média da amostra") em parágrafo inline, e o resultado era uma
+ * tela que parecia um manual. As ressalvas continuam obrigatórias — são o
+ * que impede alguém de ler o percentual como nota de pessoa —, só que agora
+ * moram num lugar só, alcançável de qualquer tela.
+ */
+function ComoFuncionaGlobal() {
+  const [aberto, setAberto] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 px-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
+        onClick={() => setAberto(true)}
+      >
+        Como funciona
+      </Button>
+
+      <Dialog
+        visible={aberto}
+        onHide={() => setAberto(false)}
+        size="lg"
+        header="Como funciona"
+        description="O método, em seis pontos."
+        footer={
+          <Button
+            variant="ghost"
+            onClick={() => setAberto(false)}
+          >
+            Fechar
+          </Button>
+        }
+      >
+        <div className="iel-prose space-y-4 text-sm leading-relaxed text-muted-foreground">
+          <div>
+            <p className="font-medium text-foreground">
+              O percentual é sobre a empresa, não sobre a vaga.
+            </p>
+            <p>
+              Ele compara o que a empresa pratica no dia a dia com o que a
+              pessoa procura, em cinco pontos. Os requisitos técnicos da vaga
+              são a outra coluna, e vêm prontos do sistema de vagas.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground">
+              Como a empresa trabalha é a média de quem trabalha nela.
+            </p>
+            <p>
+              Não é a resposta de uma pessoa do RH: é a média das respostas de
+              colaboradores de áreas e níveis diferentes. Quando a equipe
+              responde pouco, o ponto fica em aberto e não entra na conta.
+              Quando gestão e equipe respondem diferente, a diferença aparece ao
+              lado da média.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground">
+              O mínimo é 35%, e quem decide é uma pessoa.
+            </p>
+            <p>
+              Abaixo disso a pessoa não é considerada compatível, mas continua
+              visível e marcada: o corte é do IEL, serve para organizar a
+              leitura e não descarta ninguém sozinho.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground">
+              Não é teste psicológico e não produz nota.
+            </p>
+            <p>
+              São cinco perguntas sobre preferências de trabalho no cotidiano.
+              Nada de personalidade, saúde, família, religião ou opinião. O
+              número não prevê desempenho nem qualifica ninguém.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground">
+              Os resumos são montados por regra fixa.
+            </p>
+            <p>
+              Nenhuma etapa do caminho depende de serviço cobrado por candidato.
+              Inteligência artificial paga existe como camada opcional,
+              desligada por padrão, e nunca no caminho principal.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground">
+              O candidato não vê o nome da empresa.
+            </p>
+            <p>
+              Antes da entrevista ele vê atividade, localidade, segmento e
+              turno. O nome só aparece quando a empresa o chama.
+            </p>
+          </div>
+        </div>
+      </Dialog>
+    </>
+  );
+}
+
 function BrandMark() {
   return (
     <Link
@@ -549,8 +651,11 @@ export function IelShell({ children }: { children: ReactNode }) {
               </span>
             </>
           ) : null}
-          <span className="ml-auto text-[11px] text-sidebar-foreground/50">
-            {persona.label}
+          <span className="ml-auto flex items-center gap-3">
+            <span className="text-[11px] text-sidebar-foreground/50">
+              {persona.label}
+            </span>
+            <ComoFuncionaGlobal />
           </span>
         </div>
         <div className="mx-auto w-full max-w-[1500px] px-4">

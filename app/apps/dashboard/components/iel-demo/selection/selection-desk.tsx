@@ -3,16 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
+import { COPY } from '@/features/iel-demo/copy';
 import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  CANDIDATE_FILTER_LABEL,
   CLARIFICATION_STATE_LABEL,
   filterApplicationsByAnalysis,
   getApplication,
   getApplicationsByJob,
-  getCandidateFilterCounts,
   getClarificationsByJob,
   getCompany,
   getComparisonSelection,
@@ -26,9 +25,7 @@ import {
   getSourceBreakdown,
   getTalent,
   getTeam,
-  JOB_STAGE_LABEL,
-  REFERRAL_LIMIT,
-  RESCUE_TECHNICAL_CEILING
+  REFERRAL_LIMIT
 } from '@/features/iel-demo/state/selectors';
 import type {
   CandidateFilter,
@@ -49,35 +46,68 @@ import {
 
 import { CreateClarificationDialog } from '../clarifications/create-clarification-dialog';
 import { AxisWeights } from '../companies/axis-weights';
-import { RankRow } from '../instruments/rank-row';
 import { CriterionStateLegend } from '../shared/criterion-state-badge';
 import { EvidencePanel } from '../shared/evidence-panel';
 import {
   Chip,
+  Explain,
   formatDate,
   formatDateTime,
   Hero,
-  InfoHint,
+  HowItWorks,
   Panel,
   PanelHeader,
   SourceBreakdownBar
 } from '../shared/ui';
 import { AssistantPanel } from './assistant-panel';
+import { CandidateRow } from './candidate-row';
 import { CandidatesMatrix } from './candidates-matrix';
+import { Disclosure } from './disclosure';
 
-type Tab = 'candidatos' | 'contexto' | 'historico';
+/** As áreas de apoio, abaixo da decisão de envio. */
+type Tab = 'detalhar' | 'contexto' | 'historico';
 
-/** Quantas linhas a matriz mostra por vez. */
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'detalhar', label: 'Detalhar' },
+  { value: 'contexto', label: 'Contexto da vaga' },
+  { value: 'historico', label: 'Histórico' }
+];
+
+/**
+ * Três opções, não oito.
+ *
+ * A triagem por estado da análise tinha um filtro por tipo de lacuna, e quem
+ * abre a vaga não decide por tipo de lacuna: decide por quem dá para enviar,
+ * quem não dá e quem ainda não deu resposta.
+ */
+const FILTROS: { value: CandidateFilter; label: string }[] = [
+  { value: 'todas', label: 'Todos' },
+  { value: 'compativel', label: 'Combinam' },
+  { value: 'fit-pendente', label: COPY.fit.semResposta }
+];
+
+/** Quantas linhas a lista de sugeridos mostra. */
+const SUGERIDOS = 5;
+
+/** Quantas linhas o detalhamento por critério mostra por vez. */
 const PAGE_SIZE = 25;
 
+/**
+ * A mesa de seleção responde uma pergunta: quem eu envio para esta vaga?
+ *
+ * Ela já foi um painel de trabalho — três números no herói mais a caixa de
+ * triagem, chips de etapa, a procedência dos registros, o ranking com o corte
+ * repetido em cada linha e, abaixo, a matriz por critério inteira. Tudo isso
+ * continua existindo; o que mudou é a ordem. Primeiro quem dá para enviar e o
+ * botão que envia, depois o resto, recolhido.
+ */
 export function SelectionDesk({ jobId }: { jobId: string }) {
   const { state, dispatch, persona } = useIelDemo();
-  const [tab, setTab] = useState<Tab>('candidatos');
+  const [tab, setTab] = useState<Tab>('detalhar');
   const [candidateFilter, setCandidateFilter] =
     useState<CandidateFilter>('todas');
   const [candidateSearch, setCandidateSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [showRescue, setShowRescue] = useState(false);
   const [activeCriterion, setActiveCriterion] = useState<{
     applicationId: string;
     criterionId: string;
@@ -132,9 +162,6 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
   const referralList = getReferralListSelection(state, job.id);
   const team = getTeam(state, job.teamId);
   const clarifications = getClarificationsByJob(state, job.id);
-  const answered = clarifications.filter(
-    (clarification) => clarification.state === 'respondida'
-  );
 
   const activeApplication = activeCriterion
     ? getApplication(state, activeCriterion.applicationId)
@@ -145,7 +172,6 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
   const jobEvidences = getEvidencesForJob(state, job);
   const jobSourceBreakdown = getSourceBreakdown(jobEvidences);
 
-  const filterCounts = getCandidateFilterCounts(state, job, applications);
   const searchTerm = candidateSearch.trim().toLowerCase();
   const filteredApplications = filterApplicationsByAnalysis(
     state,
@@ -160,41 +186,29 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
   const visibleApplications = filteredApplications.slice(0, visibleCount);
 
   /*
-    Ranking M5.
-
-    A lista ordenada e a matriz por critério mostram o mesmo conjunto: o
-    ranking é filtrado pelos ids que sobreviveram à triagem e à busca, e
-    pagina com o mesmo `visibleCount`. Duas listas com populações diferentes
-    na mesma tela fariam o analista contar candidato duas vezes.
+    A lista completa e o detalhamento por critério mostram o mesmo conjunto:
+    ambos partem dos ids que sobreviveram à busca e ao filtro. Duas listas com
+    populações diferentes na mesma tela fariam contar a mesma pessoa duas
+    vezes.
   */
-  const screenedIds = new Set(
+  const filteredIds = new Set(
     filteredApplications.map((application) => application.id)
   );
   const jobRanking = getJobRanking(state, job.id);
-  const screenedRanking = jobRanking.filter((entry) =>
-    screenedIds.has(entry.application.id)
+  const filteredRanking = jobRanking.filter((entry) =>
+    filteredIds.has(entry.application.id)
   );
-  const rescueRanking = getRescueCandidates(state, job.id).filter((entry) =>
-    screenedIds.has(entry.application.id)
-  );
-  const rankingRows = showRescue
-    ? rescueRanking
-    : screenedRanking.slice(0, visibleCount);
+  const sugeridos = jobRanking.slice(0, SUGERIDOS);
+  const resgate = getRescueCandidates(state, job.id);
 
-  const compatibleInScreening = screenedRanking.filter(
+  const compativeis = jobRanking.filter(
     (entry) => entry.adherence.compatible === true
   ).length;
-  const belowThresholdInScreening = screenedRanking.filter(
-    (entry) => entry.adherence.compatible === false
-  ).length;
-  const withoutFitAnswer = screenedRanking.filter(
+  const semResposta = jobRanking.filter(
     (entry) => entry.adherence.compatible === null
   ).length;
-  const compatibleInJob = jobRanking.filter(
-    (entry) => entry.adherence.compatible === true
-  ).length;
 
-  const referralListFull = referralList.length >= REFERRAL_LIMIT;
+  const listaCheia = referralList.length >= REFERRAL_LIMIT;
 
   const addToReferralList = (applicationId: string) => {
     dispatch({
@@ -206,8 +220,26 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
     const application = getApplication(state, applicationId);
     const talent = application ? getTalent(application.talentId) : null;
     toast.success(
-      `${talent?.name ?? 'Candidatura'} entrou na lista de encaminhamento desta vaga.`
+      `${talent?.name ?? 'Candidatura'} entrou na lista desta vaga.`
     );
+  };
+
+  /** O checkbox da lista: marca para envio e desmarca de novo. */
+  const toggleReferral = (applicationId: string) => {
+    if (referralList.includes(applicationId)) {
+      dispatch({
+        type: 'remove-from-referral-list',
+        jobId: job.id,
+        applicationId,
+        at: nowIso()
+      });
+      return;
+    }
+    if (listaCheia) {
+      toast.error(COPY.referral.limit);
+      return;
+    }
+    addToReferralList(applicationId);
   };
 
   const toggleComparison = (applicationId: string) => {
@@ -225,55 +257,22 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
     });
   };
 
-  /** Uma linha do ranking, com as ações que a situação dela permite. */
-  const renderRankRow = (entry: JobRankingEntry) => {
-    const alreadyListed = referralList.includes(entry.application.id);
-    const pendingFit = entry.fitStatus !== 'respondido';
+  const renderCandidateRow = (entry: JobRankingEntry, idPrefix: string) => (
+    <CandidateRow
+      key={entry.application.id}
+      entry={entry}
+      idPrefix={idPrefix}
+      selected={referralList.includes(entry.application.id)}
+      blocked={listaCheia}
+      onToggle={() => toggleReferral(entry.application.id)}
+      profileHref={iel.talents.byId(entry.application.talentId).inJob(job.id)}
+    />
+  );
 
-    return (
-      <RankRow
-        key={entry.application.id}
-        rank={entry.rank}
-        name={entry.talent?.name ?? entry.application.id}
-        headline={entry.talent?.headline}
-        technicalMatch={entry.technicalMatch}
-        adherence={
-          entry.adherence.total === null
-            ? null
-            : Math.round(entry.adherence.total)
-        }
-        threshold={entry.adherence.threshold}
-        belowThreshold={entry.belowThreshold}
-        selected={comparison.includes(entry.application.id)}
-        onSelect={() => toggleComparison(entry.application.id)}
-        actions={
-          <>
-            {pendingFit ? (
-              <Link
-                href={iel.applications.byId(entry.application.id).fit}
-                className="whitespace-nowrap text-[11px] font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Abrir questionário (demo)
-              </Link>
-            ) : null}
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={alreadyListed || referralListFull}
-              title={
-                referralListFull && !alreadyListed
-                  ? `Limite de ${REFERRAL_LIMIT} currículos por vaga`
-                  : undefined
-              }
-              onClick={() => addToReferralList(entry.application.id)}
-            >
-              {alreadyListed ? 'Na lista' : 'Adicionar à lista'}
-            </Button>
-          </>
-        }
-      />
-    );
-  };
+  const envioLabel =
+    referralList.length === 0
+      ? COPY.referral.action
+      : `Enviar ${plural(referralList.length, 'currículo', 'currículos')}`;
 
   const jobHistory = getRecentHistory(state, 40).filter(
     (event) =>
@@ -292,149 +291,182 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
   return (
     <div className="space-y-6">
       {/*
-        Herói da vaga.
-
-        O topo desta tela era um cabeçalho de página e, logo abaixo, um
-        painel com a triagem espremida entre a procedência e o contador. A
-        vaga é o objeto da tela: ela abre como instrumento, com os números
-        que definem o processo e a triagem que o opera, e só então vem a
-        matriz — densa, rente à página, onde o trabalho acontece.
+        Herói da vaga: a pergunta, o número que a responde e o verbo que a
+        encerra. Os chips de etapa, a procedência e a caixa de triagem que
+        dividiam este espaço desceram — a triagem para dentro da lista
+        completa, a procedência para a aba de contexto.
       */}
       <Hero
-        eyebrow={`${company?.name} · ${job.externalRef.system} · ${job.externalRef.id}`}
-        title={`Mesa de seleção — ${job.title}`}
-        description={job.summary}
+        eyebrow={`${company?.name} · ${job.location} · ${job.workShift}`}
+        title={job.title}
+        description="Marque até 5 pessoas e envie os currículos para a empresa."
         figures={[
           {
-            label: 'Candidaturas',
-            value: applications.length
-          },
-          {
-            label: 'Na triagem atual',
-            value: filteredApplications.length,
-            hint: `de ${applications.length} na vaga`
-          },
-          {
             label: 'Compatíveis',
-            value: compatibleInJob,
-            hint: `aderência de ${ADHERENCE_THRESHOLD}% ou mais, entre quem respondeu`
+            value: compativeis,
+            hint: `${ADHERENCE_THRESHOLD}% ou mais — ${COPY.fit.combina}`
           },
           {
-            label: 'Respostas a incorporar',
-            value: answered.length,
-            tone: answered.length > 0 ? 'atencao' : 'default'
+            label: 'Ainda não responderam',
+            value: semResposta,
+            tone: semResposta > 0 ? 'atencao' : 'default'
           },
           {
-            label: 'Selecionadas',
-            value: comparison.length,
-            hint: `até ${COMPARISON_LIMIT} por comparação`
+            label: 'Selecionados',
+            value: `${referralList.length} de ${REFERRAL_LIMIT}`
           }
         ]}
         actions={
           <>
+            <Link href={iel.jobs.byId(job.id).referral}>
+              <Button
+                size="large"
+                disabled={referralList.length === 0}
+              >
+                {envioLabel}
+              </Button>
+            </Link>
             <Link href={iel.jobs.byId(job.id).comparison}>
               <Button
                 variant="outline"
                 disabled={comparison.length < 2}
               >
-                Comparar selecionados ({comparison.length})
-              </Button>
-            </Link>
-            <Link href={iel.jobs.byId(job.id).referral}>
-              <Button disabled={referralList.length === 0}>
-                Preparar encaminhamento ({referralList.length})
+                Comparar ({comparison.length})
               </Button>
             </Link>
           </>
         }
-        aside={
-          <div className="space-y-3 rounded-[var(--card-radius)] border border-border bg-card/70 p-4">
-            <p className="iel-eyebrow">Triagem</p>
+      />
+
+      <Panel
+        padding="none"
+        elevation={2}
+        className="overflow-hidden"
+      >
+        <div className="px-4 pb-3 pt-4">
+          <PanelHeader
+            title="Sugeridos para envio"
+            meta={`As cinco pessoas que mais combinam com a empresa. Mínimo de ${ADHERENCE_THRESHOLD}%.`}
+            actions={
+              referralList.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {referralList.length} de {REFERRAL_LIMIT} marcados
+                </p>
+              ) : null
+            }
+          />
+        </div>
+
+        {sugeridos.length === 0 ? (
+          <p className="px-4 pb-5 text-sm text-muted-foreground">
+            Nenhuma candidatura nesta vaga ainda.
+          </p>
+        ) : (
+          <ul className="border-t border-border">
+            {sugeridos.map((entry) => renderCandidateRow(entry, 'sugerido'))}
+          </ul>
+        )}
+
+        {resgate.length > 0 ? (
+          <Disclosure
+            tone="atencao"
+            className="border-t border-border"
+            summary={`${plural(resgate.length, 'pessoa ficou', 'pessoas ficaram')} abaixo dos requisitos da vaga, mas ${resgate.length === 1 ? 'combina' : 'combinam'} com a empresa — ver`}
+          >
+            <ul className="border-t border-border">
+              {resgate.map((entry) => renderCandidateRow(entry, 'resgate'))}
+            </ul>
+          </Disclosure>
+        ) : null}
+
+        <Disclosure
+          className="border-t border-border"
+          summary={`Todos os candidatos (${applications.length}) — ver todos`}
+        >
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-end">
             <Input
-              label="Buscar candidato"
+              label="Buscar por nome"
               placeholder="Nome da pessoa"
               value={candidateSearch}
               onChange={(event) => {
                 setCandidateSearch(event.target.value);
                 setVisibleCount(PAGE_SIZE);
               }}
+              className="sm:flex-1"
             />
-            <div className="space-y-2">
+            <div className="space-y-2 sm:w-[14rem]">
               <label
                 htmlFor="candidate-filter"
                 className="block text-sm font-medium leading-none text-foreground"
               >
-                Triagem por estado da análise
+                {COPY.filter.label}
               </label>
               <FilterNativeSelect
                 id="candidate-filter"
                 value={candidateFilter}
                 onValueChange={(value) => {
-                  setCandidateFilter(value as CandidateFilter);
+                  const escolhido = FILTROS.find(
+                    (filtro) => filtro.value === value
+                  );
+                  if (!escolhido) return;
+                  setCandidateFilter(escolhido.value);
                   setVisibleCount(PAGE_SIZE);
                 }}
               >
-                {(Object.keys(CANDIDATE_FILTER_LABEL) as CandidateFilter[]).map(
-                  (value) => (
-                    <option
-                      key={value}
-                      value={value}
-                    >
-                      {CANDIDATE_FILTER_LABEL[value]} ({filterCounts[value]})
-                    </option>
-                  )
-                )}
+                {FILTROS.map((filtro) => (
+                  <option
+                    key={filtro.value}
+                    value={filtro.value}
+                  >
+                    {filtro.label}
+                  </option>
+                ))}
               </FilterNativeSelect>
             </div>
           </div>
-        }
-      >
-        <div className="space-y-3 border-t border-border pt-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip tone="info">{JOB_STAGE_LABEL[job.stage]}</Chip>
-            <Chip>{job.workShift}</Chip>
-            <Chip>{job.location}</Chip>
-            <Chip tone={answered.length > 0 ? 'atencao' : 'neutro'}>
-              {answered.length > 0
-                ? `${plural(answered.length, 'resposta', 'respostas')} para incorporar`
-                : 'Nenhuma resposta pendente'}
-            </Chip>
-            <span className="text-xs text-muted-foreground">
-              Atualização da origem: {formatDate(job.updatedAt)}
-            </span>
-          </div>
-          <SourceBreakdownBar
-            breakdown={jobSourceBreakdown}
-            total={jobEvidences.length}
-          />
-        </div>
-      </Hero>
 
-      {answered.length > 0 ? (
-        <Alert variant="info">
-          Há resposta de esclarecimento aguardando incorporação nesta vaga.{' '}
-          <Link
-            className="underline"
-            href={iel.clarifications.index}
-          >
-            Abrir pendências
-          </Link>
-          .
-        </Alert>
-      ) : null}
+          {filteredRanking.length === 0 ? (
+            <p className="px-4 pb-5 text-sm text-muted-foreground">
+              Ninguém com esse nome ou nesse filtro.
+            </p>
+          ) : (
+            <ul className="border-t border-border">
+              {filteredRanking.map((entry) =>
+                renderCandidateRow(entry, 'todos')
+              )}
+            </ul>
+          )}
+        </Disclosure>
+
+        <div className="px-4 pb-4">
+          <HowItWorks title="Como este ranking é montado">
+            <p>
+              Cada pessoa responde cinco perguntas sobre como prefere trabalhar,
+              e a empresa responde as mesmas cinco sobre como se trabalha lá. A
+              comparação entre as duas respostas é o percentual que aparece
+              grande na linha. O outro percentual, menor, é o de requisitos da
+              vaga, que vem pronto do sistema de vagas.
+            </p>
+            <p>
+              Quem fica em {ADHERENCE_THRESHOLD}% ou mais entra em
+              &ldquo;compatíveis&rdquo;. Quem ainda não respondeu não vira zero:
+              fica sem número, porque silêncio não é resposta baixa.
+            </p>
+            <p>
+              A empresa recebe no máximo {REFERRAL_LIMIT} currículos por vaga.
+              Nada é descartado sozinho: a lista ordena, a decisão de enviar é
+              da analista.
+            </p>
+          </HowItWorks>
+        </div>
+      </Panel>
 
       <div
         role="tablist"
-        aria-label="Áreas da mesa de seleção"
+        aria-label="Áreas de apoio da vaga"
         className="flex flex-wrap gap-1 border-b border-border"
       >
-        {(
-          [
-            ['candidatos', 'Candidatos'],
-            ['contexto', 'Contexto da vaga'],
-            ['historico', 'Histórico']
-          ] as [Tab, string][]
-        ).map(([value, label]) => (
+        {TABS.map(({ value, label }) => (
           <button
             key={value}
             type="button"
@@ -453,97 +485,34 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
         ))}
       </div>
 
-      {tab === 'candidatos' ? (
+      {tab === 'detalhar' ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 space-y-4">
-            {/*
-              Ranking M5.
-
-              A cena do pitch: o analista abre a vaga e vê técnico e fit lado
-              a lado, ordenados pela aderência, com o corte marcado. As duas
-              colunas não se somam — quem cruza é quem decide. A matriz por
-              critério continua abaixo: ela é onde cada conclusão se confere
-              contra a origem do dado.
-            */}
             <Panel
               padding="none"
               elevation={1}
               className="overflow-hidden"
             >
-              <div className="border-b border-border px-5 py-3">
+              <div className="border-b border-border px-4 py-3">
                 <PanelHeader
-                  eyebrow="Ordenado por aderência"
-                  title="Ranking desta vaga"
-                  hint="A ordem é a da aderência, não de uma nota combinada. Quem não respondeu o questionário vai para o fim da lista, nunca para o zero: ausência de resposta não é aderência mínima."
-                  meta={
-                    <>
-                      {compatibleInScreening} compatíveis (≥{' '}
-                      {ADHERENCE_THRESHOLD}%) · {belowThresholdInScreening}{' '}
-                      abaixo do corte · {withoutFitAnswer} sem resposta
-                    </>
-                  }
+                  title="Critério por critério"
+                  hint="Cada marcador abre a origem do dado: de qual sistema veio, quando chegou e o que exatamente foi dito."
+                  meta={`Marque de 2 a ${COMPARISON_LIMIT} pessoas para comparar lado a lado.`}
                   actions={
-                    <Button
-                      size="sm"
-                      variant={showRescue ? 'default' : 'outline'}
-                      aria-pressed={showRescue}
-                      onClick={() => setShowRescue((value) => !value)}
-                    >
-                      Ver resgate do filtro técnico (S2)
-                    </Button>
+                    comparison.length > 0 ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          dispatch({ type: 'clear-comparison', jobId: job.id })
+                        }
+                      >
+                        Limpar seleção ({comparison.length})
+                      </Button>
+                    ) : null
                   }
                 />
-                {showRescue ? (
-                  <p className="mt-3 border-l-2 border-warning/50 pl-3 text-xs leading-relaxed text-muted-foreground">
-                    Técnico abaixo de {RESCUE_TECHNICAL_CEILING} e aderência
-                    acima do corte — o filtro automático teria descartado estas
-                    candidaturas. A decisão de reabrir continua sendo do
-                    analista.
-                  </p>
-                ) : null}
               </div>
-
-              {rankingRows.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-muted-foreground">
-                  {showRescue
-                    ? 'Nenhuma candidatura desta triagem foi descartada pelo filtro técnico com aderência acima do corte.'
-                    : 'Nenhuma candidatura na triagem atual.'}
-                </p>
-              ) : (
-                <div>{rankingRows.map(renderRankRow)}</div>
-              )}
-            </Panel>
-
-            <div className="flex flex-col gap-2 px-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-              <p>
-                Mostrando{' '}
-                <span className="font-medium text-foreground">
-                  {visibleApplications.length}
-                </span>{' '}
-                de {filteredApplications.length} candidaturas
-                {filteredApplications.length !== applications.length
-                  ? ` (${applications.length} na vaga)`
-                  : ''}
-                . Selecione de 2 a {COMPARISON_LIMIT} para comparar.
-              </p>
-              {comparison.length > 0 ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    dispatch({ type: 'clear-comparison', jobId: job.id })
-                  }
-                >
-                  Limpar seleção ({comparison.length})
-                </Button>
-              ) : null}
-            </div>
-
-            <Panel
-              padding="none"
-              elevation={1}
-              className="overflow-hidden"
-            >
               <CandidatesMatrix
                 job={job}
                 applications={visibleApplications}
@@ -588,9 +557,9 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
               />
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-semibold">*</span> requisito obrigatório
-                <InfoHint
+                <Explain
                   className="ml-1"
-                  label="Um requisito obrigatório não atendido é sinalizado para decisão do analista. A candidatura não é eliminada automaticamente."
+                  label="Um requisito obrigatório não atendido é sinalizado para decisão da analista. A candidatura não é eliminada automaticamente."
                 />
               </p>
             </div>
@@ -760,6 +729,20 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
             </Panel>
 
             <AxisWeights jobId={job.id} />
+
+            <Panel elevation={1}>
+              <PanelHeader
+                title={COPY.sources.label}
+                hint={COPY.sources.hint}
+                meta={`Atualização da origem: ${formatDate(job.updatedAt)}`}
+              />
+              <div className="mt-3">
+                <SourceBreakdownBar
+                  breakdown={jobSourceBreakdown}
+                  total={jobEvidences.length}
+                />
+              </div>
+            </Panel>
           </div>
         </div>
       ) : null}
@@ -793,11 +776,11 @@ export function SelectionDesk({ jobId }: { jobId: string }) {
 
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                Solicitações desta vaga
+                Perguntas desta vaga
               </h3>
               {clarifications.length === 0 ? (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Nenhuma solicitação registrada.
+                  Nenhuma pergunta registrada.
                 </p>
               ) : (
                 <ul className="mt-2 space-y-2">

@@ -1,7 +1,10 @@
 import { buildInitialDemoState, DEMO_SCHEMA_VERSION } from '../fixtures';
+import { DEMO_REFERENCE_DATE } from '../fixtures/companies';
 import type {
   AnalysisByApplication,
   Application,
+  CultureAnswer,
+  CultureRespondentInvite,
   DemoState,
   Evidence
 } from '../types';
@@ -48,6 +51,20 @@ type PersistedState = {
   changedAnalysis: AnalysisByApplication;
   /** Evidências que não existiam na base inicial. */
   addedEvidences: Evidence[];
+  /**
+   * Respostas de cultura novas ou substituídas (M2).
+   *
+   * Entram no delta porque a resposta de um colaborador convidado muda a média
+   * da empresa, e uma média que volta ao valor de fábrica depois de recarregar
+   * a página desmentiria o "N de M responderam" da tela ao lado.
+   */
+  changedCultureAnswers: CultureAnswer[];
+  /** Convites criados ou alterados (resposta, reenvio). */
+  changedCultureInvites: CultureRespondentInvite[];
+  /** Talentos que chegaram por importação de planilha (M6). */
+  importedTalents: DemoState['importedTalents'];
+  /** Importações já aplicadas, com a impressão digital de cada planilha. */
+  spreadsheetImports: DemoState['spreadsheetImports'];
 };
 
 type Baseline = {
@@ -55,6 +72,8 @@ type Baseline = {
   analysis: Map<string, string>;
   evidenceIds: Set<string>;
   fitResponses: Map<string, string>;
+  cultureAnswers: Map<string, string>;
+  cultureInvites: Map<string, string>;
 };
 
 let baseline: Baseline | null = null;
@@ -82,6 +101,18 @@ function getBaseline(): Baseline {
       (initial.fitResponses ?? []).map((response) => [
         response.applicationId,
         JSON.stringify(response)
+      ])
+    ),
+    cultureAnswers: new Map(
+      initial.cultureAnswers.map((answer) => [
+        answer.id,
+        JSON.stringify(answer)
+      ])
+    ),
+    cultureInvites: new Map(
+      (initial.cultureInvites ?? []).map((invite) => [
+        invite.id,
+        JSON.stringify(invite)
       ])
     )
   };
@@ -112,6 +143,14 @@ function toPersisted(state: DemoState): PersistedState {
       base.fitResponses.get(response.applicationId) !== JSON.stringify(response)
   );
 
+  const changedCultureAnswers = state.cultureAnswers.filter(
+    (answer) => base.cultureAnswers.get(answer.id) !== JSON.stringify(answer)
+  );
+
+  const changedCultureInvites = (state.cultureInvites ?? []).filter(
+    (invite) => base.cultureInvites.get(invite.id) !== JSON.stringify(invite)
+  );
+
   return {
     schemaVersion: DEMO_SCHEMA_VERSION,
     personaId: state.personaId,
@@ -128,7 +167,11 @@ function toPersisted(state: DemoState): PersistedState {
     ui: state.ui,
     changedApplications,
     changedAnalysis,
-    addedEvidences
+    addedEvidences,
+    changedCultureAnswers,
+    changedCultureInvites,
+    importedTalents: state.importedTalents ?? [],
+    spreadsheetImports: state.spreadsheetImports ?? []
   };
 }
 
@@ -140,6 +183,15 @@ function fromPersisted(persisted: PersistedState): DemoState {
       application.id,
       application
     ])
+  );
+
+  const changedCultureAnswers = persisted.changedCultureAnswers ?? [];
+  const changedCultureAnswerIds = new Set(
+    changedCultureAnswers.map((answer) => answer.id)
+  );
+  const changedCultureInvites = persisted.changedCultureInvites ?? [];
+  const changedInviteIds = new Set(
+    changedCultureInvites.map((invite) => invite.id)
   );
 
   return {
@@ -156,9 +208,30 @@ function fromPersisted(persisted: PersistedState): DemoState {
     comparison: persisted.comparison ?? state.comparison,
     referralList: persisted.referralList ?? state.referralList,
     ui: { ...state.ui, ...persisted.ui },
-    applications: state.applications.map(
-      (application) => overrides.get(application.id) ?? application
-    ),
+    applications: [
+      ...state.applications.map(
+        (application) => overrides.get(application.id) ?? application
+      ),
+      ...(persisted.changedApplications ?? []).filter(
+        (application) =>
+          !state.applications.some((entry) => entry.id === application.id)
+      )
+    ],
+    cultureAnswers: [
+      ...state.cultureAnswers.filter(
+        (answer) => !changedCultureAnswerIds.has(answer.id)
+      ),
+      ...changedCultureAnswers
+    ],
+    cultureInvites: [
+      ...(state.cultureInvites ?? []).filter(
+        (invite) => !changedInviteIds.has(invite.id)
+      ),
+      ...changedCultureInvites
+    ],
+    importedTalents: persisted.importedTalents ?? state.importedTalents,
+    spreadsheetImports:
+      persisted.spreadsheetImports ?? state.spreadsheetImports,
     analysis: { ...state.analysis, ...(persisted.changedAnalysis ?? {}) },
     evidences: [...state.evidences, ...(persisted.addedEvidences ?? [])],
     // A resposta gravada vence a da base: refazer o questionário substitui,
@@ -293,6 +366,13 @@ export function clearPersistedState(): void {
   }
 }
 
+/**
+ * "Agora" da demonstração: o dia é sempre `DEMO_REFERENCE_DATE`, a hora é a
+ * real. A base fictícia tem prazos (convites de 3 dias, questionário de 2)
+ * ancorados nessa data; se o relógio real vencesse esses prazos, a demo
+ * quebraria sozinha com o passar dos dias. Todo carimbo do reducer e todo
+ * seletor de prazo passam por aqui — um relógio só.
+ */
 export function nowIso(): string {
-  return new Date().toISOString();
+  return `${DEMO_REFERENCE_DATE}T${new Date().toISOString().slice(11)}`;
 }

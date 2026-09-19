@@ -94,7 +94,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
           return {
             index: resolve(jobBase),
             comparison: resolve(`${jobBase}/comparar`),
-            referral: resolve(`${jobBase}/encaminhamento`)
+            referral: resolve(`${jobBase}/encaminhamento`),
+            /**
+             * Importação da planilha exportada da Empregare (M6).
+             *
+             * Fica sob a vaga porque a planilha é sempre de uma vaga: é a
+             * vaga que decide com o que cada linha é comparada.
+             */
+            import: resolve(`${jobBase}/importar`)
           };
         }
       },
@@ -131,6 +138,18 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
             fit: resolve(`${applicationBase}/fit`)
           };
         }
+      },
+      /**
+       * Link do colaborador que responde a consulta de cultura (M2).
+       *
+       * A chave do caminho é o token opaco do convite, e não o id da empresa
+       * nem o da pessoa: quem intercepta a URL não descobre de quem ela é.
+       * PRODUTO.md §5.4 — link sem login é credencial portadora, então o
+       * escopo é um convite só e a validade é de três dias.
+       */
+      cultureInvite: {
+        byToken: (token: string) =>
+          resolve(`/iel/consulta/${encodeSegment(token)}`)
       },
       clarifications: {
         index: resolve('/iel/pendencias'),

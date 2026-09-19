@@ -1,6 +1,15 @@
-import type { CultureOptionValue } from '../analysis/culture';
+import type { CultureOptionId, CultureOptionValue } from '../analysis/culture';
+import {
+  addDays,
+  buildInviteToken,
+  CULTURE_INVITE_DEADLINE_DAYS,
+  CULTURE_INVITE_TOKEN_SEED,
+  type CultureInviteRole
+} from '../analysis/culture-invites';
 import type { FitAxisId } from '../analysis/fit-axes';
 import { getFitAxis } from '../analysis/fit-axes';
+import type { ImportPlan } from '../analysis/spreadsheet-import';
+import { normalizeEmail } from '../analysis/spreadsheet-import';
 import { buildInitialDemoState, COMPARISON_LIMIT } from '../fixtures';
 import { plural } from '../format';
 import type {
@@ -9,13 +18,17 @@ import type {
   Clarification,
   ClarificationEffect,
   CriterionState,
+  CultureAnswer,
+  CultureRespondentInvite,
   DataSourceId,
   DemoState,
   DemoUiState,
   Evidence,
   HistoryEvent,
   Referral,
-  ReferralItem
+  ReferralItem,
+  SpreadsheetImportRecord,
+  Talent
 } from '../types';
 import { REFERRAL_LIMIT } from './selectors';
 
@@ -53,6 +66,14 @@ export type RegisterReferralInput = {
     attentionPoints: string[];
     suggestedQuestions: string[];
   }[];
+};
+
+/** Pessoa da amostra, como a analista cadastra: só nome e e-mail corporativo. */
+export type CultureInvitePerson = {
+  name: string;
+  corporateEmail: string;
+  role: CultureInviteRole;
+  area: string;
 };
 
 export type DemoAction =
@@ -154,6 +175,53 @@ export type DemoAction =
       referralId: string;
       applicationId: string;
       question: string;
+      at: string;
+    }
+  | {
+      /**
+       * Aplica uma planilha da Empregare já transformada em plano (M6).
+       *
+       * O reducer não lê arquivo: recebe o plano que `buildImportPlan`
+       * produziu, para que a troca da planilha pelo webhook da Empregare não
+       * mexa aqui. A `fingerprint` do plano garante a idempotência — subir a
+       * mesma planilha duas vezes registra o fato e não duplica registro.
+       */
+      type: 'import-spreadsheet';
+      jobId: string;
+      plan: ImportPlan;
+      at: string;
+    }
+  | {
+      /**
+       * A analista cadastra a amostra de colaboradores da empresa (M2).
+       *
+       * E-mail já convidado naquela empresa é ignorado em silêncio: cadastrar
+       * a mesma pessoa duas vezes daria dois links à mesma pessoa e inflaria o
+       * denominador do "N de M responderam".
+       */
+      type: 'add-culture-invites';
+      companyId: string;
+      people: CultureInvitePerson[];
+      at: string;
+    }
+  | {
+      /**
+       * O colaborador responde pelo link, sem login (M2).
+       *
+       * Token expirado ou já usado não lança: vira no-op com o motivo no
+       * histórico. Quem abre um link vencido precisa de uma tela que explique,
+       * não de um erro.
+       */
+      type: 'answer-culture-invite';
+      token: string;
+      answers: Record<FitAxisId, CultureOptionId>;
+      consentVersion: string;
+      at: string;
+    }
+  | {
+      /** A analista reenvia um convite em aberto e estende o prazo (S4). */
+      type: 'resend-culture-invite';
+      inviteId: string;
       at: string;
     }
   | { type: 'apply-sync-event'; eventId: string; at: string }
@@ -881,6 +949,261 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           action: 'Esclarecimento pedido pela empresa',
           description: `Sobre a candidatura ${action.applicationId}: “${action.question.trim()}”. A candidatura segue encaminhada enquanto o IEL responde.`,
           entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'import-spreadsheet': {
+      const imports = state.spreadsheetImports ?? [];
+      const alreadyImported = imports.some(
+        (entry) =>
+          entry.jobId === action.jobId &&
+          entry.fingerprint === action.plan.fingerprint
+      );
+
+      if (alreadyImported) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: 'Analista IEL',
+            action: 'Planilha recebida (sem mudanças)',
+            description: `A mesma planilha da vaga ${action.jobId} já havia sido importada: nenhum registro foi duplicado.`,
+            entityRef: action.jobId
+          })
+        };
+      }
+
+      const existingTalentIds = new Set(
+        (state.importedTalents ?? []).map((talent) => talent.id)
+      );
+      const existingApplicationIds = new Set(
+        state.applications.map((application) => application.id)
+      );
+
+      const addedTalents: Talent[] = [];
+      const addedApplications: DemoState['applications'] = [];
+      const updatedMatches = new Map<string, number | null>();
+
+      for (const entry of action.plan.entries) {
+        if (entry.talent && !existingTalentIds.has(entry.talent.id)) {
+          existingTalentIds.add(entry.talent.id);
+          addedTalents.push(entry.talent);
+        }
+        if (
+          entry.application &&
+          !existingApplicationIds.has(entry.application.id)
+        ) {
+          existingApplicationIds.add(entry.application.id);
+          addedApplications.push(entry.application);
+        }
+        if (entry.decision === 'match-atualizado') {
+          updatedMatches.set(entry.applicationId, entry.technicalMatch);
+        }
+      }
+
+      const record: SpreadsheetImportRecord = {
+        id: nextSequentialId(
+          'IMP',
+          imports.map((entry) => entry.id)
+        ),
+        jobId: action.jobId,
+        fingerprint: action.plan.fingerprint,
+        at: action.at,
+        origin: action.plan.origin,
+        sourceId: 'FONTE-EMPREGARE',
+        counts: {
+          newTalents: action.plan.counts['novo-talento'],
+          newApplications:
+            action.plan.counts['novo-talento'] +
+            action.plan.counts['nova-candidatura'],
+          updatedMatches: action.plan.counts['match-atualizado'],
+          ignored: action.plan.counts.ignorada,
+          errors: action.plan.errors.length
+        }
+      };
+
+      return {
+        ...state,
+        importedTalents: [...(state.importedTalents ?? []), ...addedTalents],
+        applications: [
+          ...state.applications.map((application) =>
+            updatedMatches.has(application.id)
+              ? {
+                  ...application,
+                  technicalMatch: updatedMatches.get(application.id) ?? null
+                }
+              : application
+          ),
+          ...addedApplications
+        ],
+        spreadsheetImports: [...imports, record],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Planilha da Empregare importada',
+          description: `Vaga ${action.jobId}: ${record.counts.newTalents} ${plural(record.counts.newTalents, 'talento novo', 'talentos novos')}, ${record.counts.newApplications} ${plural(record.counts.newApplications, 'candidatura nova', 'candidaturas novas')}, ${record.counts.updatedMatches} com match técnico atualizado, ${record.counts.ignored} sem mudança e ${record.counts.errors} ${plural(record.counts.errors, 'linha com erro', 'linhas com erro')}.`,
+          entityRef: action.jobId
+        })
+      };
+    }
+
+    case 'add-culture-invites': {
+      const invites = state.cultureInvites ?? [];
+      const known = new Set(
+        invites
+          .filter((invite) => invite.companyId === action.companyId)
+          .map((invite) => normalizeEmail(invite.corporateEmail))
+      );
+
+      const created: CultureRespondentInvite[] = [];
+      const companySuffix = action.companyId.replace(/[^A-Za-z0-9]/g, '');
+
+      for (const person of action.people) {
+        const corporateEmail = normalizeEmail(person.corporateEmail);
+        if (corporateEmail.length === 0 || known.has(corporateEmail)) continue;
+        known.add(corporateEmail);
+
+        const id = nextSequentialId(
+          `INV-${companySuffix}`,
+          [...invites, ...created]
+            .filter((invite) => invite.companyId === action.companyId)
+            .map((invite) => invite.id)
+        );
+        const sentAt = action.at.slice(0, 10);
+
+        created.push({
+          id,
+          companyId: action.companyId,
+          name: person.name.trim(),
+          corporateEmail,
+          role: person.role,
+          area: person.area,
+          token: buildInviteToken(id, CULTURE_INVITE_TOKEN_SEED),
+          sentAt,
+          expiresAt: addDays(sentAt, CULTURE_INVITE_DEADLINE_DAYS),
+          answeredAt: null,
+          consentVersion: null,
+          resendCount: 0
+        });
+      }
+
+      if (created.length === 0) return state;
+
+      return {
+        ...state,
+        cultureInvites: [...invites, ...created],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Amostra de colaboradores convidada',
+          description: `${created.length} ${plural(created.length, 'convite enviado', 'convites enviados')} na empresa ${action.companyId}, com prazo de ${CULTURE_INVITE_DEADLINE_DAYS} dias. Cada pessoa recebe um link próprio, sem login; o link não carrega nome nem e-mail.`,
+          entityRef: action.companyId
+        })
+      };
+    }
+
+    case 'answer-culture-invite': {
+      const invites = state.cultureInvites ?? [];
+      const invite = invites.find((entry) => entry.token === action.token);
+      if (!invite) return state;
+
+      const answeredAt = action.at.slice(0, 10);
+
+      if (invite.answeredAt) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: 'Colaborador da empresa',
+            action: 'Link de consulta já utilizado',
+            description: `O convite ${invite.id} já havia sido respondido em ${invite.answeredAt}. Nada foi alterado: cada link vale uma resposta.`,
+            entityRef: invite.companyId
+          })
+        };
+      }
+
+      if (answeredAt > invite.expiresAt) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: 'Colaborador da empresa',
+            action: 'Link de consulta expirado',
+            description: `O convite ${invite.id} venceu em ${invite.expiresAt} e não aceita mais resposta. A analista pode reenviá-lo.`,
+            entityRef: invite.companyId
+          })
+        };
+      }
+
+      const answers: CultureAnswer[] = Object.entries(action.answers).map(
+        ([axisId, optionId]) => ({
+          id: `CUL-INV-${invite.id}-${axisId}`,
+          companyId: invite.companyId,
+          axisId: axisId as FitAxisId,
+          optionId,
+          respondent: invite.role,
+          count: 1,
+          answeredAt,
+          inviteId: invite.id
+        })
+      );
+
+      const answeredIds = new Set(answers.map((answer) => answer.id));
+
+      return {
+        ...state,
+        cultureAnswers: [
+          ...state.cultureAnswers.filter(
+            (answer) => !answeredIds.has(answer.id)
+          ),
+          ...answers
+        ],
+        cultureInvites: invites.map((entry) =>
+          entry.id === invite.id
+            ? {
+                ...entry,
+                answeredAt: action.at,
+                consentVersion: action.consentVersion
+              }
+            : entry
+        ),
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Colaborador da empresa',
+          action: 'Consulta de cultura respondida',
+          description: `Uma resposta entrou na consulta da empresa ${invite.companyId}, no papel "${invite.role}". Aceite registrado na versão ${action.consentVersion}. A resposta entra agregada: a empresa vê a média, nunca quem respondeu o quê.`,
+          entityRef: invite.companyId
+        })
+      };
+    }
+
+    case 'resend-culture-invite': {
+      const invites = state.cultureInvites ?? [];
+      const invite = invites.find((entry) => entry.id === action.inviteId);
+      if (!invite || invite.answeredAt) return state;
+
+      const today = action.at.slice(0, 10);
+      const base = today > invite.expiresAt ? today : invite.expiresAt;
+      const expiresAt = addDays(base, CULTURE_INVITE_DEADLINE_DAYS);
+
+      return {
+        ...state,
+        cultureInvites: invites.map((entry) =>
+          entry.id === invite.id
+            ? {
+                ...entry,
+                expiresAt,
+                resendCount: entry.resendCount + 1
+              }
+            : entry
+        ),
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Convite reenviado',
+          description: `O convite ${invite.id} foi reenviado e o prazo passou de ${invite.expiresAt} para ${expiresAt}. O link continua o mesmo.`,
+          entityRef: invite.companyId
         })
       };
     }
