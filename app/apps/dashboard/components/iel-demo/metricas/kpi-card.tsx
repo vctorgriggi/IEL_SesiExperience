@@ -18,7 +18,7 @@ import {
   TooltipTrigger
 } from '@workspace/ui/shadcn/tooltip';
 
-import { corDaVariacao, type TomDeCor } from './cores';
+import { corDaVariacao, type EstadoDeCor, type TomDeCor } from './cores';
 import { formatarValorKpi, lerValorKpi, lerVariacao } from './formato';
 import { MarcadorHistorico } from './marcador-historico';
 
