@@ -23,6 +23,7 @@ import {
   type ReaberturasPorMes,
   type TempoPorEtapa
 } from '@/features/iel-demo/analysis/analytics';
+import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   Download,
@@ -134,6 +135,7 @@ export function BiScreen() {
   // Assim que a primeira devolutiva entra, a mistura passa a ser declarada em
   // número, em vez de sumir dentro de uma média.
   const composicao = getComposicaoDosIndicadores(state, periodo);
+  const { pessoa, ambos, divergencias } = composicao.permanencia90.fontes;
 
   const exportar = () =>
     baixarCsv(
@@ -208,23 +210,44 @@ export function BiScreen() {
           className="flex items-start gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm"
         >
           <History className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          {composicao.temCaptura ? (
-            <p>
-              <strong className="font-medium">
-                {composicao.retornoEmpresas.capturado} de{' '}
-                {composicao.retornoEmpresas.total} remessas
-              </strong>{' '}
-              deste período já têm o retorno respondido pela empresa aqui
-              dentro. O resto ainda é histórico simulado, que mostra o que o
-              Mind RH passa a medir quando todas responderem.
-            </p>
-          ) : (
-            <p>
-              Dados simulados: mostram o que o Mind RH passa a medir com o
-              retorno de um toque das empresas. Nenhuma empresa respondeu ainda
-              neste período.
-            </p>
-          )}
+          <div className="flex flex-col gap-1">
+            {composicao.temCaptura ? (
+              <p>
+                <strong className="font-medium">
+                  {composicao.retornoEmpresas.capturado} de{' '}
+                  {composicao.retornoEmpresas.total} remessas
+                </strong>{' '}
+                deste período já têm o retorno respondido pela empresa aqui
+                dentro. O resto ainda é histórico simulado, que mostra o que o
+                Mind RH passa a medir quando todas responderem.
+              </p>
+            ) : (
+              <p>
+                Dados simulados: mostram o que o Mind RH passa a medir com o
+                retorno de um toque das empresas. Nenhuma empresa respondeu
+                ainda neste período.
+              </p>
+            )}
+            {/*
+             * A permanência tem duas fontes desde o check-in: a empresa, que
+             * raramente volta, e a própria pessoa, aos 30, 60 e 90 dias. Quando
+             * as duas discordam, o indicador assume a saída. Dizer de onde veio
+             * cada caso é o que impede o número de parecer mais sólido do que é.
+             */}
+            {pessoa > 0 ? (
+              <p>
+                Na permanência, {plural(pessoa, 'caso veio', 'casos vieram')} da
+                própria pessoa, pelo "como está sendo"
+                {ambos > 0
+                  ? ` — ${plural(ambos, 'caso confirmado', 'casos confirmados')} também pela empresa`
+                  : ''}
+                {divergencias > 0
+                  ? `; em ${plural(divergencias, 'caso', 'casos')} empresa e pessoa discordam, e vale a saída`
+                  : ''}
+                .
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 
