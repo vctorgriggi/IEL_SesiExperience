@@ -128,7 +128,25 @@ body:has([data-iel-theme]),
 
   --radius: 0.625rem;
 
-  --font-sans: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
+  /*
+   * Tipografia: três papéis, três pilhas.
+   *
+   * `--font-sans` é o token que o kit já lê no `body` e que a utilitária
+   * `font-sans` resolve — é por ele que a interface inteira vira Inter sem
+   * uma classe nova em lugar nenhum. `--font-display` e `--font-acess` são
+   * os outros dois papéis, consumidos pelas classes da escala abaixo.
+   *
+   * Segoe UI na reserva de todas as três, na frente de `system-ui`: em
+   * máquina do IEL sem a fonte em cache e sem rede, é nela que o produto
+   * cai, e ela é legível em 13px.
+   */
+  --font-display:
+    var(--iel-font-display), 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    var(--iel-font-sans), 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --font-acess:
+    var(--iel-font-acess), var(--iel-font-sans), 'Segoe UI', ui-sans-serif,
+    system-ui, sans-serif;
 }
 
 /*
@@ -180,18 +198,480 @@ body:has([data-iel-theme]) [data-sidebar='sidebar'],
 }
 
 /*
- * Corpo em 14px e a família do manual (Red Hat Display). O manual pede
- * interface em Medium (500) e títulos em Bold (700); o peso do corpo entra
- * aqui e os títulos continuam com as classes `font-semibold`/`font-bold`
- * dos componentes. O `body` recebe a regra porque os portais vivem fora da
- * árvore da tela.
+ * Corpo em 14px / 1.5, Inter em 400.
+ *
+ * O peso do corpo era 500 porque o manual pedia a interface em Medium na
+ * Red Hat Display. Em Inter, 400 já tem a mancha certa em 13 e 14px e 500
+ * passa a ser ênfase — que é o que a escala usa. Texto de interface quer ser
+ * invisível: quem dá personalidade ao corpo de 13px entrega uma tela
+ * cansativa.
+ *
+ * O `body` recebe a regra porque os portais (diálogo, drawer, toast) vivem
+ * fora da árvore da tela.
  */
 body:has([data-iel-theme]) {
-  font-family: var(--iel-font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.875rem;
-  font-weight: 500;
+  line-height: 1.5;
+  font-weight: 400;
   background-color: hsl(var(--background));
   background-image: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * A escala. Base 16px, nada abaixo de 12px em tela da analista.
+ *
+ * São classes e não tokens do Tailwind porque a escala é do protótipo e o
+ * `@theme` da v4 é global: um token novo em `packages/ui` vazaria para o
+ * resto do produto, e a diretriz é não mexer no boilerplate por causa do
+ * IEL. Cada classe casa com uma linha da tabela de escala, e o que ela
+ * carrega é o conjunto inteiro — família, peso, tamanho, entrelinha e
+ * espaçamento —, para não sobrar decisão na hora de usar.
+ *
+ * Regras que a escala já resolve sozinha:
+ *   · espaçamento negativo só acima de 24px (abaixo disso, apertar as letras
+ *     prejudica a legibilidade que a fonte foi escolhida para ter);
+ *   · caixa alta só em rótulo curto, sempre com espaçamento positivo;
+ *   · itálico não entra em lugar nenhum do sistema.
+ */
+body:has([data-iel-theme]) .t-display,
+[data-iel-theme] .t-display {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 2.5rem; /* 40 */
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+body:has([data-iel-theme]) .t-titulo-tela,
+[data-iel-theme] .t-titulo-tela {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.75rem; /* 28 */
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+body:has([data-iel-theme]) .t-titulo-secao,
+[data-iel-theme] .t-titulo-secao {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem; /* 20 */
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Título de card: 16px já é corpo grande, e aqui a neutra lê melhor. */
+body:has([data-iel-theme]) .t-titulo-card,
+[data-iel-theme] .t-titulo-card {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem; /* 16 */
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+/*
+ * Número. Sempre tabular: sem largura fixa de algarismo, a coluna de
+ * percentual dança de linha em linha e a leitura vira esforço.
+ */
+body:has([data-iel-theme]) .t-num,
+[data-iel-theme] .t-num,
+body:has([data-iel-theme]) .num,
+[data-iel-theme] .num {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 2.5rem; /* 40 */
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+body:has([data-iel-theme]) .t-num-card,
+[data-iel-theme] .t-num-card {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.75rem; /* 28 */
+  line-height: 1;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+body:has([data-iel-theme]) .t-corpo,
+[data-iel-theme] .t-corpo {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.875rem; /* 14 */
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+body:has([data-iel-theme]) .t-corpo-forte,
+[data-iel-theme] .t-corpo-forte {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem; /* 14 */
+  line-height: 1.5;
+}
+
+/* Apoio e legenda: 12.5px em ardósia, o piso da tela da analista. */
+body:has([data-iel-theme]) .t-apoio,
+[data-iel-theme] .t-apoio {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.78125rem; /* 12.5 */
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+/*
+ * Rótulo em caixa alta. Rótulo curto, nunca frase: em caixa alta a palavra
+ * perde a silhueta e a leitura passa a ser letra por letra.
+ */
+body:has([data-iel-theme]) .rotulo,
+[data-iel-theme] .rotulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.6875rem; /* 11 */
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/*
+ * Tabela. Cabeçalho na expressiva, célula na neutra, as duas tabulares —
+ * é comparação em coluna, e comparação em coluna exige algarismo de largura
+ * fixa. O escopo é a tabela do kit (`table`), então nenhuma tabela precisa
+ * pedir isso classe por classe.
+ */
+body:has([data-iel-theme]) table th,
+[data-iel-theme] table th {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.6875rem; /* 11 */
+  line-height: 1;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+body:has([data-iel-theme]) table td,
+[data-iel-theme] table td {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.8125rem; /* 13 */
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Título de tela e de seção pela marcação, não pela classe.
+ *
+ * `h1`/`h2`/`h3` já dizem hierarquia; repetir a decisão em cada tela seria
+ * pedir para uma delas divergir. Quem precisa de outro tamanho continua
+ * sobrescrevendo com utilitária do Tailwind, que vem depois na cascata.
+ */
+body:has([data-iel-theme]) h1,
+body:has([data-iel-theme]) h2,
+body:has([data-iel-theme]) h3,
+[data-iel-theme] h1,
+[data-iel-theme] h2,
+[data-iel-theme] h3 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+}
+
+/* Itálico não entra: o sistema não usa itálico em lugar nenhum. */
+body:has([data-iel-theme]) em,
+body:has([data-iel-theme]) i,
+[data-iel-theme] em,
+[data-iel-theme] i {
+  font-style: normal;
+  font-weight: 600;
+}
+
+/*
+ * Linha de texto entre 45 e 75 caracteres. Em parágrafo largo, limite a
+ * largura do bloco — nunca o tamanho da fonte.
+ */
+body:has([data-iel-theme]) .t-medida,
+[data-iel-theme] .t-medida {
+  max-width: 68ch;
+}
+
+/*
+ * A exceção justificada: as telas do candidato.
+ *
+ * Aqui a família não é trocada classe por classe — são os **tokens** que são
+ * relidos, exatamente como a barra relê os tokens de cor mais acima. Trocar
+ * `--font-sans` e `--font-display` neste escopo faz Atkinson descer para
+ * tudo que está dentro, componente do kit e classe da escala incluídos, sem
+ * que nenhum deles saiba da troca. Nenhuma regra de família precisa disputar
+ * especificidade com o tema, porque não há regra de família: há um token
+ * diferente.
+ *
+ * O piso de 16px vem junto. Nessa tela nada é pequeno, nem o rodapé: quem
+ * responde está no celular, muitas vezes no sol, e pode ter baixa visão.
+ * `font-size` no contêiner e não no `body` — o `body` é compartilhado com os
+ * portais da analista, e uma tela por link não reescreve a outra.
+ */
+body:has([data-iel-theme]) [data-iel-acessivel],
+[data-iel-theme] [data-iel-acessivel] {
+  --font-sans: var(--font-acess);
+  --font-display: var(--font-acess);
+  font-family: var(--font-acess);
+  font-size: 1rem; /* 16 — o piso */
+  line-height: 1.5;
+}
+
+/*
+ * O piso valendo de verdade, inclusive contra o que já está escrito.
+ *
+ * As três telas do candidato foram escritas com utilitária de tamanho
+ * (`text-xs`, `text-[13px]`, `text-[15px]`), e cada uma delas fura o piso
+ * por conta própria. A marcação vai ser corrigida para a escala semântica,
+ * mas isto fica como rede: utilitária pequena que apareça aqui dentro —
+ * agora ou em componente novo — volta para 16px, e ninguém precisa lembrar
+ * da regra.
+ *
+ * `:is()` não soma especificidade própria (vale a do seletor mais alto do
+ * grupo, todos classes), então o par de escopos acima é o que dá à regra
+ * força para vencer a utilitária do Tailwind e as regras de `td`/`th` do
+ * tema, sem `!important`.
+ */
+body:has([data-iel-theme])
+  [data-iel-acessivel]
+  :is(
+    .text-xs,
+    .text-sm,
+    .text-\[11px\],
+    .text-\[12px\],
+    .text-\[12\.5px\],
+    .text-\[13px\],
+    .text-\[15px\]
+  ),
+[data-iel-theme]
+  [data-iel-acessivel]
+  :is(
+    .text-xs,
+    .text-sm,
+    .text-\[11px\],
+    .text-\[12px\],
+    .text-\[12\.5px\],
+    .text-\[13px\],
+    .text-\[15px\]
+  ) {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/*
+ * A exceção do piso, e a única: a régua de concordância.
+ *
+ * A régua mostra os cinco degraus de uma vez, em cinco colunas — é o que a
+ * torna régua em vez de formulário, e está justificado no cabeçalho de
+ * `shared/regua-de-concordancia.tsx`. Cinco rótulos de 16px não cabem em
+ * 390px: "Nada a ver comigo" em 70px de largura quebraria em quatro linhas e
+ * a escala deixaria de ser legível de um relance, que é justamente o que o
+ * piso existe para proteger. Abaixo de 360px a régua empilha e o rótulo já
+ * sobe para 15px sozinho.
+ *
+ * A troca de família continua valendo: o rótulo é Atkinson, porque família
+ * vem por token e não por esta regra. O que volta aqui é só o tamanho.
+ *
+ * Se a decisão de produto for empilhar a régua sempre na tela do candidato,
+ * é este bloco que sai, e o degrau passa a `.t-opcao` (18px).
+ */
+body:has([data-iel-theme])
+  [data-iel-acessivel]
+  [data-regua]
+  :is(.text-\[12px\], .text-\[15px\]),
+[data-iel-theme]
+  [data-iel-acessivel]
+  [data-regua]
+  :is(.text-\[12px\], .text-\[15px\]) {
+  font-size: 0.75rem; /* 12 */
+  line-height: 1.25;
+}
+
+@media (max-width: 359px) {
+  body:has([data-iel-theme])
+    [data-iel-acessivel]
+    [data-regua]
+    :is(.text-\[12px\], .text-\[15px\]),
+  [data-iel-theme]
+    [data-iel-acessivel]
+    [data-regua]
+    :is(.text-\[12px\], .text-\[15px\]) {
+    font-size: 0.9375rem; /* 15 — empilhada, o rótulo tem a linha inteira */
+    line-height: 1.4;
+  }
+}
+
+/* Pergunta: 22 / 1.3 em Atkinson 700. */
+body:has([data-iel-theme]) [data-iel-acessivel] .t-pergunta,
+[data-iel-theme] [data-iel-acessivel] .t-pergunta {
+  font-weight: 700;
+  font-size: 1.375rem; /* 22 */
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+/*
+ * Opção de resposta e botão: 18 / 1.4 em Atkinson 400.
+ *
+ * O botão entra na mesma classe porque a escala do candidato dá o mesmo
+ * tamanho aos dois, e é coerente: a opção e a ação que a confirma são o
+ * mesmo gesto.
+ */
+body:has([data-iel-theme]) [data-iel-acessivel] .t-opcao,
+[data-iel-theme] [data-iel-acessivel] .t-opcao {
+  font-weight: 400;
+  font-size: 1.125rem; /* 18 */
+  line-height: 1.4;
+}
+
+/*
+ * Texto de apoio do candidato.
+ *
+ * A escala pedia 15px, e a mesma escala diz que nada nessa tela fica abaixo
+ * de 16px. As duas não cabem juntas, e quem ganha é o piso: ele é a razão de
+ * a tela existir com fonte própria. Apoio é 16px, um passo abaixo da opção
+ * pelo peso e pela cor, não pelo tamanho.
+ */
+body:has([data-iel-theme]) [data-iel-acessivel] .t-apoio-candidato,
+[data-iel-theme] [data-iel-acessivel] .t-apoio-candidato {
+  font-weight: 400;
+  font-size: 1rem; /* 16 — o piso */
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+/*
+ * Caixa alta na tela do candidato também sobe do 11px, e o espaçamento
+ * afrouxa menos: Atkinson já tem as letras mais distintas entre si, e
+ * `0.16em` em 14px começa a soltar a palavra em letras soltas.
+ */
+body:has([data-iel-theme]) [data-iel-acessivel] .rotulo,
+[data-iel-theme] [data-iel-acessivel] .rotulo {
+  font-size: 0.875rem; /* 14 — rótulo curto, e a caixa alta já o agiganta */
+  letter-spacing: 0.12em;
+}
+
+/*
+ * Número na tela do candidato: a família já veio pelo token, o que sobra é
+ * desfazer o que era do Archivo — a largura expandida e o aperto negativo,
+ * que numa fonte de leitura assistida só atrapalham.
+ */
+body:has([data-iel-theme]) [data-iel-acessivel] :is(.num, .t-num, .t-num-card),
+[data-iel-theme] [data-iel-acessivel] :is(.num, .t-num, .t-num-card) {
+  font-stretch: normal;
+  letter-spacing: 0;
+}
+
+/*
+ * ==================================================================
+ * Movimento do Mindzinho
+ * ==================================================================
+ *
+ * Só `transform` e `opacity`. Largura, altura e sombra ficam de fora porque
+ * animá-las obriga o navegador a recalcular layout e repintar a cada quadro —
+ * num painel que já desenha tabela e gráfico, o custo aparece como travada.
+ */
+
+/*
+ * Troca de pose: 120 ms de fusão cruzada.
+ *
+ * As quatro poses são grupos empilhados dentro do mesmo SVG
+ * (`components/iel-demo/mindzinho/mindzinho.tsx`), e só o da pose ativa fica
+ * opaco. Então a fusão cruzada não precisa de estado nem de dois elementos:
+ * é a transição de `opacity` de um grupo subindo enquanto o outro desce.
+ */
+.mz-pose {
+  transition: opacity 120ms linear;
+}
+
+/*
+ * A antena na pose de atenção pulsa duas vezes e para.
+ *
+ * `2` iterações, não `infinite`. Um alerta que pisca sem parar deixa de ser
+ * alerta: a analista aprende a ignorar o canto da tela, e aí o aviso que
+ * importa passa batido junto. Duas pulsações chamam o olho uma vez; o que
+ * mantém o recado depois disso é a forma da pose e o texto ao lado.
+ *
+ * `transform-box: fill-box` com origem no centro para o `scale` girar em
+ * torno da própria ponta: sem isso o SVG usa a origem do viewBox e a bolinha
+ * sai andando pela tela em vez de pulsar.
+ */
+@keyframes mz-antena {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.45);
+    opacity: 0.75;
+  }
+}
+
+.mz[data-pose='atencao'] .mz-antena {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mz-antena 620ms ease-in-out 2;
+}
+
+/*
+ * Entrada do painel: 180 ms, `cubic-bezier(.16, 1, .32, 1)`.
+ *
+ * O `Sheet` do kit abre em 500 ms com `ease-in-out`. Meio segundo é tempo de
+ * a analista achar que o clique não pegou; e o `ease-in-out` começa devagar,
+ * o que piora a sensação. A curva daqui sai rápido e freia no fim: o painel
+ * parece já estar lá.
+ *
+ * O escopo precisa do `body:has(...)` porque o `Sheet` renderiza num portal
+ * no fim do `body`, fora da árvore da tela — o mesmo motivo dos diálogos e
+ * dos toasts mais acima. A especificidade do par de atributos vence a
+ * utilitária `data-[state=open]:duration-500` do kit sem `!important`.
+ *
+ * O fechamento acompanha a entrada. O padrão só especifica a entrada, mas
+ * abrir em 180 ms e fechar em 300 ms é uma assimetria que se nota.
+ */
+body:has([data-iel-theme]) [data-slot='sheet-content'][data-state='open'],
+body:has([data-iel-theme]) [data-slot='sheet-content'][data-state='closed'] {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.32, 1);
+}
+
+/*
+ * Movimento reduzido: tudo vira troca instantânea. Sem exceção.
+ *
+ * Em CSS e não em JavaScript de propósito. O componente já tem
+ * `useMovimentoReduzido()` disponível, mas uma regra de mídia vale antes da
+ * primeira pintura, vale para o painel que renderiza em portal e não depende
+ * de o componente lembrar de consultar o hook. `prefers-reduced-motion` não é
+ * preferência estética: para quem tem transtorno vestibular, movimento na
+ * tela dá enjoo de verdade.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .mz-pose {
+    transition: none;
+  }
+
+  .mz[data-pose='atencao'] .mz-antena {
+    animation: none;
+  }
+
+  body:has([data-iel-theme]) [data-slot='sheet-content'][data-state='open'],
+  body:has([data-iel-theme]) [data-slot='sheet-content'][data-state='closed'] {
+    animation-duration: 1ms;
+  }
 }
 
 /*

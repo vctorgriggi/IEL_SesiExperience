@@ -368,10 +368,10 @@ export function FitQuestionnaireScreen({
       <CandidateFrame badge={null}>
         <Card>
           <CardHeader>
-            <CardTitle className="text-[22px] tracking-tight">
+            <CardTitle className="t-pergunta">
               <h1>Este link não abriu</h1>
             </CardTitle>
-            <CardDescription className="text-[15px] leading-relaxed">
+            <CardDescription className="t-apoio-candidato">
               O endereço não corresponde a nenhuma inscrição. Confira a mensagem
               que você recebeu do IEL e abra o link de novo, inteiro.
             </CardDescription>
@@ -452,10 +452,10 @@ export function FitQuestionnaireScreen({
               aria-hidden="true"
               className="size-6 text-muted-foreground"
             />
-            <CardTitle className="text-[22px] tracking-tight">
+            <CardTitle className="t-pergunta">
               <h1>O prazo para responder terminou</h1>
             </CardTitle>
-            <CardDescription className="text-[15px] leading-relaxed">
+            <CardDescription className="t-apoio-candidato">
               As perguntas desta vaga ficavam abertas por dois dias. O IEL
               continua com o seu currículo: se a vaga voltar a precisar de
               respostas, você recebe um link novo.
@@ -466,7 +466,7 @@ export function FitQuestionnaireScreen({
              * validade de 12 meses que o aceite prometeu.
              */}
             {reuso && reuso.vencidas > 0 ? (
-              <CardDescription className="text-[15px] leading-relaxed">
+              <CardDescription className="t-apoio-candidato">
                 O que você respondeu antes passou de 12 meses, então as{' '}
                 {reuso.perguntadas} frases voltam se você quiser responder.
               </CardDescription>
@@ -476,7 +476,7 @@ export function FitQuestionnaireScreen({
             <Button
               variant="outline"
               size="lg"
-              className="h-12 w-full text-[15px]"
+              className="t-opcao h-12 w-full"
               onClick={() => setIgnoredDeadline(true)}
             >
               Responder mesmo assim
@@ -524,11 +524,11 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta outline-none"
           >
             Pronto!
           </h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             {/*
              * Reaproveitar sem dizer seria mostrar menos perguntas do que a
              * pessoa esperava e calar sobre o porquê. O que ela lê aqui é o
@@ -603,7 +603,7 @@ export function FitQuestionnaireScreen({
         <div className="mt-auto flex flex-col gap-2.5 pt-2">
           <Button
             size="lg"
-            className="h-12 w-full text-[15px]"
+            className="t-opcao h-12 w-full"
             asChild
           >
             <Link
@@ -682,18 +682,18 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta outline-none"
           >
             Você já respondeu isto
           </h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             Quem pergunta é o IEL, o Centro de Empregos da Indústria. Para esta
             vaga de {jobView.activity} não há nenhuma frase nova:{' '}
             {reuso.desde
               ? `as ${reuso.perguntadas} que a empresa pergunta são as mesmas que você respondeu em ${diaMes(reuso.desde)}.`
               : `as ${reuso.perguntadas} que a empresa pergunta são as mesmas que você já respondeu.`}
           </p>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             Só falta você dizer que elas podem valer aqui.
           </p>
           <TamanhoDaTarefa
@@ -741,7 +741,7 @@ export function FitQuestionnaireScreen({
           </Label>
           <Button
             size="lg"
-            className="h-12 w-full text-[15px]"
+            className="t-opcao h-12 w-full"
             disabled={!accepted}
             onClick={confirmarReuso}
           >
@@ -776,7 +776,7 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta outline-none"
           >
             Como você prefere trabalhar?
           </h1>
@@ -786,12 +786,12 @@ export function FitQuestionnaireScreen({
            * duas frases — quem está perguntando, por causa de quê, que não é
            * prova e que não tem resposta certa.
            */}
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             Quem pergunta é o IEL, o Centro de Empregos da Indústria. Você se
             inscreveu numa vaga de {jobView.activity} e esta é a última parte da
             inscrição.
           </p>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             Não existe resposta certa nem errada, e ninguém está testando você.
             A gente só quer saber o seu jeito de trabalhar.
           </p>
@@ -878,7 +878,7 @@ export function FitQuestionnaireScreen({
           </Label>
           <Button
             size="lg"
-            className="h-12 w-full text-[15px]"
+            className="t-opcao h-12 w-full"
             disabled={!accepted}
             onClick={() => {
               mexeuRef.current = true;
@@ -974,14 +974,14 @@ export function FitQuestionnaireScreen({
           id="fit-pergunta"
           ref={tituloRef}
           tabIndex={-1}
-          className="text-[24px] font-semibold leading-[1.25] tracking-tight outline-none [text-wrap:balance]"
+          className="t-pergunta outline-none [text-wrap:balance]"
         >
           <span className="sr-only">{rotuloProgresso}: </span>
           {question.item.cena}
         </h1>
         <p
           id="fit-pergunta-dica"
-          className="text-[15px] leading-relaxed text-muted-foreground"
+          className="t-apoio-candidato"
         >
           O quanto isso é você? Não existe resposta certa.
         </p>
@@ -1027,7 +1027,7 @@ export function FitQuestionnaireScreen({
               </p>
               <Button
                 variant="outline"
-                className="h-12 w-full text-[15px]"
+                className="t-opcao h-12 w-full"
                 onClick={() => {
                   setFaltando(null);
                   setStep({ kind: 'question', index: faltando });
@@ -1040,7 +1040,7 @@ export function FitQuestionnaireScreen({
         ) : null}
         <Button
           size="lg"
-          className="h-12 w-full text-[15px]"
+          className="t-opcao h-12 w-full"
           disabled={chosen === undefined}
           onClick={() => {
             if (isLast) {
