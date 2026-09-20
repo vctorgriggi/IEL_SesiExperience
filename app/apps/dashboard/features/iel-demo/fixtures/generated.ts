@@ -198,16 +198,16 @@ const LAST_NAMES = [
 ] as const;
 
 const CITIES = [
-  'Goiânia, GO',
-  'Anápolis, GO',
-  'Aparecida de Goiânia, GO',
-  'Trindade, GO',
-  'Rio Verde, GO',
-  'Campo Grande, MS',
-  'Dourados, MS',
-  'Três Lagoas, MS',
-  'Uberlândia, MG',
-  'Brasília, DF'
+  'Cuiabá, MT',
+  'Várzea Grande, MT',
+  'Rondonópolis, MT',
+  'Sinop, MT',
+  'Sorriso, MT',
+  'Lucas do Rio Verde, MT',
+  'Cáceres, MT',
+  'Tangará da Serra, MT',
+  'Primavera do Leste, MT',
+  'Barra do Garças, MT'
 ] as const;
 
 const COMPANY_NAMES = [
@@ -504,20 +504,7 @@ const LIGHT_CITIES = [
   'Barra do Garças, MT',
   'Nova Mutum, MT',
   'Campo Verde, MT',
-  'Alta Floresta, MT',
-  'Goiânia, GO',
-  'Aparecida de Goiânia, GO',
-  'Anápolis, GO',
-  'Rio Verde, GO',
-  'Jataí, GO',
-  'Catalão, GO',
-  'Itumbiara, GO',
-  'Luziânia, GO',
-  'Senador Canedo, GO',
-  'Trindade, GO',
-  'Formosa, GO',
-  'Mineiros, GO',
-  'Goianésia, GO'
+  'Alta Floresta, MT'
 ] as const;
 
 /**

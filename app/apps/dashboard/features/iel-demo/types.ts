@@ -599,6 +599,15 @@ export type Persona = {
   description: string;
   companyId: string | null;
   talentId: string | null;
+  /**
+   * Regional de atendimento da analista, quando ela responde por uma.
+   *
+   * `null` é quem enxerga o estado inteiro: a gerência do Centro de
+   * Empregabilidade, que acompanha a meta de todas as regionais. Com uma
+   * regional preenchida, a pessoa só vê as empresas e as vagas das cidades
+   * daquela regional. Ver `fixtures/regioes.ts`.
+   */
+  regionId?: string | null;
 };
 
 /** Seleção temporária para comparação, por vaga. */

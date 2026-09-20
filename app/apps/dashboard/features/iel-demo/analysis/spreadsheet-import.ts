@@ -37,7 +37,7 @@
  *
  * - **Separador**: `;` ou `,`. Detectado no cabeçalho, contando apenas o que
  *   está fora de aspas — a exportação em pt-BR usa `;` porque a cidade vem
- *   como "Goiânia, GO".
+ *   como "Cuiabá, MT".
  * - **BOM**: aceito e descartado. O Excel em Windows grava UTF-8 com BOM, e
  *   sem descartá-lo o nome da primeira coluna viria com um caractere
  *   invisível na frente e a coluna `nome` não seria encontrada.

@@ -55,8 +55,13 @@ import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
  * (`competenciasEscolhidas`, 20/09/2026): a chave nova muda o que a
  * aderência mede, então estado gravado na versão 7 é descartado em vez de
  * hidratar meio velho meio novo. Quem lê o campo ausente vê "as 11".
+ *
+ * 9 (regionais de MT, 20/09/2026): as empresas e as pessoas saíram de Goiás
+ * e do Mato Grosso do Sul para cidades de Mato Grosso, e as personas ganharam
+ * regional. Estado gravado na versão 8 aponta para cidades que não existem
+ * mais na base e para uma persona que mudou de recorte, então é descartado.
  */
-export const DEMO_SCHEMA_VERSION = 8;
+export const DEMO_SCHEMA_VERSION = 9;
 
 const GENERATED = getGeneratedBase();
 
@@ -104,11 +109,42 @@ export const DEMO_PERSONAS: Persona[] = [
   {
     id: ANALYST_PERSONA_ID,
     kind: 'analista',
-    label: 'Analista IEL',
+    label: 'Gerência — todas as regionais',
     description:
-      'Vê as vagas e candidaturas das empresas atendidas, conduz a análise e prepara encaminhamentos.',
+      'Acompanha as regionais do estado inteiro, com a meta de cada uma e as análises do BI. Conduz a análise e prepara encaminhamentos.',
     companyId: null,
-    talentId: null
+    talentId: null,
+    regionId: null
+  },
+  {
+    id: 'analista-cuiaba',
+    kind: 'analista',
+    label: 'Analista — regional Cuiabá',
+    description:
+      'Atende Cuiabá, Várzea Grande e o entorno. Vê apenas as empresas e vagas da própria regional, com a meta do mês.',
+    companyId: null,
+    talentId: null,
+    regionId: 'cuiaba'
+  },
+  {
+    id: 'analista-caceres',
+    kind: 'analista',
+    label: 'Analista — regional Cáceres',
+    description:
+      'Atende Cáceres. Vê apenas as empresas e vagas da própria regional, com a meta do mês.',
+    companyId: null,
+    talentId: null,
+    regionId: 'caceres'
+  },
+  {
+    id: 'analista-sinop',
+    kind: 'analista',
+    label: 'Analista — regional Sinop',
+    description:
+      'Atende Sinop e Sorriso. Vê apenas as empresas e vagas da própria regional, com a meta do mês.',
+    companyId: null,
+    talentId: null,
+    regionId: 'sinop'
   },
   {
     id: 'gestor-emp-01',

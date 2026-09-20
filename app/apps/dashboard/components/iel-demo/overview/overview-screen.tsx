@@ -16,6 +16,10 @@ import { DEMO_REFERENCE_DATE } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  getRegiaoDaPersona,
+  getVisibleJobs
+} from '@/features/iel-demo/state/selectors';
+import {
   IconAlertCircle,
   IconArrowBackUp,
   IconArrowRight,
@@ -72,6 +76,7 @@ import { Funil } from '../metricas/funil';
 import { KpiCard } from '../metricas/kpi-card';
 import { MarcadorHistorico } from '../metricas/marcador-historico';
 import { PERIODO_PADRAO, SeletorPeriodo } from '../metricas/seletor-periodo';
+import { PainelDaRegional } from './painel-da-regional';
 import {
   montarPendencias,
   PENDENCIAS_VISIVEIS,
@@ -164,6 +169,18 @@ function dataPorExtenso(iso: string): string {
  */
 export function OverviewScreen() {
   const { state, persona } = useIelDemo();
+  /*
+   * Quem atende uma regional lê outra tela: o quadro da meta no lugar dos
+   * quatro indicadores do estado. Não é simplificação por gosto — os
+   * indicadores de início são calculados sobre a base inteira, e mostrá-los
+   * ao lado de uma carteira regional colocaria dois números que não fecham
+   * na mesma tela. A leitura estadual continua inteira na gerência.
+   */
+  const regiao = useMemo(() => getRegiaoDaPersona(state), [state]);
+  const vagasDaRegional = useMemo(
+    () => (regiao ? getVisibleJobs(state).length : 0),
+    [state, regiao]
+  );
   const [todas, setTodas] = useState(false);
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
   const [filtroPrioridade, setFiltroPrioridade] = useState<
@@ -249,11 +266,17 @@ export function OverviewScreen() {
             </span>
             <span className="text-muted-foreground/40">•</span>
             <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 font-medium text-foreground/75">
-              {plural(
-                kpis.vagasAtivas.valor ?? 0,
-                'vaga ativa',
-                'vagas ativas'
-              )}
+              {regiao
+                ? plural(
+                    vagasDaRegional,
+                    'vaga na regional',
+                    'vagas na regional'
+                  )
+                : plural(
+                    kpis.vagasAtivas.valor ?? 0,
+                    'vaga ativa',
+                    'vagas ativas'
+                  )}
             </span>
             <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 font-medium text-foreground/75">
               {formatarNumero(candidatos)}{' '}
@@ -270,31 +293,40 @@ export function OverviewScreen() {
         </div>
       </div>
 
-      <div
-        data-tour="inicio-indicadores"
-        className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <KpiCard
-          kpi={kpis.vagasAtivas}
-          icone={IconBriefcase}
-          tom="empresa"
-        />
-        <KpiCard
-          kpi={kpis.respostaQuestionario}
-          icone={IconMessage}
-          tom="pessoa"
-        />
-        <KpiCard
-          kpi={kpis.retornoEmpresas}
-          icone={IconArrowBackUp}
-          tom="empresa"
-        />
-        <KpiCard
-          kpi={kpis.permanencia90}
-          icone={IconShieldCheck}
-          tom="combina"
-        />
-      </div>
+      {regiao ? (
+        <div data-tour="inicio-indicadores">
+          <PainelDaRegional
+            regiao={regiao}
+            state={state}
+          />
+        </div>
+      ) : (
+        <div
+          data-tour="inicio-indicadores"
+          className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          <KpiCard
+            kpi={kpis.vagasAtivas}
+            icone={IconBriefcase}
+            tom="empresa"
+          />
+          <KpiCard
+            kpi={kpis.respostaQuestionario}
+            icone={IconMessage}
+            tom="pessoa"
+          />
+          <KpiCard
+            kpi={kpis.retornoEmpresas}
+            icone={IconArrowBackUp}
+            tom="empresa"
+          />
+          <KpiCard
+            kpi={kpis.permanencia90}
+            icone={IconShieldCheck}
+            tom="combina"
+          />
+        </div>
+      )}
 
       {/*
        * Fila larga (7/12) e, à direita, o funil e as duas pontas empilhados.

@@ -58,7 +58,7 @@ export const DEMO_COMPANIES: Company[] = [
     id: 'EMP-01',
     name: 'Cerrado Distribuição',
     sector: 'Distribuição e logística',
-    location: 'Goiânia, GO',
+    location: 'Cuiabá, MT',
     institutionalDescription:
       'A empresa se descreve como colaborativa, com metas diárias de expedição e comunicação direta entre as equipes.',
     contactName: 'Marina Duarte',
@@ -101,7 +101,7 @@ export const DEMO_COMPANIES: Company[] = [
     id: 'EMP-02',
     name: 'Horizonte Alimentos',
     sector: 'Indústria de alimentos',
-    location: 'Anápolis, GO',
+    location: 'Várzea Grande, MT',
     institutionalDescription:
       'A empresa se descreve como formal nos processos, com procedimentos escritos para movimentação de materiais.',
     contactName: 'Rafael Nogueira',
@@ -130,7 +130,7 @@ export const DEMO_COMPANIES: Company[] = [
     id: 'EMP-03',
     name: 'Oficina Pantanal',
     sector: 'Manutenção automotiva',
-    location: 'Campo Grande, MS',
+    location: 'Cáceres, MT',
     institutionalDescription:
       'A empresa se descreve como enxuta, com equipe pequena e divisão informal de tarefas administrativas.',
     contactName: 'Sônia Prado',
