@@ -23,10 +23,10 @@ data de **Última atualização** no cabeçalho.
 
 ## Índice
 
-| #   | Tela                                                               | Rota                                    | Persona                         |
-| --- | ------------------------------------------------------------------ | --------------------------------------- | ------------------------------- |
-| 01  | [Visão geral](01-visao-geral.md)                                   | `/`                                  | Analista IEL                    |
-| 02  | [Painel da empresa](02-painel-da-empresa.md)                       | `/`                                  | Gestor                          |
+| #   | Tela                                                               | Rota                                | Persona                         |
+| --- | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------- |
+| 01  | [Visão geral](01-visao-geral.md)                                   | `/`                                 | Analista IEL                    |
+| 02  | [Painel da empresa](02-painel-da-empresa.md)                       | `/`                                 | Gestor                          |
 | 03  | [Vagas](03-vagas.md)                                               | `/vagas`                            | Analista IEL, Gestor            |
 | 04  | [Mesa de seleção](04-mesa-de-selecao.md)                           | `/vagas/[jobId]`                    | Analista IEL                    |
 | 05  | [Comparação entre candidatos](05-comparacao.md)                    | `/vagas/[jobId]/comparar`           | Analista IEL                    |
@@ -51,6 +51,8 @@ data de **Última atualização** no cabeçalho.
 | 24  | [Como está sendo](24-como-esta-sendo.md)                           | `/candidatura/[id]/como-esta-sendo` | Candidato contratado, sem login |
 | 25  | [Acompanhamento](25-acompanhamento.md)                             | `/acompanhamento`                   | Analista IEL                    |
 | 26  | [Tour guiado](26-tour-guiado.md)                                   | diálogo do cabeçalho                | Analista IEL                    |
+| 27  | [Ações rápidas](27-acoes-rapidas.md)                               | botão fixo do canto                 | Analista IEL                    |
+| 28  | [Notificações](28-notificacoes.md)                                 | sino do cabeçalho                   | Analista IEL                    |
 
 ## Modelo para uma tela nova
 

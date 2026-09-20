@@ -15,8 +15,10 @@ import Script from 'next/script';
  * ação de quem está usando.
  *
  * A versão atual do plugin (7.x) desenha o próprio botão, num shadow DOM
- * fixo no meio da lateral direita — não precisa do markup `vw` das versões
- * antigas, e não disputa o canto de baixo com o "Pergunte ao Mind".
+ * fixo na lateral direita — não precisa do markup `vw` das versões antigas.
+ * No computador ele fica no meio da lateral, longe do canto de baixo; no
+ * telefone ele desce para o canto inferior direito, com `z-40`, e por isso
+ * o leque de ações rápidas recua no celular (ver `acoes-rapidas.tsx`).
  */
 const VLIBRAS_APP = 'https://vlibras.gov.br/app';
 

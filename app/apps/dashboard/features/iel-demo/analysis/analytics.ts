@@ -64,7 +64,13 @@ import {
   getRegisteredReferrals,
   getVisibleCompanies
 } from '../state/selectors';
-import type { DemoState, Job, Referral, ReferralItem } from '../types';
+import type {
+  DemoState,
+  FitReminder,
+  Job,
+  Referral,
+  ReferralItem
+} from '../types';
 import type { FonteDaPermanencia } from './acompanhamento';
 import { ADHERENCE_THRESHOLD } from './adherence';
 import { lerDevolutiva, temDevolutiva } from './devolutiva';
@@ -1795,6 +1801,46 @@ export function getOndeOCandidatoPara(
     (r) => ({ ...r, pontos: r.pontos.map((p) => ({ ...p, pct: null })) })
   );
   return resultado!;
+}
+
+export type ComunicacaoDaCandidatura = {
+  /** O convite que saiu, com o estado vivo; `null` quando nunca saiu. */
+  evento: EventoComunicacao | null;
+  /** Lembretes reenviados pela analista, do mais antigo ao mais recente. */
+  lembretes: FitReminder[];
+  /** `null` quando nenhum lembrete foi reenviado nesta candidatura. */
+  ultimoLembreteEm: string | null;
+  /**
+   * Falso quando não há convite (candidatura de planilha, ainda sem envio) ou
+   * quando a pessoa já concluiu: nos dois casos não há o que lembrar.
+   */
+  podeReenviar: boolean;
+};
+
+/**
+ * O convite de uma candidatura, como a analista o vê na gaveta da pessoa:
+ * por onde saiu, até onde chegou e quantas vezes foi lembrado.
+ *
+ * É o mesmo evento que alimenta o funil de Questionários — a tela agregada e
+ * a gaveta contam a mesma história, sem um segundo cálculo para divergir. O
+ * estado vivo vale: quem responde durante a demonstração conclui aqui também.
+ */
+export function getComunicacaoDaCandidatura(
+  state: DemoState,
+  applicationId: string
+): ComunicacaoDaCandidatura {
+  const evento =
+    eventosVivos(state).find((e) => e.applicationId === applicationId) ?? null;
+  const lembretes = (state.fitReminders ?? [])
+    .filter((lembrete) => lembrete.applicationId === applicationId)
+    .sort((a, b) => a.at.localeCompare(b.at));
+
+  return {
+    evento,
+    lembretes,
+    ultimoLembreteEm: lembretes[lembretes.length - 1]?.at ?? null,
+    podeReenviar: evento !== null && !evento.concluido
+  };
 }
 
 /* ------------------------------------------------------------------ *

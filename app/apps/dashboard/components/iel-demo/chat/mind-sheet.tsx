@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 import { montarPendencias } from '@/components/iel-demo/overview/pendencias';
 import { buildAssistantRequestPayload } from '@/features/iel-demo/ai/build-request';
 import {
@@ -491,43 +490,4 @@ const PREFIXOS_POR_LINK = [
 
 export function ehTelaPorLink(pathname: string): boolean {
   return PREFIXOS_POR_LINK.some((base) => pathname.startsWith(base));
-}
-
-/**
- * O botão fixo "Pergunte ao Mind", no canto inferior direito.
- *
- * Monte uma vez na casca do analista. Em tela por link ele não aparece,
- * mesmo que alguém o monte por engano.
- */
-export function MindTrigger({ contexto }: { contexto: MindContexto }) {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-
-  if (ehTelaPorLink(pathname)) return null;
-
-  return (
-    <>
-      <Button
-        type="button"
-        className="fixed right-4 bottom-4 z-40 shadow-xs"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <Image
-          src="/marca/simbolo.png"
-          alt=""
-          width={20}
-          height={20}
-          className="size-5 rounded-sm bg-background p-px"
-        />
-        Pergunte ao Mind
-      </Button>
-      <MindSheet
-        contexto={contexto}
-        open={open}
-        onOpenChange={setOpen}
-      />
-    </>
-  );
 }
