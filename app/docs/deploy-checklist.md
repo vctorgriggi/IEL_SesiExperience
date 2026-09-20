@@ -62,6 +62,10 @@ Por padrão o estado da demonstração fica no `localStorage` de cada navegador 
   - `DATABASE_URL` = a connection string pooled;
   - `IEL_ESTADO_COMPARTILHADO=1`.  
   Sem as duas juntas, a app continua no modo navegador (não quebra). Depois de salvar, faça um redeploy: variável de ambiente só entra no próximo build.
+- [ ] **Mind com modelo real (opcional)**, nas mesmas Environment Variables, só do servidor (nunca `NEXT_PUBLIC_*`):
+  - `IEL_AI_PROVIDER=gemini` e `GEMINI_API_KEY` (chave do Google AI Studio); `GEMINI_MODEL` é opcional, padrão `gemini-3.6-flash`.
+  - Alternativas com a mesma regra: `IEL_AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY` (+ `DEEPSEEK_MODEL`), ou `IEL_AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`.  
+  Sem provedor e chave, o Mind, a devolutiva e as mensagens saem da regra fixa (não quebra). Com chave, o que sai é pseudonimizado (`docs/PRODUTO.md` §5.8) e a transferência internacional precisa do jurídico antes de dado real.
 - [ ] **Testar o fluxo entre aparelhos**: abra a Central no notebook, entre numa vaga e copie o link do questionário de um candidato; abra o link no celular (rede diferente serve) e responda. Em até 4 segundos a resposta aparece no notebook — a tela sonda `GET /api/iel/estado` enquanto está visível. `curl 'https://<seu-domínio>/api/iel/estado?sala=principal'` deve responder `{ revisao, schemaVersion, persisted }`; se responder `{ "erro": "estado compartilhado desligado" }` (503), falta uma das duas variáveis.
 - [ ] **Reiniciar a demo** antes de apresentar: menu da analista → "Reiniciar demonstração" (faz `DELETE /api/iel/acoes` e volta a sala à base fictícia, em todos os aparelhos).
 - [ ] **O que é e o que não é**: é um estado de demonstração sobre base fictícia, numa sala única (`principal`). A API da demo não autentica — quem tem o link age (R9/R10) — e o log `iel_demo_eventos` cresce a cada ação sem poda. Em produção, sessão por pessoa e retenção definida (`docs/PRODUTO.md` §5).

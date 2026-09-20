@@ -237,6 +237,7 @@ export type AssistantCitation = z.infer<typeof assistantCitationSchema>;
 
 export const assistantProviderIdSchema = z.enum([
   'deterministic',
+  'gemini',
   'anthropic',
   'deepseek'
 ]);

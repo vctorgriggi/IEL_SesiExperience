@@ -11,7 +11,7 @@ import {
 } from './types';
 
 /**
- * O que todo provedor externo (DeepSeek, Anthropic) manda ao modelo e como
+ * O que todo provedor externo (Gemini, DeepSeek, Anthropic) manda ao modelo e como
  * lê a volta. Um lugar só, para a regra de privacidade valer igual para
  * todos: o pedido passa por `pseudonimizar.ts` antes de virar texto, e a
  * resposta volta pelo mesmo mapa antes de chegar à tela.

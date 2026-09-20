@@ -46,8 +46,12 @@ export const env = createEnv({
      */
     IEL_ESTADO_COMPARTILHADO: z.enum(['1', '0']).optional(),
     IEL_AI_PROVIDER: z
-      .enum(['deterministic', 'anthropic', 'deepseek'])
+      .enum(['deterministic', 'gemini', 'anthropic', 'deepseek'])
       .optional(),
+    // Gemini é o padrão recomendado (features/iel-demo/ai/gemini-provider.ts);
+    // GEMINI_MODEL é opcional, padrão `gemini-3.6-flash`.
+    GEMINI_API_KEY: z.string().min(1).optional(),
+    GEMINI_MODEL: z.string().min(1).optional(),
     ANTHROPIC_API_KEY: z.string().min(1).optional(),
     DEEPSEEK_API_KEY: z.string().min(1).optional(),
     // Padrão `deepseek-flash` (features/iel-demo/ai/deepseek-provider.ts).
@@ -78,6 +82,8 @@ export const env = createEnv({
     IEL_SENHA_ANALISTA: process.env.IEL_SENHA_ANALISTA,
     IEL_ESTADO_COMPARTILHADO: process.env.IEL_ESTADO_COMPARTILHADO,
     IEL_AI_PROVIDER: process.env.IEL_AI_PROVIDER,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL
