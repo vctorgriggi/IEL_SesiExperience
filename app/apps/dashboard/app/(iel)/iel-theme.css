@@ -35,13 +35,33 @@
  * por isso o escopo cobre o `body` enquanto uma tela do IEL estiver montada.
  */
 
+/*
+ * O piso da família, para quando a variável do `next/font` não alcança.
+ *
+ * O `011783f` criou este bloco e acertou o problema: a variável só existe no
+ * elemento que carrega a classe do `next/font`, e há dois momentos em que não
+ * se está dentro dele — antes da hidratação, e nos portais (diálogo, drawer,
+ * toast), que renderizam no fim do `body`. Sem um piso em `:root`, a cascata
+ * caía no `ui-sans-serif` e a fonte do produto não chegava à tela.
+ *
+ * O nome muda junto com a decisão de tipografia: o piso era 'Red Hat Display',
+ * que esta branch deixou de carregar. Apontar o piso para uma fonte que não é
+ * baixada é pior do que não ter piso — parece configurado e cai na genérica
+ * assim mesmo. Agora o piso nomeia as famílias que o produto realmente carrega
+ * (ver `(iel)/layout.tsx` e `(iel)/candidatura/layout.tsx`), com Segoe UI na
+ * frente das genéricas: é nela que a máquina do IEL cai sem cache e sem rede,
+ * e ela é legível em 13px.
+ */
 :root {
-  --iel-font-sans: "Red Hat Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --iel-font-display: Archivo, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --iel-font-sans: Inter, 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --iel-font-acess:
+    'Atkinson Hyperlegible', Inter, 'Segoe UI', ui-sans-serif, system-ui,
+    sans-serif;
 }
 
 body:has([data-iel-theme]),
 [data-iel-theme] {
-  font-family: var(--iel-font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --background: 42 30% 93%;
   --foreground: 226 41% 12%;
   --card: 0 0% 100%;
