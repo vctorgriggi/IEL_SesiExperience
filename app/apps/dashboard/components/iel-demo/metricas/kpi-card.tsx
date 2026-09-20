@@ -238,9 +238,16 @@ export function CartaoDeIndicador({
         </div>
 
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <div className="min-w-0 text-2xl font-extrabold leading-none tracking-tight tabular-nums text-foreground">
-            {valor}
-          </div>
+          {/*
+           * O número do cartão na escala: `t-num-card` é 28px em Archivo 700,
+           * tabular, com o aperto de -0.015em (ver `iel-theme.css`). Era
+           * `text-2xl font-extrabold` na fonte da interface — 24px, e a
+           * comparação entre cartões dependia de o algarismo ter largura fixa,
+           * que a neutra só dá com `tabular-nums` cravado em cada lugar. Aqui
+           * a largura fixa vem da própria classe, e a expressiva devolve ao
+           * número o peso que o espécime pede.
+           */}
+          <div className="t-num-card min-w-0 text-foreground">{valor}</div>
           {selo ? <div className="shrink-0">{selo}</div> : null}
         </div>
 

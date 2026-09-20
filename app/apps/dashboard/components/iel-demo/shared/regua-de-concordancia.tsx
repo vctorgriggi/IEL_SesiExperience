@@ -106,7 +106,20 @@ export function ReguaDeConcordancia({
   const ultimo = rotulos.length;
 
   return (
-    <div className="flex flex-col">
+    /*
+     * `data-regua` marca a única exceção ao piso de 16px das telas do
+     * candidato (`iel-theme.css`). Cinco colunas em 390px não comportam
+     * rótulo de 16px — "Nada a ver comigo" em 70px de largura viraria quatro
+     * linhas —, e mostrar a escala inteira de uma vez é o que faz a régua ser
+     * régua, como explica o cabeçalho deste arquivo. Abaixo de 360px ela
+     * empilha e o rótulo já sobe para 15px. O escopo do atributo é este
+     * componente: qualquer outro texto pequeno que apareça numa tela por link
+     * continua sendo levantado para 16px.
+     */
+    <div
+      data-regua=""
+      className="flex flex-col"
+    >
       <RadioGroup
         className="grid grid-cols-5 gap-2 sm:gap-2.5 max-[420px]:grid-cols-1"
         aria-labelledby={labelledBy}

@@ -241,9 +241,7 @@ function CartaoDeNumero({
     <Card className="@container/card shadow-xs">
       <CardHeader>
         <CardDescription>{rotulo}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-          {valor}
-        </CardTitle>
+        <CardTitle className="t-num-card">{valor}</CardTitle>
         <CardAction>
           <Badge
             variant="outline"

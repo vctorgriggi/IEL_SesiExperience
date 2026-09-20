@@ -350,10 +350,10 @@ export function FitQuestionnaireScreen({
       >
         <Card>
           <CardHeader>
-            <CardTitle className="text-[22px] tracking-tight">
+            <CardTitle className="t-pergunta">
               <h1>Este link não abriu</h1>
             </CardTitle>
-            <CardDescription className="text-[15px] leading-relaxed">
+            <CardDescription className="t-apoio-candidato">
               Confira a mensagem que você recebeu do IEL e abra o link inteiro.
             </CardDescription>
           </CardHeader>
@@ -430,10 +430,10 @@ export function FitQuestionnaireScreen({
               aria-hidden="true"
               className="size-6 text-muted-foreground"
             />
-            <CardTitle className="text-[22px] tracking-tight">
+            <CardTitle className="t-pergunta">
               <h1>O prazo para responder terminou</h1>
             </CardTitle>
-            <CardDescription className="text-[15px] leading-relaxed">
+            <CardDescription className="t-apoio-candidato">
               As frases desta vaga ficavam abertas por dois dias. O IEL continua
               com o seu currículo.
             </CardDescription>
@@ -442,7 +442,7 @@ export function FitQuestionnaireScreen({
             <Button
               variant="outline"
               size="lg"
-              className="h-12 w-full text-[15px]"
+              className="t-opcao h-12 w-full"
               onClick={() => setIgnoredDeadline(true)}
             >
               Responder mesmo assim
@@ -486,11 +486,11 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
             {primeiroNome ? `Pronto, ${primeiroNome}.` : 'Pronto.'}
           </h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             O IEL compara as suas respostas com o jeito da empresa desta vaga.
             Se o seu currículo for enviado, a empresa vê só o quanto vocês
             combinam.
@@ -507,7 +507,7 @@ export function FitQuestionnaireScreen({
         <div className="mt-auto pt-2">
           <Button
             size="lg"
-            className="h-12 w-full text-[15px]"
+            className="t-opcao h-12 w-full"
             asChild
           >
             <Link href={rotaDaCandidatura}>Ver minha candidatura</Link>
@@ -538,11 +538,11 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
             Você já respondeu isto
           </h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             As {reuso.perguntadas} frases desta vaga são as mesmas que você
             respondeu{reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}. Só falta
             você dizer que elas valem aqui.
@@ -578,12 +578,12 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
             Como você prefere trabalhar?
           </h1>
           {/* Quem pergunta e por quê, numa linha. Sem resposta certa. */}
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <p className="t-apoio-candidato">
             O IEL, Centro de Empregos da Indústria, quer saber o seu jeito de
             trabalhar para a vaga de {jobView.activity}. Não existe resposta
             certa.
@@ -718,7 +718,7 @@ export function FitQuestionnaireScreen({
             frase: question.item.texto,
             rotulos: ROTULOS_DA_REGUA.candidato
           })}
-          className="h-12 w-full justify-center text-[15px]"
+          className="t-opcao h-12 w-full justify-center"
         />
 
         <div className="pt-2">
@@ -756,7 +756,7 @@ export function FitQuestionnaireScreen({
               </p>
               <Button
                 variant="outline"
-                className="h-12 w-full text-[15px]"
+                className="t-opcao h-12 w-full"
                 onClick={() => {
                   setFaltando(null);
                   setStep({ kind: 'question', index: faltando });

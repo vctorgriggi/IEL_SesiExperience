@@ -276,7 +276,7 @@ export function FitCards({
           </CardDescription>
           <CardTitle
             className={cn(
-              'text-3xl font-semibold tracking-tight tabular-nums',
+              't-num-card',
               percentual === null ? undefined : textoDaAderencia(percentual)
             )}
           >
@@ -357,7 +357,7 @@ export function FitCards({
           <CardDescription className="min-h-10">
             {COPY.technical.label}
           </CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
+          <CardTitle className="t-num-card">
             {technicalMatch === null ? (
               <>
                 <span aria-hidden="true">—</span>

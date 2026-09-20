@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import Image from 'next/image';
+import { Mindzinho } from '@/components/iel-demo/mindzinho/mindzinho';
 import { montarPendencias } from '@/components/iel-demo/overview/pendencias';
 import { buildAssistantRequestPayload } from '@/features/iel-demo/ai/build-request';
 import {
@@ -25,6 +25,7 @@ import {
   type MindResposta
 } from '@/features/iel-demo/chat/mind';
 import { montarContextoLivre } from '@/features/iel-demo/chat/mind-livre';
+import { poseDe } from '@/features/iel-demo/mindzinho/poses';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getJob } from '@/features/iel-demo/state/selectors';
 import { IconArrowUp, IconRotate2 } from '@tabler/icons-react';
@@ -101,12 +102,16 @@ export function MindSheet({ contexto, open, onOpenChange }: MindSheetProps) {
       >
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2 text-base">
-            <Image
-              src="/marca/simbolo.png"
-              alt=""
-              width={20}
-              height={20}
-              className="size-5"
+            {/*
+             * O boneco abre o painel na pose de quem chega. Decorativo: o nome
+             * está escrito ao lado, e o leitor de tela não precisa ouvir duas
+             * vezes que é o Mind.
+             */}
+            <Mindzinho
+              avatar
+              size={26}
+              pose={poseDe('abertura')}
+              decorativo
             />
             <span>
               <strong className="font-semibold">Mind</strong>
@@ -324,22 +329,22 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
 
           {pensando ? (
             <div className="flex justify-start">
+              {/*
+               * A espera tem cara de espera: os três pontos que pulsavam agora
+               * são a pose `pensando` do boneco. O texto continua ao lado —
+               * boneco sozinho não comunica —, e é ele que o leitor de tela
+               * anuncia pelo `role="status"`.
+               */}
               <p
                 role="status"
                 className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm text-muted-foreground"
               >
-                <span
-                  aria-hidden="true"
-                  className="flex gap-1"
-                >
-                  {[0, 1, 2].map((ponto) => (
-                    <span
-                      key={ponto}
-                      className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse"
-                      style={{ animationDelay: `${ponto * 150}ms` }}
-                    />
-                  ))}
-                </span>
+                <Mindzinho
+                  avatar
+                  size={24}
+                  pose={poseDe('preparando-resposta')}
+                  decorativo
+                />
                 Mind está digitando…
               </p>
             </div>

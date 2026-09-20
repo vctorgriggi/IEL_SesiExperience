@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import type { Metadata } from 'next';
-import { Red_Hat_Display } from 'next/font/google';
+import { Archivo, Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
@@ -20,14 +20,39 @@ import { routes } from '@workspace/routes';
 
 import './iel-theme.css';
 
-/**
- * Tipografia do manual de marca (docs/marca): Red Hat Display, 500 para
- * interface e 700 para títulos. O dashboard sobrescreve o tema com Nunito;
- * aqui a fonte entra pela variável que o tema escopado consome.
+/*
+ * Tipografia do produto: duas famílias, papéis separados.
+ *
+ * Archivo nos títulos e nos números de destaque. É grotesca de origem
+ * editorial, desenhada para título e para tabela, e tem eixo de largura
+ * variável: o título sai levemente expandido (`font-stretch: 112%`, no
+ * `iel-theme.css`) e ganha presença sem trocar de família. Algarismo
+ * tabular nativo, que é o que a coluna de percentual exige.
+ *
+ * Inter na interface, no corpo, na tabela e no formulário. Altura de x alta
+ * e formas abertas entre 12 e 14px — o tamanho em que a analista passa o dia
+ * —, e nenhuma personalidade para cansar a tela.
+ *
+ * Red Hat Display sai do CSS e continua só na marca: a logo e a assinatura
+ * são imagem (`public/marca/`), não texto, então não há fonte a carregar
+ * por elas. O Atkinson Hyperlegible do questionário é carregado no layout
+ * de `candidatura/`, onde é a única tela que o usa.
+ *
+ * Pelo `next/font` e não pelo `<link>` do Google: a fonte é servida do
+ * próprio domínio, sem requisição a terceiro (privacidade) e sem salto de
+ * layout. `display: swap` e a pilha de reserva ficam mantidos — em máquina
+ * sem a fonte e sem rede, o produto cai em Segoe UI e continua legível.
  */
-const redHatDisplay = Red_Hat_Display({
+const archivo = Archivo({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
+  // Variável: o eixo `wdth` só existe assim, e é ele que dá o título em 112%.
+  axes: ['wdth'],
+  variable: '--iel-font-display',
+  display: 'swap'
+});
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
   variable: '--iel-font-sans',
   display: 'swap'
 });
@@ -109,7 +134,24 @@ export default async function IelDemoLayout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className={`${redHatDisplay.variable} ${redHatDisplay.className} font-sans`}>
+    /*
+     * As duas variáveis, mais a `className` da Inter e a utilitária
+     * `font-sans`.
+     *
+     * A `className` não é redundante com a variável, e foi o `011783f` que
+     * mostrou por quê: só a variável deixava a família chegar pelo token, e o
+     * token é lido por uma regra de CSS que ainda não valeu antes da
+     * hidratação. Nesse intervalo a cascata caía no `ui-sans-serif`. A
+     * `className` põe `font-family` no próprio elemento, então a família vale
+     * na árvore inteira desde a primeira pintura.
+     *
+     * Inter é a que entra na `className` porque é a família da interface — a
+     * base da cascata. Archivo só aparece onde a escala pede (título, número,
+     * rótulo), e chega lá pelo token `--font-display`.
+     */
+    <div
+      className={`${archivo.variable} ${inter.variable} ${inter.className} font-sans`}
+    >
       <IelDemoProvider
         compartilhado={compartilhado && estadoInicial !== null}
         estadoInicial={estadoInicial}

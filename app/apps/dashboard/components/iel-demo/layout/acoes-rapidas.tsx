@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,6 +8,7 @@ import {
   ehTelaPorLink,
   MindSheet
 } from '@/components/iel-demo/chat/mind-sheet';
+import { Mindzinho } from '@/components/iel-demo/mindzinho/mindzinho';
 import {
   formatAdherence,
   type AdherenceResult
@@ -20,6 +20,7 @@ import {
   temBaseParaRanquear
 } from '@/features/iel-demo/analysis/mapa-cultural';
 import { plural } from '@/features/iel-demo/format';
+import { poseDe } from '@/features/iel-demo/mindzinho/poses';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   getCompany,
@@ -332,12 +333,12 @@ export function AcoesRapidas() {
                 aria-haspopup="dialog"
               >
                 Pergunte ao Mind
-                <Image
-                  src="/marca/simbolo.png"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="size-5 rounded-sm bg-background p-px"
+                {/* Decorativo: o rótulo ao lado já diz o que o botão faz. */}
+                <Mindzinho
+                  avatar
+                  tema="escuro"
+                  size={20}
+                  decorativo
                 />
               </Button>
             </li>
@@ -374,12 +375,24 @@ export function AcoesRapidas() {
               className="rotate-45 transition-transform"
             />
           ) : (
-            <Image
-              src="/marca/simbolo.png"
-              alt=""
-              width={24}
-              height={24}
-              className="size-6 rounded-sm bg-background p-px"
+            /*
+             * O boneco no canto, e a pose vem do que já está na tela: se há
+             * fila, ele faz a cara de atenção — a mesma informação que o selo
+             * vermelho ao lado conta em número. Duas leituras do mesmo fato,
+             * porque o selo é pequeno e o rosto se vê de longe.
+             *
+             * `decorativo` porque o `aria-label` do botão já descreve tudo.
+             */
+            <Mindzinho
+              avatar
+              tema="escuro"
+              size={26}
+              pose={poseDe(
+                pendencias.length > 0 && !eGestor
+                  ? 'falta-resposta'
+                  : 'abertura'
+              )}
+              decorativo
             />
           )}
           {!aberto && pendencias.length > 0 && !eGestor ? (
