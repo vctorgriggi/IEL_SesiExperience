@@ -75,11 +75,17 @@ const JOB_ID = 'VAG-02';
 const COMPANY_ID = 'EMP-02';
 
 /** Há quantos dias a remessa foi registrada e a empresa respondeu. */
-const REMESSA_HA_DIAS = 80;
-const DECISAO_HA_DIAS = 78;
+const REMESSA_HA_DIAS = 110;
+const DECISAO_HA_DIAS = 108;
 
 /** Há quantos dias cada pessoa foi contratada (o clique "contratei"). */
-const CONTRATADA_HA_DIAS = { JULIA: 75, MARCOS: 45, RENATA: 70 } as const;
+const CONTRATADA_HA_DIAS = {
+  JULIA: 75,
+  MARCOS: 45,
+  RENATA: 70,
+  // Diego já passou dos 90 dias: é quem prova que o cartão "Ficaram" conta.
+  DIEGO: 100
+} as const;
 
 /* ------------------------------------------------------------------ *
  * Pessoas
@@ -194,6 +200,44 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     externalRefs: [
       { system: SYSTEM, account: ACCOUNT, id: 'EMPG-DEMO-CAND-9103' }
     ]
+  },
+  {
+    id: 'DIEGO',
+    name: 'Diego Arruda Campos',
+    headline: 'Expedição e separação de pedidos em distribuidora',
+    summary:
+      'Separou e conferiu pedidos em distribuidora de bebidas por dois anos. Prefere turno com começo e fim certos e gosta de saber o porquê das regras.',
+    city: 'Cuiabá, MT',
+    email: 'diego.campos@example.com',
+    experiences: [
+      {
+        id: 'EXP-DIEGO-01',
+        role: 'Auxiliar de expedição',
+        organization: 'Distribuidora Rio Verde (fictícia)',
+        period: 'mar/2024 — mai/2026',
+        activities:
+          'Separava pedidos por rota, conferia a carga na doca e fechava o romaneio do turno.'
+      }
+    ],
+    declaredSkills: [
+      'Separação de pedidos',
+      'Conferência de carga',
+      'Romaneio'
+    ],
+    expectations: ['Turno fixo', 'Crescer dentro da empresa'],
+    preferences: [
+      {
+        id: 'PREF-DIEGO-01',
+        axisId: 'execucao-ritmo',
+        value: 'Prefere turno com horário certo e uma tarefa de cada vez.',
+        origin: 'Registro IEL — expectativa coletada em atendimento',
+        sourceId: 'FONTE-IEL',
+        updatedAt: dateBefore(130)
+      }
+    ],
+    externalRefs: [
+      { system: SYSTEM, account: ACCOUNT, id: 'EMPG-DEMO-CAND-9104' }
+    ]
   }
 ];
 
@@ -212,7 +256,7 @@ export const DEMO_ACOMPANHAMENTO_APPLICATIONS: Application[] = [
     id: 'CAND-ACOMP-01',
     talentId: 'JULIA',
     jobId: JOB_ID,
-    appliedAt: dateBefore(96),
+    appliedAt: dateBefore(126),
     externalStage: 'entrevista-empresa',
     analysisStage: 'pronta-para-encaminhar',
     referralStage: 'interesse-em-entrevista',
@@ -223,7 +267,7 @@ export const DEMO_ACOMPANHAMENTO_APPLICATIONS: Application[] = [
     id: 'CAND-ACOMP-02',
     talentId: 'MARCOS',
     jobId: JOB_ID,
-    appliedAt: dateBefore(95),
+    appliedAt: dateBefore(125),
     externalStage: 'entrevista-empresa',
     analysisStage: 'pronta-para-encaminhar',
     referralStage: 'interesse-em-entrevista',
@@ -234,12 +278,23 @@ export const DEMO_ACOMPANHAMENTO_APPLICATIONS: Application[] = [
     id: 'CAND-ACOMP-03',
     talentId: 'RENATA',
     jobId: JOB_ID,
-    appliedAt: dateBefore(94),
+    appliedAt: dateBefore(124),
     externalStage: 'entrevista-empresa',
     analysisStage: 'pronta-para-encaminhar',
     referralStage: 'interesse-em-entrevista',
     technicalMatch: 77,
     externalRef: { system: SYSTEM, account: ACCOUNT, id: 'EMPG-DEMO-APP-6613' }
+  },
+  {
+    id: 'CAND-ACOMP-04',
+    talentId: 'DIEGO',
+    jobId: JOB_ID,
+    appliedAt: dateBefore(128),
+    externalStage: 'entrevista-empresa',
+    analysisStage: 'pronta-para-encaminhar',
+    referralStage: 'interesse-em-entrevista',
+    technicalMatch: 79,
+    externalRef: { system: SYSTEM, account: ACCOUNT, id: 'EMPG-DEMO-APP-6614' }
   }
 ];
 
@@ -281,7 +336,7 @@ const JEITOS: {
       'lideranca-autonomia': 3,
       'adaptacao-carreira': 3
     },
-    ha: 92
+    ha: 122
   },
   {
     // Marcos: espera acompanhamento no início; o resto alinhado.
@@ -299,7 +354,7 @@ const JEITOS: {
       'lideranca-autonomia': 2,
       'adaptacao-carreira': 3
     },
-    ha: 91
+    ha: 121
   },
   {
     // Renata: aderente no jeito de trabalhar. O que não deu foi o turno e
@@ -318,7 +373,25 @@ const JEITOS: {
       'lideranca-autonomia': 3,
       'adaptacao-carreira': 3
     },
-    ha: 90
+    ha: 120
+  },
+  {
+    // Diego: ritmo constante e regra clara — o perfil que ficou.
+    applicationId: 'CAND-ACOMP-04',
+    talentId: 'DIEGO',
+    jeito: {
+      'orientacao-resultados': 4,
+      inovacao: 3,
+      'aprendizado-desenvolvimento': 4,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 5,
+      'regras-decisao': 4,
+      'interacao-convivencia': 3,
+      'lideranca-autonomia': 3,
+      'adaptacao-carreira': 4
+    },
+    ha: 124
   }
 ];
 
@@ -357,7 +430,7 @@ export const DEMO_REFERRALS: Referral[] = [
     jobId: JOB_ID,
     companyId: COMPANY_ID,
     message:
-      'Segue a lista de três perfis para a vaga de Assistente de Estoque, com o resumo do que cada pessoa trouxe e o que vale confirmar na entrevista.',
+      'Segue a lista de quatro perfis para a vaga de Assistente de Estoque, com o resumo do que cada pessoa trouxe e o que vale confirmar na entrevista.',
     state: 'registrado',
     createdAt: isoBefore(REMESSA_HA_DIAS, '15:40'),
     items: [
@@ -430,6 +503,32 @@ export const DEMO_REFERRALS: Referral[] = [
           retentionReason: null,
           retentionNote: null
         }
+      },
+      {
+        applicationId: 'CAND-ACOMP-04',
+        justification:
+          'Expedição e conferência de carga em distribuidora; turno fixo e regra clara são o que ele procura.',
+        sharedEvidenceIds: [],
+        summary: 'Diego Arruda Campos — expedição e separação de pedidos.',
+        attentionPoints: [],
+        suggestedQuestions: [
+          'Como era o fechamento do romaneio no fim do turno?'
+        ],
+        managerDecision: 'quero-entrevistar',
+        managerNote: null,
+        decidedAt: isoBefore(DECISAO_HA_DIAS, '09:40'),
+        outcome: {
+          hiring: 'contratou',
+          hiringAt: isoBefore(CONTRATADA_HA_DIAS.DIEGO, '10:20'),
+          hiringReason: null,
+          hiringNote: null,
+          // Passou dos 90 dias e a empresa nunca voltou: quem contou que ele
+          // ficou foi ele mesmo, nos três marcos.
+          retention: 'pendente',
+          retentionAt: null,
+          retentionNote: null,
+          retentionReason: null
+        }
       }
     ]
   }
@@ -475,6 +574,37 @@ export const DEMO_CHECK_INS: CheckIn[] = [
     continua: false,
     comoEstaSendo: 2,
     comentario: 'O turno mudou e não deu com o transporte.',
+    consentVersion: CHECK_IN_CONSENT_VERSION
+  },
+  {
+    id: 'CHK-CAND-ACOMP-04-30',
+    applicationId: 'CAND-ACOMP-04',
+    talentId: 'DIEGO',
+    marco: 30,
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 31, '19:30'),
+    continua: true,
+    comoEstaSendo: 4,
+    consentVersion: CHECK_IN_CONSENT_VERSION
+  },
+  {
+    id: 'CHK-CAND-ACOMP-04-60',
+    applicationId: 'CAND-ACOMP-04',
+    talentId: 'DIEGO',
+    marco: 60,
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 61, '20:05'),
+    continua: true,
+    comoEstaSendo: 4,
+    consentVersion: CHECK_IN_CONSENT_VERSION
+  },
+  {
+    id: 'CHK-CAND-ACOMP-04-90',
+    applicationId: 'CAND-ACOMP-04',
+    talentId: 'DIEGO',
+    marco: 90,
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 91, '21:15'),
+    continua: true,
+    comoEstaSendo: 5,
+    comentario: 'Já fecho o romaneio sozinho e o turno é o combinado.',
     consentVersion: CHECK_IN_CONSENT_VERSION
   }
 ];

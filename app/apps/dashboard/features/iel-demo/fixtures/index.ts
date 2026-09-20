@@ -11,6 +11,14 @@ import {
   DEMO_APPLICATIONS,
   DEMO_FIT_RESPONSES
 } from './applications';
+import {
+  ANALISE_REAL,
+  CANDIDATURAS_REAIS,
+  EVIDENCIAS_REAIS,
+  PREFERENCIAS_CULTURAIS_REAIS,
+  RESPOSTAS_FIT_REAIS,
+  TALENTOS_REAIS
+} from './candidatos-reais';
 import { DEMO_CLARIFICATIONS } from './clarifications';
 import {
   DEMO_COMPANIES,
@@ -20,6 +28,13 @@ import {
 } from './companies';
 import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_CULTURE_INVITES } from './culture-invites';
+import {
+  CONVITES_REAIS,
+  EMPRESAS_REAIS,
+  EQUIPES_REAIS,
+  RESPOSTAS_CULTURA_REAIS,
+  VAGAS_REAIS
+} from './empresas-reais';
 import { DEMO_EVIDENCES } from './evidences';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
@@ -39,25 +54,33 @@ export const DEMO_SCHEMA_VERSION = 7;
 const GENERATED = getGeneratedBase();
 
 /**
- * Catálogos completos: a base curada do roteiro primeiro, o volume gerado em
- * seguida. A ordem importa — as telas listam nessa sequência, então as vagas e
- * pessoas da demonstração aparecem no topo sem depender de ordenação.
+ * Catálogos completos: a base curada do roteiro primeiro, as empresas reais
+ * de Cuiabá em seguida (`empresas-reais.ts`), o volume gerado por último. A
+ * ordem importa — as telas listam nessa sequência, então as vagas e pessoas
+ * da demonstração aparecem no topo sem depender de ordenação.
  */
-export const ALL_COMPANIES = [...DEMO_COMPANIES, ...GENERATED.companies];
-export const ALL_JOBS = [...DEMO_JOBS, ...GENERATED.jobs];
+export const ALL_COMPANIES = [
+  ...DEMO_COMPANIES,
+  ...EMPRESAS_REAIS,
+  ...GENERATED.companies
+];
+export const ALL_JOBS = [...DEMO_JOBS, ...VAGAS_REAIS, ...GENERATED.jobs];
 /**
  * As três pessoas da remessa antiga da Horizonte Alimentos entram depois das
  * curadas e antes do volume gerado: têm nome e história, mas não são as
- * protagonistas do roteiro (`fixtures/acompanhamento.ts`).
+ * protagonistas do roteiro (`fixtures/acompanhamento.ts`). Os candidatos das
+ * empresas reais vêm depois delas (`candidatos-reais.ts`).
  */
 export const ALL_TALENTS = [
   ...DEMO_TALENTS,
   ...DEMO_ACOMPANHAMENTO_TALENTS,
+  ...TALENTOS_REAIS,
   ...GENERATED.talents
 ];
 
 export const ALL_TALENT_CULTURE_ANSWERS = [
   ...DEMO_TALENT_CULTURE_ANSWERS,
+  ...PREFERENCIAS_CULTURAIS_REAIS,
   ...GENERATED.talentCultureAnswers
 ];
 
@@ -105,6 +128,15 @@ export const DEMO_PERSONAS: Persona[] = [
     description:
       'Sônia Prado. Vê apenas a própria empresa e os perfis compartilhados em encaminhamentos.',
     companyId: 'EMP-03',
+    talentId: null
+  },
+  {
+    id: 'gestor-emp-04',
+    kind: 'gestor',
+    label: 'Gestão — Colatte',
+    description:
+      'Contato da empresa (sem nome na base). Vê apenas a própria empresa e os perfis compartilhados em encaminhamentos.',
+    companyId: 'EMP-04',
     talentId: null
   }
 ];
@@ -159,24 +191,42 @@ export function buildInitialDemoState(): DemoState {
     schemaVersion: DEMO_SCHEMA_VERSION,
     personaId: ANALYST_PERSONA_ID,
     dataSources: clone(DEMO_DATA_SOURCES),
+    // As candidaturas das empresas reais vêm primeiro: a primeira da lista
+    // é a do candidato da demonstração (CAND-21, Colatte), que é a que o
+    // atalho "Ver como o candidato vê" abre (`candidatos-reais.ts`).
     applications: [
+      ...clone(CANDIDATURAS_REAIS),
       ...clone(DEMO_APPLICATIONS),
       ...clone(DEMO_ACOMPANHAMENTO_APPLICATIONS),
       ...clone(GENERATED.applications)
     ],
-    analysis: { ...clone(DEMO_ANALYSIS), ...clone(GENERATED.analysis) },
-    evidences: [...clone(DEMO_EVIDENCES), ...clone(GENERATED.evidences)],
-    teams: [...clone(DEMO_TEAMS), ...clone(GENERATED.teams)],
+    analysis: {
+      ...clone(DEMO_ANALYSIS),
+      ...clone(ANALISE_REAL),
+      ...clone(GENERATED.analysis)
+    },
+    evidences: [
+      ...clone(DEMO_EVIDENCES),
+      ...clone(EVIDENCIAS_REAIS),
+      ...clone(GENERATED.evidences)
+    ],
+    teams: [
+      ...clone(DEMO_TEAMS),
+      ...clone(EQUIPES_REAIS),
+      ...clone(GENERATED.teams)
+    ],
     cultureAnswers: [
       ...clone(DEMO_CULTURE_ANSWERS),
+      ...clone(RESPOSTAS_CULTURA_REAIS),
       ...clone(GENERATED.cultureAnswers)
     ],
-    cultureInvites: clone(DEMO_CULTURE_INVITES),
+    cultureInvites: [...clone(DEMO_CULTURE_INVITES), ...clone(CONVITES_REAIS)],
     importedTalents: [],
     spreadsheetImports: [],
     fitResponses: [
       ...clone(DEMO_FIT_RESPONSES),
       ...clone(DEMO_ACOMPANHAMENTO_FIT_RESPONSES),
+      ...clone(RESPOSTAS_FIT_REAIS),
       ...clone(GENERATED.fitResponses)
     ],
     // A remessa da Horizonte Alimentos já contratada há semanas, e o que as
@@ -226,6 +276,20 @@ export {
 } from './acompanhamento';
 export { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 export { DEMO_CULTURE_INVITES } from './culture-invites';
+export {
+  CONVITES_REAIS,
+  EMPRESAS_REAIS,
+  EQUIPES_REAIS,
+  RESPOSTAS_CULTURA_REAIS,
+  VAGAS_REAIS
+} from './empresas-reais';
+export {
+  ANALISE_REAL,
+  CANDIDATURAS_REAIS,
+  EVIDENCIAS_REAIS,
+  RESPOSTAS_FIT_REAIS,
+  TALENTOS_REAIS
+} from './candidatos-reais';
 export { loadExampleSpreadsheet } from './planilha-exemplo';
 export { DEMO_EVIDENCES } from './evidences';
 export { DEMO_JOBS } from './jobs';

@@ -4,11 +4,12 @@ Transcrições em Markdown dos documentos produzidos a partir da reunião com a 
 
 **Estes documentos têm precedência sobre `docs/BRIEFING_CLAUDE_PROTOTIPO_IEL.md` onde houver conflito.** O briefing foi escrito em 19/09 às 00:47, antes da reunião; a reunião corrigiu entendimentos e trouxe regras de negócio ditas pelo próprio cliente.
 
-| Arquivo | O que é | Fonte |
-| --- | --- | --- |
-| [01-prioridade-funcionalidades-moscow.md](01-prioridade-funcionalidades-moscow.md) | Priorização Must / Should / Could / Won't, critério de sucesso do MVP e roadmap em 5 fases | `Prioridade de Funcionalidades (MoSCoW) Desafio IEL.pdf` |
-| [02-entendimento-do-desafio-fit-cultural.md](02-entendimento-do-desafio-fit-cultural.md) | Dor central, públicos, fluxo atual, hipóteses validadas e corrigidas, regras de negócio, base conceitual | `Entendimento do Desafio IEL Fit Cultural na Triagem.pdf` |
-| [03-transcricao-reuniao-2026-09-19.md](03-transcricao-reuniao-2026-09-19.md) | Trechos decisivos da transcrição, com timestamps, organizados por tema | `09-19 Reunião de Consultoria [...] transcript.pdf` |
+| Arquivo                                                                                  | O que é                                                                                                                                                                                                                   | Fonte                                                        |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [01-prioridade-funcionalidades-moscow.md](01-prioridade-funcionalidades-moscow.md)       | Priorização Must / Should / Could / Won't, critério de sucesso do MVP e roadmap em 5 fases                                                                                                                                | `Prioridade de Funcionalidades (MoSCoW) Desafio IEL.pdf`     |
+| [02-entendimento-do-desafio-fit-cultural.md](02-entendimento-do-desafio-fit-cultural.md) | Dor central, públicos, fluxo atual, hipóteses validadas e corrigidas, regras de negócio, base conceitual                                                                                                                  | `Entendimento do Desafio IEL Fit Cultural na Triagem.pdf`    |
+| [03-transcricao-reuniao-2026-09-19.md](03-transcricao-reuniao-2026-09-19.md)             | Trechos decisivos da transcrição, com timestamps, organizados por tema                                                                                                                                                    | `09-19 Reunião de Consultoria [...] transcript.pdf`          |
+| [05-seed-empresas-reais.md](05-seed-empresas-reais.md)                                   | Empresas reais de Cuiabá na base de demonstração (Colatte, Log,Lab, Amaggi, Grupo Norte Logística, Bom Futuro): fontes públicas, o que é fato e o que é inferência, mapeamento aos 10 temas e o candidato da demonstração | Sites institucionais das empresas, consultados em 19/09/2026 |
 
 ## Regras de negócio ditas pelo cliente que vinculam o MVP
 

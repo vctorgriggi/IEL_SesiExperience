@@ -392,12 +392,12 @@ export type GeneratedBase = {
  * Proporção de candidaturas geradas que respondem o questionário de fit.
  *
  * R7 diz que quem não responde sai do processo, e o prazo é de 1 a 2 dias.
- * Taxa de resposta de 100% seria um pano de fundo que mente: a tela do
- * analista existe justamente para lidar com a fila em que parte das pessoas
- * não respondeu, e sem esse terço a coluna de aderência nunca mostraria uma
- * lacuna. O sorteio sai do mesmo gerador semeado — mesma base a cada carga.
+ * Uma pequena parte fica sem resposta — a coluna de aderência precisa saber
+ * mostrar a lacuna —, mas a base de demonstração tem de parecer completa:
+ * era 0,7 e a vaga do roteiro aparecia com 31 pessoas sem responder. O
+ * sorteio sai do mesmo gerador semeado — mesma base a cada carga.
  */
-const FIT_RESPONSE_RATE = 0.7;
+const FIT_RESPONSE_RATE = 0.96;
 
 /** Quantas candidaturas geradas entram na vaga 1 do roteiro. */
 const EXTRA_ON_SCRIPT_JOB = 86;

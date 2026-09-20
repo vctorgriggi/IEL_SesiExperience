@@ -41,7 +41,9 @@
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
 import type { Company } from '../types';
 import { DEMO_APPLICATIONS, DEMO_FIT_RESPONSES } from './applications';
+import { CANDIDATURAS_REAIS, RESPOSTAS_FIT_REAIS } from './candidatos-reais';
 import { DEMO_COMPANIES, DEMO_REFERENCE_DATE } from './companies';
+import { EMPRESAS_REAIS, VAGAS_REAIS } from './empresas-reais';
 import { getGeneratedBase } from './generated';
 import { DEMO_JOBS } from './jobs';
 
@@ -890,24 +892,445 @@ function build(): OutcomesBase {
     }
   }
 
+  // As empresas reais de Cuiabá entram depois, com gerador próprio: o que
+  // já estava sorteado acima não muda de lugar.
+  const reais = construirHistoricoReal(seq);
+  remessas.push(...reais.remessas);
+  reaberturas.push(...reais.reaberturas);
+
   remessas.sort((a, b) => a.enviadaEm.localeCompare(b.enviadaEm));
   reaberturas.sort((a, b) => a.reabertaEm.localeCompare(b.reabertaEm));
+
+  const todasAsEmpresas = [...empresas, ...reais.empresas];
 
   return {
     comunicacao: buildComunicacao(random),
     remessas,
     reaberturas,
-    vagasEmAndamento: buildVagasEmAndamento(empresas),
+    // As reais ficam no fim da lista: o gerador próprio desta função anda o
+    // mesmo tanto para as que já existiam.
+    vagasEmAndamento: buildVagasEmAndamento(todasAsEmpresas),
     perfisEmpresa,
-    roteiros: buildRoteiros(random, empresas),
+    roteiros: [
+      ...buildRoteiros(random, empresas),
+      ...buildRoteiros(createRandom(SEED + 111), reais.empresas)
+    ],
     sincronizacoes: buildSincronizacoes(random),
     entregaEmail30d: [],
-    empresas: empresas.map(({ company }) => ({
+    empresas: todasAsEmpresas.map(({ company }) => ({
       companyId: company.id,
       nome: company.name,
       setor: setorDoHistorico(company.sector)
     }))
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Empresas reais de Cuiabá
+ * ------------------------------------------------------------------ */
+
+type RemessaRealSeed = {
+  /** Dias antes da referência em que a lista foi enviada. */
+  diasAtras: number;
+  cargo: string;
+  retorno: RetornoEmpresa;
+  motivo?: MotivoNaoContratacao;
+  /** Houve contratação (vista ou não pelo IEL). */
+  contratou: boolean;
+  /** Dias até a pessoa sair; `null` se ficou. Gera a reabertura. */
+  saiuAposDias: number | null;
+};
+
+/**
+ * O passado das empresas reais (`empresas-reais.ts`), escrito à mão.
+ *
+ * É recorte ilustrativo, como o resto do histórico — nada aqui é dado da
+ * empresa. Os números são pequenos: a Colatte é uma equipe pequena que
+ * reabriu a vaga de suporte duas vezes no ano, e é esse número que a tela
+ * "Custo de reabrir" precisa ter para a analista ligar com argumento. A
+ * Norte Logística, a mais rotativa das cinco, reabriu três.
+ */
+const HISTORICO_REAL: Record<string, RemessaRealSeed[]> = {
+  'EMP-04': [
+    {
+      diasAtras: 330,
+      cargo: 'Assistente de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 38
+    },
+    {
+      diasAtras: 250,
+      cargo: 'Auxiliar Administrativo',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 175,
+      cargo: 'Assistente de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 24
+    },
+    {
+      diasAtras: 95,
+      cargo: 'Auxiliar Administrativo',
+      retorno: 'nao-contratou',
+      motivo: 'expectativa-salarial',
+      contratou: false,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 40,
+      cargo: 'Assistente de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    }
+  ],
+  'EMP-05': [
+    {
+      diasAtras: 300,
+      cargo: 'Analista de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 220,
+      cargo: 'Analista de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 61
+    },
+    {
+      diasAtras: 160,
+      cargo: 'Assistente Administrativo',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 110,
+      cargo: 'Analista de Suporte',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 35,
+      cargo: 'Auxiliar de Testes',
+      retorno: 'nao-contratou',
+      motivo: 'perfil-equipe',
+      contratou: false,
+      saiuAposDias: null
+    }
+  ],
+  'EMP-06': [
+    {
+      diasAtras: 340,
+      cargo: 'Assistente de Logística',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 290,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 27
+    },
+    {
+      diasAtras: 240,
+      cargo: 'Assistente Administrativo',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 190,
+      cargo: 'Assistente de Logística',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 150,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'nao-contratou',
+      motivo: 'desistencia-candidato',
+      contratou: false,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 100,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 45
+    },
+    {
+      diasAtras: 60,
+      cargo: 'Assistente de Logística',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 25,
+      cargo: 'Assistente Administrativo',
+      retorno: 'nao-contratou',
+      motivo: 'perfil-equipe',
+      contratou: false,
+      saiuAposDias: null
+    }
+  ],
+  'EMP-07': [
+    {
+      diasAtras: 350,
+      cargo: 'Conferente de Carga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 19
+    },
+    {
+      diasAtras: 310,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 270,
+      cargo: 'Conferente de Carga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 230,
+      cargo: 'Ajudante de Carga e Descarga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 33
+    },
+    {
+      diasAtras: 185,
+      cargo: 'Conferente de Carga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 140,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'nao-contratou',
+      motivo: 'desistencia-candidato',
+      contratou: false,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 105,
+      cargo: 'Ajudante de Carga e Descarga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 52
+    },
+    {
+      diasAtras: 70,
+      cargo: 'Conferente de Carga',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 30,
+      cargo: 'Auxiliar de Armazém',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    }
+  ],
+  'EMP-08': [
+    {
+      diasAtras: 320,
+      cargo: 'Auxiliar de Almoxarifado',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 260,
+      cargo: 'Assistente Administrativo',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 41
+    },
+    {
+      diasAtras: 200,
+      cargo: 'Auxiliar de Almoxarifado',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 145,
+      cargo: 'Auxiliar de Produção',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: 22
+    },
+    {
+      diasAtras: 90,
+      cargo: 'Assistente Administrativo',
+      retorno: 'nao-contratou',
+      motivo: 'vaga-cancelada',
+      contratou: false,
+      saiuAposDias: null
+    },
+    {
+      diasAtras: 45,
+      cargo: 'Auxiliar de Almoxarifado',
+      retorno: 'contratou',
+      contratou: true,
+      saiuAposDias: null
+    }
+  ]
+};
+
+/**
+ * Remessas e reaberturas das empresas reais, a partir de `HISTORICO_REAL`.
+ *
+ * Gerador próprio (`SEED + 110`): só as aderências enviadas e os dias de cada
+ * etapa são sorteados; o desfecho de cada remessa está escrito acima.
+ */
+function construirHistoricoReal(seqInicial: number): {
+  remessas: RemessaHistorica[];
+  reaberturas: ReaberturaHistorica[];
+  empresas: EmpresaDoHistorico[];
+} {
+  const random = createRandom(SEED + 110);
+  const remessas: RemessaHistorica[] = [];
+  const reaberturas: ReaberturaHistorica[] = [];
+  const empresas: EmpresaDoHistorico[] = [];
+  const comVagaAtiva = new Set(
+    VAGAS_REAIS.filter((job) => job.stage !== 'encerrada').map(
+      (job) => job.companyId
+    )
+  );
+
+  let seq = seqInicial;
+  for (const company of EMPRESAS_REAIS) {
+    const seeds = HISTORICO_REAL[company.id] ?? [];
+    const setor = setorDoHistorico(company.sector);
+    const vies = viesDoSetor(company.sector);
+    empresas.push({
+      company,
+      ritmo: seeds.length / 12,
+      rotatividade: 1,
+      desvio: 0,
+      temVagaAtiva: comVagaAtiva.has(company.id)
+    });
+
+    for (const seed of seeds) {
+      seq += 1;
+      const id = `HIST-REM-${String(seq).padStart(4, '0')}`;
+      const enviadaEm = dateBefore(seed.diasAtras);
+      const aposMindRh = enviadaEm >= MIND_RH_START_DATE;
+      const curriculosRecebidos = between(random, 12, 48);
+      const questionariosRespondidos = Math.round(
+        curriculosRecebidos * (aposMindRh ? 0.7 : 0.45)
+      );
+      const acimaDoCorte = Math.round(questionariosRespondidos * 0.65);
+      const curriculosEnviados = between(random, 3, 5);
+      const enviados = Array.from({ length: curriculosEnviados }, () =>
+        gerarEnvio(random, aposMindRh, vies)
+      );
+      const diasDecisao = between(random, 5, 14);
+      const contratadoEm = addDays(
+        enviadaEm,
+        diasDecisao + between(random, 4, 10)
+      );
+
+      const contratados: ContratacaoHistorica[] = [];
+      if (seed.contratou) {
+        // Depois do Mind RH a empresa escolhe quem combina mais.
+        let indice = 0;
+        enviados.forEach((envio, i) => {
+          if (envio.aderencia > (enviados[indice]?.aderencia ?? 0)) indice = i;
+        });
+        const envio = enviados[indice]!;
+        const saidaEm =
+          seed.saiuAposDias === null
+            ? null
+            : addDays(contratadoEm, seed.saiuAposDias);
+        const marco = (dias: number): boolean | null => {
+          if (saidaEm !== null && seed.saiuAposDias! < dias) return false;
+          return addDays(contratadoEm, dias) <= DEMO_REFERENCE_DATE
+            ? true
+            : null;
+        };
+        if (
+          seed.retorno === 'contratou' &&
+          contratadoEm <= DEMO_REFERENCE_DATE
+        ) {
+          contratados.push({
+            indiceEnvio: indice,
+            aderencia: envio.aderencia,
+            contratadoEm,
+            ficou30: marco(30),
+            ficou90: marco(90)
+          });
+        }
+        if (saidaEm !== null && seed.saiuAposDias !== null) {
+          const intervalo = between(random, 1, 5);
+          const reabertaEm = addDays(saidaEm, intervalo);
+          if (reabertaEm <= DEMO_REFERENCE_DATE) {
+            reaberturas.push({
+              companyId: company.id,
+              setor,
+              remessaId: id,
+              reabertaEm,
+              diasAteReabrir: seed.saiuAposDias + intervalo
+            });
+          }
+        }
+      }
+
+      remessas.push({
+        id,
+        vagaId: `HIST-VAG-${String(seq).padStart(4, '0')}`,
+        cargo: seed.cargo,
+        companyId: company.id,
+        setor,
+        enviadaEm,
+        curriculosRecebidos,
+        questionariosRespondidos,
+        acimaDoCorte,
+        curriculosEnviados,
+        enviados,
+        retorno: seed.retorno,
+        motivo:
+          seed.retorno === 'nao-contratou' ? (seed.motivo ?? 'outro') : null,
+        diasAteRetorno: seed.retorno === 'sem-resposta' ? null : diasDecisao,
+        contratados,
+        etapasDias: {
+          perfilEmpresa: aposMindRh ? between(random, 2, 6) : null,
+          ligacao: between(random, 1, 3),
+          questionarios: between(random, 1, 2),
+          listaFinal: between(random, 1, 2),
+          retornoEmpresa:
+            seed.retorno === 'sem-resposta'
+              ? between(random, 12, 20)
+              : diasDecisao
+        }
+      });
+    }
+  }
+
+  return { remessas, reaberturas, empresas };
 }
 
 /**
@@ -918,12 +1341,20 @@ function build(): OutcomesBase {
  */
 function buildComunicacao(random: () => number): EventoComunicacao[] {
   const generated = getGeneratedBase();
-  const applications = [...DEMO_APPLICATIONS, ...generated.applications];
+  // As candidaturas das empresas reais vêm por último aqui, embora sejam as
+  // primeiras do estado: acrescentá-las ao fim não desloca o sorteio das
+  // que já existiam.
+  const applications = [
+    ...DEMO_APPLICATIONS,
+    ...generated.applications,
+    ...CANDIDATURAS_REAIS
+  ];
   const responded = new Map(
-    [...DEMO_FIT_RESPONSES, ...generated.fitResponses].map((r) => [
-      r.applicationId,
-      r
-    ])
+    [
+      ...DEMO_FIT_RESPONSES,
+      ...generated.fitResponses,
+      ...RESPOSTAS_FIT_REAIS
+    ].map((r) => [r.applicationId, r])
   );
 
   return applications.map((application) => {
@@ -1063,7 +1494,11 @@ function buildRoteiros(
 function buildSincronizacoes(random: () => number): ExecucaoSincronizacao[] {
   const generated = getGeneratedBase();
   const porDia = new Map<string, number>();
-  for (const application of [...DEMO_APPLICATIONS, ...generated.applications]) {
+  for (const application of [
+    ...DEMO_APPLICATIONS,
+    ...generated.applications,
+    ...CANDIDATURAS_REAIS
+  ]) {
     const dia = application.appliedAt.slice(0, 10);
     porDia.set(dia, (porDia.get(dia) ?? 0) + 1);
   }

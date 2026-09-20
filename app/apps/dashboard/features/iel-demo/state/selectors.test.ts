@@ -105,11 +105,11 @@ describe('indicadores e agregações da visão geral', () => {
     // curadas do roteiro não são afetadas pelo volume gerado em volta.
     expect(getOverviewMetrics(state, 'todas').openClarifications).toBe(2);
     expect(getOverviewMetrics(state, 'todas').referralsAwaitingReturn).toBe(0);
-    // As 5 incluem as três candidaturas já contratadas da remessa antiga
+    // As 6 incluem as quatro candidaturas já contratadas da remessa antiga
     // (`fixtures/acompanhamento.ts`), que a empresa já respondeu.
     expect(getOverviewMetrics(state, 'EMP-02')).toEqual({
       openJobs: 1,
-      applicationsInAnalysis: 5,
+      applicationsInAnalysis: 6,
       openClarifications: 1,
       referralsAwaitingReturn: 0
     });
@@ -380,7 +380,9 @@ describe('persistência local versionada', () => {
       plan,
       at: '2026-09-19T12:00:00.000Z'
     });
-    const convite = getCultureInvites(importado, 'EMP-01').find(
+    // A Cerrado não tem mais convite em aberto (seed de 2026-09-19); o da
+    // Colatte é o único ainda no prazo.
+    const convite = getCultureInvites(importado, 'EMP-04').find(
       (entry) => !entry.answeredAt
     )!;
     const respondido = demoReducer(importado, {
@@ -400,11 +402,11 @@ describe('persistência local versionada', () => {
     expect(lido.spreadsheetImports).toHaveLength(1);
     expect(lido.applications).toHaveLength(respondido.applications.length);
     expect(
-      getCultureInvites(lido, 'EMP-01').find((entry) => entry.id === convite.id)
+      getCultureInvites(lido, 'EMP-04').find((entry) => entry.id === convite.id)
         ?.answeredAt
     ).toBe('2026-09-14T12:00:00.000Z');
-    expect(getCompanyCultureProfile(lido, 'EMP-01')).toEqual(
-      getCompanyCultureProfile(respondido, 'EMP-01')
+    expect(getCompanyCultureProfile(lido, 'EMP-04')).toEqual(
+      getCompanyCultureProfile(respondido, 'EMP-04')
     );
   });
 
