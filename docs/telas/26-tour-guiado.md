@@ -19,7 +19,8 @@ quem entra pela primeira vez e não sabe por onde começar.
 
 - **Botão no cabeçalho**: bússola + "Tour" (só a bússola abaixo de 640px), antes das ações da tela.
 - **Diálogo** com uma linha por tela: ícone, nome, a pergunta que a tela responde, o número de passos
-  e o selo **esta tela** quando é a tela em que se está.
+  e o selo **esta tela** quando é a tela em que se está. A primeira opção é **A jornada inteira**, que
+  atravessa quatro telas sozinha.
 - **Balão do tour** (driver.js), com título, uma ou duas frases, o progresso ("3 de 4") e os botões
   Voltar / Próximo / Fechar. O resto da página escurece e o bloco em foco fica recortado.
 
@@ -35,6 +36,7 @@ estado, seletor ou fixture: o tour é texto fixo sobre a estrutura da tela.
 | Clicar em **Tour** | abre o diálogo |
 | Escolher a tela em que já se está | fecha o diálogo e começa na hora |
 | Escolher outra tela | navega até ela e começa quando ela termina de montar |
+| Avançar num passo de outra rota | o motor navega, espera o alvo e só então mostra o balão |
 | Voltar / Próximo | anda entre os passos |
 | Fechar ou `Esc` | encerra e devolve a tela |
 
@@ -45,12 +47,15 @@ Nenhuma ação do reducer é disparada: o tour não altera o estado da demonstra
 Tudo em um arquivo só, `tours.ts`:
 
 1. Acrescente um objeto em `TOURS` com `id`, `titulo`, `descricao`, `icone`, `rota` e `passos`.
-2. Cada passo tem `titulo`, `texto` e, opcionalmente, `seletor` (o bloco destacado), `lado` e
-   `alinhamento`. **Passo sem `seletor`** abre centralizado — é como cada tour começa, dizendo o que
-   a tela responde antes de apontar para qualquer canto.
-3. O alvo é sempre `[data-tour="…"]`, atributo escrito na marcação da tela. Nunca uma classe do
+2. Cada passo tem `titulo`, `texto` e, opcionalmente, `seletor` (o bloco destacado), `lado`,
+   `alinhamento` e `rota`. **Passo sem `seletor`** abre centralizado — é como cada tour começa,
+   dizendo o que a tela responde antes de apontar para qualquer canto.
+3. **`rota` no passo** faz o tour trocar de tela antes de mostrá-lo. É o que permite um tour
+   percorrer a jornada inteira; sem ela, o passo é da tela em que o tour já está. O alvo de um passo
+   com rota não precisa existir agora — ele nasce depois da navegação.
+4. O alvo é sempre `[data-tour="…"]`, atributo escrito na marcação da tela. Nunca uma classe do
    Tailwind: classe muda no primeiro ajuste de layout e o tour quebra em silêncio.
-4. Rota com identificador (`/vagas/<id>`) precisa de `casaCom`, senão o tour nunca se reconhece como
+5. Rota com identificador (`/vagas/<id>`) precisa de `casaCom`, senão o tour nunca se reconhece como
    o da tela atual.
 
 A ordem do diálogo é a ordem do array.
@@ -63,7 +68,11 @@ o perfil da pessoa no servidor — não o `localStorage`, que é por navegador.
 ## Regras e limites
 
 - **Passo cujo alvo não existe é descartado**, não quebra o tour: telas mudam e cartões somem em
-  estado vazio. Um tour com um passo a menos é melhor do que um tour que estoura.
+  estado vazio. Um tour com um passo a menos é melhor do que um tour que estoura. A regra não vale
+  para passo de outra rota: ali o alvo ainda não existe porque a tela não chegou.
+- **O clique em "Próximo" é do motor, não do driver.js.** Ele precisa navegar, esperar o alvo e
+  refazer a medida do recorte antes de avançar; deixar o driver avançar sozinho poria o destaque no
+  vazio.
 - O tour **não promete o que o produto não faz**: é leitura da tela, não argumento de venda. Onde a
   tela diz "dados simulados", o tour repete.
 - Só o analista tem tour. As telas por link (candidato, colaborador, relatório da empresa) não têm
@@ -80,3 +89,4 @@ Alcançável de qualquer tela do analista. Vizinho de "Como funciona" (o método
 ## Histórico
 
 - 2026-09-20 — criado.
+- 2026-09-20 — passos podem trocar de tela (`rota` no passo) e entra o tour "A jornada inteira".

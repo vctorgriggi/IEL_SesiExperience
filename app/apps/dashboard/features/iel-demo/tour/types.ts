@@ -34,6 +34,14 @@ export type PassoDoTour = {
   texto: string;
   lado?: LadoDoPasso;
   alinhamento?: AlinhamentoDoPasso;
+  /**
+   * Rota em que este passo mora.
+   *
+   * Presente e diferente da tela atual, o motor navega antes de mostrar o
+   * balão — é o que permite um tour atravessar a jornada em vez de ficar
+   * numa tela só. Ausente, o passo é da tela em que o tour já está.
+   */
+  rota?: string;
 };
 
 export type TourDeTela = {

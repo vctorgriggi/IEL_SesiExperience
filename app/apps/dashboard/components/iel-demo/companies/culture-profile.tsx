@@ -489,7 +489,10 @@ export function CompanyCultureTable({
         </Collapsible>
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div
+        data-tour="empresa-temas"
+        className="overflow-x-auto rounded-lg border"
+      >
         <Table>
           <TableCaption className="sr-only">
             Como a empresa trabalha, ponto a ponto: o que a equipe diz, a

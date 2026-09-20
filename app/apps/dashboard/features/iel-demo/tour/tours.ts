@@ -11,6 +11,7 @@
  */
 
 import {
+  IconArrowRight,
   IconBriefcase,
   IconBuilding,
   IconChartBar,
@@ -33,6 +34,78 @@ function alvo(nome: string): string {
 }
 
 export const TOURS: TourDeTela[] = [
+  {
+    id: 'jornada',
+    titulo: 'A jornada inteira',
+    descricao: 'Da fila do dia ao retorno da empresa — atravessa as telas',
+    icone: IconArrowRight,
+    rota: iel.index,
+    casaCom: () => false,
+    passos: [
+      {
+        rota: iel.index,
+        titulo: 'O caminho completo, em sete paradas',
+        texto:
+          'Este tour anda sozinho pelas telas: começa no dia da analista, passa pela decisão de quem enviar e termina no que a empresa devolveu. Use o "Próximo" — a navegação é por nossa conta.'
+      },
+      {
+        rota: iel.index,
+        seletor: alvo('inicio-fila'),
+        titulo: '1. O que precisa de mim hoje',
+        texto:
+          'A fila abre o dia na ordem em que compensa resolver. Cada linha leva à tela onde aquilo se resolve.',
+        lado: 'right'
+      },
+      {
+        rota: iel.index,
+        seletor: alvo('inicio-funil'),
+        titulo: '2. Onde o processo perde gente',
+        texto:
+          'Do currículo recebido a quem ficou 90 dias. O degrau que mais encolhe é a próxima conversa com a empresa.',
+        lado: 'left'
+      },
+      {
+        rota: iel.jobs.byId('VAG-01').index,
+        seletor: alvo('mesa-indicadores'),
+        titulo: '3. A vaga, em quatro números',
+        texto:
+          'Trocamos de tela. Compatíveis, sem resposta, marcados e resgate — cada cartão é também um filtro da tabela abaixo.',
+        lado: 'bottom'
+      },
+      {
+        rota: iel.jobs.byId('VAG-01').index,
+        seletor: alvo('mesa-tabela'),
+        titulo: '4. Os dois números, lado a lado',
+        texto:
+          '"Combina" é a aderência ao jeito de trabalhar da empresa; "Requisitos" vem do sistema de vagas. O resgate traz de volta quem o filtro técnico descartou.',
+        lado: 'top'
+      },
+      {
+        rota: iel.companies.byId('EMP-01'),
+        seletor: alvo('empresa-temas'),
+        titulo: '5. De onde sai o "combina"',
+        texto:
+          'Outra tela: a empresa descrita pela própria equipe, tema a tema. Enquanto o mínimo de respostas não fecha, o tema fica em aberto e não pesa na conta de ninguém.',
+        lado: 'top'
+      },
+      {
+        rota: iel.followUp.index,
+        seletor: alvo('acompanhamento-fila'),
+        titulo: '6. A contratação durou?',
+        texto:
+          'A última tela do ciclo. O que a pessoa disse e o que a empresa disse, lado a lado — e quando a empresa cala, quem responde é a pessoa.',
+        lado: 'top'
+      },
+      {
+        rota: iel.followUp.index,
+        seletor: alvo('acompanhamento-privacidade'),
+        titulo: '7. E o que a pessoa diz fica com o IEL',
+        texto:
+          'A resposta do check-in nunca chega à empresa. É o que torna a pergunta possível.',
+        lado: 'bottom'
+      }
+    ]
+  },
   {
     id: 'inicio',
     titulo: 'Início',

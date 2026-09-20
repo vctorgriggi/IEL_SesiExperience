@@ -3,12 +3,14 @@
 /**
  * O tour, a partir do cabeçalho.
  *
- * Um botão na barra de 48px abre um diálogo com uma opção por tela. Escolher
- * a tela em que já se está começa na hora; escolher outra navega até ela e
- * começa quando ela chega — por isso este componente vive no cabeçalho, que
- * é o que sobrevive à troca de rota dentro da casca.
+ * Um botão na barra de 48px abre um diálogo com uma opção por tela, mais a
+ * jornada inteira, que atravessa as telas sozinha.
+ *
+ * Quem navega é este componente: ele entrega ao motor do tour uma função
+ * `navegar` que empurra a rota e só resolve quando a tela chega. Por isso
+ * vive no cabeçalho — é o que sobrevive à troca de rota dentro da casca.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { IconCompass, IconPlayerPlay } from '@tabler/icons-react';
 
@@ -29,41 +31,48 @@ import {
   DialogTrigger
 } from '@workspace/ui/shadcn/dialog';
 
-function estaNaTela(tour: TourDeTela, pathname: string): boolean {
-  return tour.casaCom ? tour.casaCom(pathname) : tour.rota === pathname;
-}
+/** Quanto se espera a rota trocar antes de seguir assim mesmo. */
+const ESPERA_DA_ROTA_MS = 5000;
 
 export function TourMenu() {
   const pathname = usePathname();
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
-  const { dirigir } = useDriverDoTour();
 
-  /** Tour escolhido em outra tela, esperando a rota chegar. */
-  const pendenteRef = useRef<TourDeTela | null>(null);
+  /*
+   * Empurra a rota e resolve quando o navegador já está nela. O `push` do
+   * App Router não avisa quando terminou, então quem avisa é o próprio
+   * `location` — é o único sinal que não depende de re-render deste
+   * componente, que pode nem acontecer no meio do tour.
+   */
+  const navegar = useCallback(
+    (rota: string) =>
+      new Promise<void>((resolve) => {
+        router.push(rota);
+        const limite = Date.now() + ESPERA_DA_ROTA_MS;
+        const conferir = () => {
+          if (window.location.pathname === rota || Date.now() > limite) {
+            resolve();
+            return;
+          }
+          window.setTimeout(conferir, 60);
+        };
+        conferir();
+      }),
+    [router]
+  );
+
+  const { dirigir } = useDriverDoTour(navegar);
 
   const tourDestaTela = tourDaRota(pathname);
 
   const escolher = useCallback(
     (tour: TourDeTela) => {
       setAberto(false);
-      if (estaNaTela(tour, pathname)) {
-        void dirigir(tour);
-        return;
-      }
-      pendenteRef.current = tour;
-      router.push(tour.rota);
+      void dirigir(tour);
     },
-    [dirigir, pathname, router]
+    [dirigir]
   );
-
-  // A rota mudou: se era a que o tour pendente esperava, começa.
-  useEffect(() => {
-    const pendente = pendenteRef.current;
-    if (!pendente || !estaNaTela(pendente, pathname)) return;
-    pendenteRef.current = null;
-    void dirigir(pendente);
-  }, [dirigir, pathname]);
 
   return (
     <Dialog
