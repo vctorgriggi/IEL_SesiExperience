@@ -6,7 +6,7 @@
 `getSituacaoDeContratacao` em `state/selectors.ts`; o marco a abrir vem de `marcoParaContar` em
 `analysis/situacao-da-candidatura.ts`
 **Persona:** o próprio candidato, já contratado, sem login
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-23
 
 ## O que a tela faz
 
@@ -22,7 +22,7 @@ saída (`analytics.ts`).
 ## A condição para a verdade
 
 **A empresa nunca vê a resposta.** Está escrito no aceite (`CHECK_IN_CONSENT_TEXT.whoSees`), na
-abertura, no rodapé de cada pergunta, na tela de fim e na
+abertura, numa linha sob cada pergunta, na tela de fim e na
 [Minha candidatura](23-minha-candidatura.md). Quem sabe que o chefe vai ler não diz que o turno
 mudou e o transporte não deu; a frase é o que torna a resposta possível, não um aviso legal.
 
@@ -31,28 +31,23 @@ mudou e o transporte não deu; a frase é o que torna a resposta possível, não
 Finalidade nova, aceite próprio — LGPD, art. 7º, I. A pessoa consentiu em responder ao questionário
 da vaga, não em ser acompanhada depois de contratada. Por isso o aceite é o passo 0, ocupa a tela
 inteira, **nasce desmarcado** e sem ele as perguntas não abrem. A versão do texto
-(`CHECK_IN_CONSENT_VERSION`) vai gravada em cada resposta (art. 8º, § 4º). Os cinco itens do
-aceite aparecem palavra por palavra, todos no mesmo corpo de leitura.
+(`CHECK_IN_CONSENT_VERSION`) vai gravada em cada resposta (art. 8º, § 4º) e não aparece na tela.
+O aceite é o curto (`AceiteCurto`): três linhas (para quê, quem vê, por quanto tempo) e o texto
+inteiro, com os cinco itens, atrás de "Ler o texto completo".
 
 ## O que aparece
 
-- **Abertura e aceite.** Quem pergunta (o IEL), por quê (a pessoa chegou àquela vaga por ele e foi
-  contratada), quanto tempo leva e que a empresa não vê. Etiquetas "2 perguntas · 1 minuto · aos 30
-  dias". Depois, o cartão do aceite (para quê, o que guardamos, quem vê, por quanto tempo, seus
-  direitos), a caixa desmarcada, o botão que só habilita com ela marcada e a saída "Ver minha
-  candidatura".
+- **Abertura e aceite.** "Como está sendo na empresa?", uma linha (quem pergunta, para qual vaga,
+  e que a empresa não vê), as etiquetas "2 perguntas · 1 minuto · aos 30 dias", o aceite curto, a
+  caixa desmarcada e o botão.
 - **Pergunta 1 — "Você continua na empresa?"** Dois alvos de 60px: "Sim, continuo" e "Não, saí".
 - **Pergunta 2 — "Como está sendo?"** (ou **"Como estava sendo?"**, para quem disse que saiu).
-  Cinco alvos com o rótulo escrito, de "Muito ruim" a "Muito bom" (`COMO_ESTA_SENDO_LABEL`). Nunca
-  só número ou carinha.
-- **"Quer contar algo?"** — opcional, até 200 letras, com contador. A dica diz sobre o que é: o
-  trabalho, o horário, o que combinaram e o que mudou — "não precisa falar de ninguém". O botão
-  diz "Enviar sem recado" enquanto o campo está vazio.
-- **"Obrigado!"** — o que a pessoa disse, devolvido em palavra, e **"O que acontece agora"** em
-  três passos: o IEL lê e a empresa não vê; a próxima pergunta (ou que essa era a última); e, para
-  quem continua, que pode responder de novo (vale a última). Para quem disse que saiu: a pessoa do
-  IEL fala com ela sobre outras vagas e o currículo continua no banco. Botão "Ver minha
-  candidatura" e "Responder de novo".
+  Cinco alvos com o rótulo escrito, de "Muito ruim" a "Muito bom" (`COMO_ESTA_SENDO_LABEL`).
+- **"Quer contar algo?"** — opcional, até 200 letras, com contador. O botão diz "Enviar sem
+  recado" enquanto o campo está vazio.
+- **"Obrigado."** — o que a pessoa disse, devolvido em palavra, uma linha (quem lê é o IEL, a
+  empresa não vê; a próxima pergunta ou que essa era a última) e **um** botão, "Ver minha
+  candidatura". Sem "responder de novo": uma resposta por marco.
 - **A vaga sem o nome da empresa** na etiqueta, como nas outras telas do candidato (R5).
 
 ## Os estados sem pergunta
@@ -61,20 +56,23 @@ aceite aparecem palavra por palavra, todos no mesmo corpo de leitura.
 | ------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------- |
 | Candidatura inexistente                                | Este link não abriu                 | Confira a mensagem e abra o link inteiro.                                                   |
 | Sem contratação registrada                             | Esta pergunta ainda não é para você | O IEL só pergunta depois que a empresa registra a contratação; acompanhe pela candidatura.  |
-| Marco já respondido (`marcoParaContar` é o da última)  | Você já respondeu                   | O que disse, aos N dias, e o recado se houver. "Mudar minha resposta" abre tudo de novo.    |
+| Marco já respondido (sem pergunta aberta)              | Você já respondeu                   | O que disse, aos N dias, o recado se houver e a próxima pergunta. Corrigir é pelo IEL.      |
 | Marco não alcançado (`proximoMarco` existe)            | Ainda não é hora                    | "Você foi contratado há N dias; a próxima pergunta é em M dias, por este mesmo link."       |
 | Janelas fechadas sem resposta                          | As perguntas terminaram             | O tempo das perguntas passou; para contar algo, o Centro de Empregos.                       |
 | Empresa informou saída antes dos 30 dias, sem resposta | Não há pergunta aberta agora        | Neutro, sem o motivo que a empresa deu; se não estiver certo, procure o Centro de Empregos. |
 
-Depois dos 30 dias, quem teve a saída informada pela empresa **ainda pode responder**: o seletor
-fecha as pendências, mas `marcoParaContar` devolve o marco mais recente alcançado, para a versão
-dela ser ouvida — é o que faz a divergência aparecer para a analista.
+Depois dos 30 dias, quem teve a saída informada pela empresa e ainda não respondeu nada **pode
+responder**: o seletor fecha as pendências, mas `marcoParaContar` devolve o marco mais recente
+alcançado, para a versão dela ser ouvida — é o que faz a divergência aparecer para a analista.
+
+Em todos os estados sem pergunta, uma linha: "Precisa corrigir algo? Fale com a pessoa do IEL que
+mandou este link."
 
 ## Fechar e voltar
 
 O que já foi respondido fica no navegador da pessoa (`shared/use-rascunho.ts`), com a versão do
 aceite e o marco: rascunho de outro texto ou de outro marco é descartado. Ela volta ao passo em que
-parou, com um aviso em `role="status"`. O rascunho some no envio. **Rascunho não é resposta**: o
+parou, em silêncio. O rascunho some no envio. **Rascunho não é resposta**: o
 reducer só recebe a resposta completa, com o aceite.
 
 ## De onde vêm os dados hoje
@@ -90,7 +88,8 @@ reducer só recebe a resposta completa, com o aceite.
 
 - Aceitar e responder — `answer-check-in`, com marco, as duas respostas, o recado opcional, o
   carimbo de `nowIso()` e a versão do aceite. Um registro por marco por candidatura
-  (`CHK-<candidatura>-<marco>`): responder de novo substitui, não acumula.
+  (`CHK-<candidatura>-<marco>`); a tela só oferece uma resposta por marco, e o reducer substitui
+  se o IEL precisar corrigir.
 
 ## Backend futuro
 
@@ -125,3 +124,7 @@ acompanhamento da analista.
 
 - 2026-09-19 — criada: a pergunta ao próprio contratado aos 30, 60 e 90 dias, com aceite próprio,
   duas perguntas fechadas, recado opcional e os estados sem pergunta.
+- 2026-09-23 — enxugamento pedido pelo dono do produto: aceite curto com o texto inteiro recolhido,
+  abertura de uma linha, fim de uma linha com um botão, e **nenhum "responder de novo" nem "mudar
+  minha resposta"** — uma resposta por marco; corrigir é pelo IEL. Sem versão do texto, sem rodapé
+  de demonstração, retomada em silêncio. Abertura: de 213 para 109 palavras.

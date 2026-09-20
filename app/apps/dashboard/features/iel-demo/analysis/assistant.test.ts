@@ -25,8 +25,8 @@ describe('análise assistida (respostas determinísticas)', () => {
     expect(text).not.toContain('Bruno');
     expect(text).toContain('6 de 8 critérios possuem dados suficientes');
     expect(answer.usedRecords).toContain('EVD-ANA-01');
-    expect(answer.disclaimer).toContain(
-      'Nenhum modelo de linguagem foi consultado'
+    expect(answer.disclaimer).toBe(
+      'Texto montado só a partir dos registros selecionados.'
     );
   });
 

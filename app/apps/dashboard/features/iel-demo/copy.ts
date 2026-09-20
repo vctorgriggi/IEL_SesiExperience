@@ -77,30 +77,36 @@ export function missingAnswers(respondidas: number, total: number): string {
   return `Faltam respostas — ${respondidas} de ${total}`;
 }
 
-/** Rótulo de cada um dos 10 temas, em palavra comum. */
+/**
+ * Rótulo de cada um dos 11 temas: o tópico da planilha do cliente, em caixa
+ * de frase (`FitAxis.label`). O nome é dele, não nosso.
+ */
 export const AXIS_LABEL: Record<FitAxisId, string> = Object.fromEntries(
   FIT_AXES.map((axis) => [axis.id, axis.label])
 ) as Record<FitAxisId, string>;
 
 /**
- * O mesmo ponto em duas ou três palavras.
+ * O mesmo tema em uma ou duas palavras, cortadas do nome do cliente — nunca
+ * um nome inventado ("Regras e decisão" sai de "Regras, métodos e decisão").
  *
  * Só para onde o espaço é do desenho, e não do texto: em volta do radar, um
  * rótulo de cinco palavras ou é cortado ou encolhe o polígono, e com
- * dez temas em volta o espaço de cada um é ainda menor. O nome
- * inteiro continua ao lado, na lista que acompanha o gráfico.
+ * onze temas em volta o espaço de cada um é ainda menor; o mesmo vale para
+ * chips e barrinhas de celular. O nome inteiro continua ao lado, na lista
+ * que acompanha o gráfico.
  */
 export const AXIS_SHORT_LABEL: Record<FitAxisId, string> = {
-  'orientacao-resultados': 'Entrega',
-  inovacao: 'Novidades',
-  'aprendizado-desenvolvimento': 'Aprender',
-  'foco-cliente': 'Quem recebe',
-  'etica-seguranca': 'Segurança',
-  'execucao-ritmo': 'Ritmo',
-  'regras-decisao': 'Regras',
+  'orientacao-resultados': 'Resultados',
+  inovacao: 'Inovação',
+  'aprendizado-desenvolvimento': 'Aprendizado',
+  'foco-cliente': 'Foco no cliente',
+  'etica-seguranca': 'Ética e segurança',
+  'execucao-ritmo': 'Execução e ritmo',
+  'regras-decisao': 'Regras e decisão',
   'interacao-convivencia': 'Convivência',
-  'lideranca-autonomia': 'Autonomia',
-  'adaptacao-carreira': 'Carreira'
+  'lideranca-autonomia': 'Liderança e autonomia',
+  'adaptacao-carreira': 'Adaptação e carreira',
+  'expectativas-futuras': 'Expectativas'
 };
 
 export const COPY = {
@@ -110,16 +116,16 @@ export const COPY = {
     combina: COMBINA_COM_A_EMPRESA,
     naoCombina: 'abaixo do mínimo',
     semResposta: SEM_RESPOSTA,
-    hint: 'Compara como a equipe da empresa prefere trabalhar com como a pessoa prefere trabalhar, nos 10 temas. Não é nota, não mede desempenho.'
+    hint: 'Compara como a equipe da empresa prefere trabalhar com como a pessoa prefere trabalhar, nos 11 temas. Não é nota, não mede desempenho.'
   },
   technical: {
     label: 'Requisitos da vaga',
     hint: 'Percentual que o sistema de vagas já calcula sobre os requisitos técnicos. Vem da planilha, não é recalculado aqui.'
   },
   axes: {
-    label: 'Os 10 temas',
+    label: 'Os 11 temas',
     singular: 'tema',
-    hint: 'Dez temas do jeito de trabalhar, respondidos pelos dois lados com as mesmas frases.'
+    hint: 'Onze temas do jeito de trabalhar, respondidos pelos dois lados com as mesmas frases.'
   },
   culture: {
     label: 'Como a empresa trabalha',

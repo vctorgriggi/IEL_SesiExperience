@@ -83,7 +83,7 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
   if (!talent) {
     return (
       <Alert variant="destructive">
-        Pessoa não encontrada nesta base de demonstração.{' '}
+        Pessoa não encontrada.{' '}
         <Link
           className="underline"
           href={iel.talents.index}

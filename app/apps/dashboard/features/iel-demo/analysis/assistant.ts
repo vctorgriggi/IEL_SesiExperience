@@ -29,8 +29,7 @@ export type AssistantAnswer = {
   disclaimer: string;
 };
 
-const DISCLAIMER =
-  'Texto montado a partir dos registros selecionados nesta base de demonstração. Nenhum modelo de linguagem foi consultado e nenhuma informação foi inventada.';
+const DISCLAIMER = 'Texto montado só a partir dos registros selecionados.';
 
 function firstName(fullName: string): string {
   return fullName.split(' ')[0] ?? fullName;
@@ -406,7 +405,7 @@ export function buildReferralDraft(
   }
 
   return {
-    message: `Encaminhamento de ${items.length} perfil(is) para a vaga ${job.title}. As informações abaixo vêm das fontes autorizadas da base de demonstração e incluem os pontos que ainda precisam de conversa. Notas internas do IEL não fazem parte deste conteúdo.`,
+    message: `Encaminhamento de ${items.length} perfil(is) para a vaga ${job.title}. As informações abaixo vêm das fontes autorizadas e incluem os pontos que ainda precisam de conversa. Notas internas do IEL não fazem parte deste conteúdo.`,
     items
   };
 }

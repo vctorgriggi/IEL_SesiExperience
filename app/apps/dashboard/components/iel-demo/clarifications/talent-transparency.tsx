@@ -56,7 +56,14 @@ import { formatarData } from '../shared/datas';
  * que elas existem é o que permite pedir acesso ou correção. Omiti-las seria
  * transformar "não posso mostrar" em "não existe".
  */
-export function TalentTransparency({ talentId }: { talentId: string }) {
+export function TalentTransparency({
+  talentId,
+  children
+}: {
+  talentId: string;
+  /** O que entra antes dos registros, quando quem monta tem algo a mostrar. */
+  children?: ReactNode;
+}) {
   const { state } = useIelDemo();
   const [open, setOpen] = useState(false);
   const transparency = getTalentTransparency(state, talentId);
@@ -95,48 +102,57 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
           </CardAction>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4 pt-4 text-sm leading-relaxed text-muted-foreground">
-          <p>
-            {plural(total, 'registro', 'registros')} ·{' '}
-            {transparency.sharedWith.length === 0
-              ? 'nenhuma empresa recebeu seu perfil até agora'
-              : `${plural(transparency.sharedWith.length, 'empresa recebeu', 'empresas receberam')} seu perfil`}
-            . Se algum registro estiver errado, é possível corrigi-lo antes que
-            ele pese numa decisão.
-          </p>
-
-          {/*
-           * Os direitos ficam fora do recolhido, e antes dele.
-           *
-           * Até aqui eles só apareciam quando a analista abria um
-           * esclarecimento — isto é, quando o IEL precisava de alguma coisa.
-           * Direito que só existe quando a outra parte lembra não é direito
-           * exercível. LGPD, art. 18: "O titular dos dados pessoais tem
-           * direito a obter do controlador (…) III - correção de dados
-           * incompletos, inexatos ou desatualizados" e "IX - revogação do
-           * consentimento". O texto diz o caminho de cada um, em uma frase.
-           */}
-          <div className="flex flex-col gap-2 border-t pt-4">
-            <h3 className="text-xs font-medium text-muted-foreground">
-              Seus direitos
-            </h3>
-            <p>
-              <span className="font-medium text-foreground">Corrigir.</span> Se
-              alguma resposta não é mais o que você pensa, responda o
-              questionário de novo: fica valendo a última.
-            </p>
-            <p>
-              <span className="font-medium text-foreground">
-                Pedir para sair.
-              </span>{' '}
-              Você pode pedir ao IEL para parar de usar as suas respostas e
-              tirar você deste processo. Avise a pessoa do IEL que falou com
-              você — é o mesmo contato que mandou este link.
-            </p>
-          </div>
-        </CardContent>
-
         <CollapsibleContent>
+          {/*
+           * Tudo atrás de um toque, inclusive os direitos: a tela do
+           * candidato pediu "Seus dados" recolhido (20/09/2026). O que vem
+           * de quem monta (`children`) entra primeiro — é o que a pessoa
+           * mais quer ver: as próprias respostas.
+           */}
+          {children ? (
+            <CardContent className="pt-4">{children}</CardContent>
+          ) : null}
+          <CardContent className="flex flex-col gap-4 pt-4 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              {plural(total, 'registro', 'registros')} ·{' '}
+              {transparency.sharedWith.length === 0
+                ? 'nenhuma empresa recebeu seu perfil até agora'
+                : `${plural(transparency.sharedWith.length, 'empresa recebeu', 'empresas receberam')} seu perfil`}
+              . Se algum registro estiver errado, é possível corrigi-lo antes
+              que ele pese numa decisão.
+            </p>
+
+            {/*
+             * Os direitos, em uma frase cada, com o caminho de exercer. LGPD,
+             * art. 18: "O titular dos dados pessoais tem direito a obter do
+             * controlador (…) III - correção de dados incompletos, inexatos ou
+             * desatualizados" e "IX - revogação do consentimento".
+             */}
+            <div className="flex flex-col gap-2 border-t pt-4">
+              <h3 className="text-xs font-medium text-muted-foreground">
+                Seus direitos
+              </h3>
+              {/*
+               * A resposta é uma só e vale 12 meses (decisão do dono do
+               * produto, 20/09/2026): corrigir é pedir ao IEL, não responder
+               * outra vez.
+               */}
+              <p>
+                <span className="font-medium text-foreground">Corrigir.</span>{' '}
+                Precisa corrigir algo? Fale com a pessoa do IEL que mandou este
+                link.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">
+                  Pedir para sair.
+                </span>{' '}
+                Você pode pedir ao IEL para parar de usar as suas respostas e
+                tirar você deste processo. Avise a pessoa do IEL que falou com
+                você — é o mesmo contato que mandou este link.
+              </p>
+            </div>
+          </CardContent>
+
           <CardContent className="flex flex-col gap-6 pt-4">
             <Secao titulo="Informações a seu respeito">
               <Table>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { MinhaCandidaturaScreen } from '@/components/iel-demo/candidate/minha-candidatura-screen';
+import { analistaLogada } from '@/features/iel-demo/acesso/sessao';
 
 export const metadata: Metadata = { title: 'Minha candidatura' };
 
@@ -18,5 +19,11 @@ export default async function IelCandidateApplicationPage({
   params
 }: PageProps) {
   const { applicationId } = await params;
-  return <MinhaCandidaturaScreen applicationId={applicationId} />;
+  const equipe = await analistaLogada();
+  return (
+    <MinhaCandidaturaScreen
+      applicationId={applicationId}
+      equipeLogada={equipe}
+    />
+  );
 }

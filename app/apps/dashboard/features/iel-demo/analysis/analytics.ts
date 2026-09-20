@@ -888,7 +888,7 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
       n: remessasAtuais.length,
       descricao:
         retornoCapturado > 0
-          ? `Remessas enviadas no período em que a empresa devolveu o resultado. ${retornoCapturado} ${retornoCapturado === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico simulado.`
+          ? `Remessas enviadas no período em que a empresa devolveu o resultado. ${retornoCapturado} ${retornoCapturado === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico.`
           : 'Remessas enviadas no período em que a empresa devolveu o resultado (contratou ou não contratou).'
     }),
     permanencia90: kpi({
@@ -904,7 +904,7 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
       n: apuradosAtuais.length,
       descricao:
         permanenciaCapturada > 0
-          ? `Contratados com permanência apurada no período que continuavam na empresa. ${permanenciaCapturada} ${permanenciaCapturada === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico simulado.`
+          ? `Contratados com permanência apurada no período que continuavam na empresa. ${permanenciaCapturada} ${permanenciaCapturada === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico.`
           : 'Contratados que completaram 90 dias no período e continuavam na empresa.'
     })
   };
@@ -995,7 +995,7 @@ export function getFunilDoPeriodo(
 }
 
 export type DuasPontas = {
-  /** Empresas com vaga ativa cujo perfil fecha nos 10 temas. */
+  /** Empresas com vaga ativa cujo perfil fecha nos 11 temas. */
   empresasPerfilCompleto: Kpi;
   /** Candidaturas às vagas ativas que concluíram o questionário. */
   candidatosConcluiram: Kpi;

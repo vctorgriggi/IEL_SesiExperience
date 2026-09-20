@@ -553,7 +553,7 @@ function buildLightCompanies(random: () => number, firstIndex: number) {
       sector,
       location: pick(random, LIGHT_CITIES),
       institutionalDescription:
-        'Empresa da carteira do IEL na base de demonstração, sem vaga aberta neste mês. A descrição institucional é fictícia.',
+        'Empresa da carteira do IEL, sem vaga aberta neste mês.',
       contactName: `${pick(random, FIRST_NAMES)} ${pick(random, LAST_NAMES)}`,
       contactEmail: `contato.${companyId.toLowerCase()}@example.com`,
       sourceId: 'FONTE-EMPRESA',
@@ -653,8 +653,7 @@ function build(): GeneratedBase {
       name,
       sector: SECTORS[c % SECTORS.length]!,
       location: city,
-      institutionalDescription:
-        'Empresa atendida pelo IEL na base de demonstração. A descrição institucional é fictícia.',
+      institutionalDescription: 'Empresa atendida pelo IEL.',
       contactName: `${pick(random, FIRST_NAMES)} ${pick(random, LAST_NAMES)}`,
       contactEmail: `contato.${companyId.toLowerCase()}@example.com`,
       sourceId: 'FONTE-EMPRESA',
@@ -667,7 +666,7 @@ function build(): GeneratedBase {
       id: teamId,
       companyId,
       name: `Equipe de operação — ${name}`,
-      routine: 'Rotina operacional informada pela empresa na base demo.',
+      routine: 'Rotina operacional informada pela empresa.',
       managerName: `${pick(random, FIRST_NAMES)} ${pick(random, LAST_NAMES)}`,
       managerEmail: `gestor.${companyId.toLowerCase()}@example.com`,
       conditions: [
@@ -679,7 +678,7 @@ function build(): GeneratedBase {
               ? 'Há colega de referência nas primeiras semanas.'
               : 'Não há acompanhamento dedicado no turno.',
           status: random() > 0.4 ? 'confirmado' : 'a-confirmar',
-          origin: 'Contexto da empresa — demonstração',
+          origin: 'Contexto da empresa',
           updatedAt: dateBefore(10 + (c % 30))
         }
       ]
@@ -695,14 +694,13 @@ function build(): GeneratedBase {
         location: city,
         stage: JOB_STAGES[Math.floor(random() * JOB_STAGES.length)]!,
         workShift: pick(random, SHIFTS),
-        summary:
-          'Vaga da base de demonstração, usada para dar volume aos filtros e contadores.',
+        summary: 'Vaga recebida do sistema de recrutamento.',
         essentialRequirements: [
           'Experiência na atividade principal',
           'Disponibilidade no turno informado'
         ],
         organizationalContext:
-          'Contexto organizacional informado pela empresa na base demo.',
+          'Contexto organizacional informado pela empresa.',
         criteria: buildCriteria(jobId, random),
         axisWeights: buildAxisWeights(random, jobId),
         // O pano de fundo não traz proposta assistida: ela é um trecho real de
@@ -710,7 +708,7 @@ function build(): GeneratedBase {
         // encheria a base de evidência sem lastro.
         axisWeightSuggestions: [],
         externalRef: {
-          system: 'Empregare — demonstração',
+          system: 'Empregare',
           account: `ACC-${companyId}`,
           id: `EMPG-DEMO-${jobId}`
         },
@@ -727,8 +725,7 @@ function build(): GeneratedBase {
       id,
       name: `${first} ${last}`,
       headline: pick(random, JOB_TITLES),
-      summary:
-        'Perfil da base de demonstração, com experiência declarada no sistema de origem.',
+      summary: 'Perfil com experiência declarada no sistema de origem.',
       city: pick(random, CITIES),
       email: `${first.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}.${id.toLowerCase()}@example.com`,
       experiences: [
@@ -746,7 +743,7 @@ function build(): GeneratedBase {
       preferences: [],
       externalRefs: [
         {
-          system: 'Empregare — demonstração',
+          system: 'Empregare',
           account: 'ACC-IEL',
           id: `EMPG-DEMO-CAND-${id}`
         }
@@ -774,7 +771,7 @@ function build(): GeneratedBase {
       // discordarem em alguns casos — que é o que a mesa precisa mostrar.
       technicalMatch: 30 + Math.floor(random() * 66),
       externalRef: {
-        system: 'Empregare — demonstração',
+        system: 'Empregare',
         account: 'ACC-IEL',
         id: `EMPG-DEMO-APP-${applicationId}`
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import {
   discrimina,
   getItem,
@@ -14,7 +14,6 @@ import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
-import { Button } from '@workspace/ui/shadcn/button';
 import { Label } from '@workspace/ui/shadcn/label';
 import { Switch } from '@workspace/ui/shadcn/switch';
 
@@ -23,9 +22,10 @@ import { BADGE_DE_ESTADO, SELO, TEXTO_DE_ESTADO } from '../metricas/cores';
 /**
  * Uma frase do instrumento, como a analista a controla.
  *
- * A **cena** vem em destaque porque é o que a pessoa lê na tela de resposta;
- * a frase original do cliente fica "num toque", como nas telas de resposta.
- * Polo e par são jargão do instrumento e ficam em letra pequena, com a
+ * A frase em destaque é o `texto` da planilha do cliente, sem edição — é o
+ * que a pessoa lê na tela de resposta desde 20/09/2026, a pedido do dono do
+ * produto ("não muda as perguntas"). A `cena` e o `textoSimples` seguem no
+ * código, sem tela. Polo e par são jargão do instrumento e ficam em letra pequena, com a
  * palavra ao lado da seta. Os dois interruptores têm rótulo escrito e, quando
  * uma regra impede o ajuste, o interruptor fica desabilitado e o motivo
  * aparece ao lado — bloqueio sem explicação seria um botão quebrado.
@@ -52,7 +52,6 @@ export function LinhaDaFrase({
   ) => void;
 }) {
   const item = getItem(itemId);
-  const [mostrarOriginal, setMostrarOriginal] = useState(false);
   const idBase = useId();
   if (!item) return null;
 
@@ -63,7 +62,6 @@ export function LinhaDaFrase({
     ? motivoParaNaoDesmarcarDiscrimina(itemId, config)
     : null;
   const par = parDoItem(itemId);
-  const originalId = `${idBase}-original`;
   const motivoId = `${idBase}-motivo`;
   const motivo = bloqueioDesligar ?? bloqueioSepara;
 
@@ -92,31 +90,8 @@ export function LinhaDaFrase({
             !ativa && 'text-muted-foreground'
           )}
         >
-          {item.cena}
+          {item.texto}
         </p>
-
-        <div>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs"
-            aria-expanded={mostrarOriginal}
-            aria-controls={originalId}
-            onClick={() => setMostrarOriginal((aberto) => !aberto)}
-          >
-            {mostrarOriginal
-              ? 'Esconder a frase original'
-              : 'Ver a frase original'}
-          </Button>
-          {mostrarOriginal ? (
-            <p
-              id={originalId}
-              className="mt-1 text-sm text-muted-foreground"
-            >
-              “{item.texto}”
-            </p>
-          ) : null}
-        </div>
 
         {/*
          * Polo e par: a seta é só reforço; a palavra diz o que é. "Mesmo

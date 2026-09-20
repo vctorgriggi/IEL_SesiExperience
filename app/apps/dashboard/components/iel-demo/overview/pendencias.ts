@@ -11,6 +11,7 @@ import {
   getRegisteredReferrals,
   getTalent,
   getVisibleJobs,
+  perguntasDoCandidato,
   type JobRankingEntry
 } from '@/features/iel-demo/state/selectors';
 import type { DemoState } from '@/features/iel-demo/types';
@@ -178,18 +179,21 @@ export function montarPendencias(state: DemoState): Pendencia[] {
     }
 
     if (semQuestionario > 0) {
+      // Quantas frases esta vaga pergunta: uma por competência que a empresa
+      // escolheu (de 3 a 11), não as 10 fixas de quando os temas eram todos.
+      const frases = perguntasDoCandidato(state, job.id).length;
       pendencias.push({
         id: `${job.id}-questionario`,
         tipo: 'questionario',
         titulo: job.title,
-        resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} as 10 frases`,
+        resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} ${frases === 1 ? 'a frase' : `as ${frases} frases`}`,
         href: iel.jobs.byId(job.id).index,
         verbo: 'Abrir a vaga',
         urgencia: 5,
         prioridade: 'normal',
         statusPrazo: 'no-prazo',
         prazoLabel: 'Prazo fit: até 48h',
-        criterio: 'Aguardando 10 frases de fit',
+        criterio: `Aguardando ${frases} ${frases === 1 ? 'frase' : 'frases'} de fit`,
         score: 20 + semQuestionario
       });
     }

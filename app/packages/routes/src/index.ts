@@ -188,6 +188,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         }
       },
       /**
+       * A cena do candidato, para o telão: o toque em "Candidatar-se" no
+       * portal, a mensagem do IEL chegando e o questionário abrindo, tudo
+       * num celular desenhado. Fora da barra e fora da porta da analista —
+       * chega só por URL, e o questionário que abre no fim é o real.
+       */
+      cenaCandidato: (applicationId: string) =>
+        resolve(`/cena/candidato/${encodeSegment(applicationId)}`),
+      /**
        * Link do colaborador que responde a consulta de cultura (M2).
        *
        * A chave do caminho é o token opaco do convite, e não o id da empresa

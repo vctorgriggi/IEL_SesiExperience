@@ -70,8 +70,8 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
   if (persona.kind !== 'analista') {
     return (
       <Alert variant="warning">
-        A preparação do encaminhamento é uma etapa do analista do IEL. Troque a
-        persona na barra de demonstração para continuar.
+        A preparação do encaminhamento é uma etapa do analista do IEL. Troque de
+        visão no menu do usuário para continuar.
       </Alert>
     );
   }
@@ -132,10 +132,8 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
 
         {registered && existingReferral ? (
           <Alert variant="success">
-            Encaminhamento registrado. “Atualização externa não enviada —
-            demonstração”: o sistema de recrutamento original não foi alterado.
-            Troque a persona para a empresa e registre o interesse em entrevista
-            em{' '}
+            Encaminhamento registrado. Perfis enviados à empresa. Troque a visão
+            para a empresa e registre o interesse em entrevista em{' '}
             <Link
               className="underline"
               href={iel.referrals.byId(existingReferral.id)}
@@ -168,16 +166,14 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
 
       {registered && existingReferral ? (
         <Alert variant="success">
-          Encaminhamento registrado. “Atualização externa não enviada —
-          demonstração”: o sistema de recrutamento original não foi alterado.{' '}
+          Encaminhamento registrado. Perfis enviados à empresa.{' '}
           <Link
             className="underline"
             href={iel.referrals.byId(existingReferral.id)}
           >
             Abrir o encaminhamento
           </Link>{' '}
-          ou troque a persona para a empresa e registre o interesse em
-          entrevista.
+          ou troque a visão para a empresa e registre o interesse em entrevista.
         </Alert>
       ) : null}
 

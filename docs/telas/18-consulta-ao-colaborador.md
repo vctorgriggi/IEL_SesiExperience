@@ -4,12 +4,15 @@
 **Componente:** `apps/dashboard/components/iel-demo/companies/culture-invite-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/culture-invites.ts`
 **Persona:** quem trabalha na empresa e recebeu o link, sem login
-**Última atualização:** 2026-09-20
+**Última atualização:** 2026-09-23
 
 ## O que a tela faz
 
-Responde uma pergunta — "como é trabalhar aqui?" — pelas 16 frases do bloco daquele convite
-(amostragem em matriz sobre as 52 do instrumento), uma frase por tela. É o que forma o perfil
+Responde uma pergunta — "como é trabalhar aqui?" — pelas frases do bloco daquele convite
+(amostragem em matriz sobre as 52 do instrumento), uma frase por tela. São até 16; ficam menos
+quando a empresa pede menos de 11 competências (R11) — o rodízio é o mesmo, o bloco é que encolhe —,
+e o bloco é calculado na abertura do link, de modo que quem já respondeu não tem o conteúdo alterado
+depois. É o que forma o perfil
 cultural da empresa por **amostra de colaboradores**, e não pela opinião de uma pessoa só.
 
 Quem abre isto é um colaborador operacional, no celular, no intervalo do turno: uma alternativa por
@@ -30,92 +33,82 @@ quanto tempo vai levar e achar que a resposta volta para a chefia.
 ## Base legal
 
 Consentimento do titular — LGPD, art. 7º, I. O aceite é o passo 0, nasce desmarcado, e sem ele o
-questionário não abre. A versão do texto vai gravada junto da resposta.
+questionário não abre. O texto é o de `CULTURE_CONSENT_TEXT` (`analysis/culture-invites.ts`),
+versionado (`CULTURE_CONSENT_VERSION`, hoje `2026-09-23`); a versão vai gravada junto da resposta e
+**não aparece na tela**. O que a pessoa lê é o **aceite curto** (`AceiteCurto`): "Antes de
+responder", três linhas (`CULTURE_CONSENT_RESUMO` — o que responde e para quê · quem vê · por
+quanto tempo), a caixa "Li e aceito" e o botão; o texto inteiro fica atrás de "Ler o texto
+completo".
 
 ## O que a tela não mostra
 
 - **Ninguém mais.** Não há lista de colegas, contagem de quem já respondeu nem média parcial. Quem
   responde sobre o próprio ambiente não pode ver — nem ser visto por — os outros respondentes: a
   empresa recebe a média, nunca "fulano respondeu isto" (PRODUTO.md §5).
-- **Nem o próprio e-mail.** `getInviteByToken` devolve só o primeiro nome, a empresa e o prazo. Um
-  link vazado não vira vazamento de dado pessoal.
+- **Nem o próprio e-mail.** `getInviteByToken` devolve só a empresa, o prazo e a situação. Um link
+  vazado não vira vazamento de dado pessoal.
+- **Nenhuma leitura sobre o lugar ou sobre a pessoa.** O fim devolve o que ela respondeu, frase a
+  frase; a devolutiva pessoal saiu (ver abaixo).
 
 ## O que aparece
 
-- **Passo 0 — abertura e aceite.** Primeiro, em duas frases: quem pediu, com nome ("A equipe do
-  IEL que atende a Cerrado Distribuição pediu a opinião de quem vive o dia a dia daí. Por isso
-  você recebeu este link.") e que não existe resposta certa — "responda pelo que acontece de verdade, não pelo que deveria acontecer". Depois
-  três etiquetas com o tamanho da tarefa ("16 frases · uns 5 minutos · sem cadastro"), o **cartão
-  do anonimato** (ver abaixo), o cartão do aceite, a porta para a conversa, a caixa desmarcada e o
-  botão que só habilita quando ela é marcada.
-- **As 16 frases do bloco como cenas**, uma por tela. O título é a `cena` do instrumento — a mesma
-  ideia da frase do cliente, na primeira pessoa e no chão de fábrica ("Entendi a tarefa? Vou até o
-  fim sem ficar perguntando a cada passo.") —, com a pergunta de apoio "O quanto isso é assim aí?"
-  e um toque discreto, "ver a frase original", que abre a frase da planilha. O cabeçalho diz onde
-  a pessoa está e **quantas ainda faltam** ("Frase 8 de 16 · Faltam 8"); na oitava, a tela diz
-  "Metade do caminho".
-- **A régua de um toque** (`shared/regua-de-concordancia.tsx`): cinco degraus lado a lado, de
-  72px, com o número e a palavra escrita — "Não é assim aqui · Pouco · Depende · Quase sempre · É
-  bem assim aqui" —, os extremos com peso maior. Quem responde descreve o **ambiente**, não a si,
-  e por isso os degraus não dizem "Sou eu"; o degrau tocado se preenche no azul da empresa, que é
-  o lado que a resposta forma (DESIGN.md §8, "Cor nos dados"). O toque seleciona e, 350 ms depois,
-  a tela avança; "Próxima" continua para quem prefere o botão, para quem voltou a uma frase já
-  respondida e para o teclado (setas escolhem, Enter confirma). Na última, "Enviar respostas" é um
-  gesto à parte.
-- **Voltar** é um botão de 48px como o de seguir — era um `<button>` sublinhado de 13px, pequeno
-  demais para o polegar. A resposta anterior continua marcada.
-- **Confirmação** ao fim: "Resposta registrada", a **devolutiva pessoal**
-  (`shared/leitura-pessoal.tsx`, montada só com as 16 respostas que acabaram de ser enviadas, sem
-  nome; quem reabre o link depois não a vê, porque a resposta já virou média) e **"O que acontece
-  agora"** em três passos — a
-  resposta entra numa média, a média descreve a empresa quando gente suficiente responder, e este
-  link não abre de novo.
+Três telas, poucas palavras (pedido do dono do produto, 20/09/2026):
 
-## A cena e a régua
+- **Abertura.** "Como é trabalhar aqui?", uma linha ("A equipe do IEL que atende a Colatte quer a
+  opinião de quem vive o dia a dia daí. Não existe resposta certa."), as etiquetas "16 frases · uns
+  5 minutos · sem cadastro", o aceite curto — a segunda linha é o anonimato: "Ninguém vê a sua
+  resposta sozinha: nem a empresa, nem a chefia, nem o IEL. Só a média." — e, no rodapé, o link
+  "Prefere responder conversando?".
+- **As 16 frases do bloco, como o cliente as escreveu**, uma por tela: "8 de 16" pequeno no topo
+  com a barra, o `texto` da planilha em título grande, sem edição, "O quanto isso é assim aí?", a **régua de um toque** do colaborador
+  ("Não é assim aqui · Pouco · Depende · Quase sempre · É bem assim aqui"), em azul — é o lado da
+  empresa que a resposta forma —, "Próxima" e um "Voltar" discreto.
+- **Fim.** "Obrigado.", uma linha (a resposta foi registrada e entra numa média com a da equipe;
+  este link não abre outra vez) e o bloco **"Suas respostas"** (`shared/suas-respostas.tsx`): a
+  frase do cliente e, à direita, o grau no vocabulário da escala (_Discordo muito … Concordo muito_), por tema.
+  Rodapé: "É o que você respondeu. Entra numa média com a equipe; ninguém vê a sua sozinha." Sem
+  botão: o link é de uso único.
 
-Mesma decisão do [questionário do candidato](17-questionario-do-candidato.md#a-cena-e-a-régua-por-que-mudou):
-o instrumento não muda — mesmas 52 frases, mesma escala, mesma média —, a `cena` é apresentação,
-e a frase original fica a um toque. O que é próprio daqui: a régua do colaborador
+## A frase e a régua
+
+Mesma decisão do [questionário do candidato](17-questionario-do-candidato.md#a-frase-e-a-régua):
+o instrumento não muda — mesmas 52 frases, mesma escala, mesma média — e a tela mostra o `texto`
+da planilha do cliente, sem edição (`cena` e `textoSimples` ficaram no código, sem tela). O que é
+próprio daqui: a régua do colaborador
 (`ROTULOS_DA_REGUA.colaborador`) fala do lugar, não da pessoa, e preenche em azul. Os valores são
 os mesmos que a analista lê como "Discordo muito … Concordo muito".
 
 A marca da empresa entraria na abertura, ao lado de quem pediu; `Company` não tem campo de logo, e
 sem campo nada foi inventado.
 
-## O cartão do anonimato
+## O anonimato
 
 A promessa de anonimato é o que decide se a resposta é honesta: a pessoa está dizendo como é
-trabalhar na empresa dela, e a chefia pode estar do lado. Por isso ela saiu do terceiro parágrafo
-do texto legal e virou um cartão próprio, antes do aceite: _"Ninguém vai saber o que você
-respondeu. Sua resposta não fica com o seu nome. Ela entra numa média com a de todo mundo que
-responder. Nem a empresa, nem a sua chefia, nem o IEL veem a sua resposta sozinha."_
-
-O "nem o IEL" é verdade e está na matriz de acesso: o analista vê o agregado por tema, nunca a
-resposta individual (PRODUTO.md §5.1).
+trabalhar na empresa dela, e a chefia pode estar do lado. Era um cartão próprio; agora é a segunda
+das três linhas do aceite, onde a pessoa lê antes de marcar a caixa. O "nem o IEL" é verdade e está
+na matriz de acesso: o analista vê o agregado por tema, nunca a resposta individual (§5.1).
 
 ## A porta para a conversa
 
 A [conversa guiada](../../app/apps/dashboard/components/iel-demo/chat/conversa-colaborador.tsx)
-existe para quem tem dificuldade com formulário — e, até 19/09, só chegava lá quem soubesse digitar
-`/conversa` no endereço. Agora a tela de abertura oferece "Responder conversando", antes do aceite.
+existe para quem tem dificuldade com formulário. A abertura oferece "Prefere responder
+conversando?" como um link de uma linha no rodapé.
 
 ## Fechar e voltar
 
-São 16 frases no intervalo do turno: interrupção é o caso comum, não a exceção. O que já foi
-respondido fica no **navegador da própria pessoa** (`shared/use-rascunho.ts`), preso à versão do
-aceite e ao bloco daquele convite; ela fecha na frase 7, volta depois e continua na 7, com um aviso
-em `role="status"`. O rascunho some no envio. A retomada não olha o status do convite: a base da
-demonstração chega do navegador depois da primeira renderização, e um convite que a analista
-reenviou ao vivo ainda parece vencido nesse instante — se o link não estiver aberto, as telas de
-vencido e respondido vêm antes do passo e o rascunho simplesmente não aparece.
+São 16 frases no intervalo do turno: interrupção é o caso comum. O que já foi respondido fica no
+**navegador da própria pessoa** (`shared/use-rascunho.ts`), preso à versão do aceite e ao bloco
+daquele convite; ela fecha na frase 7, volta depois e continua na 7, em silêncio. O rascunho some
+no envio. A retomada não olha o status do convite: a base da demonstração chega do navegador depois
+da primeira renderização, e um convite reenviado ao vivo ainda parece vencido nesse instante.
 
-**Rascunho não é resposta.** Nada pela metade chega ao estado da demonstração, e é por isso que o
-rascunho fica no aparelho, não no servidor.
+**Rascunho não é resposta.** Nada pela metade chega ao estado da demonstração.
 
 ## De onde vêm os dados hoje
 
 - `getInviteByToken`, em `state/selectors.ts`, sobre `fixtures/culture-invites.ts`.
-- As perguntas vêm de `CULTURE_QUESTIONS`.
+- As frases vêm de `blocoDoConvite` (`analysis/instrumento.ts`); o aceite, de `CULTURE_CONSENT_TEXT`
+  e `CULTURE_CONSENT_RESUMO`.
 
 ## Ações do usuário
 
@@ -159,3 +152,18 @@ cultural usado em [Mesa de seleção](04-mesa-de-selecao.md) e [Mapa de Cultura]
   assim aqui", em azul, que seleciona e avança; a abertura diz quem pediu com nome; a devolutiva
   pessoal entra no fim, acima de "O que acontece agora"; a retomada do rascunho deixa de depender
   do status do convite na primeira renderização. Instrumento, escala e média intactos.
+- 2026-09-23 — enxugamento pedido pelo dono do produto: aceite curto de três linhas com o texto
+  inteiro recolhido (`CULTURE_CONSENT_TEXT` vira constante; versão `2026-09-23`), abertura de uma
+  linha com o anonimato dentro do aceite, frases sem frase original nem contadores extras, fim com
+  "Suas respostas" em vocabulário de escala no lugar da devolutiva pessoal. Zero texto de bastidor.
+  Abertura: de 235 para 101 palavras.
+- 2026-09-20 — **a frase e o tópico do cliente, sem edição**, como no
+  [questionário do candidato](17-questionario-do-candidato.md#a-frase-e-a-régua): o título é o
+  `texto` da planilha, "Suas respostas" idem; `cena` e `textoSimples` ficaram no código sem uso
+  de tela; temas com o nome do tópico do cliente, e 11 deles.
+- 2026-09-20 — **atalho da equipe: só com sessão da analista.** Com o cookie da Central
+  (`analistaLogada()`), o rodapé mostra "Equipe do IEL · Abrir no Mind RH", que leva à empresa do
+  convite (`/empresas/<companyId>`); vale na tela em passos e na conversa. Sem cookie, nada no DOM.
+
+- 2026-09-20 — o bloco passa a sair filtrado pelas competências que a empresa escolheu (R11): com 8
+  das 11, o colaborador responde menos frases, sobre os temas que a empresa quer medir.

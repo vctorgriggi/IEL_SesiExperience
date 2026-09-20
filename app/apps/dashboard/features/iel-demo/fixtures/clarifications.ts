@@ -34,7 +34,7 @@ export const DEMO_CLARIFICATIONS: Clarification[] = [
     sharedInfo:
       'Título da vaga, setor da empresa e horário previsto. Sem o nome de quem contrata, sem outros candidatos e sem anotações internas.',
     reason:
-      'A disponibilidade registrada é da inscrição de 02/07/2026 e precisa de reconfirmação antes do encaminhamento.',
+      'A disponibilidade registrada é da inscrição de 08/07/2026 e precisa de reconfirmação antes do encaminhamento.',
     state: 'solicitada',
     createdAt: '2026-09-10T13:00:00.000Z',
     answeredAt: null,
@@ -71,7 +71,7 @@ export const DEMO_CLARIFICATIONS: Clarification[] = [
     sharedInfo:
       'As duas informações de disponibilidade registradas e o turno da vaga. Nada sobre outros candidatos.',
     reason:
-      'O currículo indica disponibilidade integral (20/11/2025) e o registro IEL de 08/09/2026 indica apenas o período da manhã.',
+      'O currículo indica disponibilidade integral (26/11/2025) e o registro IEL de 14/09/2026 indica apenas o período da manhã.',
     state: 'solicitada',
     createdAt: '2026-09-11T11:30:00.000Z',
     answeredAt: null,

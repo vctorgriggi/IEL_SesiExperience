@@ -79,7 +79,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{nome}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {persona.kind} · demonstração
+                  {persona.kind}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -100,9 +100,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
               value={persona.id}
               onValueChange={(value) => {
                 dispatch({ type: 'set-persona', personaId: value });
-                toast.info(
-                  'Recorte de dados alterado. Isso é uma simulação de visão, não autenticação.'
-                );
+                toast.info('Visão alterada.');
               }}
             >
               {DEMO_PERSONAS.map((option) => (
@@ -128,7 +126,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
             ) : null}
             <DropdownMenuItem onSelect={() => setConfirmarReset(true)}>
               <IconRotate2 />
-              Reiniciar demonstração
+              Reiniciar base
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -140,16 +138,15 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reiniciar a demonstração?</DialogTitle>
+            <DialogTitle>Reiniciar a base?</DialogTitle>
             <DialogDescription>
-              Todo o progresso local (esclarecimentos, listas e encaminhamentos)
-              volta ao estado inicial da base fictícia.
+              Volta a base para o estado inicial, para todo mundo que estiver
+              usando. As respostas registradas desde então se perdem.
             </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            A base volta a ter 3 empresas, 3 vagas, 8 talentos, 10 candidaturas
-            e 2 solicitações de esclarecimento em aberto. Agora há{' '}
-            {state.clarifications.length} solicitações registradas.
+            Hoje há {state.clarifications.length} solicitações de esclarecimento
+            registradas.
           </p>
           <DialogFooter>
             <Button
@@ -163,7 +160,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
               onClick={() => {
                 resetDemo();
                 setConfirmarReset(false);
-                toast.success('Demonstração reiniciada com a base inicial.');
+                toast.success('Base reiniciada.');
               }}
             >
               Reiniciar agora

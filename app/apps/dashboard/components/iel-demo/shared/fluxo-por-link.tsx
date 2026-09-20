@@ -2,68 +2,59 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { IconChevronDown, IconMessageCircle } from '@tabler/icons-react';
+import { IconArrowUpRight, IconChevronDown } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
-import { Card, CardContent } from '@workspace/ui/shadcn/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from '@workspace/ui/shadcn/card';
+import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
 } from '@workspace/ui/shadcn/collapsible';
+import { Label } from '@workspace/ui/shadcn/label';
 
 /**
  * As peças que o candidato e o colaborador têm em comum.
  *
  * São dois fluxos diferentes — um responde sobre si, o outro sobre a empresa
  * onde trabalha —, mas a pessoa do outro lado é a mesma: celular, sem login,
- * sem paciência para formulário. O tamanho da tarefa, a porta para a conversa
- * guiada e os passos do "o que acontece agora" se escrevem uma vez só, para
- * as duas telas dizerem a mesma coisa do mesmo jeito.
+ * pouco tempo e pouca paciência para texto. O tamanho da tarefa, o aceite
+ * curto e a porta para a conversa se escrevem uma vez só, para as telas
+ * dizerem a mesma coisa do mesmo jeito.
  */
 
 /**
- * A porta para a versão em conversa (C2).
+ * A porta para a versão em conversa (C2), numa linha só.
  *
- * A conversa guiada existe justamente para quem tem dificuldade com
- * formulário — e, até aqui, só chegava lá quem soubesse digitar `/conversa`
- * no endereço. Quem mais precisa dela é exatamente quem não faria isso.
+ * Era um cartão com título, explicação e botão. Para quem abre o link no
+ * celular, o cartão competia com o aceite — e a conversa é alternativa, não
+ * pedido. Fica no rodapé, como um link.
  */
 export function CaminhoDaConversa({ href }: { href: string }) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <p className="text-[15px] leading-snug font-medium">
-            Prefere responder conversando?
-          </p>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            A gente manda uma frase de cada vez, como numa mensagem, e pode ler
-            em voz alta para você.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-12 w-full text-[15px]"
-          asChild
-        >
-          <Link href={href}>
-            <IconMessageCircle aria-hidden="true" />
-            Responder conversando
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <p className="text-center text-sm text-muted-foreground">
+      <Link
+        href={href}
+        className="inline-flex min-h-12 items-center underline underline-offset-4"
+      >
+        Prefere responder conversando?
+      </Link>
+    </p>
   );
 }
 
 /**
- * "16 frases", "uns 5 minutos": o tamanho da tarefa, dito antes do texto do
- * aceite. Quem abre um link sem saber o que é decide continuar ou fechar por
- * esta linha.
+ * "16 frases", "uns 5 minutos": o tamanho da tarefa, dito antes do aceite.
+ * Quem abre um link sem saber o que é decide continuar ou fechar por esta
+ * linha.
  */
 export function TamanhoDaTarefa({ itens }: { itens: string[] }) {
   return (
@@ -83,68 +74,175 @@ export function TamanhoDaTarefa({ itens }: { itens: string[] }) {
 }
 
 /**
- * A frase original do cliente, a um toque atrás da cena.
+ * O aceite curto: três linhas, o texto inteiro a um toque, a caixa e o botão.
  *
- * Quem responde lê a cena ("Chega uma tarefa nova. Eu começo e vou
- * ajustando no caminho."); a analista e o auditor precisam poder conferir
- * que é o mesmo instrumento, com a mesma frase da planilha. Fica discreta —
- * um botão pequeno, sem cartão — para não competir com a cena, e fecha
- * sozinha na frase seguinte (quem a monta troca a `key`).
+ * O texto inteiro do aceite é o que a versão gravada identifica, então ele
+ * continua existindo palavra por palavra — só não ocupa a tela. Quem quiser
+ * lê em "Ler o texto completo"; quem não quiser lê três linhas em palavra
+ * comum: o que responde e para quê, quem vê, por quanto tempo vale (LGPD,
+ * art. 9º). A caixa nasce desmarcada e o botão só abre com ela marcada:
+ * consentimento marcado de antemão não é consentimento.
+ *
+ * O que fica de fora, de propósito: "sem o aceite o questionário não abre"
+ * (o botão desabilitado já diz), a versão do texto (vai gravada na resposta,
+ * não na tela) e qualquer explicação de método.
  */
-export function FraseOriginal({ texto }: { texto: string }) {
-  const [aberta, setAberta] = useState(false);
+export function AceiteCurto({
+  id,
+  titulo = 'Antes de responder',
+  linhas,
+  textoCompleto,
+  aceito,
+  onAceitar,
+  rotuloDaCaixa = 'Li e aceito',
+  rotuloDoBotao,
+  onConfirmar
+}: {
+  /** Prefixo dos ids da caixa e do texto, um por tela. */
+  id: string;
+  titulo?: string;
+  /** As três linhas do resumo. */
+  linhas: readonly string[];
+  /** O texto inteiro, uma frase por item, atrás de "Ler o texto completo". */
+  textoCompleto: readonly string[];
+  aceito: boolean;
+  onAceitar: (aceito: boolean) => void;
+  rotuloDaCaixa?: string;
+  rotuloDoBotao: string;
+  onConfirmar: () => void;
+}) {
+  const [aberto, setAberto] = useState(false);
   return (
-    <Collapsible
-      open={aberta}
-      onOpenChange={setAberta}
-      className="flex flex-col items-start gap-1"
-    >
-      <CollapsibleTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          // 32px de desenho, 48px de toque: o pseudo-elemento alarga a área
-          // clicável sem empurrar o resto da tela.
-          className="relative -ml-2 h-8 gap-1 px-2 text-[13px] font-normal text-muted-foreground after:absolute after:-inset-y-2 after:inset-x-0 after:content-['']"
-        >
-          <IconChevronDown
-            aria-hidden="true"
-            className={cn(
-              'size-3.5 transition-transform',
-              aberta ? 'rotate-180' : ''
-            )}
-          />
-          {aberta ? 'esconder a frase original' : 'ver a frase original'}
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <p className="rounded-lg border border-dashed px-3 py-2 text-sm leading-relaxed text-muted-foreground">
-          <span className="sr-only">Frase original: </span>
-          {texto}
-        </p>
-      </CollapsibleContent>
-    </Collapsible>
+    <div className="flex flex-col gap-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            <h2>{titulo}</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-2.5">
+            {linhas.map((linha) => (
+              <li
+                key={linha}
+                className="flex gap-2.5 text-[15px] leading-relaxed text-foreground"
+              >
+                <span
+                  aria-hidden="true"
+                  className="mt-[11px] size-1.5 shrink-0 rounded-full bg-muted-foreground/60"
+                />
+                {linha}
+              </li>
+            ))}
+          </ul>
+          <Collapsible
+            open={aberto}
+            onOpenChange={setAberto}
+            className="flex flex-col items-start gap-2"
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                // 32px de desenho, 48px de toque.
+                className="relative -ml-2 h-8 gap-1 px-2 text-[13px] font-normal text-muted-foreground after:absolute after:-inset-y-2 after:inset-x-0 after:content-['']"
+              >
+                <IconChevronDown
+                  aria-hidden="true"
+                  className={cn(
+                    'size-3.5 transition-transform',
+                    aberto ? 'rotate-180' : ''
+                  )}
+                />
+                {aberto ? 'Esconder o texto completo' : 'Ler o texto completo'}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div
+                id={`${id}-texto`}
+                className="flex flex-col gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm leading-relaxed text-muted-foreground"
+              >
+                {textoCompleto.map((frase) => (
+                  <p key={frase}>{frase}</p>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </CardContent>
+      </Card>
+
+      <Label
+        htmlFor={`${id}-caixa`}
+        className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] leading-snug font-medium"
+      >
+        <Checkbox
+          id={`${id}-caixa`}
+          className="size-5"
+          checked={aceito}
+          onCheckedChange={(valor) => onAceitar(valor === true)}
+        />
+        {rotuloDaCaixa}
+      </Label>
+      <Button
+        size="lg"
+        className="h-12 w-full text-[15px]"
+        disabled={!aceito}
+        onClick={onConfirmar}
+      >
+        {rotuloDoBotao}
+      </Button>
+    </div>
   );
 }
 
-/** Um passo numerado do "o que acontece agora". Nenhum fim sem ele. */
-export function PassoDoFim({
-  numero,
+/**
+ * A moldura das telas por link: a etiqueta no alto à direita (a vaga, ou a
+ * empresa da consulta) e o resto. O quadrado da marca já vem da casca.
+ */
+export function MolduraPorLink({
+  etiqueta,
+  atalhoDaEquipe,
   children
 }: {
-  numero: number;
+  etiqueta: ReactNode;
+  /** Só com sessão da analista: a linha de volta ao Mind RH, no rodapé. */
+  atalhoDaEquipe?: { href: string };
   children: ReactNode;
 }) {
   return (
-    <li className="flex gap-3">
-      <span
-        aria-hidden="true"
-        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums text-muted-foreground"
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-5 px-1 pt-2">
+      <div className="flex items-center justify-end gap-2">{etiqueta}</div>
+      {children}
+      {atalhoDaEquipe ? <AtalhoDaEquipe href={atalhoDaEquipe.href} /> : null}
+    </div>
+  );
+}
+
+/**
+ * A volta ao Mind RH para quem é da equipe do IEL.
+ *
+ * Quem apresenta responde como candidato ou colaborador e precisa voltar à
+ * Central para ver a resposta chegar. A linha só existe quando a página
+ * confirmou a sessão da analista pelo cookie (`analistaLogada`); para quem
+ * abre o link de verdade, sem cookie, o DOM não tem nem um wrapper vazio.
+ * É comportamento de produto ("você é da equipe, então tem o atalho"), não
+ * texto de bastidor.
+ */
+export function AtalhoDaEquipe({ href }: { href: string }) {
+  return (
+    <p className="mt-auto flex items-center justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+      <span>Equipe do IEL</span>
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
       >
-        {numero}
-      </span>
-      <p className="text-[15px] leading-relaxed text-foreground">{children}</p>
-    </li>
+        Abrir no Mind RH
+        <IconArrowUpRight
+          aria-hidden="true"
+          className="size-3.5"
+        />
+      </Link>
+    </p>
   );
 }

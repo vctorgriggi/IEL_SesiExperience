@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ConversaColaborador } from '@/components/iel-demo/chat/conversa-colaborador';
+import { analistaLogada } from '@/features/iel-demo/acesso/sessao';
 
 export const metadata: Metadata = { title: 'Como é trabalhar aqui' };
 
@@ -17,5 +18,11 @@ export default async function IelCultureInviteConversationPage({
   params
 }: PageProps) {
   const { token } = await params;
-  return <ConversaColaborador token={token} />;
+  const equipe = await analistaLogada();
+  return (
+    <ConversaColaborador
+      token={token}
+      equipeLogada={equipe}
+    />
+  );
 }

@@ -133,8 +133,7 @@ export function ReferralPreviewDialog({
 
           <Alert variant="default">
             Fora deste conteúdo: notas internas do IEL, candidaturas em outras
-            empresas, avaliações não autorizadas e o histórico de análise. Nada
-            é enviado ao sistema de origem nesta demonstração.
+            empresas, avaliações não autorizadas e o histórico de análise.
           </Alert>
         </div>
 

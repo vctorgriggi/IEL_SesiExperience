@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   montarRoteiroCandidato,
@@ -13,8 +13,6 @@ import {
   getCandidateJobView,
   getFitResponse,
   getFitStatus,
-  getTalent,
-  perguntasDoCandidato,
   perguntasQueFaltam,
   reaproveitamentoDaCandidatura,
   respostasResolvidas,
@@ -26,7 +24,8 @@ import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 
-import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { AtalhoDaEquipe } from '../shared/fluxo-por-link';
+import { SuasRespostas } from '../shared/suas-respostas';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
 import { useMontado } from '../shared/use-voz';
 
@@ -36,28 +35,28 @@ import { useMontado } from '../shared/use-voz';
  * Grava pela mesma ação do questionário em telas (`answer-fit-questionnaire`),
  * com a versão do aceite e o relógio único da demo. O que a pessoa vê da vaga
  * sai de `getCandidateJobView` — atividade, cidade, segmento e turno, nunca o
- * nome da empresa (R5) — e nada aqui mostra percentual, ranking ou outros
- * candidatos.
+ * nome da empresa (R5) — e nada aqui mostra percentual, ranking, outros
+ * candidatos ou uma leitura sobre a pessoa: no fim, o que ela respondeu.
  *
  * O roteiro depende do estado (já respondeu? prazo vencido?) só até o
  * primeiro toque. Depois disso ele congela: a própria resposta muda o estado
  * para "já respondeu", e a conversa não pode trocar de roteiro no meio.
+ *
+ * Não há "responder de novo": a resposta é uma só e vale 12 meses. O único
+ * recomeço é "Responder mesmo assim", de quem chegou fora do prazo.
  */
 export function ConversaCandidato({
-  applicationId
+  applicationId,
+  equipeLogada = false
 }: {
   applicationId: string;
+  /** Sessão da analista confirmada pela página: mostra o atalho de volta. */
+  equipeLogada?: boolean;
 }) {
   const montado = useMontado();
   const { state, dispatch } = useIelDemo();
   const [travada, setTravada] = useState<VarianteCandidato | null>(null);
   const [sessao, setSessao] = useState(0);
-  /*
-   * "Responder de novo" recusa o reaproveitamento e refaz as frases todas —
-   * metade reaproveitada e metade nova não seria "de novo". É o desfazer que
-   * o aceite promete.
-   */
-  const [responderTudo, setResponderTudo] = useState(false);
 
   const application = getApplication(state, applicationId);
   const vaga = getCandidateJobView(state, applicationId);
@@ -77,40 +76,17 @@ export function ConversaCandidato({
       ? 'invalido'
       : respondido
         ? 'ja-respondeu'
-        : reuso?.nadaAPerguntar && !responderTudo
+        : reuso?.nadaAPerguntar
           ? 'reaproveita'
           : getFitStatus(state, application) === 'expirado'
             ? 'expirado'
             : 'novo';
   const variante = travada ?? varianteAtual;
 
-  /*
-   * Só o que falta perguntar: as frases da vaga menos as que a pessoa já
-   * respondeu dentro dos 12 meses. Quem pediu para responder de novo vê a
-   * lista inteira.
-   */
-  const perguntas = !application
-    ? []
-    : responderTudo
-      ? perguntasDoCandidato(state, application.jobId)
-      : perguntasQueFaltam(state, applicationId);
+  // Só o que falta perguntar: as frases da vaga menos as que a pessoa já
+  // respondeu dentro dos 12 meses.
+  const perguntas = application ? perguntasQueFaltam(state, applicationId) : [];
   const itemIds = perguntas.map((pergunta) => pergunta.itemId);
-
-  /*
-   * O que a devolutiva lê no fim: as respostas resolvidas desta candidatura
-   * (reaproveitadas e novas), já gravadas pelo `onConcluir`. Contexto sem o
-   * nome da empresa (R5), e estável entre renderizações para a devolutiva
-   * não pedir o texto de novo a cada fala que entra.
-   */
-  const atividade = vaga?.activity;
-  const setor = vaga?.sector;
-  const contextoDaLeitura = useMemo(
-    () => ({ atividade, setor }),
-    [atividade, setor]
-  );
-  const primeiroNome = application
-    ? getTalent(application.talentId, state)?.name.split(' ')[0]
-    : undefined;
 
   if (!montado) return <ConversaCarregando />;
 
@@ -120,14 +96,13 @@ export function ConversaCandidato({
     respondidoEm: existente?.answeredAt ?? null,
     frases: perguntas.map((pergunta) => ({
       itemId: pergunta.itemId,
-      cena: pergunta.item.cena,
-      original: pergunta.item.texto
+      texto: pergunta.item.texto
     })),
-    reuso: responderTudo ? null : reuso
+    reuso
   });
 
-  const recomecar = () => {
-    setResponderTudo(true);
+  // Fora do prazo, "Responder mesmo assim" abre o roteiro normal.
+  const responderMesmoAssim = () => {
     setTravada('novo');
     setSessao((atual) => atual + 1);
   };
@@ -147,6 +122,17 @@ export function ConversaCandidato({
           >
             Vaga de {vaga.activity}
           </Badge>
+        ) : null
+      }
+      rodape={
+        equipeLogada && application ? (
+          <AtalhoDaEquipe
+            href={
+              application.talentId
+                ? routes.dashboard.iel.talents.byId(application.talentId).index
+                : routes.dashboard.iel.jobs.byId(application.jobId).index
+            }
+          />
         ) : null
       }
       onPrimeiraResposta={() => setTravada(variante)}
@@ -173,6 +159,9 @@ export function ConversaCandidato({
         });
       }}
       renderFim={(respostas) => {
+        // As respostas resolvidas desta candidatura (reaproveitadas e novas),
+        // já gravadas pelo `onConcluir`; se ainda não chegaram, as da
+        // própria conversa.
         const resolvidas = respostasResolvidas(state, applicationId)?.valores;
         const valores =
           resolvidas && Object.keys(resolvidas).length > 0
@@ -180,11 +169,9 @@ export function ConversaCandidato({
             : respostasDaEscala(respostas, itemIds);
         if (!valores || Object.keys(valores).length === 0) return null;
         return (
-          <LeituraPessoal
+          <SuasRespostas
             papel="candidato"
             respostas={valores}
-            primeiroNome={primeiroNome}
-            contexto={contextoDaLeitura}
           />
         );
       }}
@@ -202,12 +189,6 @@ export function ConversaCandidato({
                   variant={variant}
                   className={classe}
                 >
-                  {/*
-                   * Levava para `/fit`, o próprio questionário, com o rótulo
-                   * "Ver o que está registrado sobre você" — a pessoa tocava
-                   * esperando o seu registro e caía de volta na primeira
-                   * pergunta. O registro mora em "Minha candidatura".
-                   */}
                   <Link
                     href={
                       routes.dashboard.iel.applications.byId(applicationId)
@@ -224,11 +205,9 @@ export function ConversaCandidato({
                 key={acao}
                 variant={variant}
                 className={classe}
-                onClick={recomecar}
+                onClick={responderMesmoAssim}
               >
-                {acao === 'responder-mesmo-assim'
-                  ? 'Responder mesmo assim'
-                  : 'Responder de novo'}
+                Responder mesmo assim
               </Button>
             );
           })}

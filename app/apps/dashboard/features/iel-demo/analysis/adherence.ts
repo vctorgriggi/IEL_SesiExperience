@@ -10,11 +10,11 @@
  *
  * **O rótulo é "aderência", nunca "chance de sucesso".** O número mede a
  * distância entre o que a equipe da empresa responde e o que a pessoa
- * responde, frase a frase, nos 10 temas do instrumento do cliente. Não prediz
+ * responde, frase a frase, nos 11 temas do instrumento do cliente. Não prediz
  * desempenho e não substitui o técnico nem o comportamental (R3).
  *
- * **O denominador fica visível.** `coverage` diz em quantos dos 10 temas a
- * conta foi possível. Um total de 80% sobre dois temas não é a mesma coisa
+ * **O denominador fica visível.** `coverage` diz em quantos dos temas que a
+ * empresa pediu a conta foi possível. Um total de 80% sobre dois temas não é a mesma coisa
  * que 80% sobre dez.
  *
  * **Onde falta um lado, não há número.** Se a empresa não fechou a frase, ou
@@ -30,7 +30,7 @@
  */
 
 import { CULTURE_SCALE_MAX, CULTURE_SCALE_MIN } from './culture';
-import { FIT_AXES, type FitAxisId } from './fit-axes';
+import { FIT_AXIS_IDS, getFitAxis, type FitAxisId } from './fit-axes';
 import {
   alinharAoPolo,
   CONFIGURACAO_DE_FABRICA,
@@ -147,7 +147,8 @@ function mediaDe(valores: number[]): number | null {
 
 function finalizar(
   byAxis: AdherenceAxisEntry[],
-  byItem: AdherenceItemEntry[]
+  byItem: AdherenceItemEntry[],
+  totalAxes: number
 ): AdherenceResult {
   const measured = byAxis.filter(
     (entry): entry is AdherenceAxisEntry & { adherence: number } =>
@@ -175,7 +176,7 @@ function finalizar(
     total,
     threshold: ADHERENCE_THRESHOLD,
     compatible: total === null ? null : total >= ADHERENCE_THRESHOLD,
-    coverage: { answeredAxes: measured.length, totalAxes: FIT_AXES.length }
+    coverage: { answeredAxes: measured.length, totalAxes }
   };
 }
 
@@ -219,8 +220,14 @@ export function computeAdherence(
   profile: CompanyItemMeans,
   response: CandidateItemValues | null,
   weights: Partial<Record<FitAxisId, AdherenceWeight>>,
-  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA,
+  // Os temas que a empresa pediu no questionário. O que ela não pediu não
+  // entra na conta nem no denominador: a resposta continua guardada, mas
+  // medir um critério que a empresa não escolheu seria cobrar dela um
+  // alinhamento que ela não pediu.
+  temas: readonly FitAxisId[] = FIT_AXIS_IDS
 ): AdherenceResult {
+  const pedidos = new Set(temas);
   const byItem: AdherenceItemEntry[] = [];
 
   for (const [itemId, candidateValue] of Object.entries(response ?? {})) {
@@ -230,6 +237,7 @@ export function computeAdherence(
     // ajuste. A resposta fica guardada; só não entra na conta.
     if (!item || !itemAtivo(itemId, config) || !discrimina(item, config))
       continue;
+    if (!pedidos.has(item.tema)) continue;
     const regua = reguaDaEmpresa(itemId, profile);
     byItem.push({
       itemId,
@@ -243,7 +251,8 @@ export function computeAdherence(
     });
   }
 
-  const byAxis: AdherenceAxisEntry[] = FIT_AXES.map((axis) => {
+  const byAxis: AdherenceAxisEntry[] = temas.map((axisId) => {
+    const axis = getFitAxis(axisId);
     const weight = weights[axis.id] ?? 'medio';
     const doTema = byItem.filter((entry) => entry.axisId === axis.id);
     const comparados = doTema.filter(
@@ -293,7 +302,7 @@ export function computeAdherence(
     };
   });
 
-  return finalizar(byAxis, byItem);
+  return finalizar(byAxis, byItem, temas.length);
 }
 
 /**
@@ -304,9 +313,12 @@ export function computeAdherence(
 export function computeThemeAdherence(
   profile: CompanyAxisMeans,
   values: CandidateAxisValues | null,
-  weights: Partial<Record<FitAxisId, AdherenceWeight>>
+  weights: Partial<Record<FitAxisId, AdherenceWeight>>,
+  /** Idem `computeAdherence`: o que a empresa pediu, e só. */
+  temas: readonly FitAxisId[] = FIT_AXIS_IDS
 ): AdherenceResult {
-  const byAxis: AdherenceAxisEntry[] = FIT_AXES.map((axis) => {
+  const byAxis: AdherenceAxisEntry[] = temas.map((axisId) => {
+    const axis = getFitAxis(axisId);
     const companyMean = profile[axis.id] ?? null;
     const candidateValue = values?.[axis.id] ?? null;
     const weight = weights[axis.id] ?? 'medio';
@@ -332,21 +344,24 @@ export function computeThemeAdherence(
     };
   });
 
-  return finalizar(byAxis, []);
+  return finalizar(byAxis, [], temas.length);
 }
 
 /** Resultado vazio: sem candidatura, sem vaga ou sem resposta. */
-export function emptyAdherence(): AdherenceResult {
+export function emptyAdherence(
+  temas: readonly FitAxisId[] = FIT_AXIS_IDS
+): AdherenceResult {
   return finalizar(
-    FIT_AXES.map((axis) => ({
-      axisId: axis.id,
+    temas.map((axisId) => ({
+      axisId,
       adherence: null,
       companyMean: null,
       candidateValue: null,
       weight: 'medio' as const,
       gap: null
     })),
-    []
+    [],
+    temas.length
   );
 }
 

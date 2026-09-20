@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CultureInviteScreen } from '@/components/iel-demo/companies/culture-invite-screen';
+import { analistaLogada } from '@/features/iel-demo/acesso/sessao';
 
 export const metadata: Metadata = { title: 'Como é trabalhar aqui' };
 
@@ -15,5 +16,11 @@ type PageProps = {
  */
 export default async function IelCultureInvitePage({ params }: PageProps) {
   const { token } = await params;
-  return <CultureInviteScreen token={token} />;
+  const equipe = await analistaLogada();
+  return (
+    <CultureInviteScreen
+      token={token}
+      equipeLogada={equipe}
+    />
+  );
 }

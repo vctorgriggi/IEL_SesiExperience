@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     template: '%s · Mind RH'
   },
   description:
-    'Protótipo navegável: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada. Base fictícia.',
+    'Central de Seleção do IEL: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada.',
   robots: { index: false, follow: false },
   icons: { icon: '/marca/simbolo.png' }
 };

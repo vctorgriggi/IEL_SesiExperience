@@ -6,10 +6,12 @@ import {
   getSuggestedSampleSize,
   type CultureInviteRole
 } from '@/features/iel-demo/analysis/culture-invites';
+import type { FitAxisId } from '@/features/iel-demo/analysis/fit-axes';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import type { CultureInvitePerson } from '@/features/iel-demo/state/reducer';
 import {
+  competenciasDaEmpresa,
   getCompany,
   getCultureInvites,
   getCultureInviteStatus,
@@ -60,6 +62,10 @@ import {
 
 import { SimularEnvioDialog } from '../chat/simular-envio-dialog';
 import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
+import {
+  PassoDeCompetencias,
+  razaoDoMinimo
+} from './competencias-do-questionario';
 
 /**
  * Quem foi convidado e quem ainda falta (M2).
@@ -347,8 +353,14 @@ export function CultureInviteForm({
   companyId: string;
   onDone: () => void;
 }) {
-  const { dispatch } = useIelDemo();
+  const { state, dispatch } = useIelDemo();
   const [headcount, setHeadcount] = useState('30');
+  // A escolha começa no que a empresa já tem guardado — e, para quem nunca
+  // escolheu, isso é as 11 (`competenciasDaEmpresa`). Todas marcadas por
+  // padrão: quem não quiser mexer manda o instrumento inteiro, como antes.
+  const [competencias, setCompetencias] = useState<FitAxisId[]>(() =>
+    competenciasDaEmpresa(state, companyId)
+  );
   const [linhas, setLinhas] = useState<CultureInvitePerson[]>([
     emptyRow(),
     emptyRow(),
@@ -365,8 +377,19 @@ export function CultureInviteForm({
       atual.map((linha, i) => (i === index ? { ...linha, ...patch } : linha))
     );
 
+  const travaDoMinimo = razaoDoMinimo(competencias.length);
+
   const enviar = () => {
-    if (preenchidas.length === 0) return;
+    if (preenchidas.length === 0 || travaDoMinimo !== null) return;
+    // A escolha é gravada antes dos convites: o bloco de cada convite é
+    // calculado na abertura do link, e precisa achar a escolha já no estado.
+    dispatch({
+      type: 'set-company-competencies',
+      companyId,
+      axisIds: competencias,
+      decidedBy: 'analista',
+      at: nowIso()
+    });
     dispatch({
       type: 'add-culture-invites',
       companyId,
@@ -382,6 +405,16 @@ export function CultureInviteForm({
 
   return (
     <div className="flex flex-col gap-5">
+      {/*
+       * A escolha do que medir vem antes da lista de e-mails: é ela que
+       * define o que cada pessoa convidada vai responder.
+       */}
+      <PassoDeCompetencias
+        escolhidas={competencias}
+        onChange={setCompetencias}
+        idPrefix={`convite-${companyId}`}
+      />
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="headcount">Quantas pessoas há na área da vaga?</Label>
         <Input
@@ -482,7 +515,7 @@ export function CultureInviteForm({
 
       <div className="flex flex-col gap-2">
         <Button
-          disabled={preenchidas.length === 0}
+          disabled={preenchidas.length === 0 || travaDoMinimo !== null}
           onClick={enviar}
         >
           Enviar{' '}

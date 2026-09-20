@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CheckInScreen } from '@/components/iel-demo/candidate/check-in-screen';
+import { analistaLogada } from '@/features/iel-demo/acesso/sessao';
 
 export const metadata: Metadata = { title: 'Como está sendo?' };
 
@@ -15,5 +16,11 @@ type PageProps = {
  */
 export default async function IelCandidateCheckInPage({ params }: PageProps) {
   const { applicationId } = await params;
-  return <CheckInScreen applicationId={applicationId} />;
+  const equipe = await analistaLogada();
+  return (
+    <CheckInScreen
+      applicationId={applicationId}
+      equipeLogada={equipe}
+    />
+  );
 }

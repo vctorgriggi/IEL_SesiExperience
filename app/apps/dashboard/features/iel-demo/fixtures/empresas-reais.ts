@@ -115,7 +115,7 @@ export const EMPRESAS_REAIS: Company[] = [
     contactName: 'Contato institucional (site)',
     contactEmail: 'contato@colatte.io',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-09-12',
+    updatedAt: '2026-09-18',
     cultureSuggestions: [
       {
         axisId: 'interacao-convivencia',
@@ -151,7 +151,7 @@ export const EMPRESAS_REAIS: Company[] = [
     contactName: 'Contato institucional (site)',
     contactEmail: 'contato@loglab.example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-09-10',
+    updatedAt: '2026-09-16',
     cultureSuggestions: [
       {
         axisId: 'regras-decisao',
@@ -182,7 +182,7 @@ export const EMPRESAS_REAIS: Company[] = [
     contactName: 'Contato institucional (site)',
     contactEmail: 'contato@amaggi.example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-09-09',
+    updatedAt: '2026-09-15',
     cultureSuggestions: [
       {
         axisId: 'interacao-convivencia',
@@ -212,7 +212,7 @@ export const EMPRESAS_REAIS: Company[] = [
     contactName: 'Contato institucional (site)',
     contactEmail: 'contato@gruponorte.example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-09-11',
+    updatedAt: '2026-09-17',
     cultureSuggestions: [
       {
         axisId: 'etica-seguranca',
@@ -241,7 +241,7 @@ export const EMPRESAS_REAIS: Company[] = [
     contactName: 'Contato institucional (site)',
     contactEmail: 'contato@bomfuturo.example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-09-08',
+    updatedAt: '2026-09-14',
     cultureSuggestions: [
       {
         axisId: 'inovacao',
@@ -279,8 +279,8 @@ export const EQUIPES_REAIS: Team[] = [
         value:
           'Vários clientes ao mesmo tempo: um chamado interrompe o teste em andamento e é preciso alternar.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-12'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-18'
       },
       {
         id: 'COND-402',
@@ -290,7 +290,7 @@ export const EQUIPES_REAIS: Team[] = [
           'Quem atende fala direto com o cliente e com quem escreve o código, sem intermediário.',
         status: 'da-descricao',
         origin: 'Site da empresa — colatte.io',
-        updatedAt: '2026-09-12'
+        updatedAt: '2026-09-18'
       },
       {
         id: 'COND-403',
@@ -299,8 +299,8 @@ export const EQUIPES_REAIS: Team[] = [
         value: 'Ainda não informado pela empresa.',
         status: 'a-confirmar',
         informed: false,
-        origin: 'Contexto da empresa — demonstração',
-        updatedAt: '2026-09-12'
+        origin: 'Contexto da empresa',
+        updatedAt: '2026-09-18'
       }
     ]
   },
@@ -321,7 +321,7 @@ export const EQUIPES_REAIS: Team[] = [
           'Todo chamado segue roteiro de classificação e escalonamento documentado (processo certificado).',
         status: 'da-descricao',
         origin: 'Site da empresa — loglabdigital.com.br',
-        updatedAt: '2026-09-10'
+        updatedAt: '2026-09-16'
       },
       {
         id: 'COND-502',
@@ -331,7 +331,7 @@ export const EQUIPES_REAIS: Team[] = [
           'Cursos e certificações internos, declarados na página de carreiras.',
         status: 'da-descricao',
         origin: 'Página de carreiras — loglabdigital.com.br/carreira',
-        updatedAt: '2026-09-10'
+        updatedAt: '2026-09-16'
       }
     ]
   },
@@ -351,8 +351,8 @@ export const EQUIPES_REAIS: Team[] = [
         value:
           'Na safra a rotina se estende e os horários são reorganizados (inferência a partir do setor; a confirmar).',
         status: 'a-confirmar',
-        origin: 'Contexto da empresa — demonstração',
-        updatedAt: '2026-09-09'
+        origin: 'Contexto da empresa',
+        updatedAt: '2026-09-15'
       },
       {
         id: 'COND-602',
@@ -362,7 +362,7 @@ export const EQUIPES_REAIS: Team[] = [
           'Toda movimentação segue procedimento escrito e programa de integridade.',
         status: 'da-descricao',
         origin: 'Trabalhe na Amaggi — amaggi.com.br',
-        updatedAt: '2026-09-09'
+        updatedAt: '2026-09-15'
       }
     ]
   },
@@ -382,8 +382,8 @@ export const EQUIPES_REAIS: Team[] = [
         value:
           'As cargas chegam juntas no início do turno; quem confere alterna entre docas.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-11'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-17'
       },
       {
         id: 'COND-702',
@@ -391,8 +391,8 @@ export const EQUIPES_REAIS: Team[] = [
         label: 'Apoio nas primeiras atividades',
         value: 'Encarregado do turno acompanha a primeira semana.',
         status: 'confirmado',
-        origin: 'Contexto da empresa — informado na ligação (demonstração)',
-        updatedAt: '2026-09-11'
+        origin: 'Contexto da empresa — informado na ligação',
+        updatedAt: '2026-09-17'
       }
     ]
   },
@@ -411,8 +411,8 @@ export const EQUIPES_REAIS: Team[] = [
         label: 'Registro de movimentações',
         value: 'Sistema interno com procedimento de entrada e saída.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-08'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-14'
       }
     ]
   }
@@ -422,7 +422,7 @@ export const EQUIPES_REAIS: Team[] = [
  * Vagas
  * ------------------------------------------------------------------ */
 
-const SYSTEM = 'Empregare — demonstração';
+const SYSTEM = 'Empregare';
 
 export const VAGAS_REAIS: Job[] = [
   {
@@ -453,7 +453,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de atendimento a clientes com abertura e acompanhamento de chamados?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-602',
@@ -462,7 +462,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de conferência ou teste seguindo roteiro, com registro do que saiu diferente?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-603',
@@ -471,7 +471,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de operação de planilha ou sistema para lançar ocorrências?',
         dimension: 'tecnica',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-604',
@@ -480,7 +480,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há curso técnico em informática concluído ou em andamento, ou experiência equivalente?',
         dimension: 'tecnica',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-605',
@@ -488,7 +488,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobre o horário das 9h às 18h?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-606',
@@ -497,7 +497,7 @@ export const VAGAS_REAIS: Job[] = [
           'Existe interesse declarado em trabalhar com software e atendimento técnico?',
         dimension: 'profissional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       },
       {
         id: 'CRI-607',
@@ -515,7 +515,7 @@ export const VAGAS_REAIS: Job[] = [
           'A rotina alterna entre chamados e testes; há informação sobre como a pessoa lida com isso?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       }
     ],
     axisWeights: {
@@ -548,7 +548,7 @@ export const VAGAS_REAIS: Job[] = [
       }
     ],
     externalRef: { system: SYSTEM, account: 'Colatte', id: 'EMPG-DEMO-6001' },
-    updatedAt: '2026-09-14'
+    updatedAt: '2026-09-20'
   },
   {
     id: 'VAG-07',
@@ -574,7 +574,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de emissão de notas fiscais de serviço?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-702',
@@ -583,7 +583,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de controle de contas a receber em planilha ou sistema?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-703',
@@ -591,7 +591,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobre o horário comercial?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-704',
@@ -600,7 +600,7 @@ export const VAGAS_REAIS: Job[] = [
           'As expectativas registradas dialogam com uma rotina administrativa dividida com os sócios?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       }
     ],
     axisWeights: {
@@ -610,7 +610,7 @@ export const VAGAS_REAIS: Job[] = [
     },
     axisWeightSuggestions: [],
     externalRef: { system: SYSTEM, account: 'Colatte', id: 'EMPG-DEMO-6002' },
-    updatedAt: '2026-09-12'
+    updatedAt: '2026-09-18'
   },
   {
     id: 'VAG-08',
@@ -637,7 +637,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de atendimento a usuários ou clientes por telefone ou chat?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-802',
@@ -645,7 +645,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de uso de ferramenta de chamados ou tickets?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-803',
@@ -653,7 +653,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobre a escala entre 7h e 19h?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-804',
@@ -686,7 +686,7 @@ export const VAGAS_REAIS: Job[] = [
       account: 'Log,Lab Inteligência Digital',
       id: 'EMPG-DEMO-6101'
     },
-    updatedAt: '2026-09-11'
+    updatedAt: '2026-09-17'
   },
   {
     id: 'VAG-09',
@@ -713,7 +713,7 @@ export const VAGAS_REAIS: Job[] = [
           'Há registro de conferência de notas ou documentos de transporte?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-902',
@@ -721,7 +721,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de lançamentos em sistema ou planilha?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-903',
@@ -730,7 +730,7 @@ export const VAGAS_REAIS: Job[] = [
           'A disponibilidade declarada aceita horas adicionais nos picos da safra?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-904',
@@ -758,7 +758,7 @@ export const VAGAS_REAIS: Job[] = [
       }
     ],
     externalRef: { system: SYSTEM, account: 'Amaggi', id: 'EMPG-DEMO-6201' },
-    updatedAt: '2026-09-10'
+    updatedAt: '2026-09-16'
   },
   {
     id: 'VAG-10',
@@ -784,7 +784,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de conferência de volumes ou romaneios?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-1002',
@@ -792,7 +792,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobre o turno da manhã?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-1003',
@@ -800,7 +800,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'O acompanhamento da primeira semana atende à expectativa?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Condição informada na ligação (demonstração)'
+        confirmedBy: 'Condição informada na ligação'
       }
     ],
     axisWeights: {
@@ -814,7 +814,7 @@ export const VAGAS_REAIS: Job[] = [
       account: 'Grupo Norte Logística',
       id: 'EMPG-DEMO-6301'
     },
-    updatedAt: '2026-09-12'
+    updatedAt: '2026-09-18'
   },
   {
     // Processo de março, encerrado: é daqui que vem a resposta antiga do
@@ -841,7 +841,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de conferência de romaneios?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-1102',
@@ -849,7 +849,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobria o turno da noite?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       }
     ],
     axisWeights: { 'execucao-ritmo': 'alto' },
@@ -859,7 +859,7 @@ export const VAGAS_REAIS: Job[] = [
       account: 'Grupo Norte Logística',
       id: 'EMPG-DEMO-6288'
     },
-    updatedAt: '2026-04-02'
+    updatedAt: '2026-04-08'
   },
   {
     id: 'VAG-12',
@@ -885,7 +885,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de conferência de notas ou materiais?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-1202',
@@ -893,7 +893,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'Há registro de lançamentos de entrada e saída em sistema?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-1203',
@@ -901,7 +901,7 @@ export const VAGAS_REAIS: Job[] = [
         question: 'A disponibilidade declarada cobre o horário comercial?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       }
     ],
     axisWeights: { 'regras-decisao': 'alto', 'execucao-ritmo': 'medio' },
@@ -911,7 +911,7 @@ export const VAGAS_REAIS: Job[] = [
       account: 'Bom Futuro',
       id: 'EMPG-DEMO-6401'
     },
-    updatedAt: '2026-09-09'
+    updatedAt: '2026-09-15'
   }
 ];
 
@@ -977,7 +977,8 @@ const COLATTE_EQUIPE: AlvoCultural = {
     'regras-decisao': 2.5,
     'interacao-convivencia': 4.5,
     'lideranca-autonomia': 4.5,
-    'adaptacao-carreira': 3.5
+    'adaptacao-carreira': 3.5,
+    'expectativas-futuras': 3.5
   },
   itens: {
     I05: 5,
@@ -1011,7 +1012,8 @@ const COLATTE: Tracado = {
     'regras-decisao': 'I33',
     'interacao-convivencia': 'I39',
     'lideranca-autonomia': 'I40',
-    'adaptacao-carreira': 'I50'
+    'adaptacao-carreira': 'I47',
+    'expectativas-futuras': 'I50'
   }
 };
 
@@ -1050,7 +1052,8 @@ const LOGLAB: Tracado = {
       'regras-decisao': 4.5,
       'interacao-convivencia': 3.5,
       'lideranca-autonomia': 3.5,
-      'adaptacao-carreira': 3.5
+      'adaptacao-carreira': 3.5,
+      'expectativas-futuras': 3.5
     },
     itens: {
       I01: 5,
@@ -1075,7 +1078,8 @@ const LOGLAB: Tracado = {
     'regras-decisao': 'I31',
     'interacao-convivencia': 'I36',
     'lideranca-autonomia': 'I41',
-    'adaptacao-carreira': 'I50'
+    'adaptacao-carreira': 'I47',
+    'expectativas-futuras': 'I50'
   }
 };
 
@@ -1116,7 +1120,8 @@ const AMAGGI: Tracado = {
       'regras-decisao': 4,
       'interacao-convivencia': 4,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     itens: {
       I02: 5,
@@ -1141,7 +1146,8 @@ const AMAGGI: Tracado = {
     'regras-decisao': 'I31',
     'interacao-convivencia': 'I38',
     'lideranca-autonomia': 'I42',
-    'adaptacao-carreira': 'I47'
+    'adaptacao-carreira': 'I47',
+    'expectativas-futuras': 'I49'
   }
 };
 
@@ -1183,7 +1189,8 @@ const NORTE: Tracado = {
       'regras-decisao': 3.5,
       'interacao-convivencia': 4.5,
       'lideranca-autonomia': 4.5,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     itens: {
       I03: 1,
@@ -1208,7 +1215,8 @@ const NORTE: Tracado = {
     'regras-decisao': 'I32',
     'interacao-convivencia': 'I39',
     'lideranca-autonomia': 'I40',
-    'adaptacao-carreira': 'I47'
+    'adaptacao-carreira': 'I47',
+    'expectativas-futuras': 'I49'
   }
 };
 
@@ -1243,7 +1251,8 @@ const BOM_FUTURO: Tracado = {
       'regras-decisao': 4,
       'interacao-convivencia': 3.5,
       'lideranca-autonomia': 4,
-      'adaptacao-carreira': 3.5
+      'adaptacao-carreira': 3.5,
+      'expectativas-futuras': 3.5
     },
     itens: {
       I04: 5,
@@ -1269,8 +1278,48 @@ const BOM_FUTURO: Tracado = {
     'regras-decisao': 'I31',
     'interacao-convivencia': 'I39',
     'lideranca-autonomia': 'I40',
-    'adaptacao-carreira': 'I45'
+    'adaptacao-carreira': 'I45',
+    'expectativas-futuras': 'I49'
   }
+};
+
+/**
+ * As competências que cada empresa real pediu no questionário (R11).
+ *
+ * A Colatte é a empresa que exercita o pedido do IEL: **8 das 11**. É uma
+ * casa de software de equipe curta, e as três que ela não pede são as que o
+ * próprio traçado público não sustenta:
+ *
+ * - **Regras, métodos e decisão** — não há manual de procedimento para
+ *   medir aderência a ele; o que existe é combinado conversado, e isso já é
+ *   Interação social e convivência. (O valor 2,5 do traçado era inferência
+ *   nossa, sem frase pública por trás.)
+ * - **Adaptação a mudanças e carreira** — único tema da Colatte sem frase
+ *   marcante escolhida à mão, porque o site não diz nada sobre horário
+ *   flexível nem mudança de método.
+ * - **Expectativas futuras** — cinco pessoas não têm trilha de carreira a
+ *   oferecer; perguntar onde a pessoa se vê em três anos e medir a distância
+ *   seria cobrar um alinhamento que a empresa não tem como honrar.
+ *
+ * O que ela mantém é o que ela publica sobre si: ciclos curtos com o cliente
+ * validando (Foco no cliente), "sem intermediários" (Interação),
+ * "feitos por quem você conhece pelo nome" (Liderança e autonomia),
+ * "ninguém some por três meses" (Ética, segurança e respeito).
+ *
+ * As demais empresas pedem as 11 — por isso não aparecem aqui: ausência na
+ * chave é "as 11" (`competenciasDaEmpresa`).
+ */
+export const COMPETENCIAS_REAIS: Record<string, FitAxisId[]> = {
+  'EMP-04': [
+    'orientacao-resultados',
+    'inovacao',
+    'aprendizado-desenvolvimento',
+    'foco-cliente',
+    'etica-seguranca',
+    'execucao-ritmo',
+    'interacao-convivencia',
+    'lideranca-autonomia'
+  ]
 };
 
 export const TRACADO_REAL: Record<string, Tracado> = {
@@ -1362,8 +1411,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     inicio: 1,
     n: 10,
     respondidos: 10,
-    sentAt: '2026-09-08',
-    answeredAt: '2026-09-10'
+    sentAt: '2026-09-14',
+    answeredAt: '2026-09-16'
   }),
   {
     id: 'INV-EMP04-11',
@@ -1371,7 +1420,7 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'colaborador-11@colatte.example.com',
     role: 'equipe',
     area: 'Desenvolvimento e suporte',
-    sentAt: '2026-09-13',
+    sentAt: '2026-09-19',
     answeredAt: null
   },
 
@@ -1382,8 +1431,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'gestao-servicedesk@loglab.example.com',
     role: 'gestao',
     area: 'Service desk',
-    sentAt: '2026-09-03',
-    answeredAt: '2026-09-04'
+    sentAt: '2026-09-09',
+    answeredAt: '2026-09-10'
   },
   {
     id: 'INV-EMP05-02',
@@ -1391,8 +1440,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'gente@loglab.example.com',
     role: 'rh',
     area: 'Gente e cultura',
-    sentAt: '2026-09-03',
-    answeredAt: '2026-09-04'
+    sentAt: '2026-09-09',
+    answeredAt: '2026-09-10'
   },
   ...amostra({
     companyId: 'EMP-05',
@@ -1402,8 +1451,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     inicio: 3,
     n: 11,
     respondidos: 11,
-    sentAt: '2026-09-04',
-    answeredAt: '2026-09-06'
+    sentAt: '2026-09-10',
+    answeredAt: '2026-09-12'
   }),
 
   // Amaggi: 12 de 12 da equipe.
@@ -1415,8 +1464,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     inicio: 1,
     n: 12,
     respondidos: 12,
-    sentAt: '2026-09-02',
-    answeredAt: '2026-09-04'
+    sentAt: '2026-09-08',
+    answeredAt: '2026-09-10'
   }),
 
   // Norte Logística: perfil fechado há meses (a vaga de março já usou
@@ -1429,8 +1478,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     inicio: 1,
     n: 11,
     respondidos: 11,
-    sentAt: '2026-08-24',
-    answeredAt: '2026-08-26'
+    sentAt: '2026-08-30',
+    answeredAt: '2026-09-01'
   }),
 
   // Bom Futuro: 10 de 10.
@@ -1442,8 +1491,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     inicio: 1,
     n: 10,
     respondidos: 10,
-    sentAt: '2026-09-09',
-    answeredAt: '2026-09-11'
+    sentAt: '2026-09-15',
+    answeredAt: '2026-09-17'
   })
 ];
 
@@ -1459,10 +1508,10 @@ export const CONVITES_REAIS: CultureRespondentInvite[] =
  * temas. Sem `inviteId`: quem confirma pela tela fala em nome da empresa.
  */
 const GESTAO_DECLARA: Record<string, string> = {
-  'EMP-04': '2026-09-09',
-  'EMP-06': '2026-09-03',
-  'EMP-07': '2026-08-25',
-  'EMP-08': '2026-09-10'
+  'EMP-04': '2026-09-15',
+  'EMP-06': '2026-09-09',
+  'EMP-07': '2026-08-31',
+  'EMP-08': '2026-09-16'
 };
 
 /** Ruído menor na frase marcante: é o que a torna marcante. */
@@ -1494,6 +1543,14 @@ function construirRespostas(): CultureAnswer[] {
       convite.role === 'equipe'
         ? tracado.equipe
         : (tracado.gestao ?? tracado.equipe);
+    // O bloco da semente é o inteiro, de propósito, mesmo onde a empresa
+    // hoje pede menos competências: a consulta da Colatte foi respondida em
+    // setembro, quando ela ainda media as 11, e a escolha de 8 veio depois.
+    // É o que o produto promete — resposta de tema retirado continua
+    // guardada e volta a contar se a empresa reincluir o tema —, e é o que
+    // deixa a demonstração poder reincluir um tema ao vivo e ver o número
+    // mudar. Quem abre o link **agora** recebe o bloco já filtrado
+    // (`getInviteByToken`).
     for (const item of blocoDoConvite(convite)) {
       respostas.push({
         id: `CUL-${convite.id}-${item.id}`,

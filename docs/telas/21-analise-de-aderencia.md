@@ -13,7 +13,7 @@ lista de vagas — link antigo não dá 404
 
 Responde **"esta pessoa combina com quais empresas?"** — não só com aquela em cuja vaga ela está
 sendo olhada agora. Ao lado da lista de empresas, a leitura completa de uma delas: o percentual com o
-denominador, o radar dos dez temas e o tema a tema com os dois lados escritos.
+denominador, o radar dos onze temas e o tema a tema com os dois lados escritos.
 
 Era tela própria no menu lateral, organizada por vaga: todas as pessoas da vaga, ordenadas, e uma
 pessoa por vez aberta em cima. Mas o ranking por vaga é exatamente o que a [Mesa de
@@ -26,7 +26,7 @@ conta passa a responder o que faz o banco de talentos valer.
 Na ordem da tela:
 
 - **Onde ela se encaixa** — a lista de empresas comparadas, ordenada por aderência e numerada, com
-  setor, percentual, faixa nomeada, denominador ("4 de 10 temas medidos") e a marca de quem está
+  setor, percentual, faixa nomeada, denominador ("4 de 11 temas medidos") e a marca de quem está
   abaixo do corte. A linha diz também quando a pessoa já se candidatou àquela empresa. Clicar troca
   a leitura ao lado; a empresa aberta é trazida para a vista quando vem de um link com `?vaga=`.
 - **Sem base suficiente para posição** — o grupo do fim da lista, sem número e sem faixa, com o
@@ -38,11 +38,11 @@ Na ordem da tela:
 - **Divergência gestão × equipe**, quando existe: quantos temas a empresa responde diferente entre
   gestão e equipe, com o aviso de que a leitura usa a média declarada e a divergência fica registrada
   no contexto da empresa. A média é o perfil, a dispersão é o diagnóstico.
-- **Radar dos dez temas** — o polígono da empresa e o da pessoa sobre a mesma escala, com legenda
+- **Radar dos onze temas** — o polígono da empresa e o da pessoa sobre a mesma escala, com legenda
   dizendo que a escala são as opções do questionário, não uma nota. Tema sem um dos lados abre o
   polígono em vez de ser desenhado como mínimo. Em volta do polígono o nome vai curto
   (`AXIS_SHORT_LABEL`), porque ali o espaço é do desenho.
-- **Em que ela combina e em que difere** — os dez temas um a um: a aderência de cada um, o peso
+- **Em que ela combina e em que difere** — os onze temas um a um: a aderência de cada um, o peso
   declarado pela empresa, o trilho com o corte de 35% marcado e, embaixo, os dois lados em números
   ("Empresa: média 1,4 de 3 · Helena: opção 1 de 3"). Tema sem um dos lados diz de quem é a falta, e
   não desenha trilho.
@@ -107,7 +107,7 @@ série só com o número escrito ao lado.
 - **Piso de evidência.** Abaixo de dois temas respondidos pelos dois lados não há posição atribuída,
   e o grupo é nomeado por escrito.
 - **Explicabilidade (LGPD, art. 20, § 1º).** O percentual de cada tema e o peso declarado ficam
-  visíveis, e o denominador ("4 de 10 temas medidos") aparece junto do total.
+  visíveis, e o denominador ("4 de 11 temas medidos") aparece junto do total.
 - **Recorte por persona.** O perfil da pessoa não abre para o gestor: ele vê pessoas apenas dentro de
   uma remessa enviada pelo IEL.
 - Cor sozinha não informa: abaixo do mínimo tem o traço no trilho e a frase em texto.

@@ -291,18 +291,34 @@ const FRASES: Record<FitAxisId, Record<LadoDoTema, FrasesDoLado>> = {
   'adaptacao-carreira': {
     alto: {
       candidato:
-        'Consigo mudar meus horários quando o trabalho precisa, e me vejo seguindo um caminho parecido com o de hoje.',
+        'Consigo mudar meus horários quando o trabalho precisa, e, se um jeito de trabalhar funciona, prefiro esperar antes de mudar.',
       colaborador:
-        'Aqui, os horários mudam quando a operação pede, e quem fica costuma seguir um caminho parecido por bastante tempo.',
+        'Aqui, os horários mudam quando a operação pede, e o que funciona só muda depois que a alternativa firma.',
       lugar:
-        'os horários mudam quando a operação pede e o caminho é de longo prazo'
+        'os horários mudam quando a operação pede e o que funciona não muda à toa'
     },
     baixo: {
       candidato:
-        'Prefiro horários que não mudam, e gosto de pensar em caminhos diferentes para o meu futuro.',
+        'Prefiro horários que não mudam, e gosto de experimentar um jeito novo assim que ele aparece.',
       colaborador:
-        'Aqui, os horários são fixos, e há espaço para quem quer mudar de caminho e aprender coisas diferentes.',
-      lugar: 'os horários são fixos e há espaço para mudar de caminho'
+        'Aqui, os horários são fixos, e um jeito novo de trabalhar entra assim que aparece.',
+      lugar: 'os horários são fixos e um jeito novo entra logo'
+    }
+  },
+  'expectativas-futuras': {
+    alto: {
+      candidato:
+        'Nos próximos anos, quero conhecer cada vez melhor a minha área, e me vejo seguindo um caminho parecido com o de hoje.',
+      colaborador:
+        'Aqui, quem fica costuma aprofundar a própria área e seguir um caminho parecido por bastante tempo.',
+      lugar: 'o caminho é aprofundar a própria área por bastante tempo'
+    },
+    baixo: {
+      candidato:
+        'Gosto de pensar em caminhos diferentes para o meu futuro e de aprender assuntos que não uso hoje.',
+      colaborador:
+        'Aqui, há espaço para quem quer mudar de caminho e aprender assuntos diferentes.',
+      lugar: 'há espaço para mudar de caminho e aprender assuntos diferentes'
     }
   }
 };

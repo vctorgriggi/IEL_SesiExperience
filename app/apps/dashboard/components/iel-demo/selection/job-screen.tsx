@@ -232,7 +232,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
   if (!job) {
     return (
       <Alert variant="destructive">
-        Vaga não encontrada nesta base de demonstração.{' '}
+        Vaga não encontrada.{' '}
         <Link
           className="underline"
           href={iel.jobs.index}
@@ -251,8 +251,8 @@ export function JobScreen({ jobId }: { jobId: string }) {
   ) {
     return (
       <Alert variant="warning">
-        Esta vaga pertence a outra empresa. Nesta demonstração, o perfil de
-        gestor só acessa os processos da própria empresa.{' '}
+        Esta vaga pertence a outra empresa. O gestor só acessa os processos da
+        própria empresa.{' '}
         <Link
           className="underline"
           href={iel.jobs.index}

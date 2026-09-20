@@ -30,7 +30,7 @@ export const DEMO_JOBS: Job[] = [
           'Há registro de experiência conferindo pedidos e identificando divergências?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-102',
@@ -47,7 +47,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'A disponibilidade declarada cobre o turno das 13h às 22h?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-104',
@@ -56,7 +56,7 @@ export const DEMO_JOBS: Job[] = [
           'Existe interesse declarado nas atividades de expedição e estoque?',
         dimension: 'profissional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       },
       {
         id: 'CRI-105',
@@ -65,7 +65,7 @@ export const DEMO_JOBS: Job[] = [
           'A expectativa de aprendizado declarada é compatível com a rotina oferecida?',
         dimension: 'profissional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       },
       {
         id: 'CRI-106',
@@ -83,7 +83,7 @@ export const DEMO_JOBS: Job[] = [
           'A rotina exige execução autônoma durante boa parte do turno; há informação sobre isso?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-108',
@@ -92,7 +92,7 @@ export const DEMO_JOBS: Job[] = [
           'A forma de comunicar prioridades (checklist no início do turno) está confirmada?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       }
     ],
     axisWeights: {
@@ -133,11 +133,11 @@ export const DEMO_JOBS: Job[] = [
       }
     ],
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-3391'
     },
-    updatedAt: '2026-09-13'
+    updatedAt: '2026-09-19'
   },
   {
     id: 'VAG-02',
@@ -182,7 +182,7 @@ export const DEMO_JOBS: Job[] = [
           'A disponibilidade declarada cobre o horário comercial e está atualizada?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-204',
@@ -190,7 +190,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'Existe interesse declarado nas atividades de estoque?',
         dimension: 'profissional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       },
       {
         id: 'CRI-205',
@@ -241,11 +241,11 @@ export const DEMO_JOBS: Job[] = [
       }
     ],
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Horizonte Alimentos',
       id: 'EMPG-DEMO-4127'
     },
-    updatedAt: '2026-09-12'
+    updatedAt: '2026-09-18'
   },
   {
     id: 'VAG-03',
@@ -271,7 +271,7 @@ export const DEMO_JOBS: Job[] = [
           'Há registro de experiência organizando documentos e arquivos?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-302',
@@ -279,7 +279,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'Há registro de atendimento telefônico ou ao público?',
         dimension: 'tecnica',
         required: false,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-303',
@@ -287,7 +287,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'A disponibilidade declarada cobre o horário comercial?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-304',
@@ -296,7 +296,7 @@ export const DEMO_JOBS: Job[] = [
           'As expectativas profissionais registradas dialogam com a oportunidade?',
         dimension: 'profissional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       },
       {
         id: 'CRI-305',
@@ -338,11 +338,11 @@ export const DEMO_JOBS: Job[] = [
       }
     ],
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Oficina Pantanal',
       id: 'EMPG-DEMO-2055'
     },
-    updatedAt: '2026-09-08'
+    updatedAt: '2026-09-14'
   },
   /*
    * As vagas 4 e 5 são da Cerrado Distribuição, a mesma empresa da vaga 1, e
@@ -382,7 +382,7 @@ export const DEMO_JOBS: Job[] = [
           'Há registro de experiência separando ou conferindo pedidos e volumes?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-402',
@@ -390,7 +390,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'A disponibilidade declarada cobre o turno da manhã?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-403',
@@ -399,7 +399,7 @@ export const DEMO_JOBS: Job[] = [
           'As expectativas registradas dialogam com uma rotina de expedição?',
         dimension: 'organizacional',
         required: false,
-        confirmedBy: 'Registro IEL — demonstração'
+        confirmedBy: 'Registro IEL'
       }
     ],
     axisWeights: {
@@ -411,11 +411,11 @@ export const DEMO_JOBS: Job[] = [
     },
     axisWeightSuggestions: [],
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-3402'
     },
-    updatedAt: '2026-09-11'
+    updatedAt: '2026-09-17'
   },
   {
     id: 'VAG-05',
@@ -437,7 +437,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'Há registro de experiência organizando estoque ou depósito?',
         dimension: 'tecnica',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       },
       {
         id: 'CRI-502',
@@ -445,7 +445,7 @@ export const DEMO_JOBS: Job[] = [
         question: 'A disponibilidade declarada cobria o turno da tarde?',
         dimension: 'profissional',
         required: true,
-        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+        confirmedBy: 'Descrição da vaga (Empregare)'
       }
     ],
     axisWeights: {
@@ -454,10 +454,10 @@ export const DEMO_JOBS: Job[] = [
     },
     axisWeightSuggestions: [],
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-3288'
     },
-    updatedAt: '2025-08-20'
+    updatedAt: '2025-08-26'
   }
 ];

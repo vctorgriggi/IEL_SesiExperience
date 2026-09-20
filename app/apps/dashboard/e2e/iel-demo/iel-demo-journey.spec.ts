@@ -273,9 +273,7 @@ test.describe('Central de Seleção IEL — demonstração', () => {
 
     // Reiniciar restaura a base inicial.
     await abrirMenuDaPersona(page);
-    await page
-      .getByRole('menuitem', { name: 'Reiniciar demonstração' })
-      .click();
+    await page.getByRole('menuitem', { name: 'Reiniciar base' }).click();
     await page.getByRole('button', { name: 'Reiniciar agora' }).click();
     await page.goto('/iel/pendencias');
     // As duas solicitações iniciais voltam; a criada na demonstração desaparece.

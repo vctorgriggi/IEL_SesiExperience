@@ -183,7 +183,7 @@ export function CreateClarificationDialog({
     toast.success(
       asDraft
         ? 'Rascunho salvo em Pendências.'
-        : 'Solicitação registrada. Envio simulado: nenhuma mensagem real foi disparada.'
+        : 'Solicitação registrada e enviada.'
     );
     onCreated?.('novo');
   }
@@ -288,9 +288,8 @@ export function CreateClarificationDialog({
         </div>
 
         <Alert variant="default">
-          Envio simulado: a experiência do destinatário fica disponível em
-          Pendências, na ação “Abrir experiência do destinatário”. Nenhum e-mail
-          ou mensagem é enviado.
+          A mensagem que chega a quem recebe fica em Pendências, na ação “Abrir
+          experiência do destinatário”.
         </Alert>
       </div>
     </Dialog>

@@ -86,7 +86,8 @@ export function InstrumentoScreen() {
 
   const termo = normalizarBusca(busca);
 
-  // As seções depois dos filtros. A busca olha a cena, a frase original, o
+  // As seções depois dos filtros. A busca olha a frase, a cena (que não
+  // aparece mais na tela, mas ainda acha), o
   // subtema e o id, para "I12" e "conferir" acharem a mesma frase.
   const secoes = useMemo(
     () =>
@@ -125,7 +126,7 @@ export function InstrumentoScreen() {
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">Instrumento</h1>
         <p className="text-sm text-muted-foreground">
-          As 52 frases do cliente, em 10 temas: o que o candidato e o
+          As 52 frases do cliente, em 11 temas: o que o candidato e o
           colaborador respondem, e o que pesa na aderência
         </p>
       </div>
@@ -329,7 +330,9 @@ function SecaoDoTema({
           </span>
         </div>
         <CardDescription>
-          {axis.tituloOriginal} · {axis.description}
+          {axis.tituloOriginal !== axis.label
+            ? `${axis.tituloOriginal} · ${axis.description}`
+            : axis.description}
         </CardDescription>
         <p className="text-sm">
           <span className="text-muted-foreground">Frase padrão: </span>

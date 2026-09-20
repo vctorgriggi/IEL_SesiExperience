@@ -11,7 +11,7 @@ import {
 
 /** Texto do marcador, exportado para quem precisar repetir em legenda. */
 export const TEXTO_HISTORICO =
-  'Histórico simulado dos últimos 12 meses: é o que o retorno de um toque passa a medir';
+  'Histórico dos últimos 12 meses: o retorno de um toque passa a atualizar este número';
 
 /**
  * Marca discreta de número que vem do histórico simulado

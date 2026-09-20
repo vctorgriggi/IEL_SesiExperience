@@ -410,7 +410,7 @@ const PRIVACIDADE = [
     icone: IconShieldLock,
     titulo: 'Você vê a leitura, não as respostas uma a uma',
     texto:
-      'O quanto combina com a empresa e os 10 temas ficam visíveis. Cada resposta, não.'
+      'O quanto combina com a empresa e os 11 temas ficam visíveis. Cada resposta, não.'
   },
   {
     icone: IconUserCheck,

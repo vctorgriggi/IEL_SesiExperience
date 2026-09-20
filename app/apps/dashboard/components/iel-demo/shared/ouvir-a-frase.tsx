@@ -89,10 +89,11 @@ export function OuvirAFrase({
  * numa tirada só, impossível de acompanhar.
  */
 export function falaDaFrase({
-  cena,
+  frase,
   rotulos
 }: {
-  cena: string;
+  /** A frase do instrumento, como está escrita na tela. */
+  frase: string;
   rotulos: { valor: number; rotulo: string }[];
 }): string {
   const degraus = rotulos
@@ -100,7 +101,7 @@ export function falaDaFrase({
     .join(' ');
 
   return [
-    cena,
+    frase,
     'O quanto isso é você? Não existe resposta certa.',
     'Para responder, toque no número.',
     degraus

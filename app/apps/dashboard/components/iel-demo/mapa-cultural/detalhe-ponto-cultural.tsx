@@ -145,7 +145,7 @@ export function DetalhePontoCultural({
 
               {/*
                 O número e o que o sustenta, lado a lado. O denominador é
-                exigência: "4 de 10 temas" evita ler 80% como se os dez
+                exigência: "4 de 11 temas" evita ler 80% como se os onze
                 tivessem sido respondidos.
               */}
               {leitura?.aderencia ? (

@@ -13,9 +13,9 @@
  * respondidas numa escala de concordância de 5 pontos. O candidato responde
  * 10 delas, uma por tema, escolhidas pela empresa da vaga — as frases em que
  * a equipe dela é mais marcante (`escolherPerguntasDoCandidato`). O público é
- * operacional, com baixo letramento digital (00:08:01): ele lê o
- * `textoSimples` de cada frase, e a escala aparece em 5 botões com o rótulo
- * escrito.
+ * operacional, com baixo letramento digital (00:08:01): ele lê o `texto`
+ * de cada frase — o da planilha, sem edição, a pedido do dono do produto
+ * (20/09/2026) —, e a escala aparece em 5 botões com o rótulo escrito.
  *
  * **As mesmas frases da empresa, na voz da pessoa.** O candidato responde a
  * mesma frase que a equipe respondeu. É o que torna a comparação legítima: a
@@ -85,8 +85,14 @@
  * finalidade e a retenção do que já era coletado — não dá para fazer isso
  * calado sobre um aceite que prometia o contrário. Versão nova, e reuso só
  * para quem aceitar esta.
+ * 2026-09-23: o texto mostrado mudou de forma — um resumo de três linhas
+ * (`CANDIDATE_CONSENT_RESUMO`) na frente e o texto inteiro atrás de um
+ * toque — e de conteúdo: o desfazer deixa de ser "responda de novo" (a
+ * resposta é uma só e vale 12 meses) e passa a ser "peça correção ou saída
+ * pelo IEL". O que a pessoa lê e aceita é outro, então a versão sobe. As
+ * duas versões anteriores continuam gravadas nas respostas que as aceitaram.
  */
-export const CANDIDATE_CONSENT_VERSION = '2026-09-22';
+export const CANDIDATE_CONSENT_VERSION = '2026-09-23';
 
 /**
  * Versão do texto que vigorava antes de 2026-09-22.
@@ -134,6 +140,9 @@ export const VALIDADE_DA_RESPOSTA_MESES = 12;
  * texto novo. Aceite novo, reuso novo; nada retroage.
  */
 export const VERSOES_DE_ACEITE_QUE_PERMITEM_REUSO: readonly string[] = [
+  // 2026-09-22 já prometia os 12 meses e o reuso; 2026-09-23 só muda a forma
+  // e o desfazer. Quem aceitou uma delas aceitou o reuso.
+  '2026-09-22',
   CANDIDATE_CONSENT_VERSION
 ];
 
@@ -203,21 +212,40 @@ export function respostaDentroDaValidade(
  * depender de ninguém lembrar de renderizar um campo novo.
  *
  * O prazo aparece em número ("12 meses") e o desfazer aparece em ação
- * ("responda de novo", "peça para sair"), não em termo jurídico: quem lê é
+ * ("peça correção", "peça para sair"), não em termo jurídico: quem lê é
  * público operacional com baixo letramento digital (00:08:01), e direito que
  * a pessoa não entende como exercer é direito que ela não tem.
+ *
+ * Desde 2026-09-23 o desfazer **não** é "responda de novo": a resposta é uma
+ * só e vale 12 meses (decisão do dono do produto, 20/09/2026). Corrigir é
+ * pedir ao IEL, pelo mesmo canal por onde o link chegou — e o reducer
+ * continua aceitando a substituição, porque é o IEL quem a faria.
  */
 export const CANDIDATE_CONSENT_TEXT = {
   version: CANDIDATE_CONSENT_VERSION,
-  title: 'Antes de começar',
+  title: 'Antes de responder',
   purpose:
-    'São 10 frases sobre como você prefere trabalhar. Para cada uma, você diz se concorda ou discorda. As respostas são usadas só para comparar o jeito que você prefere trabalhar com o da empresa desta vaga.',
+    'São frases sobre como você prefere trabalhar. Para cada uma, você diz o quanto concorda. As respostas servem só para comparar o seu jeito de trabalhar com o da empresa desta vaga.',
   collected:
-    'Coletamos apenas o quanto você concorda com cada uma das 10 frases. Nada de saúde, família, religião, opinião política ou teste de personalidade.',
+    'Coletamos apenas o quanto você concorda com cada frase. Nada de saúde, família, religião, opinião política ou teste de personalidade.',
   whoSees:
     'Quem vê: a equipe do IEL que cuida desta vaga. Se o seu currículo for encaminhado, a empresa vê quanto você combina com ela em cada tema — nunca as suas respostas uma a uma.',
   retention:
-    'As suas respostas são suas, não da vaga: elas ficam guardadas por 12 meses. Nesse tempo, se você se candidatar a outra vaga pelo IEL, a gente usa o que você já respondeu e pergunta só o que faltar — você não responde tudo de novo. Elas são usadas só aqui, pelo IEL, para comparar com o jeito de trabalhar de cada empresa. Depois de 12 meses elas deixam de ser usadas e as frases são perguntadas outra vez.',
+    'As suas respostas são suas, não da vaga: ficam guardadas por 12 meses. Nesse tempo, se você se candidatar a outra vaga pelo IEL, a gente usa o que você já respondeu e pergunta só o que faltar. Depois de 12 meses elas deixam de ser usadas e as frases são perguntadas outra vez.',
   rights:
-    'Você pode mudar de ideia quando quiser: responda as frases de novo e vale sempre a sua última resposta. Pode também ver o que está registrado sobre você, pedir correção ou pedir para sair — e aí as suas respostas deixam de ser usadas em qualquer vaga. É tudo pelo mesmo canal por onde chegou este link.'
+    'Você responde uma vez só. Pode ver o que está registrado sobre você, pedir correção ou pedir para sair — e aí as suas respostas deixam de ser usadas em qualquer vaga. É tudo com a pessoa do IEL que mandou este link.'
 } as const;
+
+/**
+ * O aceite em três linhas, do jeito que a tela mostra antes da caixa "Li e
+ * aceito": o que você responde e para quê, quem vê, por quanto tempo vale.
+ *
+ * É resumo do `CANDIDATE_CONSENT_TEXT`, não outro texto: o inteiro fica a um
+ * toque ("Ler o texto completo") e é o que a versão gravada identifica. Os
+ * dois andam juntos — mudou um, sobe `CANDIDATE_CONSENT_VERSION`.
+ */
+export const CANDIDATE_CONSENT_RESUMO: readonly string[] = [
+  'Você diz o quanto concorda com cada frase. Serve só para comparar o seu jeito de trabalhar com o da empresa desta vaga.',
+  'Quem vê é a equipe do IEL. A empresa nunca vê as suas respostas uma a uma.',
+  'Vale por 12 meses, para esta e para outras vagas pelo IEL. Você responde uma vez só.'
+];

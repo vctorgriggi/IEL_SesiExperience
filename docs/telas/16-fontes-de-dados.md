@@ -8,16 +8,16 @@
 ## O que a tela faz
 
 Mostra de onde vem cada tipo de informação e o que acontece quando uma fonte cai. É a tela que
-sustenta a promessa de integração do produto — e a que admite, por escrito, o que é simulado.
+sustenta a promessa de integração do produto. O que ainda é simulado por trás dela fica em
+`docs/interno/o-que-e-simulado.md`, não na tela.
 
 ## O que aparece
 
 - **Cabeçalho**: "De onde vem cada tipo de informação, com a última atualização recebida."
 - **Lista de fontes** — Empregare, avaliação externa, contexto da empresa e registro IEL — com tipo,
   descrição, última sincronização, registros recebidos, situação e último erro.
-- **Recebimento de atualização simulada** — aplica um evento de sincronização e mostra o efeito nas
-  telas.
-- **O que é simulado nesta demonstração** — os limites, escritos na própria interface.
+- **Recebimento de atualização** — aplica um evento de sincronização e mostra o efeito nas telas.
+- **O que fica de fora** — o que o Mind RH não recebe nem envia, dito como fato de produto.
 
 ## De onde vêm os dados hoje
 
@@ -27,7 +27,7 @@ sustenta a promessa de integração do produto — e a que admite, por escrito, 
 
 - Marcar uma fonte como ativa ou indisponível — `set-source-status`.
 - Aplicar um evento de atualização — `apply-sync-event`.
-- Recarregar a base da demonstração — `hydrate`.
+- Recarregar a base — `hydrate`.
 
 ## Backend futuro
 
@@ -40,8 +40,8 @@ sustenta a promessa de integração do produto — e a que admite, por escrito, 
 
 - Fonte indisponível não pode ser disfarçada: as telas precisam mostrar dado desatualizado como
   desatualizado.
-- A tela declara explicitamente o que é simulado, para que a demonstração não prometa integração que
-  ainda não existe.
+- Os nomes das fontes são os do produto ("Empregare", "Avaliação externa", "Contexto da empresa",
+  "Registro IEL"), sem sufixo de demonstração; a descrição diz o que a fonte é, não que é fictícia.
 
 ## Ligações
 
