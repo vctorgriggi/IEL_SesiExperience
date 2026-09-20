@@ -28,6 +28,7 @@ import {
 import { useIsMobile } from '@workspace/ui/use-mobile';
 
 import { SimularEnvioButton } from '../chat/simular-envio-dialog';
+import { ComunicacaoDoCandidato } from './comunicacao-do-candidato';
 import { TalentFitView } from './talent-fit-view';
 
 /** "Ana Ribeiro" vira "AR": duas letras bastam para o avatar. */
@@ -154,12 +155,18 @@ export function TalentDrawer({
           </DrawerClose>
         </DrawerHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 text-sm">
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-4 text-sm">
           <TalentFitView
             job={job}
             talent={talent}
             application={application}
           />
+          {/*
+           * Depois da leitura, e não antes: quem abre a gaveta está decidindo
+           * sobre a pessoa. O convite só vira assunto quando falta resposta —
+           * e aí a analista age daqui mesmo, sem perder a lista.
+           */}
+          <ComunicacaoDoCandidato applicationId={application.id} />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3">
