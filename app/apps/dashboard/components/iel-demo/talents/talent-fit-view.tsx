@@ -420,7 +420,7 @@ export function TalentFitView({
    * O ranking já traz a aderência de quem está nele; quem abriu a página por
    * link direto pode não estar (vaga encerrada, candidatura arquivada), e aí
    * a conta vem do estado pela candidatura. É a mesma função nos dois
-   * caminhos — a tabela nunca fica sem os 10 temas.
+   * caminhos — a tabela nunca fica sem os 11 temas.
    */
   const adherence = entry?.adherence ?? getAdherence(state, application.id);
   const pontos = adherence?.byAxis ?? [];

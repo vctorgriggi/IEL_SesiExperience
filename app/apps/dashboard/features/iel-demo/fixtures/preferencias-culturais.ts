@@ -17,7 +17,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-12'
+    updatedAt: '2026-08-18'
   },
   {
     id: 'CULT-ANA-02',
@@ -26,7 +26,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-02'
+    updatedAt: '2026-08-08'
   },
   {
     id: 'CULT-ANA-03',
@@ -35,7 +35,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-12'
+    updatedAt: '2026-08-18'
   },
   {
     id: 'CULT-ANA-04',
@@ -44,7 +44,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-12'
+    updatedAt: '2026-08-18'
   },
 
   // --- Bruno: autonomia na execução, rotina já dominada ---
@@ -55,7 +55,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-05'
+    updatedAt: '2026-08-11'
   },
   {
     id: 'CULT-BRUNO-02',
@@ -64,7 +64,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-05'
+    updatedAt: '2026-08-11'
   },
   {
     id: 'CULT-BRUNO-03',
@@ -73,7 +73,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-05'
+    updatedAt: '2026-08-11'
   },
   {
     id: 'CULT-BRUNO-04',
@@ -82,7 +82,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-05'
+    updatedAt: '2026-08-11'
   },
 
   // --- Carla: rotina administrativa, quer alcançar áreas vizinhas ---
@@ -93,7 +93,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-07-28'
+    updatedAt: '2026-08-03'
   },
   {
     id: 'CULT-CARLA-02',
@@ -102,7 +102,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-07-28'
+    updatedAt: '2026-08-03'
   },
   {
     id: 'CULT-CARLA-03',
@@ -111,7 +111,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-07-28'
+    updatedAt: '2026-08-03'
   },
   {
     id: 'CULT-CARLA-04',
@@ -120,7 +120,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-07-28'
+    updatedAt: '2026-08-03'
   },
 
   // --- Diego: respostas que não puxam para região nenhuma ---
@@ -131,7 +131,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-07-15'
+    updatedAt: '2026-07-21'
   },
   {
     id: 'CULT-DIEGO-02',
@@ -140,7 +140,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-07-15'
+    updatedAt: '2026-07-21'
   },
   {
     id: 'CULT-DIEGO-03',
@@ -149,7 +149,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-07-15'
+    updatedAt: '2026-07-21'
   },
   {
     id: 'CULT-DIEGO-04',
@@ -158,7 +158,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-07-15'
+    updatedAt: '2026-07-21'
   },
 
   // --- Elisa: procedimento definido em todos os eixos ---
@@ -169,7 +169,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-20'
+    updatedAt: '2026-08-26'
   },
   {
     id: 'CULT-ELISA-02',
@@ -178,7 +178,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-01'
+    updatedAt: '2026-08-07'
   },
   {
     id: 'CULT-ELISA-03',
@@ -187,7 +187,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-20'
+    updatedAt: '2026-08-26'
   },
   {
     id: 'CULT-ELISA-04',
@@ -196,7 +196,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-20'
+    updatedAt: '2026-08-26'
   },
   {
     id: 'CULT-ELISA-05',
@@ -205,7 +205,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-20'
+    updatedAt: '2026-08-26'
   },
 
   // --- Fábio: treinamento antes de assumir, primeira experiência na área ---
@@ -216,7 +216,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-18'
+    updatedAt: '2026-08-24'
   },
   {
     id: 'CULT-FABIO-02',
@@ -225,7 +225,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-18'
+    updatedAt: '2026-08-24'
   },
   {
     id: 'CULT-FABIO-03',
@@ -234,7 +234,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-18'
+    updatedAt: '2026-08-24'
   },
   {
     id: 'CULT-FABIO-04',
@@ -243,7 +243,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-18'
+    updatedAt: '2026-08-24'
   },
 
   // --- Gabriela: autonomia depois do início, prioridade por escrito ---
@@ -254,7 +254,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-22'
+    updatedAt: '2026-08-28'
   },
   {
     id: 'CULT-GABRIELA-02',
@@ -263,7 +263,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 2,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-22'
+    updatedAt: '2026-08-28'
   },
   {
     id: 'CULT-GABRIELA-03',
@@ -272,7 +272,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Currículo — informação declarada na inscrição',
     sourceId: 'FONTE-EMPREGARE',
-    updatedAt: '2026-08-10'
+    updatedAt: '2026-08-16'
   },
   {
     id: 'CULT-GABRIELA-04',
@@ -281,7 +281,7 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 3,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-22'
+    updatedAt: '2026-08-28'
   },
   {
     id: 'CULT-GABRIELA-05',
@@ -290,6 +290,6 @@ export const DEMO_TALENT_CULTURE_ANSWERS: TalentCultureAnswer[] = [
     value: 4,
     origin: 'Registro IEL — expectativa coletada em atendimento',
     sourceId: 'FONTE-IEL',
-    updatedAt: '2026-08-22'
+    updatedAt: '2026-08-28'
   }
 ];

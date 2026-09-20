@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     template: '%s · Mind RH'
   },
   description:
-    'Protótipo navegável: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada. Base fictícia.',
+    'Central de Seleção do IEL: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada.',
   robots: { index: false, follow: false },
   icons: { icon: '/marca/simbolo.png' }
 };
@@ -134,7 +134,24 @@ export default async function IelDemoLayout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className={`${archivo.variable} ${inter.variable}`}>
+    /*
+     * As duas variáveis, mais a `className` da Inter e a utilitária
+     * `font-sans`.
+     *
+     * A `className` não é redundante com a variável, e foi o `011783f` que
+     * mostrou por quê: só a variável deixava a família chegar pelo token, e o
+     * token é lido por uma regra de CSS que ainda não valeu antes da
+     * hidratação. Nesse intervalo a cascata caía no `ui-sans-serif`. A
+     * `className` põe `font-family` no próprio elemento, então a família vale
+     * na árvore inteira desde a primeira pintura.
+     *
+     * Inter é a que entra na `className` porque é a família da interface — a
+     * base da cascata. Archivo só aparece onde a escala pede (título, número,
+     * rótulo), e chega lá pelo token `--font-display`.
+     */
+    <div
+      className={`${archivo.variable} ${inter.variable} ${inter.className} font-sans`}
+    >
       <IelDemoProvider
         compartilhado={compartilhado && estadoInicial !== null}
         estadoInicial={estadoInicial}

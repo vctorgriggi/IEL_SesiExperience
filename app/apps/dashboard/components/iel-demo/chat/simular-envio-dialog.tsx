@@ -42,6 +42,13 @@ export type SimularEnvioContexto = {
   cidade?: string;
   empresa?: string;
   vaga?: string;
+  /**
+   * Quantas frases o candidato ainda tem para responder nesta candidatura.
+   * Não são 10 fixas: a empresa escolhe de 3 a 11 competências (uma frase
+   * por competência) e parte pode já vir respondida de antes. Ausente, a
+   * mensagem fala em "o questionário", sem número.
+   */
+  frasesQueFaltam?: number;
 };
 
 export type SimularEnvioDialogProps = {
@@ -97,13 +104,26 @@ function montarMensagem(
     // R5: nem `contexto.empresa` nem nada que a identifique entra aqui.
     const atividade = contexto.atividade ?? contexto.vaga ?? 'a vaga';
     const onde = contexto.cidade ? `, em ${contexto.cidade}` : '';
+    const quantas = contexto.frasesQueFaltam;
+    const pedido =
+      quantas === 0
+        ? 'Você já respondeu o que esta vaga pergunta sobre o seu jeito de trabalhar: é só confirmar.'
+        : quantas === undefined
+          ? 'Responda o questionário sobre como você prefere trabalhar.'
+          : `Responda ${quantas} ${quantas === 1 ? 'frase rápida' : 'frases rápidas'} sobre como você prefere trabalhar.`;
+    const pedidoLongo =
+      quantas === 0
+        ? 'Para seguir, é só confirmar as respostas que você já deu sobre como prefere trabalhar. Leva menos de um minuto, pelo celular.'
+        : quantas === undefined
+          ? 'Para seguir, responda o questionário sobre como você prefere trabalhar. Leva uns 5 minutos, pelo celular, e não existe resposta certa.'
+          : `Para seguir, responda ${quantas} ${quantas === 1 ? 'frase rápida' : 'frases rápidas'} sobre como você prefere trabalhar. Leva uns 5 minutos, pelo celular, e não existe resposta certa.`;
     return {
-      whatsapp: `Olá! Aqui é o ${REMETENTE}. Recebemos sua candidatura para a vaga de ${atividade}${onde}. Responda 10 frases rápidas sobre como você prefere trabalhar. É pelo celular e não precisa de senha.`,
+      whatsapp: `Olá! Aqui é o ${REMETENTE}. Recebemos sua candidatura para a vaga de ${atividade}${onde}. ${pedido} É pelo celular e não precisa de senha.`,
       assunto: `Sua candidatura: ${atividade}${onde}`,
       email: [
         'Olá!',
         `Recebemos sua candidatura para a vaga de ${atividade}${onde}.`,
-        'Para seguir, responda 10 frases rápidas sobre como você prefere trabalhar. Leva uns 5 minutos, pelo celular, e não existe resposta certa.'
+        pedidoLongo
       ]
     };
   }
@@ -128,7 +148,7 @@ function montarMensagem(
     email: [
       contexto.empresa ? `Olá, equipe ${contexto.empresa}!` : 'Olá!',
       `Os currículos${vaga} estão prontos para leitura.`,
-      'A página abre sem login e mostra, de cada pessoa, os requisitos e como ela combina com a empresa nos 10 temas.'
+      'A página abre sem login e mostra, de cada pessoa, os requisitos e como ela combina com a empresa nos 11 temas.'
     ]
   };
 }

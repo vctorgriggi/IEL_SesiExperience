@@ -164,7 +164,7 @@ export function SolicitacoesSimples() {
           icone={IconClockExclamation}
           tom={contadores.vencendoHoje > 0 ? 'atencao' : 'neutro'}
           rodape="último dia para responder"
-          apoio="Prazos do cliente: 2 dias para o candidato, 3 para o colaborador (R7), 15 para a devolutiva da empresa (R9) e 30 para o 'como está sendo'."
+          apoio="Prazos: 2 dias para o candidato, 3 para o colaborador, 15 para a devolutiva da empresa e 30 para o 'como está sendo'."
         />
         <CartaoDeIndicador
           rotulo="Vencidos"
@@ -413,10 +413,6 @@ export function SolicitacoesSimples() {
             Lembrete automático: {LEMBRETE_APOS_ENVIO_HORAS} h depois do envio e{' '}
             {LEMBRETE_ANTES_DO_PRAZO_HORAS} h antes do prazo, pelo mesmo canal e
             com o mesmo link.
-          </p>
-          <p>
-            Os lembretes automáticos são simulados nesta demonstração; em
-            produção saem sozinhos nos horários acima.
           </p>
         </div>
       </section>

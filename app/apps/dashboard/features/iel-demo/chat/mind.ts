@@ -524,7 +524,7 @@ function responderEmpresa(
   return {
     paragrafos: [
       abertos.length === 0
-        ? `Os 10 temas da ${empresa.name} já têm resposta suficiente.`
+        ? `Os 11 temas da ${empresa.name} já têm resposta suficiente.`
         : `${plural(abertos.length, 'ponto está', 'pontos estão')} em aberto: cada ponto precisa de pelo menos ${MIN_TEAM_RESPONSES} respostas da equipe.${prazo}`
     ],
     itens: abertos.map((axis) => AXIS_LABEL[axis.axisId]),

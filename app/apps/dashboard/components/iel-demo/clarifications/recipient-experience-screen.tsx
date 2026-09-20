@@ -95,7 +95,7 @@ export function RecipientExperienceScreen({
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
         <Card>
           <CardHeader>
-            <CardDescription>Dados de demonstração</CardDescription>
+            <CardDescription>O que a pessoa recebe</CardDescription>
             <CardTitle className="text-lg">
               {clarification.state === 'incorporada'
                 ? 'Resposta já incorporada à análise'
@@ -103,7 +103,7 @@ export function RecipientExperienceScreen({
             </CardTitle>
             <CardDescription>
               Obrigado. A resposta abaixo ficou registrada e aparece para o
-              analista do IEL. Nenhuma mensagem saiu deste ambiente.
+              analista do IEL.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,12 +149,6 @@ export function RecipientExperienceScreen({
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className="text-muted-foreground"
-            >
-              Dados de demonstração
-            </Badge>
             <Badge
               variant="outline"
               className="text-muted-foreground"

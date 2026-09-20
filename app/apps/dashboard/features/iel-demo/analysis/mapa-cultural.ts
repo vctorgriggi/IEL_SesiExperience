@@ -1,5 +1,5 @@
 /**
- * Projeta as respostas dos 10 temas do instrumento em duas dimensões.
+ * Projeta as respostas dos 11 temas do instrumento em duas dimensões.
  *
  * Não é um segundo modelo cultural: os quatro tipos nomeiam regiões do plano e
  * descrevem ambiente de trabalho, nunca traço de pessoa.
@@ -98,7 +98,9 @@ export const CONTRIBUICAO_POR_TEMA: Record<
   'regras-decisao': { x: -0.25, y: -0.75 },
   'interacao-convivencia': { x: -1, y: 0.25 },
   'lideranca-autonomia': { x: 0.75, y: 0.5 },
-  'adaptacao-carreira': { x: 0, y: -0.75 }
+  'adaptacao-carreira': { x: 0, y: -0.75 },
+  // Aprofundar a própria área e seguir o caminho de hoje: estrutura, de leve.
+  'expectativas-futuras': { x: 0.25, y: -0.5 }
 };
 
 /**

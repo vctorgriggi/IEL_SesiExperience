@@ -35,8 +35,13 @@
  * por isso o escopo cobre o `body` enquanto uma tela do IEL estiver montada.
  */
 
+:root {
+  --iel-font-sans: "Red Hat Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 body:has([data-iel-theme]),
 [data-iel-theme] {
+  font-family: var(--iel-font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --background: 42 30% 93%;
   --foreground: 226 41% 12%;
   --card: 0 0% 100%;
@@ -132,21 +137,48 @@ body:has([data-iel-theme]),
    * Tipografia: três papéis, três pilhas.
    *
    * `--font-sans` é o token que o kit já lê no `body` e que a utilitária
-   * `font-sans` resolve — é por ele que a interface inteira vira Inter sem
-   * uma classe nova em lugar nenhum. `--font-display` e `--font-acess` são
-   * os outros dois papéis, consumidos pelas classes da escala abaixo.
+   * `font-sans` resolve — é por ele que a interface inteira vira Inter sem uma
+   * classe nova em lugar nenhum. `--font-display` e `--font-acess` são os
+   * outros dois papéis, consumidos pelas classes da escala abaixo.
    *
-   * Segoe UI na reserva de todas as três, na frente de `system-ui`: em
-   * máquina do IEL sem a fonte em cache e sem rede, é nela que o produto
-   * cai, e ela é legível em 13px.
+   * **A reserva vai dentro do `var()`, não depois dele.** Essa é a correção
+   * que o `011783f` trouxe, e ela é sutil: escrever
+   *
+   *     font-family: var(--iel-font-sans), 'Segoe UI', sans-serif;
+   *
+   * não funciona quando a variável não existe. `var()` sem valor e sem
+   * segundo argumento invalida a declaração inteira no momento do cálculo, e
+   * a família cai no valor herdado — não na próxima da lista. E a variável
+   * realmente não existe em dois momentos que importam: antes da hidratação, e
+   * dentro dos portais (diálogo, drawer, toast), que renderizam no fim do
+   * `body`, fora do elemento que carrega a classe do `next/font`.
+   *
+   * Com a reserva como segundo argumento de `var()`, o navegador usa a pilha
+   * inteira quando a variável falta. Segoe UI vem primeiro na fila das
+   * genéricas: em máquina do IEL sem a fonte em cache e sem rede, é nela que o
+   * produto cai, e ela é legível em 13px.
    */
-  --font-display:
-    var(--iel-font-display), 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
-  --font-sans:
-    var(--iel-font-sans), 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
-  --font-acess:
-    var(--iel-font-acess), var(--iel-font-sans), 'Segoe UI', ui-sans-serif,
-    system-ui, sans-serif;
+  --font-display: var(
+    --iel-font-display,
+    'Segoe UI',
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+  --font-sans: var(
+    --iel-font-sans,
+    'Segoe UI',
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+  --font-acess: var(
+    --iel-font-acess,
+    'Segoe UI',
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
 }
 
 /*
@@ -210,6 +242,12 @@ body:has([data-iel-theme]) [data-sidebar='sidebar'],
  * fora da árvore da tela.
  */
 body:has([data-iel-theme]) {
+  /*
+   * `var(--font-sans)` e não a pilha crua: o token acima já carrega a reserva
+   * dentro do próprio `var()`, então esta linha não precisa repeti-la. E
+   * `--font-sans` sempre existe aqui — o tema o declara no bloco de cima, que
+   * cobre o `body`, e o kit o declara em `:root` como último piso.
+   */
   font-family: var(--font-sans);
   font-size: 0.875rem;
   line-height: 1.5;

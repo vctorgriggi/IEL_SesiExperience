@@ -43,7 +43,7 @@ import {
   SheetTitle
 } from '@workspace/ui/shadcn/sheet';
 
-import { useMovimentoReduzido } from './use-voz';
+import { useMovimentoReduzido } from '../shared/use-voz';
 
 export { contextoDaRota, type MindContexto };
 

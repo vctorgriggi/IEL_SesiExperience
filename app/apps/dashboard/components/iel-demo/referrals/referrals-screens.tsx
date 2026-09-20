@@ -20,11 +20,10 @@ import {
   getReferralsByCompany,
   getRegisteredReferrals,
   getTalent,
-  REFERRAL_STAGE_LABEL,
   type ReferralOutcomeRow
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import type { ReferralItem } from '@/features/iel-demo/types';
+import type { Referral, ReferralItem } from '@/features/iel-demo/types';
 import {
   IconAlertCircle,
   IconCircleCheck,
@@ -46,6 +45,11 @@ import {
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@workspace/ui/shadcn/collapsible';
 import { Input } from '@workspace/ui/shadcn/input';
 import { Label } from '@workspace/ui/shadcn/label';
 import {
@@ -383,17 +387,303 @@ export function ReferralsScreen() {
 
         <p className="text-xs text-muted-foreground">
           “Quero entrevistar” registra a intenção da empresa e atualiza o
-          histórico. Nenhuma reunião é agendada e nenhuma contratação é
-          automatizada nesta demonstração.
+          histórico. A analista combina a entrevista com a empresa.
         </p>
       </div>
     </div>
   );
 }
 
+/**
+ * Uma evidência que aparece cinco vezes não é cinco evidências.
+ *
+ * O mesmo trecho de currículo entra na análise uma vez por critério que ele
+ * sustenta, e a lista crua repetia a frase inteira a cada entrada. Quem lê
+ * quer saber o que foi compartilhado, não quantas vezes o motor tocou nele —
+ * o número fica ao lado, e a frase aparece uma vez só.
+ */
+function evidenciasUnicas(
+  evidences: ReturnType<typeof getEvidencesByIds>
+): { chave: string; texto: string; origem: string; vezes: number }[] {
+  const mapa = new Map<
+    string,
+    { chave: string; texto: string; origem: string; vezes: number }
+  >();
+
+  for (const evidence of evidences) {
+    const chave = `${evidence.information}—${evidence.originLabel}`;
+    const atual = mapa.get(chave);
+    if (atual) {
+      atual.vezes += 1;
+      continue;
+    }
+    mapa.set(chave, {
+      chave,
+      texto: evidence.information,
+      origem: evidence.originLabel,
+      vezes: 1
+    });
+  }
+
+  return [...mapa.values()];
+}
+
+function ListaCurta({ titulo, itens }: { titulo: string; itens: string[] }) {
+  if (itens.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
+      <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+        {itens.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Uma pessoa do encaminhamento.
+ *
+ * O cartão responde primeiro à pergunta que traz alguém aqui — quem é, por
+ * que foi encaminhada, o que a empresa disse — e guarda o resto atrás de um
+ * clique. Antes, pontos de atenção, perguntas e evidências vinham abertos em
+ * todos os cartões ao mesmo tempo: cinco pessoas viravam cinco telas de texto
+ * corrido, e o retorno da empresa, que é o que muda o trabalho da analista,
+ * se perdia no meio.
+ */
+function PessoaEncaminhada({
+  item,
+  referral,
+  linha,
+  isManager,
+  onAvisar
+}: {
+  item: ReferralItem;
+  referral: Referral;
+  linha: ReferralOutcomeRow | undefined;
+  isManager: boolean;
+  onAvisar: (applicationId: string, etapa: EtapaDaMensagem) => void;
+}) {
+  const { state, dispatch } = useIelDemo();
+  const [aberto, setAberto] = useState(false);
+  const [note, setNote] = useState('');
+  const iel = routes.dashboard.iel;
+
+  const application = getApplication(state, item.applicationId);
+  const talent = application ? getTalent(application.talentId) : null;
+  const evidencias = evidenciasUnicas(
+    getEvidencesByIds(state, item.sharedEvidenceIds)
+  );
+
+  const detalhes = [
+    item.attentionPoints.length > 0
+      ? plural(
+          item.attentionPoints.length,
+          'ponto de atenção',
+          'pontos de atenção'
+        )
+      : null,
+    item.suggestedQuestions.length > 0
+      ? plural(item.suggestedQuestions.length, 'pergunta', 'perguntas')
+      : null,
+    evidencias.length > 0
+      ? plural(evidencias.length, 'evidência', 'evidências')
+      : null
+  ].filter((parte): parte is string => parte !== null);
+
+  const decidindo = isManager && item.managerDecision === 'pendente';
+
+  return (
+    <Card className="gap-3 py-4">
+      <CardHeader className="gap-1">
+        <CardTitle className="text-base font-medium">{talent?.name}</CardTitle>
+        <CardDescription className="text-sm">{item.summary}</CardDescription>
+        <CardAction>
+          {linha ? (
+            <DesfechoDaEmpresa linha={linha} />
+          ) : (
+            <DecisaoDaEmpresa item={item} />
+          )}
+        </CardAction>
+      </CardHeader>
+
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">{item.justification}</p>
+
+        {item.managerNote ? (
+          <p className="border-l-2 pl-3 text-sm text-muted-foreground">
+            {item.managerNote}
+            {item.decidedAt ? (
+              <span className="text-xs">
+                {' '}
+                · {formatarDataHora(item.decidedAt)}
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+
+        {detalhes.length > 0 ? (
+          <Collapsible
+            open={aberto}
+            onOpenChange={setAberto}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto justify-start px-0 text-muted-foreground"
+              >
+                {aberto ? 'Ocultar detalhes' : detalhes.join(' · ')}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="flex flex-col gap-3 pt-3">
+              <div className="grid gap-3 lg:grid-cols-2">
+                <ListaCurta
+                  titulo="Pontos de atenção"
+                  itens={item.attentionPoints}
+                />
+                <ListaCurta
+                  titulo="Perguntas sugeridas para a entrevista"
+                  itens={item.suggestedQuestions}
+                />
+              </div>
+
+              {evidencias.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Evidências compartilhadas
+                  </p>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {evidencias.map((evidencia) => (
+                      <li key={evidencia.chave}>
+                        “{evidencia.texto}” — {evidencia.origem}
+                        {evidencia.vezes > 1 ? ` (${evidencia.vezes}×)` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
+
+        {decidindo ? (
+          <div className="flex flex-col gap-2 border-t pt-3">
+            <Label htmlFor={`manager-note-${item.applicationId}`}>
+              Observação operacional (obrigatória para “Não avançar”)
+            </Label>
+            <Textarea
+              id={`manager-note-${item.applicationId}`}
+              rows={2}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  dispatch({
+                    type: 'manager-decision',
+                    referralId: referral.id,
+                    applicationId: item.applicationId,
+                    decision: 'quero-entrevistar',
+                    note,
+                    at: nowIso()
+                  });
+                  toast.success(
+                    'Interesse registrado — a analista combina a entrevista com a empresa.'
+                  );
+                }}
+              >
+                Quero entrevistar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={note.trim().length === 0}
+                onClick={() => {
+                  dispatch({
+                    type: 'manager-clarification-request',
+                    referralId: referral.id,
+                    applicationId: item.applicationId,
+                    question: note,
+                    at: nowIso()
+                  });
+                  toast.success(
+                    'Pedido de esclarecimento registrado para o IEL. A candidatura segue encaminhada.'
+                  );
+                }}
+              >
+                Solicitar esclarecimento ao IEL
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={note.trim().length === 0}
+                onClick={() => {
+                  dispatch({
+                    type: 'manager-decision',
+                    referralId: referral.id,
+                    applicationId: item.applicationId,
+                    decision: 'nao-avancar',
+                    note,
+                    at: nowIso()
+                  });
+                  toast.success(
+                    'Decisão registrada com a justificativa informada.'
+                  );
+                }}
+              >
+                Não avançar
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {!isManager ? (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto px-0"
+              onClick={() =>
+                onAvisar(item.applicationId, etapaPeloEncaminhamento(item))
+              }
+            >
+              <IconMessageCircle aria-hidden="true" />
+              Avisar a pessoa
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto px-0"
+              asChild
+            >
+              <Link
+                href={
+                  application
+                    ? iel.talents
+                        .byId(application.talentId)
+                        .inJob(referral.jobId)
+                    : iel.talents.index
+                }
+              >
+                Abrir perfil completo
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ReferralDetailScreen({ referralId }: { referralId: string }) {
-  const { state, dispatch, persona } = useIelDemo();
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const { state, persona } = useIelDemo();
   // "Avisar a pessoa": o rascunho de WhatsApp com a etapa que o retorno da
   // empresa define. Só a analista vê; a empresa não fala com o candidato.
   const [aviso, setAviso] = useState<{
@@ -442,8 +732,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
   ) {
     return (
       <Alert variant="warning">
-        Este encaminhamento é de outra empresa e está fora do escopo desta
-        persona.{' '}
+        Este encaminhamento é de outra empresa.{' '}
         <Link
           className="underline"
           href={iel.referrals.index}
@@ -455,269 +744,67 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
     );
   }
 
+  /*
+    O estado do encaminhamento inteiro, em uma linha.
+
+    Era um quadro com parágrafo explicando onde a empresa responde. A analista
+    já sabe onde — o link do relatório está logo abaixo. O que ela procura
+    aqui é quanto ainda falta voltar, e isso cabe numa linha.
+  */
+  const resumo = desfechos
+    ? [
+        `${desfechos.respondidos} de ${desfechos.total} com desfecho`,
+        desfechos.contratados > 0
+          ? plural(desfechos.contratados, 'contratação', 'contratações')
+          : null,
+        desfechos.naoContratados > 0
+          ? `${desfechos.naoContratados} sem contratação`
+          : null,
+        desfechos.saidasAntes90 > 0
+          ? `${desfechos.saidasAntes90} ${desfechos.saidasAntes90 === 1 ? 'saiu' : 'saíram'} antes de ${PERMANENCIA_DIAS} dias`
+          : null,
+        desfechos.pendentes > 0 ? esperaEmAberto(desfechos) : null
+      ].filter((parte): parte is string => parte !== null)
+    : [];
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">
           {isManager
             ? 'Perfis compartilhados pelo IEL'
-            : `Encaminhamento ${referral.id}`}
+            : (job?.title ?? referral.id)}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {company?.name} · {job?.title} — {referral.message}
+          {company?.name} · {plural(referral.items.length, 'perfil', 'perfis')}
+          {referral.createdAt
+            ? ` · ${formatarDataHora(referral.createdAt)}`
+            : ''}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Retrato registrado em{' '}
-          {referral.createdAt ? formatarDataHora(referral.createdAt) : '—'}.
-          Notas internas do IEL e dados de outras empresas não fazem parte deste
-          conteúdo.
-        </p>
+        {!isManager && resumo.length > 0 ? (
+          <p className="text-sm text-muted-foreground">{resumo.join(' · ')}</p>
+        ) : null}
       </div>
-
-      {!isManager && desfechos ? (
-        <div className="flex flex-col gap-1 rounded-lg border p-3">
-          <p className="text-sm font-medium">
-            {desfechos.respondidos} de {desfechos.total} com desfecho informado
-          </p>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {desfechos.contratados > 0
-              ? `${desfechos.contratados} ${desfechos.contratados === 1 ? 'contratação informada' : 'contratações informadas'}`
-              : 'Nenhuma contratação informada'}
-            {desfechos.naoContratados > 0
-              ? ` · ${desfechos.naoContratados} sem contratação`
-              : ''}
-            {desfechos.saidasAntes90 > 0
-              ? ` · ${desfechos.saidasAntes90} ${desfechos.saidasAntes90 === 1 ? 'saiu' : 'saíram'} antes de ${PERMANENCIA_DIAS} dias`
-              : ''}
-            {desfechos.pendentes > 0 ? ` · ${esperaEmAberto(desfechos)}` : ''}.
-            A empresa responde na própria página do relatório, em um clique.
-          </p>
-        </div>
-      ) : null}
 
       {!isManager ? <ReferralReportLink jobId={referral.jobId} /> : null}
 
-      <ul className="flex flex-col gap-4">
-        {referral.items.map((item) => {
-          const application = getApplication(state, item.applicationId);
-          const talent = application ? getTalent(application.talentId) : null;
-          const evidences = getEvidencesByIds(state, item.sharedEvidenceIds);
-          const note = notes[item.applicationId] ?? '';
-          const linha = desfechos?.linhas.find(
-            (entrada) => entrada.applicationId === item.applicationId
-          );
-
-          return (
-            <li key={item.applicationId}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{talent?.name}</CardTitle>
-                  <CardDescription>{item.summary}</CardDescription>
-                  <CardAction>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {linha ? <DesfechoDaEmpresa linha={linha} /> : null}
-                      <DecisaoDaEmpresa item={item} />
-                      {application ? (
-                        <Badge
-                          variant="outline"
-                          className="text-muted-foreground"
-                        >
-                          {REFERRAL_STAGE_LABEL[application.referralStage]}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </CardAction>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Justificativa do IEL
-                    </p>
-                    <p className="text-sm text-foreground">
-                      {item.justification}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Pontos de atenção
-                      </p>
-                      {item.attentionPoints.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Nenhum ponto pendente.
-                        </p>
-                      ) : (
-                        <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                          {item.attentionPoints.map((point) => (
-                            <li key={point}>{point}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Perguntas sugeridas para a entrevista
-                      </p>
-                      {item.suggestedQuestions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Sem perguntas pendentes.
-                        </p>
-                      ) : (
-                        <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                          {item.suggestedQuestions.map((question) => (
-                            <li key={question}>{question}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Evidências compartilhadas ({evidences.length})
-                    </p>
-                    <ul className="space-y-1 text-sm text-muted-foreground">
-                      {evidences.map((evidence) => (
-                        <li key={evidence.id}>
-                          “{evidence.information}” — {evidence.originLabel}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {item.managerNote ? (
-                    <div className="rounded-md border bg-muted/50 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Retorno da empresa
-                      </p>
-                      <p className="text-sm text-foreground">
-                        {item.managerNote}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {item.decidedAt ? formatarDataHora(item.decidedAt) : ''}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {isManager && item.managerDecision === 'pendente' ? (
-                    <div className="flex flex-col gap-2 border-t pt-3">
-                      <Label htmlFor={`manager-note-${item.applicationId}`}>
-                        Observação operacional (obrigatória para “Não avançar”)
-                      </Label>
-                      <Textarea
-                        id={`manager-note-${item.applicationId}`}
-                        rows={2}
-                        value={note}
-                        onChange={(event) =>
-                          setNotes((current) => ({
-                            ...current,
-                            [item.applicationId]: event.target.value
-                          }))
-                        }
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            dispatch({
-                              type: 'manager-decision',
-                              referralId: referral.id,
-                              applicationId: item.applicationId,
-                              decision: 'quero-entrevistar',
-                              note,
-                              at: nowIso()
-                            });
-                            toast.success(
-                              'Interesse registrado. Nenhuma reunião foi agendada nesta demonstração.'
-                            );
-                          }}
-                        >
-                          Quero entrevistar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={note.trim().length === 0}
-                          onClick={() => {
-                            dispatch({
-                              type: 'manager-clarification-request',
-                              referralId: referral.id,
-                              applicationId: item.applicationId,
-                              question: note,
-                              at: nowIso()
-                            });
-                            toast.success(
-                              'Pedido de esclarecimento registrado para o IEL. A candidatura segue encaminhada.'
-                            );
-                          }}
-                        >
-                          Solicitar esclarecimento ao IEL
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          disabled={note.trim().length === 0}
-                          onClick={() => {
-                            dispatch({
-                              type: 'manager-decision',
-                              referralId: referral.id,
-                              applicationId: item.applicationId,
-                              decision: 'nao-avancar',
-                              note,
-                              at: nowIso()
-                            });
-                            toast.success(
-                              'Decisão registrada com a justificativa informada.'
-                            );
-                          }}
-                        >
-                          Não avançar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {!isManager ? (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setAviso({
-                            applicationId: item.applicationId,
-                            etapa: etapaPeloEncaminhamento(item)
-                          });
-                          setAvisoAberto(true);
-                        }}
-                      >
-                        <IconMessageCircle aria-hidden="true" />
-                        Avisar a pessoa
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        asChild
-                      >
-                        <Link
-                          href={
-                            application
-                              ? iel.talents
-                                  .byId(application.talentId)
-                                  .inJob(referral.jobId)
-                              : iel.talents.index
-                          }
-                        >
-                          Abrir perfil completo (visão IEL)
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
-            </li>
-          );
-        })}
+      <ul className="flex flex-col gap-3">
+        {referral.items.map((item) => (
+          <li key={item.applicationId}>
+            <PessoaEncaminhada
+              item={item}
+              referral={referral}
+              linha={desfechos?.linhas.find(
+                (entrada) => entrada.applicationId === item.applicationId
+              )}
+              isManager={isManager}
+              onAvisar={(applicationId, etapa) => {
+                setAviso({ applicationId, etapa });
+                setAvisoAberto(true);
+              }}
+            />
+          </li>
+        ))}
       </ul>
 
       {aviso ? (
@@ -730,11 +817,11 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
       ) : null}
 
       {isManager ? (
-        <Alert variant="default">
+        <p className="text-xs text-muted-foreground">
           Você vê apenas o conteúdo compartilhado neste encaminhamento.
           Avaliações internas, notas do analista e candidaturas de outras
           empresas não são exibidas.
-        </Alert>
+        </p>
       ) : null}
     </div>
   );

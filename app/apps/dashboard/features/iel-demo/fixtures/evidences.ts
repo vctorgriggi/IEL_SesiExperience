@@ -17,9 +17,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Conferia pedidos recebidos e identificava divergências de quantidade.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Loja Horizonte (fictícia)',
+    originLabel: 'Currículo — experiência na Loja Horizonte',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-02',
+    updatedAt: '2026-08-08',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-101' },
@@ -37,7 +37,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-18',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-104' },
@@ -56,7 +56,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-18',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-106' },
@@ -75,7 +75,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-8801 (Cerrado Distribuição)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-05',
+    updatedAt: '2026-09-11',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-103' }],
     interpretation:
@@ -86,11 +86,11 @@ export const DEMO_EVIDENCES: Evidence[] = [
     talentId: 'ANA',
     teamId: null,
     information:
-      'A inscrição na Horizonte Alimentos é de 02/07/2026 e o registro IEL de 10/09/2026 pede reconfirmação da disponibilidade para esta oportunidade.',
+      'A inscrição na Horizonte Alimentos é de 08/07/2026 e o registro IEL de 16/09/2026 pede reconfirmação da disponibilidade para esta oportunidade.',
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — anotação de análise',
     nature: 'registro-iel',
-    updatedAt: '2026-09-10',
+    updatedAt: '2026-09-16',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-203' }],
     interpretation:
@@ -104,9 +104,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     teamId: null,
     information: 'Separava cargas e conferia romaneios antes do carregamento.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Transportes Araguaia (fictícia)',
+    originLabel: 'Currículo — experiência na Transportes Araguaia',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-10',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-101' }],
     interpretation:
@@ -118,9 +118,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     teamId: null,
     information: 'Registrava as saídas do dia em planilha compartilhada.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Transportes Araguaia (fictícia)',
+    originLabel: 'Currículo — experiência na Transportes Araguaia',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-10',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-102' }],
     interpretation:
@@ -134,7 +134,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-8802 (Cerrado Distribuição)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-04',
+    updatedAt: '2026-09-10',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-103' }],
     interpretation: 'Cobre o turno das 13h às 22h.'
@@ -148,7 +148,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-18',
+    updatedAt: '2026-08-24',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-107' }],
     interpretation:
@@ -163,9 +163,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Organizava documentos e notas fiscais e conferia protocolos de entrega.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Clínica Vale Verde (fictícia)',
+    originLabel: 'Currículo — experiência na Clínica Vale Verde',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-07-28',
+    updatedAt: '2026-08-03',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-101' },
@@ -181,9 +181,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'O currículo cita uso do sistema interno da clínica e não menciona operação de planilhas.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Clínica Vale Verde (fictícia)',
+    originLabel: 'Currículo — experiência na Clínica Vale Verde',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-07-28',
+    updatedAt: '2026-08-03',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-102' }],
     interpretation:
@@ -197,7 +197,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidaturas EMPG-DEMO-CAND-8803 e 7712',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-06',
+    updatedAt: '2026-09-12',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-103' },
@@ -214,7 +214,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-20',
+    updatedAt: '2026-08-26',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-104' },
@@ -230,9 +230,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     teamId: null,
     information: 'Atendia o telefone da recepção e direcionava chamadas.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Clínica Vale Verde (fictícia)',
+    originLabel: 'Currículo — experiência na Clínica Vale Verde',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-07-28',
+    updatedAt: '2026-08-03',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-302' }],
     interpretation:
@@ -247,9 +247,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Conferia volumes durante o carregamento e organizava as docas do depósito.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência no Depósito Serra Azul (fictício)',
+    originLabel: 'Currículo — experiência no Depósito Serra Azul',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-06',
+    updatedAt: '2026-08-12',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-101' }],
     interpretation:
@@ -262,9 +262,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'O currículo indica que os lançamentos eram feitos pelo conferente do turno, sem detalhar a participação em planilhas.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência no Depósito Serra Azul (fictício)',
+    originLabel: 'Currículo — experiência no Depósito Serra Azul',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-06',
+    updatedAt: '2026-08-12',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-102' }],
     interpretation:
@@ -276,9 +276,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     teamId: null,
     information: 'Disponibilidade integral declarada no currículo.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — campo de disponibilidade (versão de 20/11/2025)',
+    originLabel: 'Currículo — campo de disponibilidade (versão de 26/11/2025)',
     nature: 'relato-do-candidato',
-    updatedAt: '2025-11-20',
+    updatedAt: '2025-11-26',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-103' }],
     interpretation:
@@ -291,9 +291,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Informou em atendimento que hoje só consegue trabalhar no período da manhã.',
     sourceId: 'FONTE-IEL',
-    originLabel: 'Registro IEL — atendimento de 08/09/2026',
+    originLabel: 'Registro IEL — atendimento de 14/09/2026',
     nature: 'registro-iel',
-    updatedAt: '2026-09-08',
+    updatedAt: '2026-09-14',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-103' }],
     interpretation:
@@ -306,9 +306,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Executava a conferência final do turno sem supervisão direta.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência no Depósito Serra Azul (fictício)',
+    originLabel: 'Currículo — experiência no Depósito Serra Azul',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-06',
+    updatedAt: '2026-08-12',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-107' }],
     interpretation:
@@ -323,9 +323,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Controlava materiais de consumo e apoiava os inventários trimestrais.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Indústria Sol Nascente (fictícia)',
+    originLabel: 'Currículo — experiência na Indústria Sol Nascente',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-10',
+    updatedAt: '2026-08-16',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-201' }],
     interpretation: 'Atividade diretamente relacionada ao requisito da vaga.'
@@ -337,9 +337,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Conferia notas de entrada e lançava as movimentações no sistema da indústria.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Indústria Sol Nascente (fictícia)',
+    originLabel: 'Currículo — experiência na Indústria Sol Nascente',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-10',
+    updatedAt: '2026-08-16',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-202' }],
     interpretation:
@@ -353,7 +353,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-9015 (Horizonte Alimentos)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-28',
+    updatedAt: '2026-09-03',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-203' }],
     interpretation: 'Cobre o horário comercial da vaga.'
@@ -366,7 +366,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-22',
+    updatedAt: '2026-08-28',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-204' }],
     interpretation: 'Interesse declarado e específico para a área da vaga.'
@@ -376,12 +376,11 @@ export const DEMO_EVIDENCES: Evidence[] = [
     talentId: 'ELISA',
     teamId: null,
     information:
-      'Avaliação externa fictícia de 30/07/2026: preferência por rotinas estruturadas 4 de 5; conforto com mudanças de prioridade 2 de 5.',
+      'Avaliação externa de 05/08/2026: preferência por rotinas estruturadas 4 de 5; conforto com mudanças de prioridade 2 de 5.',
     sourceId: 'FONTE-AVALIACAO',
-    originLabel:
-      'Inventário Fictício de Preferências de Trabalho — avaliação externa (demonstração)',
+    originLabel: 'Inventário de preferências de trabalho — avaliação externa',
     nature: 'avaliacao-externa',
-    updatedAt: '2026-07-30',
+    updatedAt: '2026-08-05',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-206' }],
     interpretation:
@@ -396,10 +395,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Atendia clientes no balcão, emitia pedidos e apoiava o caixa.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel:
-      'Currículo — experiência na Distribuidora Boa Vista (fictícia)',
+    originLabel: 'Currículo — experiência na Distribuidora Boa Vista',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-08-21',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-201' }],
     interpretation:
@@ -413,7 +411,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-9016 (Horizonte Alimentos)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-01',
+    updatedAt: '2026-09-07',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-203' }],
     interpretation: 'Cobre o horário da vaga.'
@@ -427,7 +425,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-09-01',
+    updatedAt: '2026-09-07',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-204' }],
     interpretation:
@@ -442,10 +440,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Organizava documentos contábeis, digitalizava arquivos e controlava prazos de entrega.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel:
-      'Currículo — experiência na Contabilidade Rio Claro (fictícia)',
+    originLabel: 'Currículo — experiência na Contabilidade Rio Claro',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-09',
+    updatedAt: '2026-08-15',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-301' }],
     interpretation: 'Atividade diretamente relacionada ao requisito da vaga.'
@@ -457,10 +454,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Cobrava prazos com clientes, sem detalhar se o contato era por telefone.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel:
-      'Currículo — experiência na Contabilidade Rio Claro (fictícia)',
+    originLabel: 'Currículo — experiência na Contabilidade Rio Claro',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-09',
+    updatedAt: '2026-08-15',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-302' }],
     interpretation:
@@ -474,7 +470,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-7713 (Oficina Pantanal)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-03',
+    updatedAt: '2026-09-09',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-303' }],
     interpretation: 'Cobre o horário das 8h às 18h.'
@@ -488,7 +484,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — expectativa coletada em atendimento',
     nature: 'registro-iel',
-    updatedAt: '2026-08-25',
+    updatedAt: '2026-08-31',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-304' }],
     interpretation:
@@ -503,9 +499,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Apoiava a emissão de orçamentos, conferia cadastros e organizava pastas de serviço.',
     sourceId: 'FONTE-EMPREGARE',
-    originLabel: 'Currículo — experiência na Autopeças Guaicurus (fictícia)',
+    originLabel: 'Currículo — experiência na Autopeças Guaicurus',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-08-30',
+    updatedAt: '2026-09-05',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-301' }],
     interpretation:
@@ -520,7 +516,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPREGARE',
     originLabel: 'Candidatura EMPG-DEMO-CAND-7714 (Oficina Pantanal)',
     nature: 'relato-do-candidato',
-    updatedAt: '2026-09-02',
+    updatedAt: '2026-09-08',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-303' }],
     interpretation:
@@ -533,11 +529,11 @@ export const DEMO_EVIDENCES: Evidence[] = [
     talentId: null,
     teamId: 'EQ-01',
     information:
-      'Solicitação de contexto enviada em 28/08/2026 sem resposta: não há informação sobre acompanhamento nas primeiras atividades no turno da tarde.',
+      'Solicitação de contexto enviada em 03/09/2026 sem resposta: não há informação sobre acompanhamento nas primeiras atividades no turno da tarde.',
     sourceId: 'FONTE-IEL',
     originLabel: 'Registro IEL — pedido de contexto à empresa',
     nature: 'registro-iel',
-    updatedAt: '2026-08-28',
+    updatedAt: '2026-09-03',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-106' }],
     interpretation:
@@ -550,9 +546,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'A equipe tem pouca sobreposição entre turnos: a tarde começa quando a manhã encerra.',
     sourceId: 'FONTE-EMPRESA',
-    originLabel: 'Descrição da vaga (Empregare — demonstração)',
+    originLabel: 'Descrição da vaga (Empregare)',
     nature: 'descricao-da-vaga',
-    updatedAt: '2026-09-02',
+    updatedAt: '2026-09-08',
     visibility: 'compartilhavel',
     links: [
       { jobId: 'VAG-01', criterionId: 'CRI-106' },
@@ -568,9 +564,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Prioridades comunicadas por checklist impresso no início do turno.',
     sourceId: 'FONTE-EMPRESA',
-    originLabel: 'Descrição da vaga (Empregare — demonstração)',
+    originLabel: 'Descrição da vaga (Empregare)',
     nature: 'descricao-da-vaga',
-    updatedAt: '2026-09-02',
+    updatedAt: '2026-09-08',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-108' }],
     interpretation:
@@ -583,9 +579,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'A rotina é executada sem supervisão direta durante a maior parte do turno.',
     sourceId: 'FONTE-EMPRESA',
-    originLabel: 'Descrição da vaga (Empregare — demonstração)',
+    originLabel: 'Descrição da vaga (Empregare)',
     nature: 'descricao-da-vaga',
-    updatedAt: '2026-09-02',
+    updatedAt: '2026-09-08',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-01', criterionId: 'CRI-107' }],
     interpretation:
@@ -600,7 +596,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPRESA',
     originLabel: 'Contexto da empresa — confirmado pelo gestor Rafael Nogueira',
     nature: 'confirmado-pelo-gestor',
-    updatedAt: '2026-08-30',
+    updatedAt: '2026-09-05',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-205' }],
     interpretation:
@@ -614,7 +610,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPRESA',
     originLabel: 'Contexto da empresa — confirmado pelo gestor Rafael Nogueira',
     nature: 'confirmado-pelo-gestor',
-    updatedAt: '2026-08-30',
+    updatedAt: '2026-09-05',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-206' }],
     interpretation: 'Prática de comunicação registrada e confirmada.'
@@ -628,7 +624,7 @@ export const DEMO_EVIDENCES: Evidence[] = [
     sourceId: 'FONTE-EMPRESA',
     originLabel: 'Contexto da empresa — confirmado pelo gestor Rafael Nogueira',
     nature: 'confirmado-pelo-gestor',
-    updatedAt: '2026-08-30',
+    updatedAt: '2026-09-05',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-02', criterionId: 'CRI-202' }],
     interpretation:
@@ -641,9 +637,9 @@ export const DEMO_EVIDENCES: Evidence[] = [
     information:
       'Atividades e condições da equipe descritas apenas em linhas gerais, sem detalhamento de apoio ou rotina.',
     sourceId: 'FONTE-EMPRESA',
-    originLabel: 'Descrição da vaga (Empregare — demonstração)',
+    originLabel: 'Descrição da vaga (Empregare)',
     nature: 'descricao-da-vaga',
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-18',
     visibility: 'compartilhavel',
     links: [{ jobId: 'VAG-03', criterionId: 'CRI-305' }],
     interpretation:

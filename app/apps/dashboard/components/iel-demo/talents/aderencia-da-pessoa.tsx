@@ -349,7 +349,7 @@ export function AderenciaDaPessoa({
 
 /**
  * A leitura desta pessoa numa empresa: o número com o denominador, o radar
- * dos dez temas e o tema a tema com os dois lados escritos. É a mesma
+ * dos onze temas e o tema a tema com os dois lados escritos. É a mesma
  * marcação da antiga tela de aderência, que agora vive aqui.
  */
 function LeituraNaEmpresa({

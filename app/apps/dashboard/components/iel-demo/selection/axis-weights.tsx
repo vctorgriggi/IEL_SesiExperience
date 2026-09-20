@@ -7,6 +7,7 @@ import {
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   AXIS_WEIGHT_LABEL,
+  competenciasDaEmpresa,
   getAxisWeight,
   getPendingAxisWeightSuggestion,
   getWeightLearning
@@ -35,6 +36,8 @@ import {
   TableRow
 } from '@workspace/ui/shadcn/table';
 
+import { TEMA_NAO_PEDIDO } from '../companies/competencias-do-questionario';
+
 const WEIGHT_OPTIONS: AxisWeight[] = ['alto', 'medio', 'baixo'];
 
 /** Do texto para o tipo, sem asserção: a lista é a fonte da verdade. */
@@ -54,6 +57,7 @@ function lerPeso(valor: string): AxisWeight | null {
 export function AxisWeights({ job }: { job: Job }) {
   const { state, dispatch } = useIelDemo();
   const learning = getWeightLearning(state, job.id);
+  const pedidas = competenciasDaEmpresa(state, job.companyId);
 
   const setWeight = (
     axisId: FitAxisId,
@@ -122,6 +126,27 @@ export function AxisWeights({ job }: { job: Job }) {
           </TableHeader>
           <TableBody>
             {FIT_AXES.map((axis) => {
+              // Peso de um tema que a empresa não pediu não existe: a linha
+              // fica, em cinza, dizendo por quê — tirá-la da tabela
+              // esconderia o critério de quem lê o percentual da vaga.
+              if (!pedidas.includes(axis.id)) {
+                return (
+                  <TableRow
+                    key={axis.id}
+                    className="text-muted-foreground"
+                  >
+                    <TableCell className="whitespace-normal">
+                      <span className="font-medium">{axis.label}</span>
+                    </TableCell>
+                    <TableCell
+                      colSpan={2}
+                      className="whitespace-normal text-sm"
+                    >
+                      {TEMA_NAO_PEDIDO}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
               const weight = getAxisWeight(job, axis.id, state);
               const suggestion = getPendingAxisWeightSuggestion(
                 state,

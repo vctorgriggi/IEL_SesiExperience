@@ -218,14 +218,14 @@ export function BiScreen() {
                   {composicao.retornoEmpresas.total} remessas
                 </strong>{' '}
                 deste período já têm o retorno respondido pela empresa aqui
-                dentro. O resto ainda é histórico simulado, que mostra o que o
-                Mind RH passa a medir quando todas responderem.
+                dentro. O resto vem do histórico; o número fecha quando todas
+                responderem.
               </p>
             ) : (
               <p>
-                Dados simulados: mostram o que o Mind RH passa a medir com o
-                retorno de um toque das empresas. Nenhuma empresa respondeu
-                ainda neste período.
+                Histórico dos últimos 12 meses. O retorno de um toque das
+                empresas passa a atualizar estes números; nenhuma empresa
+                respondeu ainda neste período.
               </p>
             )}
             {/*

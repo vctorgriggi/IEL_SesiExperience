@@ -67,16 +67,16 @@ function buildInvite(seed: InviteSeed): CultureRespondentInvite {
   };
 }
 
-const PRIMEIRA_LEVA_CERRADO = '2026-09-05';
-const SEGUNDA_LEVA_CERRADO = '2026-09-12';
-const RESPOSTA_EQUIPE_CERRADO = '2026-09-08';
+const PRIMEIRA_LEVA_CERRADO = '2026-09-11';
+const SEGUNDA_LEVA_CERRADO = '2026-09-18';
+const RESPOSTA_EQUIPE_CERRADO = '2026-09-14';
 /**
  * A segunda leva respondeu no dia seguinte ao envio. Os três convites
  * (INV-EMP01-08..10) continuam existindo com os mesmos tokens — estão em
  * documentação —, mas respondidos: a base de demonstração tem de parecer
- * completa, e a Cerrado fecha os 10 temas.
+ * completa, e a Cerrado fecha os 11 temas.
  */
-const RESPOSTA_SEGUNDA_LEVA_CERRADO = '2026-09-13';
+const RESPOSTA_SEGUNDA_LEVA_CERRADO = '2026-09-19';
 
 const INVITE_SEEDS: InviteSeed[] = [
   ...[
@@ -114,8 +114,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'rafael.nogueira@horizonte.example.com',
     role: 'gestao',
     area: 'Estoque',
-    sentAt: '2026-09-01',
-    answeredAt: '2026-09-02'
+    sentAt: '2026-09-07',
+    answeredAt: '2026-09-08'
   },
   {
     id: 'INV-EMP02-02',
@@ -123,8 +123,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'simone.vasques@horizonte.example.com',
     role: 'rh',
     area: 'Gente e Gestão',
-    sentAt: '2026-09-01',
-    answeredAt: '2026-09-02'
+    sentAt: '2026-09-07',
+    answeredAt: '2026-09-08'
   },
   ...[
     'Heitor Salles',
@@ -143,8 +143,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: corporateEmail(name, 'horizonte.example.com'),
     role: 'equipe' as const,
     area: 'Estoque',
-    sentAt: '2026-09-04',
-    answeredAt: '2026-09-06'
+    sentAt: '2026-09-10',
+    answeredAt: '2026-09-12'
   })),
 
   {
@@ -153,8 +153,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: 'sonia.prado@pantanal.example.com',
     role: 'gestao',
     area: 'Administrativo',
-    sentAt: '2026-08-28',
-    answeredAt: '2026-08-30'
+    sentAt: '2026-09-03',
+    answeredAt: '2026-09-05'
   },
   ...[
     'Lúcio Barreto',
@@ -170,8 +170,8 @@ const INVITE_SEEDS: InviteSeed[] = [
     corporateEmail: corporateEmail(name, 'pantanal.example.com'),
     role: 'equipe' as const,
     area: 'Administrativo',
-    sentAt: '2026-08-29',
-    answeredAt: index < 2 ? '2026-09-01' : null
+    sentAt: '2026-09-04',
+    answeredAt: index < 2 ? '2026-09-07' : null
   }))
 ];
 

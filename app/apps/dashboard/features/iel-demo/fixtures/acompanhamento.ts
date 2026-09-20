@@ -84,7 +84,7 @@ const CONTRATADA_HA_DIAS = {
   MARCOS: 45,
   RENATA: 70,
   // Diego já passou dos 90 dias: é quem prova que o cartão "Ficaram" conta.
-  DIEGO: 100
+  DIEGO_CAMPOS: 100
 } as const;
 
 /* ------------------------------------------------------------------ *
@@ -92,7 +92,7 @@ const CONTRATADA_HA_DIAS = {
  * ------------------------------------------------------------------ */
 
 const ACCOUNT = 'Horizonte Alimentos';
-const SYSTEM = 'Empregare — demonstração';
+const SYSTEM = 'Empregare';
 
 export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
   {
@@ -107,7 +107,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
       {
         id: 'EXP-JULIA-01',
         role: 'Auxiliar de almoxarifado',
-        organization: 'Distribuidora Planalto (fictícia)',
+        organization: 'Distribuidora Planalto',
         period: 'fev/2024 — abr/2026',
         activities:
           'Conferia notas e mercadorias na entrada, organizava o estoque por família de produto e apoiava o inventário mensal.'
@@ -145,7 +145,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
       {
         id: 'EXP-MARCOS-01',
         role: 'Repositor e recebimento',
-        organization: 'Supermercado Boa Vista (fictício)',
+        organization: 'Supermercado Boa Vista',
         period: 'jun/2023 — mai/2026',
         activities:
           'Recebia mercadorias, lançava entradas no sistema da loja e repunha gôndolas conforme a lista do dia.'
@@ -179,7 +179,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
       {
         id: 'EXP-RENATA-01',
         role: 'Auxiliar de depósito',
-        organization: 'Construtora Serra Azul (fictícia)',
+        organization: 'Construtora Serra Azul',
         period: 'ago/2024 — mar/2026',
         activities:
           'Registrava entrada e saída de materiais em planilha, conferia pedidos das equipes e organizava o depósito.'
@@ -202,7 +202,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     ]
   },
   {
-    id: 'DIEGO',
+    id: 'DIEGO-CAMPOS',
     name: 'Diego Arruda Campos',
     headline: 'Expedição e separação de pedidos em distribuidora',
     summary:
@@ -211,9 +211,9 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     email: 'diego.campos@example.com',
     experiences: [
       {
-        id: 'EXP-DIEGO-01',
+        id: 'EXP-DIEGO-CAMPOS-01',
         role: 'Auxiliar de expedição',
-        organization: 'Distribuidora Rio Verde (fictícia)',
+        organization: 'Distribuidora Rio Verde',
         period: 'mar/2024 — mai/2026',
         activities:
           'Separava pedidos por rota, conferia a carga na doca e fechava o romaneio do turno.'
@@ -227,7 +227,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     expectations: ['Turno fixo', 'Crescer dentro da empresa'],
     preferences: [
       {
-        id: 'PREF-DIEGO-01',
+        id: 'PREF-DIEGO-CAMPOS-01',
         axisId: 'execucao-ritmo',
         value: 'Prefere turno com horário certo e uma tarefa de cada vez.',
         origin: 'Registro IEL — expectativa coletada em atendimento',
@@ -287,7 +287,7 @@ export const DEMO_ACOMPANHAMENTO_APPLICATIONS: Application[] = [
   },
   {
     id: 'CAND-ACOMP-04',
-    talentId: 'DIEGO',
+    talentId: 'DIEGO-CAMPOS',
     jobId: JOB_ID,
     appliedAt: dateBefore(128),
     externalStage: 'entrevista-empresa',
@@ -334,7 +334,8 @@ const JEITOS: {
       'regras-decisao': 5,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     ha: 122
   },
@@ -352,7 +353,8 @@ const JEITOS: {
       'regras-decisao': 4,
       'interacao-convivencia': 4,
       'lideranca-autonomia': 2,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     ha: 121
   },
@@ -371,14 +373,15 @@ const JEITOS: {
       'regras-decisao': 4,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     ha: 120
   },
   {
     // Diego: ritmo constante e regra clara — o perfil que ficou.
     applicationId: 'CAND-ACOMP-04',
-    talentId: 'DIEGO',
+    talentId: 'DIEGO-CAMPOS',
     jeito: {
       'orientacao-resultados': 4,
       inovacao: 3,
@@ -389,7 +392,8 @@ const JEITOS: {
       'regras-decisao': 4,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     ha: 124
   }
@@ -519,7 +523,7 @@ export const DEMO_REFERRALS: Referral[] = [
         decidedAt: isoBefore(DECISAO_HA_DIAS, '09:40'),
         outcome: {
           hiring: 'contratou',
-          hiringAt: isoBefore(CONTRATADA_HA_DIAS.DIEGO, '10:20'),
+          hiringAt: isoBefore(CONTRATADA_HA_DIAS.DIEGO_CAMPOS, '10:20'),
           hiringReason: null,
           hiringNote: null,
           // Passou dos 90 dias e a empresa nunca voltou: quem contou que ele
@@ -579,9 +583,9 @@ export const DEMO_CHECK_INS: CheckIn[] = [
   {
     id: 'CHK-CAND-ACOMP-04-30',
     applicationId: 'CAND-ACOMP-04',
-    talentId: 'DIEGO',
+    talentId: 'DIEGO-CAMPOS',
     marco: 30,
-    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 31, '19:30'),
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO_CAMPOS - 31, '19:30'),
     continua: true,
     comoEstaSendo: 4,
     consentVersion: CHECK_IN_CONSENT_VERSION
@@ -589,9 +593,9 @@ export const DEMO_CHECK_INS: CheckIn[] = [
   {
     id: 'CHK-CAND-ACOMP-04-60',
     applicationId: 'CAND-ACOMP-04',
-    talentId: 'DIEGO',
+    talentId: 'DIEGO-CAMPOS',
     marco: 60,
-    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 61, '20:05'),
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO_CAMPOS - 61, '20:05'),
     continua: true,
     comoEstaSendo: 4,
     consentVersion: CHECK_IN_CONSENT_VERSION
@@ -599,9 +603,9 @@ export const DEMO_CHECK_INS: CheckIn[] = [
   {
     id: 'CHK-CAND-ACOMP-04-90',
     applicationId: 'CAND-ACOMP-04',
-    talentId: 'DIEGO',
+    talentId: 'DIEGO-CAMPOS',
     marco: 90,
-    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO - 91, '21:15'),
+    respondidoEm: isoBefore(CONTRATADA_HA_DIAS.DIEGO_CAMPOS - 91, '21:15'),
     continua: true,
     comoEstaSendo: 5,
     comentario: 'Já fecho o romaneio sozinho e o turno é o combinado.',

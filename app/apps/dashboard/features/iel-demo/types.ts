@@ -751,6 +751,24 @@ export type DemoState = {
    * está no código. Não muda `DEMO_SCHEMA_VERSION`.
    */
   instrumento?: ConfiguracaoDoInstrumento;
+  /**
+   * As competências que cada empresa escolheu medir no questionário, por
+   * `companyId` (de 3 a 11, na ordem de `FIT_AXES`).
+   *
+   * Pedido do IEL em 20/09/2026: "o fluxo de envio do questionário para os
+   * colaboradores da empresa responder deve ser adaptável a escolher quais
+   * competências a empresa julga relevante dentre as 11 criadas". A escolha
+   * manda no bloco do colaborador, nas frases do candidato e no denominador
+   * da aderência, então mora no estado (e não na fixture da empresa): tem
+   * autor, hora e histórico, e precisa acompanhar a base no modo
+   * compartilhado.
+   *
+   * Opcional, e empresa ausente da chave equivale a **as 11**: estado
+   * gravado antes deste campo hidrata sem ele e nada muda de sentido.
+   * `competenciasDaEmpresa` (`state/selectors.ts`) é a única porta de
+   * leitura.
+   */
+  competenciasEscolhidas?: Record<string, FitAxisId[]>;
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

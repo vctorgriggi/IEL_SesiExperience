@@ -1,5 +1,5 @@
 /**
- * O instrumento de fit: 52 afirmações em primeira pessoa, em 10 temas.
+ * O instrumento de fit: 52 afirmações em primeira pessoa, em 11 temas.
  *
  * Fonte: `docs/cliente/04-perguntas-empresa.xlsx`, a planilha que o cliente
  * entregou (colunas TOPICO, SUBTOPICO e PERGUNTA PARA EMPRESA). O `texto` de
@@ -8,31 +8,22 @@
  * e é isso que torna a comparação legítima — a aderência é a distância entre
  * duas respostas à mesma frase, não a correlação entre dois instrumentos.
  *
- * O `textoSimples` é a mesma frase reescrita para o candidato operacional no
- * celular, com baixo letramento digital (R10): curta, sem jargão, até cerca
- * de 12 palavras, mantendo o sentido e o polo — quem concorda com uma
- * concorda com a outra.
+ * **O que as telas mostram é o `texto`, sem edição.** O dono do produto
+ * pediu (20/09/2026): "não muda as perguntas, nem o sentido dela, nem a
+ * categoria — ela foi feita com rigor". Candidato, colaborador e analista
+ * leem a frase da planilha e o nome do tópico da planilha (`fit-axes.ts`).
  *
- * ## A cena
+ * ## `textoSimples` e `cena`: duas reescritas que ficaram no código
  *
- * A `cena` é a terceira forma da mesma frase, e é a que as telas de resposta
- * mostram — ao candidato e ao colaborador. Os fluxos estavam corretos e não
- * eram atrativos: frase de planilha, cinco bolinhas, "Próxima", dezesseis
- * vezes. Quem lia "Depois de entender uma atividade, consigo seguir com a
- * execução sem precisar confirmar cada etapa" não sentia que aquilo era
- * sobre ela. A cena diz a mesma ideia como uma situação do chão de fábrica,
- * do estoque, da expedição ou do escritório, na primeira pessoa, em até 14
- * palavras, sem "atividade", "execução", "processo" nem "demanda". O cliente
- * elogiou a versão em "pares de situação" justamente por ser "bem mais fácil
- * de preencher" (reunião de 19/09, 00:40:02).
- *
- * A cena é apresentação, não instrumento: o `texto` é o que o cliente
- * escreveu e é o que a analista e o auditor comparam, então continua
- * disponível "num toque" em cada tela. Se um revisor comparar `texto` e
- * `cena` de um item, tem de ler a mesma ideia com a mesma direção — nos
- * itens de `polo: -1` a cena continua invertida. O `textoSimples` fica como
- * estava: ainda é lido em telas do analista (a sugestão da cultura, por
- * exemplo), e não há por que reescrevê-lo.
+ * O `textoSimples` é a mesma frase reescrita curta, sem jargão, até cerca de
+ * 12 palavras, mantendo o sentido e o polo. A `cena` é a terceira forma:
+ * a mesma ideia como situação do chão de fábrica, na primeira pessoa, em até
+ * 14 palavras — foi o que as telas de resposta mostraram em 20/09/2026, até
+ * o pedido acima. As duas continuam aqui como dado (a busca da tela do
+ * instrumento ainda as indexa, e o `textoSimples` ainda alimenta prompt de
+ * IA), mas nenhuma tela as apresenta a quem responde. Se voltarem a ser
+ * usadas, a regra continua: quem concorda com uma concorda com a outra, e
+ * nos itens de `polo: -1` a reescrita continua invertida.
  *
  * ## Duas leituras da mesma escala
  *
@@ -688,9 +679,8 @@ const ITENS: ItemSemId[] = [
     polo: 1,
     discrimina: true
   },
-  // "EXPECTATIVAS FUTURAS" entra neste tema: ver `fit-axes.ts`.
   {
-    tema: 'adaptacao-carreira',
+    tema: 'expectativas-futuras',
     subtema: 'Direção de Desenvolvimento',
     texto:
       'Nos próximos anos, gostaria de conhecer cada vez melhor as atividades que já fazem parte da minha área de trabalho.',
@@ -700,7 +690,7 @@ const ITENS: ItemSemId[] = [
     discrimina: false
   },
   {
-    tema: 'adaptacao-carreira',
+    tema: 'expectativas-futuras',
     subtema: 'Mudança de Responsabilidades',
     texto:
       'Se minhas responsabilidades continuarem semelhantes às atuais, ainda posso me imaginar satisfeito(a) com minha trajetória profissional.',
@@ -710,7 +700,7 @@ const ITENS: ItemSemId[] = [
     discrimina: true
   },
   {
-    tema: 'adaptacao-carreira',
+    tema: 'expectativas-futuras',
     subtema: 'Aprendizado Futuro',
     texto:
       'Tenho interesse em aprender assuntos diferentes dos que utilizo atualmente no trabalho.',
@@ -720,7 +710,7 @@ const ITENS: ItemSemId[] = [
     discrimina: true
   },
   {
-    tema: 'adaptacao-carreira',
+    tema: 'expectativas-futuras',
     subtema: 'Trajetória Profissional',
     texto:
       'Consigo me imaginar seguindo uma trajetória profissional parecida com a que tenho hoje.',
@@ -730,7 +720,7 @@ const ITENS: ItemSemId[] = [
     discrimina: true
   },
   {
-    tema: 'adaptacao-carreira',
+    tema: 'expectativas-futuras',
     subtema: 'Relação com Novas Oportunidades',
     texto:
       'Quando aparece uma oportunidade profissional diferente, costumo avaliar bastante antes de considerar uma mudança.',
@@ -908,7 +898,8 @@ export const ITEM_PADRAO_POR_TEMA: Record<FitAxisId, string> = {
   'regras-decisao': 'I31',
   'interacao-convivencia': 'I35',
   'lideranca-autonomia': 'I40',
-  'adaptacao-carreira': 'I47'
+  'adaptacao-carreira': 'I47',
+  'expectativas-futuras': 'I49'
 };
 
 /* ------------------------------------------------------------------ *
@@ -934,7 +925,7 @@ export const TAMANHO_DO_BLOCO = 16;
  * A ordem do rodízio: um item de cada tema por vez, com a frase padrão do
  * tema primeiro e as não discriminantes por último.
  *
- * Assim um bloco de 16 frases consecutivas passa por todos os 10 temas, e as
+ * Assim um bloco de 16 frases consecutivas passa por todos os 11 temas, e as
  * frases que o rodízio alcança primeiro são as que mais servem ao candidato.
  */
 export const ORDEM_DO_RODIZIO: string[] = (() => {
@@ -1015,22 +1006,32 @@ export function indiceDoConvite(inviteId: string): number {
   return Math.max(0, Number(final[1]) - 1);
 }
 
-/** As frases que aquele convite responde, na ordem do rodízio. */
+/**
+ * As frases que aquele convite responde, na ordem do rodízio.
+ *
+ * `temas` são as competências que a empresa escolheu medir (de 3 a 11). O
+ * rodízio continua o mesmo — as posições das 52 não mudam, para um convite já
+ * enviado continuar com o mesmo bloco —; o que a empresa não pediu apenas sai
+ * do bloco, que fica menor. Quem já respondeu não tem a resposta alterada:
+ * o bloco é calculado na abertura do link, e o que foi respondido antes
+ * continua guardado no estado.
+ */
 export function blocoDoConvite(
   convite: {
     id: string;
     companyId: string;
   },
-  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA,
+  temas?: readonly FitAxisId[]
 ): ItemDoInstrumento[] {
-  // O rodízio é fixo (as posições das 52 não mudam com a configuração, para
-  // um convite já enviado continuar com o mesmo bloco); uma frase desligada
-  // pela analista simplesmente sai do bloco, que fica um pouco menor.
+  const pedidos = temas ? new Set(temas) : null;
   return blocoDoIndice(convite.companyId, indiceDoConvite(convite.id))
     .map((itemId) => getItem(itemId))
     .filter(
       (item): item is ItemDoInstrumento =>
-        item !== null && itemAtivo(item.id, config)
+        item !== null &&
+        itemAtivo(item.id, config) &&
+        (pedidos === null || pedidos.has(item.tema))
     );
 }
 

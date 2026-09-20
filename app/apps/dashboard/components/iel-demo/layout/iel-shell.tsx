@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { routes } from '@workspace/routes';
@@ -24,6 +25,20 @@ const SENTINELA = '__id__';
 
 function prefixo(caminho: string): string {
   return caminho.slice(0, caminho.indexOf(SENTINELA));
+}
+
+/**
+ * A casa de quem chegou por link: "/candidatura/<id>" ou "/consulta/<token>".
+ *
+ * O prefixo já para na barra antes do identificador, então o que falta é o
+ * primeiro segmento depois dele. Devolve nulo quando não há para onde ir —
+ * a própria casa, ou um caminho sem identificador.
+ */
+function inicioDoLink(pathname: string, base: string): string | null {
+  const identificador = pathname.slice(base.length).split('/')[0];
+  if (!identificador) return null;
+  const inicio = `${base}${identificador}`;
+  return inicio === pathname ? null : inicio;
 }
 
 /**
@@ -62,12 +77,12 @@ const PREFIXOS_POR_LINK: {
    */
   {
     base: prefixo(routes.dashboard.iel.applications.byId(SENTINELA).index),
-    largura: 'max-w-md',
+    largura: 'max-w-xl',
     cabecalho: true
   },
   {
     base: prefixo(routes.dashboard.iel.cultureInvite.byToken(SENTINELA)),
-    largura: 'max-w-md',
+    largura: 'max-w-xl',
     cabecalho: true
   },
   /*
@@ -110,6 +125,7 @@ export function IelShell({
       <LinkShell
         largura={porLink.largura}
         cabecalho={porLink.cabecalho}
+        inicio={inicioDoLink(pathname, porLink.base)}
       >
         {children}
       </LinkShell>
@@ -151,45 +167,67 @@ export function IelShell({
 /**
  * Uma tarefa por link: a marca do produto, o cliente e o conteúdo.
  *
- * O cabeçalho aqui não navega — não há para onde ir. Ele existe para dizer de
- * quem é a página que chegou por SMS: a marca Mind RH e, ao lado, o IEL, que
- * é quem fala com o candidato (R5).
+ * O cabeçalho diz de quem é a página que chegou por SMS: a marca Mind RH e,
+ * ao lado, o IEL, que é quem fala com o candidato (R5). A marca é o único
+ * caminho de volta: do questionário e da conversa, ela leva a "Minha
+ * candidatura" — a casa da pessoa, de onde as tarefas saem e para onde
+ * voltam. Já estando lá, ela é só a marca, e não um link para a própria
+ * página.
  */
 function LinkShell({
   children,
   largura,
-  cabecalho
+  cabecalho,
+  inicio
 }: {
   children: ReactNode;
   largura: string;
   cabecalho: boolean;
+  /** Para onde a marca volta, ou nulo quando esta já é a tela inicial. */
+  inicio: string | null;
 }) {
+  const marca = (
+    <Image
+      src="/marca/mindrh-wordmark.png"
+      alt="Mind RH"
+      width={2624}
+      height={613}
+      priority
+      className="h-5 w-auto"
+    />
+  );
+
   return (
     <div
       data-iel-theme=""
       className="flex min-h-dvh flex-col bg-background text-foreground"
     >
       {cabecalho ? (
-        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
-          <Image
-            src="/marca/mindrh-wordmark.png"
-            alt="Mind RH"
-            width={2624}
-            height={613}
-            priority
-            className="h-5 w-auto"
-          />
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-4"
-          />
-          <span className="truncate text-xs text-muted-foreground">
-            IEL · Centro de Empregos
-          </span>
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/50 bg-background/85 px-4 sm:px-8 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            {inicio ? (
+              <Link
+                href={inicio}
+                aria-label="Voltar ao início"
+                className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {marca}
+              </Link>
+            ) : (
+              marca
+            )}
+            <Separator
+              orientation="vertical"
+              className="data-[orientation=vertical]:h-4"
+            />
+            <span className="truncate text-xs font-medium text-muted-foreground">
+              IEL · Centro de Empregos
+            </span>
+          </div>
         </header>
       ) : null}
       <main
-        className={cn('mx-auto w-full flex-1 px-4 pb-24 sm:pb-10', largura)}
+        className={cn('mx-auto w-full flex-1 px-4 py-4 sm:py-6 pb-24 sm:pb-12', largura)}
       >
         {children}
       </main>

@@ -24,7 +24,13 @@ import {
   type ReferralOutcome
 } from '../analysis/devolutiva';
 import type { FitAxisId } from '../analysis/fit-axes';
-import { getFitAxis } from '../analysis/fit-axes';
+import {
+  FIT_AXIS_IDS,
+  getFitAxis,
+  MAXIMO_DE_COMPETENCIAS,
+  MINIMO_DE_COMPETENCIAS,
+  ordenarCompetencias
+} from '../analysis/fit-axes';
 import {
   ajustarInstrumento,
   alinharAoPolo,
@@ -400,6 +406,25 @@ export type DemoAction =
       /** "Voltar ao instrumento do cliente": apaga todos os ajustes. */
       type: 'reset-instrumento';
       at: string;
+    }
+  | {
+      /**
+       * A empresa escolhe quais competências quer medir no questionário
+       * (de 3 a 11), pela analista no envio do convite ou por ela mesma na
+       * própria página.
+       *
+       * A validação do piso mora aqui, e não só no formulário: é a mesma
+       * escolha de desenho do limite de 5 currículos por remessa — uma regra
+       * que muda o que a aderência mede não pode depender de a tela estar
+       * certa. Fora da faixa, o estado não muda e o motivo fica no
+       * histórico.
+       */
+      type: 'set-company-competencies';
+      companyId: string;
+      axisIds: FitAxisId[];
+      /** Quem decidiu: a analista no envio, ou a própria empresa. */
+      decidedBy: 'analista' | 'empresa';
+      at: string;
     };
 
 function nextSequentialId(prefix: string, existing: string[]): string {
@@ -720,7 +745,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           at: action.at,
           actor: 'Analista IEL',
           action: 'Esclarecimento solicitado',
-          description: `Solicitação ${action.clarificationId} enviada (envio simulado).`,
+          description: `Solicitação ${action.clarificationId} enviada.`,
           entityRef: action.clarificationId
         })
       };
@@ -1103,7 +1128,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           at: action.at,
           actor: 'Analista IEL',
           action: 'Encaminhamento registrado',
-          description: `${plural(referral.items.length, 'perfil compartilhado', 'perfis compartilhados')} com a empresa na vaga ${action.input.jobId}. Atualização externa não enviada — demonstração.`,
+          description: `${plural(referral.items.length, 'perfil compartilhado', 'perfis compartilhados')} com a empresa na vaga ${action.input.jobId}.`,
           entityRef: id
         })
       };
@@ -1161,7 +1186,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
               : 'Decisão de não avançar registrada',
           description:
             action.decision === 'quero-entrevistar'
-              ? `A empresa quer entrevistar a candidatura ${action.applicationId}. Nenhuma reunião foi agendada nesta demonstração.`
+              ? `A empresa quer entrevistar a candidatura ${action.applicationId}. A analista combina a entrevista.`
               : `A empresa não vai avançar com a candidatura ${action.applicationId}. Justificativa: ${action.note || 'não informada'}.`,
           entityRef: action.applicationId
         })
@@ -1707,7 +1732,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           ...state,
           history: appendHistory(state, {
             at: action.at,
-            actor: 'Empregare — demonstração',
+            actor: 'Empregare',
             action: 'Atualização recebida (sem mudanças)',
             description: `Evento ${action.eventId} já havia sido aplicado: nenhum registro foi duplicado.`,
             entityRef: action.eventId
@@ -1766,6 +1791,66 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       };
     }
 
+    case 'set-company-competencies': {
+      const escolhidas = ordenarCompetencias(action.axisIds);
+      const atuais =
+        state.competenciasEscolhidas?.[action.companyId] ?? FIT_AXIS_IDS;
+      const autor =
+        action.decidedBy === 'empresa' ? 'Gestão da empresa' : 'Analista IEL';
+
+      // Fora de 3..11 nada muda. O histórico registra a recusa: quem olhar
+      // depois precisa saber que a tentativa existiu e por que não pegou.
+      if (
+        escolhidas.length < MINIMO_DE_COMPETENCIAS ||
+        escolhidas.length > MAXIMO_DE_COMPETENCIAS
+      ) {
+        return {
+          ...state,
+          history: appendHistory(state, {
+            at: action.at,
+            actor: autor,
+            action: 'Competências não alteradas',
+            description: `A empresa ${action.companyId} ficaria com ${plural(escolhidas.length, 'competência', 'competências')} no questionário, e são no mínimo ${MINIMO_DE_COMPETENCIAS} e no máximo ${MAXIMO_DE_COMPETENCIAS}. Nada foi alterado.`,
+            entityRef: action.companyId
+          })
+        };
+      }
+
+      const entraram = escolhidas.filter((id) => !atuais.includes(id));
+      const sairam = atuais.filter((id) => !escolhidas.includes(id));
+      if (entraram.length === 0 && sairam.length === 0) return state;
+
+      const nomes = (ids: FitAxisId[]) =>
+        ids.map((id) => getFitAxis(id).label).join(', ');
+      const primeiraVez =
+        state.competenciasEscolhidas?.[action.companyId] === undefined;
+      const mudanca = [
+        entraram.length > 0 ? `entrou ${nomes(entraram)}` : null,
+        sairam.length > 0 ? `saiu ${nomes(sairam)}` : null
+      ]
+        .filter((parte): parte is string => parte !== null)
+        .join('; ');
+
+      return {
+        ...state,
+        competenciasEscolhidas: {
+          ...(state.competenciasEscolhidas ?? {}),
+          [action.companyId]: escolhidas
+        },
+        history: appendHistory(state, {
+          at: action.at,
+          actor: autor,
+          action: primeiraVez
+            ? 'Competências do questionário escolhidas'
+            : 'Competências do questionário alteradas',
+          description: primeiraVez
+            ? `A empresa escolheu ${plural(escolhidas.length, 'competência', 'competências')} para o questionário: ${nomes(escolhidas)}.`
+            : `A empresa mudou as competências do questionário: ${mudanca}. Ficaram ${escolhidas.length} de ${MAXIMO_DE_COMPETENCIAS}. As respostas dos temas retirados continuam guardadas e deixam de contar.`,
+          entityRef: action.companyId
+        })
+      };
+    }
+
     case 'reset-instrumento': {
       const atual = configuracaoDoInstrumento(state);
       if (instrumentoDeFabrica(atual)) return state;
@@ -1793,10 +1878,10 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ),
         history: appendHistory(state, {
           at: action.at,
-          actor: 'Ambiente de demonstração',
+          actor: 'Mind RH',
           action:
             action.status === 'indisponivel'
-              ? 'Falha de fonte simulada'
+              ? 'Fonte indisponível'
               : 'Fonte restabelecida',
           description:
             action.status === 'indisponivel'
@@ -1847,7 +1932,7 @@ export function applySyncEventPayload(
     applications,
     history: appendHistory(state, {
       at,
-      actor: 'Empregare — demonstração',
+      actor: 'Empregare',
       action: 'Atualização recebida',
       description: `Evento ${event.id} aplicado: candidatura ${event.payload.applicationId} atualizada para "${event.payload.externalStage}".`,
       entityRef: event.payload.applicationId

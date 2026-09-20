@@ -1,15 +1,9 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  CANDIDATE_CONSENT_RESUMO,
   CANDIDATE_CONSENT_TEXT,
   CANDIDATE_CONSENT_VERSION
 } from '@/features/iel-demo/analysis/candidate-questionnaire';
@@ -25,118 +19,123 @@ import {
   getFitResponse,
   getFitStatus,
   getTalent,
-  perguntasDoCandidato,
   perguntasQueFaltam,
   reaproveitamentoDaCandidatura,
   respostasResolvidas,
-  validadeDasRespostas,
   versaoDoAceiteVigente
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
   IconAlertTriangle,
+  IconArrowLeft,
+  IconArrowRight,
   IconCircleCheck,
   IconClock,
-  IconHistory
+  IconHistory,
+  IconLock
 } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
+import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
-import { Checkbox } from '@workspace/ui/shadcn/checkbox';
-import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
 
 import { ICONE_TINGIDO } from '../metricas/cores';
 import {
+  AceiteCurto,
   CaminhoDaConversa,
-  FraseOriginal,
-  PassoDoFim,
+  MolduraPorLink,
   TamanhoDaTarefa
 } from '../shared/fluxo-por-link';
-import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { falaDaFrase, OuvirAFrase } from '../shared/ouvir-a-frase';
 import { ReguaDeConcordancia } from '../shared/regua-de-concordancia';
+import { SuasRespostas } from '../shared/suas-respostas';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 import { useRascunho } from '../shared/use-rascunho';
 
 /**
  * Questionário de fit do candidato, com o aceite que o abre (M3 + M7).
  *
+ * ## Três telas, poucas palavras
+ *
+ * Abertura (quem pergunta, uma linha, o tamanho da tarefa, o aceite curto),
+ * as frases (uma por tela, a frase da planilha do cliente em título grande,
+ * sem edição, e a régua de um toque) e
+ * o fim ("Pronto, Nome." e as respostas devolvidas como linha de teste). O
+ * público é operacional, no celular, com baixo letramento digital: o que não
+ * é a pergunta, a régua ou o botão de seguir não está na tela.
+ *
  * ## Base legal
  *
- * O tratamento das respostas tem como base o **consentimento do titular** —
- * LGPD, art. 7º: "O tratamento de dados pessoais somente poderá ser realizado
- * nas seguintes hipóteses: I - mediante o fornecimento de consentimento pelo
- * titular". Por isso o passo 0 é uma tela inteira, o aceite nasce desmarcado
- * e sem ele o questionário não abre — consentimento marcado de antemão não é
- * inequívoco.
+ * Consentimento do titular (LGPD, art. 7º, I). O aceite nasce desmarcado e
+ * sem ele o questionário não abre. O texto apresentado é o de
+ * `CANDIDATE_CONSENT_TEXT`, resumido em três linhas
+ * (`CANDIDATE_CONSENT_RESUMO`) e inteiro a um toque; a versão vai gravada na
+ * resposta (`versaoDoAceiteVigente`), nunca na tela — é rastreabilidade, não
+ * leitura.
  *
- * O texto apresentado é o de `CANDIDATE_CONSENT_TEXT` e cobre o que o art. 9º
- * manda informar de forma "clara, adequada e ostensiva": finalidade, o que se
- * coleta, quem vê, por quanto tempo e quais são os direitos do titular. Os
- * cinco itens ficam no mesmo cartão, em letra de leitura: prazo e direitos
- * saíram da nota de rodapé em 12px, onde ninguém os lia, e entraram na lista,
- * do mesmo tamanho dos outros — informação que a lei manda dar de forma
- * ostensiva não cabe em letra miúda.
+ * ## Uma resposta só
  *
- * As cinco frases são as constantes, palavra por palavra: elas são o texto a
- * que a pessoa consente e vão gravadas por versão
- * (`CANDIDATE_CONSENT_VERSION`). O que esta tela escreve por conta própria
- * — quem está perguntando, por que, quanto tempo leva e que não existe
- * resposta certa — fica **fora** do cartão, antes dele.
+ * A resposta vale 12 meses e é uma só: não há "responder de novo" em lugar
+ * nenhum. Quem precisa corrigir fala com a pessoa do IEL que mandou o link
+ * (o reducer continua aceitando a substituição, porque é o IEL quem a faria).
+ * Quem já respondeu abre direto no fim, com as respostas.
  *
  * ## O que a tela não mostra
  *
- * O nome da empresa não aparece em lugar nenhum (R5). O cabeçalho sai de
- * `getCandidateJobView`, que é um tipo fechado de quatro campos — atividade,
+ * O nome da empresa não aparece em lugar nenhum (R5): o cabeçalho sai de
+ * `getCandidateJobView`, um tipo fechado de quatro campos — atividade,
  * localidade, segmento e turno —, e o rodapé diz isso em voz alta para a
- * pessoa não ficar procurando. Também não aparecem o percentual de aderência,
- * o ranking nem qualquer outro candidato: o candidato responde, não se avalia.
+ * pessoa não ficar procurando. Também não aparecem percentual de aderência,
+ * ranking, comparação nem leitura sobre quem a pessoa é: o candidato
+ * responde, não se avalia (PRODUTO.md §11).
  *
  * ## Forma
  *
- * Uma frase por tela, alvos de 48px, corpo de 15px. O público é operacional
- * e com baixo letramento digital: o que não é a frase atual, o botão de
- * seguir ou o de voltar não está na tela.
+ * Uma frase por tela, alvos de 48px, corpo de 15px. No alto, o número do
+ * passo num círculo e o quanto falta ("Faltam 4", "Última frase"); no
+ * rodapé, "Próxima" e o "Voltar uma frase".
  *
- * A frase aparece como **cena** (`item.cena`): a mesma ideia do instrumento
- * na primeira pessoa, como uma situação do dia a dia — "Chega uma tarefa
- * nova. Eu começo e vou ajustando no caminho." A frase original do cliente
- * fica a um toque ("ver a frase original"), para a analista e o auditor
- * conferirem que é o mesmo instrumento. A pergunta de apoio é "O quanto isso
- * é você?", e a escala é a **régua de um toque**
- * (`shared/regua-de-concordancia`): cinco degraus com a palavra escrita, de
- * "Nada a ver comigo" a "Sou eu"; o toque seleciona e, um instante depois,
- * a tela avança sozinha. "Próxima" continua na tela para quem prefere o
- * botão, para quem voltou a uma frase já respondida (o toque no mesmo degrau
- * não muda nada, então não avança) e para o teclado; na última frase o toque
- * só seleciona, e enviar é um gesto à parte.
+ * A frase na tela é a do instrumento do cliente (`item.texto`), palavra por
+ * palavra e sem edição — é o mesmo enunciado que a analista lê no relatório
+ * e que volta em "Suas respostas". A pergunta de apoio é "O quanto isso é
+ * você? Não existe resposta certa.", e a escala é a **régua de um toque**
+ * (`shared/regua-de-concordancia`): cinco degraus com o número escrito na
+ * pastilha e a palavra embaixo, de "Nada a ver comigo" a "Sou eu".
  *
- * As 10 frases são as que a empresa da vaga escolheu (`perguntasDoCandidato`):
+ * Entre a frase e a régua fica o **"Ouvir a pergunta"**
+ * (`shared/ouvir-a-frase`): o aparelho lê a frase e depois os cinco degraus
+ * numerados, para quem não lê ou lê com esforço. O número é a ponte entre o
+ * que se ouve e o que se toca, por isso ele está escrito no degrau.
+ *
+ * O toque **seleciona e para aí**: a tela mudava debaixo do dedo antes de a
+ * pessoa ler o que tinha escolhido. Quem decide passar é "Próxima" — um
+ * gesto, uma frase — e na última frase o mesmo botão envia.
+ *
+ * As frases são as que a empresa da vaga escolheu (`perguntasQueFaltam`):
  * uma por tema, onde a equipe dela é mais marcante.
  *
  * ## O fim
  *
- * Antes do "O que acontece agora" entra a devolutiva pessoal
- * (`shared/leitura-pessoal`): a pessoa deu dez respostas e recebe uma leitura
- * delas de volta, com as resolvidas — reaproveitadas e novas — e nunca o nome
- * da empresa (R5).
+ * "Pronto, Nome." e **"Suas respostas"** (`shared/suas-respostas`): cada
+ * frase que a pessoa respondeu — as reaproveitadas de outra vaga e as novas
+ * — com o grau no vocabulário da escala. É o dado do jeito que foi dado, sem
+ * adjetivo, sem percentual e sem o nome da empresa (R5). Dali sai um botão
+ * só: ver a candidatura.
  *
  * ## Fechar e voltar
  *
- * O que já foi respondido fica no navegador da pessoa (`useRascunho`), com a
- * versão do aceite e a lista de frases daquela vaga. Ela fecha na frase 7,
- * volta depois e continua na 7 — o rascunho some assim que ela envia. Sem
- * isso, cada interrupção no meio do caminho custava a resposta inteira, e é
- * no meio do caminho que o celular toca.
+ * O que já foi respondido fica no navegador (`useRascunho`), preso à versão
+ * do aceite e à lista de frases da vaga; quem fecha na frase 5 volta na 5,
+ * em silêncio, e o rascunho some no envio.
  */
 
 type Step =
@@ -180,94 +179,78 @@ function primeiraSemResposta(answers: Answers, itemIds: string[]): number {
   return itemIds.findIndex((itemId) => answers[itemId] === undefined);
 }
 
+/** O texto inteiro do aceite, na ordem em que a pessoa o lê. */
+const TEXTO_COMPLETO_DO_ACEITE = [
+  CANDIDATE_CONSENT_TEXT.purpose,
+  CANDIDATE_CONSENT_TEXT.collected,
+  CANDIDATE_CONSENT_TEXT.whoSees,
+  CANDIDATE_CONSENT_TEXT.retention,
+  CANDIDATE_CONSENT_TEXT.rights
+];
+
 /**
- * Tira do texto do aceite o rótulo que a tela já imprime ao lado.
+ * Volta a página ao topo antes de trocar de passo.
  *
- * `CANDIDATE_CONSENT_TEXT.whoSees` começa com "Quem vê:", porque a constante
- * também é lida em voz corrida na conversa guiada, onde não há rótulo. Aqui
- * há, e a pessoa lia "Quem vê / Quem vê: a equipe do IEL…". O texto do aceite
- * é versionado e não se reescreve por causa de layout — então quem se ajusta
- * é a tela.
+ * A tela da frase é mais alta que o celular — frase, "Ouvir a pergunta", os
+ * cinco degraus empilhados —, então quem envia a última resposta está com a
+ * página rolada. Sem isto, o passo seguinte nasce no meio.
  */
-/** "05/09", do jeito que a frase a diz. */
-function diaMes(iso: string): string {
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+function aoTopo(): void {
+  if (typeof document === 'undefined') return;
+  // Ora rola o `html`, ora o `body` — o plugin de acessibilidade muda quem é
+  // o container. Zerar os dois é o que funciona nos dois casos.
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 }
 
-/** "05/09/2027": a data de validade, que fica longe e precisa do ano. */
-function diaMesAno(iso: string): string {
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-}
-
-function semRotuloRepetido(rotulo: string, texto: string): string {
-  const prefixo = `${rotulo}: `;
-  if (!texto.startsWith(prefixo)) return texto;
-  const resto = texto.slice(prefixo.length);
-  // O que vinha depois dos dois-pontos começava em minúscula.
-  return resto.charAt(0).toUpperCase() + resto.slice(1);
+/** O atalho da equipe: o perfil da pessoa (onde a resposta chega) ou, sem talento, a vaga. */
+function atalhoDoCandidato(
+  application: { talentId: string | null; jobId: string } | null
+): { href: string } | undefined {
+  if (!application) return undefined;
+  return {
+    href: application.talentId
+      ? routes.dashboard.iel.talents.byId(application.talentId).index
+      : routes.dashboard.iel.jobs.byId(application.jobId).index
+  };
 }
 
 export function FitQuestionnaireScreen({
-  applicationId
+  applicationId,
+  equipeLogada = false
 }: {
   applicationId: string;
+  /** Sessão da analista confirmada pela página: mostra o atalho de volta. */
+  equipeLogada?: boolean;
 }) {
   const { state, dispatch } = useIelDemo();
   const existing = getFitResponse(state, applicationId);
   const reuso = reaproveitamentoDaCandidatura(state, applicationId);
 
   /*
-   * Esta candidatura já está resolvida?
-   *
-   * Não basta existir um registro: desde que a resposta vale 12 meses, um
-   * registro de 2025 é um registro vencido, e a vaga volta a precisar das
-   * frases. "Respondido" é ter registro **e** não faltar nenhuma frase.
+   * Esta candidatura já está resolvida? Não basta existir um registro: um
+   * registro vencido é uma vaga que volta a precisar das frases.
+   * "Respondido" é ter registro **e** não faltar nenhuma frase.
    */
   const respondido = existing !== null && (reuso?.faltantes ?? 0) === 0;
 
-  // Quem já respondeu abre direto na confirmação. "Responder de novo" é
-  // permitido porque a ação é idempotente por candidatura: uma pessoa tem
-  // uma resposta, não duas.
   const [step, setStep] = useState<Step>(
     respondido ? { kind: 'done' } : { kind: 'consent' }
   );
   const [accepted, setAccepted] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [ignoredDeadline, setIgnoredDeadline] = useState(false);
-  const [retomado, setRetomado] = useState(false);
   const [faltando, setFaltando] = useState<number | null>(null);
-  /*
-   * "Quero responder de novo": a pessoa recusa o reaproveitamento e responde
-   * todas as frases da vaga. É o desfazer que o aceite promete — sem ele, a
-   * promessa de "vale sempre a sua última resposta" seria falsa.
-   */
-  const [responderTudo, setResponderTudo] = useState(false);
-  // Verdadeiro depois de a pessoa tocar em "Começar" ou "Responder de novo".
+  // Verdadeiro depois do primeiro toque: a base que chega do navegador
+  // depois da primeira renderização não pode trocar a tela por baixo dela.
   const mexeuRef = useRef(false);
 
   const application = getApplication(state, applicationId);
+  const atalho = equipeLogada ? atalhoDoCandidato(application) : undefined;
   const jobView = getCandidateJobView(state, applicationId);
-  // Estável entre renderizações: a devolutiva o usa como dependência de
-  // efeito, e um objeto novo a cada render a faria pedir o texto de novo.
-  const atividadeDaVaga = jobView?.activity;
-  const setorDaVaga = jobView?.sector;
-  const contextoDaLeitura = useMemo(
-    () => ({ atividade: atividadeDaVaga, setor: setorDaVaga }),
-    [atividadeDaVaga, setorDaVaga]
-  );
-  const validade = application
-    ? validadeDasRespostas(state, application.talentId)
-    : null;
-  /*
-   * A pessoa responde só o que esta empresa pergunta **e** ela ainda não
-   * respondeu dentro dos 12 meses. Quem pediu para responder de novo vê a
-   * lista inteira.
-   */
-  const perguntas = !application
-    ? []
-    : responderTudo
-      ? perguntasDoCandidato(state, application.jobId)
-      : perguntasQueFaltam(state, applicationId);
+  // Só o que esta empresa pergunta **e** a pessoa ainda não respondeu
+  // dentro dos 12 meses.
+  const perguntas = application ? perguntasQueFaltam(state, applicationId) : [];
   const totalQuestions = perguntas.length;
   const itemIds = perguntas.map((pergunta) => pergunta.itemId);
   const chaveDasFrases = itemIds.join(',');
@@ -307,17 +290,16 @@ export function FitQuestionnaireScreen({
     [chaveDasFrases, itemIds, totalQuestions]
   );
 
+  // Retomar não pede o aceite de novo: ele foi dado sob esta mesma versão
+  // (`lerRascunho` barra outra). E não avisa: a pessoa cai na frase em que
+  // parou, com o que já respondeu marcado.
   const aoRetomar = useCallback((rascunho: RascunhoDoFit) => {
-    // O aceite já tinha sido dado nesta mesma conversa, com esta mesma
-    // versão de texto: retomar não pede consentimento de novo, mas também
-    // não vale para um texto que mudou (`lerRascunho` barra).
     setAccepted(true);
     setAnswers(rascunho.respostas);
     setStep({ kind: 'question', index: rascunho.indice });
-    setRetomado(true);
   }, []);
 
-  const rascunho = useRascunho<RascunhoDoFit>({
+  const { restaurado, gravar, apagar } = useRascunho<RascunhoDoFit>({
     chave: `iel-rascunho:fit:${applicationId}`,
     ler: lerRascunho,
     aoRestaurar: respondido ? () => undefined : aoRetomar
@@ -325,7 +307,6 @@ export function FitQuestionnaireScreen({
 
   // Grava a cada toque, e só depois de o navegador ter sido lido: gravar
   // antes apagaria o rascunho com o estado vazio da montagem.
-  const { restaurado, gravar, apagar } = rascunho;
   useEffect(() => {
     if (!restaurado || step.kind !== 'question') return;
     if (Object.keys(answers).length === 0) return;
@@ -341,13 +322,11 @@ export function FitQuestionnaireScreen({
   }, [restaurado, step, answers, chaveDasFrases, gravar]);
 
   /*
-   * A base da demonstração só chega do `localStorage` num efeito, depois da
-   * primeira renderização — e o passo inicial era decidido antes dela. Quem
-   * respondia, fechava e abria o link de novo caía na tela de aceite, como se
-   * nunca tivesse respondido, e ficava nela. Aqui a tela se corrige quando a
-   * resposta aparece, sem atropelar quem pediu para responder de novo.
+   * A base da demonstração só chega do navegador num efeito, depois da
+   * primeira renderização — e o passo inicial era decidido antes dela. A
+   * tela se corrige quando a resposta aparece, sem atropelar quem já tocou.
    */
-  const nadaAPerguntar = Boolean(reuso?.nadaAPerguntar) && !responderTudo;
+  const nadaAPerguntar = Boolean(reuso?.nadaAPerguntar);
   useEffect(() => {
     if (mexeuRef.current) return;
     if (respondido) {
@@ -365,48 +344,40 @@ export function FitQuestionnaireScreen({
 
   if (!application || !jobView) {
     return (
-      <CandidateFrame badge={null}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={null}
+      >
         <Card>
           <CardHeader>
             <CardTitle className="t-pergunta">
               <h1>Este link não abriu</h1>
             </CardTitle>
             <CardDescription className="t-apoio-candidato">
-              O endereço não corresponde a nenhuma inscrição. Confira a mensagem
-              que você recebeu do IEL e abra o link de novo, inteiro.
+              Confira a mensagem que você recebeu do IEL e abra o link inteiro.
             </CardDescription>
           </CardHeader>
         </Card>
-      </CandidateFrame>
+      </MolduraPorLink>
     );
   }
 
-  const badge = (
+  const etiqueta = (
     <Badge
-      variant="outline"
-      className="font-medium text-muted-foreground"
+      variant="secondary"
+      className="gap-1.5 px-3 py-1 font-medium bg-secondary/80 text-foreground border border-border/70 shadow-2xs text-xs sm:text-[13px]"
     >
+      <span className="size-1.5 rounded-full bg-primary" />
       Vaga de {jobView.activity}
     </Badge>
   );
+  const rotaDaCandidatura =
+    routes.dashboard.iel.applications.byId(applicationId).index;
 
   const expired =
     getFitStatus(state, application) === 'expirado' &&
     !respondido &&
     !ignoredDeadline;
-
-  const restart = () => {
-    mexeuRef.current = true;
-    apagar();
-    setAnswers({});
-    setAccepted(false);
-    setRetomado(false);
-    setFaltando(null);
-    // Quem pede para responder de novo responde tudo: metade das frases
-    // reaproveitadas e metade novas não seria "de novo".
-    setResponderTudo(true);
-    setStep({ kind: 'consent' });
-  };
 
   /** A pessoa confirma que as respostas que já deu valem para esta vaga. */
   const confirmarReuso = () => {
@@ -418,6 +389,7 @@ export function FitQuestionnaireScreen({
       at: nowIso()
     });
     apagar();
+    aoTopo();
     setStep({ kind: 'done' });
   };
 
@@ -440,12 +412,18 @@ export function FitQuestionnaireScreen({
     });
     apagar();
     setFaltando(null);
+    // A última frase costuma ser respondida com a página rolada; sem isto, o
+    // "Pronto, Nome." nasce escondido atrás do cabeçalho fixo da casca.
+    aoTopo();
     setStep({ kind: 'done' });
   };
 
   if (expired) {
     return (
-      <CandidateFrame badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <Card>
           <CardHeader>
             <IconClock
@@ -456,21 +434,9 @@ export function FitQuestionnaireScreen({
               <h1>O prazo para responder terminou</h1>
             </CardTitle>
             <CardDescription className="t-apoio-candidato">
-              As perguntas desta vaga ficavam abertas por dois dias. O IEL
-              continua com o seu currículo: se a vaga voltar a precisar de
-              respostas, você recebe um link novo.
+              As frases desta vaga ficavam abertas por dois dias. O IEL continua
+              com o seu currículo.
             </CardDescription>
-            {/*
-             * Quem tinha resposta vencida chega aqui e precisa entender por
-             * que as frases voltaram: não é a vaga pedindo duas vezes, é a
-             * validade de 12 meses que o aceite prometeu.
-             */}
-            {reuso && reuso.vencidas > 0 ? (
-              <CardDescription className="t-apoio-candidato">
-                O que você respondeu antes passou de 12 meses, então as{' '}
-                {reuso.perguntadas} frases voltam se você quiser responder.
-              </CardDescription>
-            ) : null}
           </CardHeader>
           <CardContent className="flex flex-col gap-2.5">
             <Button
@@ -487,33 +453,29 @@ export function FitQuestionnaireScreen({
               className="h-12 w-full text-muted-foreground"
               asChild
             >
-              <Link
-                href={
-                  routes.dashboard.iel.applications.byId(applicationId).index
-                }
-              >
-                Ver minha candidatura
-              </Link>
+              <Link href={rotaDaCandidatura}>Ver minha candidatura</Link>
             </Button>
           </CardContent>
         </Card>
-      </CandidateFrame>
+      </MolduraPorLink>
     );
   }
 
   if (step.kind === 'done') {
     /*
-     * O que a devolutiva lê: as respostas resolvidas desta candidatura —
-     * as reaproveitadas de outra vaga e as novas —, que é o mesmo conjunto
-     * que a aderência usa. O primeiro nome vem do talento; o contexto é só
-     * a atividade e o segmento, nunca a empresa (R5).
+     * O que volta para a pessoa: as respostas resolvidas desta candidatura
+     * — as reaproveitadas de outra vaga e as novas —, uma linha por frase,
+     * no vocabulário da escala. Nada sobre quem ela é.
      */
     const resolvidas = respostasResolvidas(state, applicationId);
     const primeiroNome = getTalent(application.talentId, state)?.name.split(
       ' '
     )[0];
     return (
-      <CandidateFrame badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <div className="flex flex-col gap-3">
           <span
             aria-hidden="true"
@@ -524,154 +486,48 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="t-pergunta outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
-            Pronto!
+            {primeiroNome ? `Pronto, ${primeiroNome}.` : 'Pronto.'}
           </h1>
           <p className="t-apoio-candidato">
-            {/*
-             * Reaproveitar sem dizer seria mostrar menos perguntas do que a
-             * pessoa esperava e calar sobre o porquê. O que ela lê aqui é o
-             * que aconteceu com o dado dela.
-             */}
-            {reuso && reuso.novas === 0 && reuso.reaproveitadas > 0
-              ? `Usamos as ${reuso.reaproveitadas} respostas que você já tinha dado${reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}. Você não precisou responder nada de novo.`
-              : reuso && reuso.reaproveitadas > 0
-                ? `Recebemos as suas ${reuso.novas} respostas. As outras ${reuso.reaproveitadas} vieram do que você já tinha respondido${reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}.`
-                : totalQuestions > 0
-                  ? `Recebemos as suas ${totalQuestions} respostas.`
-                  : 'Suas respostas já estão registradas.'}
+            O IEL compara as suas respostas com o jeito da empresa desta vaga.
+            Se o seu currículo for enviado, a empresa vê só o quanto vocês
+            combinam.
           </p>
         </div>
 
         {resolvidas && Object.keys(resolvidas.valores).length > 0 ? (
-          <LeituraPessoal
+          <SuasRespostas
             papel="candidato"
             respostas={resolvidas.valores}
-            primeiroNome={primeiroNome}
-            contexto={contextoDaLeitura}
           />
         ) : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>O que acontece agora</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="flex flex-col gap-4">
-              <PassoDoFim numero={1}>
-                O IEL compara o seu jeito de trabalhar com o de quem já trabalha
-                na empresa desta vaga.
-              </PassoDoFim>
-              <PassoDoFim numero={2}>
-                Se o seu currículo for enviado, a empresa recebe só um resumo do
-                quanto vocês combinam. As suas respostas, uma a uma, ela nunca
-                vê.
-              </PassoDoFim>
-              <PassoDoFim numero={3}>
-                Se a empresa quiser conversar, quem avisa você é o IEL, pelo
-                mesmo contato que mandou este link.
-              </PassoDoFim>
-            </ol>
-          </CardContent>
-          {validade?.validaAte ? (
-            <CardFooter>
-              {/*
-                O que o aceite promete, dito de volta com a data na mão: a
-                resposta é da pessoa, vale por 12 meses e poupa a próxima
-                candidatura.
-              */}
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                As suas respostas ficam guardadas até{' '}
-                {diaMesAno(validade.validaAte)}. Se você se candidatar a outra
-                vaga pelo IEL nesse tempo, a gente pergunta só o que faltar.
-              </p>
-            </CardFooter>
-          ) : null}
-        </Card>
-
-        {/*
-         * O fim do questionário deixou de ser o fim da jornada.
-         *
-         * "Você não precisa fazer mais nada agora" era verdade e, ainda assim,
-         * abandonava a pessoa: ela dava as respostas e não recebia nada de
-         * volta. A saída daqui é "Minha candidatura", onde cada estado diz o
-         * que acontece agora — inclusive quando a empresa não segue.
-         */}
-        <div className="mt-auto flex flex-col gap-2.5 pt-2">
+        <div className="mt-auto pt-2">
           <Button
             size="lg"
             className="t-opcao h-12 w-full"
             asChild
           >
-            <Link
-              href={routes.dashboard.iel.applications.byId(applicationId).index}
-            >
-              Ver minha candidatura
-            </Link>
+            <Link href={rotaDaCandidatura}>Ver minha candidatura</Link>
           </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            className="h-12 w-full text-muted-foreground"
-            onClick={restart}
-          >
-            Responder de novo
-          </Button>
-          <p className="text-center text-[13px] leading-relaxed text-muted-foreground">
-            Guarde este link: é por ele que você acompanha a sua candidatura.
-          </p>
-          <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Demonstração: nada é enviado de verdade e este link abre direto, sem
-            senha e sem cadastro.
-          </p>
         </div>
-      </CandidateFrame>
+      </MolduraPorLink>
     );
   }
 
-  /**
-   * O que a tela diz sobre o tamanho da lista ter mudado, quando mudou.
-   *
-   * Três motivos possíveis, e cada um é uma frase diferente: parte das frases
-   * veio de resposta anterior, as respostas anteriores passaram dos 12 meses,
-   * ou a própria pessoa pediu para responder tudo de novo.
-   */
-  const avisoDoReuso: { titulo: string; texto: string } | null = responderTudo
-    ? {
-        titulo: 'Você pediu para responder de novo',
-        texto: `São as ${totalQuestions} frases desta vaga. Vale sempre a sua última resposta: o que você responder agora substitui o que tinha respondido antes.`
-      }
-    : reuso && reuso.reaproveitadas > 0
-      ? {
-          titulo: `${reuso.reaproveitadas} de ${reuso.perguntadas} frases você já respondeu`,
-          texto: reuso.desde
-            ? `Elas vieram das suas respostas de ${diaMes(reuso.desde)} e continuam valendo, então a gente pergunta só as ${totalQuestions} que faltam. Se preferir, dá para responder tudo de novo no fim.`
-            : `Elas vieram do que você já tinha respondido, então a gente pergunta só as ${totalQuestions} que faltam.`
-        }
-      : reuso && reuso.vencidas > 0
-        ? {
-            titulo: 'Suas respostas anteriores venceram',
-            texto: `O que você respondeu passou de 12 meses, e depois desse prazo a gente não usa mais. Por isso as ${totalQuestions} frases voltam.`
-          }
-        : null;
-
   /*
    * Nada a perguntar: as respostas que a pessoa já deu cobrem esta vaga.
-   *
-   * Um formulário vazio seria a pior saída — a pessoa abriria o link, não
-   * veria pergunta nenhuma e não saberia se fez o que tinha de fazer. Aqui
-   * ela lê o que aconteceu com o dado dela, confirma num toque e continua
-   * podendo responder tudo de novo, que é o desfazer prometido no aceite.
-   *
-   * O aceite reaparece porque o texto mudou junto com a regra: quem
-   * consentiu sob a versão antiga não consentiu com o reuso.
+   * Um formulário vazio seria a pior saída; aqui ela lê o que vai ser usado
+   * e confirma num toque. O aceite reaparece porque a confirmação é dela.
    */
   if (step.kind === 'reuse' && reuso) {
     return (
-      <CandidateFrame badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <div className="flex flex-col gap-3">
           <span
             aria-hidden="true"
@@ -682,88 +538,31 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="t-pergunta outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
             Você já respondeu isto
           </h1>
           <p className="t-apoio-candidato">
-            Quem pergunta é o IEL, o Centro de Empregos da Indústria. Para esta
-            vaga de {jobView.activity} não há nenhuma frase nova:{' '}
-            {reuso.desde
-              ? `as ${reuso.perguntadas} que a empresa pergunta são as mesmas que você respondeu em ${diaMes(reuso.desde)}.`
-              : `as ${reuso.perguntadas} que a empresa pergunta são as mesmas que você já respondeu.`}
+            As {reuso.perguntadas} frases desta vaga são as mesmas que você
+            respondeu{reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}. Só falta
+            você dizer que elas valem aqui.
           </p>
-          <p className="t-apoio-candidato">
-            Só falta você dizer que elas podem valer aqui.
-          </p>
-          <TamanhoDaTarefa
-            itens={['nenhuma frase nova', 'um toque', 'sem cadastro']}
-          />
+          <TamanhoDaTarefa itens={['nenhuma frase nova', 'um toque']} />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>{CANDIDATE_CONSENT_TEXT.title}</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <ConsentItem label="O que vamos usar">
-              {reuso.desde
-                ? `As ${reuso.perguntadas} respostas que você deu em ${diaMes(reuso.desde)}. Nenhuma frase nova é perguntada e nada de novo é coletado.`
-                : `As ${reuso.perguntadas} respostas que você já tinha dado. Nenhuma frase nova é perguntada e nada de novo é coletado.`}
-            </ConsentItem>
-            <ConsentItem label="Quem vê">
-              {semRotuloRepetido('Quem vê', CANDIDATE_CONSENT_TEXT.whoSees)}
-            </ConsentItem>
-            <ConsentItem label="Por quanto tempo">
-              {CANDIDATE_CONSENT_TEXT.retention}
-            </ConsentItem>
-            <ConsentItem label="Seus direitos">
-              {CANDIDATE_CONSENT_TEXT.rights}
-            </ConsentItem>
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col gap-3 pt-1">
-          <Label
-            htmlFor="fit-reuse-consent"
-            className="flex min-h-[60px] cursor-pointer items-start gap-3 rounded-xl border p-4 text-[15px] leading-snug font-medium"
-          >
-            <Checkbox
-              id="fit-reuse-consent"
-              className="mt-0.5 size-5"
-              aria-describedby="fit-reuse-ajuda"
-              checked={accepted}
-              onCheckedChange={(value) => setAccepted(value === true)}
-            />
-            Li e aceito o uso das minhas respostas nesta vaga.
-          </Label>
-          <Button
-            size="lg"
-            className="t-opcao h-12 w-full"
-            disabled={!accepted}
-            onClick={confirmarReuso}
-          >
-            Usar as minhas respostas
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            className="h-12 w-full text-muted-foreground"
-            onClick={restart}
-          >
-            Quero responder de novo
-          </Button>
-          <p
-            id="fit-reuse-ajuda"
-            className="text-center text-xs leading-relaxed text-muted-foreground"
-          >
-            Sem o aceite nada é usado nesta vaga. Versão do texto:{' '}
-            {CANDIDATE_CONSENT_TEXT.version}.
-          </p>
-        </div>
-      </CandidateFrame>
+        <AceiteCurto
+          id="fit-reuse"
+          linhas={[
+            `Usamos as ${reuso.perguntadas} respostas que você já deu. Nada novo é perguntado.`,
+            ...CANDIDATE_CONSENT_RESUMO.slice(1)
+          ]}
+          textoCompleto={TEXTO_COMPLETO_DO_ACEITE}
+          aceito={accepted}
+          onAceitar={setAccepted}
+          rotuloDoBotao="Usar as minhas respostas"
+          onConfirmar={confirmarReuso}
+        />
+      </MolduraPorLink>
     );
   }
 
@@ -771,29 +570,23 @@ export function FitQuestionnaireScreen({
   // vez de virar tela em branco.
   if (step.kind === 'consent' || step.kind === 'reuse') {
     return (
-      <CandidateFrame badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <div className="flex flex-col gap-2.5">
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="t-pergunta outline-none"
+            className="t-pergunta scroll-mt-20 outline-none"
           >
             Como você prefere trabalhar?
           </h1>
-          {/*
-           * A primeira tela decide a adesão: quem abre o link não sabe o que
-           * é aquilo. Então, antes do texto do aceite, quatro respostas em
-           * duas frases — quem está perguntando, por causa de quê, que não é
-           * prova e que não tem resposta certa.
-           */}
+          {/* Quem pergunta e por quê, numa linha. Sem resposta certa. */}
           <p className="t-apoio-candidato">
-            Quem pergunta é o IEL, o Centro de Empregos da Indústria. Você se
-            inscreveu numa vaga de {jobView.activity} e esta é a última parte da
-            inscrição.
-          </p>
-          <p className="t-apoio-candidato">
-            Não existe resposta certa nem errada, e ninguém está testando você.
-            A gente só quer saber o seu jeito de trabalhar.
+            O IEL, Centro de Empregos da Indústria, quer saber o seu jeito de
+            trabalhar para a vaga de {jobView.activity}. Não existe resposta
+            certa.
           </p>
           <TamanhoDaTarefa
             itens={[
@@ -802,120 +595,41 @@ export function FitQuestionnaireScreen({
               'sem cadastro'
             ]}
           />
+          {/*
+           * Por que são 7 frases e não 10: reuso calado não é reuso
+           * informado (LGPD, art. 6º, VI). Uma linha basta.
+           */}
+          {reuso && reuso.reaproveitadas > 0 ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {reuso.reaproveitadas} já valem de uma vaga anterior; faltam{' '}
+              {totalQuestions}.
+            </p>
+          ) : null}
         </div>
 
-        {/*
-         * Por que são 7 frases e não 10, ou por que voltaram a ser 10.
-         * Mostrar menos perguntas sem explicar deixaria a pessoa em dúvida
-         * sobre se respondeu o que devia — e reuso calado não é reuso
-         * informado (LGPD, art. 6º, VI).
-         */}
-        {avisoDoReuso ? (
-          <Card>
-            <CardContent className="flex gap-3">
-              <span
-                aria-hidden="true"
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
-              >
-                <IconHistory className="size-4" />
-              </span>
-              <div className="flex flex-col gap-1">
-                <p className="text-[15px] leading-snug font-medium">
-                  {avisoDoReuso.titulo}
-                </p>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {avisoDoReuso.texto}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>{CANDIDATE_CONSENT_TEXT.title}</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <ConsentItem label="Para quê">
-              {CANDIDATE_CONSENT_TEXT.purpose}
-            </ConsentItem>
-            <ConsentItem label="O que coletamos">
-              {CANDIDATE_CONSENT_TEXT.collected}
-            </ConsentItem>
-            <ConsentItem label="Quem vê">
-              {semRotuloRepetido('Quem vê', CANDIDATE_CONSENT_TEXT.whoSees)}
-            </ConsentItem>
-            <ConsentItem label="Por quanto tempo">
-              {CANDIDATE_CONSENT_TEXT.retention}
-            </ConsentItem>
-            <ConsentItem label="Seus direitos">
-              {CANDIDATE_CONSENT_TEXT.rights}
-            </ConsentItem>
-          </CardContent>
-        </Card>
+        <AceiteCurto
+          id="fit-consent"
+          linhas={CANDIDATE_CONSENT_RESUMO}
+          textoCompleto={TEXTO_COMPLETO_DO_ACEITE}
+          aceito={accepted}
+          onAceitar={setAccepted}
+          rotuloDoBotao="Começar"
+          onConfirmar={() => {
+            mexeuRef.current = true;
+            setStep({ kind: 'question', index: 0 });
+          }}
+        />
 
         <CaminhoDaConversa
           href={
             routes.dashboard.iel.applications.byId(applicationId).conversation
           }
         />
-
-        <div className="flex flex-col gap-3 pt-1">
-          <Label
-            htmlFor="fit-consent"
-            className="flex min-h-[60px] cursor-pointer items-start gap-3 rounded-xl border p-4 text-[15px] leading-snug font-medium"
-          >
-            <Checkbox
-              id="fit-consent"
-              className="mt-0.5 size-5"
-              aria-describedby="fit-consent-ajuda"
-              checked={accepted}
-              onCheckedChange={(value) => setAccepted(value === true)}
-            />
-            Li e aceito o uso das minhas respostas.
-          </Label>
-          <Button
-            size="lg"
-            className="t-opcao h-12 w-full"
-            disabled={!accepted}
-            onClick={() => {
-              mexeuRef.current = true;
-              setStep({ kind: 'question', index: 0 });
-            }}
-          >
-            Começar
-          </Button>
-          {reuso && reuso.reaproveitadas > 0 && !responderTudo ? (
-            <Button
-              variant="ghost"
-              size="lg"
-              className="h-12 w-full text-muted-foreground"
-              onClick={() => {
-                setResponderTudo(true);
-                setAnswers({});
-                setFaltando(null);
-                apagar();
-              }}
-            >
-              Responder as {reuso.perguntadas} de novo
-            </Button>
-          ) : null}
-          <p
-            id="fit-consent-ajuda"
-            className="text-center text-xs leading-relaxed text-muted-foreground"
-          >
-            Sem o aceite o questionário não abre. Versão do texto:{' '}
-            {CANDIDATE_CONSENT_TEXT.version}.
-          </p>
-        </div>
-      </CandidateFrame>
+      </MolduraPorLink>
     );
   }
 
-  // Sobrou o passo das frases. O de reuso sai daqui quando não há
-  // reaproveitamento a confirmar — a tela cai no aceite normal.
+  // Sobrou o passo das frases.
   if (step.kind !== 'question') return null;
 
   const question = perguntas[step.index];
@@ -929,89 +643,104 @@ export function FitQuestionnaireScreen({
   const metade = step.index + 1 === Math.ceil(totalQuestions / 2);
 
   return (
-    <CandidateFrame badge={badge}>
-      <div className="flex flex-col gap-2">
-        {/*
-         * O número da pergunta é lido no título, que recebe o foco. À direita
-         * ficava "cerca de 30 s", que não é informação: o que a pessoa quer
-         * saber no meio de uma fila de frases é quantas ainda faltam.
-         */}
+    <MolduraPorLink
+      atalhoDaEquipe={atalho}
+      etiqueta={etiqueta}
+    >
+      <div className="flex flex-col gap-2.5 pb-2">
         <div
-          className="flex justify-between text-[13px] text-muted-foreground"
+          className="flex items-center justify-between text-xs sm:text-[13px] font-medium text-muted-foreground"
           aria-hidden="true"
         >
-          <span>{rotuloProgresso}</span>
-          <span>{restantes === 0 ? 'Última' : `Faltam ${restantes}`}</span>
+          <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+              {step.index + 1}
+            </span>
+            {rotuloProgresso}
+          </span>
+          <span className="rounded-full bg-muted/90 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+            {restantes === 0 ? 'Última frase 🎉' : `Faltam ${restantes}`}
+          </span>
         </div>
         <Progress
-          className="h-1.5 bg-muted"
+          className="h-2 bg-muted/80 rounded-full"
           value={valorProgresso}
-          // O `Progress` do kit não repassa `value` ao Radix; sem isto a
-          // barra é lida sem número.
           aria-valuenow={valorProgresso}
           aria-label={rotuloProgresso}
           aria-valuetext={rotuloProgresso}
         />
         {metade && totalQuestions > 4 ? (
-          <p className="text-[13px] leading-snug text-muted-foreground">
-            Metade do caminho.
+          <p className="text-xs font-medium text-muted-foreground">
+            Metade do caminho concluída ✨
           </p>
         ) : null}
       </div>
 
-      {retomado ? (
-        <p
-          role="status"
-          className="rounded-lg border border-dashed px-3 py-2 text-[13px] leading-relaxed text-muted-foreground"
-        >
-          Você voltou de onde parou. As frases que já tinha respondido continuam
-          respondidas.
-        </p>
-      ) : null}
+      <div className="my-auto flex flex-col gap-4 py-4 sm:py-6">
+        <div className="flex flex-col gap-2.5">
+          <h1
+            id="fit-pergunta"
+            ref={tituloRef}
+            tabIndex={-1}
+            className={cn(
+              // `scroll-mt-20`: a frase recebe o foco a cada passo e a página
+              // rola até ela; sem a margem, o cabeçalho fixo da casca (56px)
+              // come as duas primeiras linhas.
+              'scroll-mt-20 font-bold leading-snug tracking-tight text-foreground outline-none [text-wrap:balance]',
+              // A frase é a do instrumento do cliente, sem edição, e algumas
+              // passam de 120 caracteres: um degrau menor para caber a 390px.
+              question.item.texto.length > 120
+                ? 'text-[20px] sm:text-[22px]'
+                : 'text-[22px] sm:text-[26px]'
+            )}
+          >
+            {question.item.texto}
+          </h1>
+          <p
+            id="fit-pergunta-dica"
+            className="text-[14px] sm:text-[15px] leading-relaxed text-muted-foreground"
+          >
+            O quanto isso é você? Não existe resposta certa.
+          </p>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <h1
-          id="fit-pergunta"
-          ref={tituloRef}
-          tabIndex={-1}
-          className="t-pergunta outline-none [text-wrap:balance]"
-        >
-          <span className="sr-only">{rotuloProgresso}: </span>
-          {question.item.cena}
-        </h1>
-        <p
-          id="fit-pergunta-dica"
-          className="t-apoio-candidato"
-        >
-          O quanto isso é você? Não existe resposta certa.
-        </p>
-        {/* Fecha sozinha quando a frase muda: a chave é a frase. */}
-        <FraseOriginal
-          key={question.itemId}
-          texto={question.item.texto}
+        {/*
+          O botão de ouvir vem antes da régua, e não depois.
+
+          Quem depende dele não vai varrer a tela atrás de um controle: ele
+          precisa estar no caminho de leitura, entre a frase e a resposta, no
+          instante em que a pessoa trava. A largura inteira é de propósito —
+          é o mesmo alvo dos degraus, não um ícone de canto.
+        */}
+        <OuvirAFrase
+          id={question.itemId}
+          texto={falaDaFrase({
+            frase: question.item.texto,
+            rotulos: ROTULOS_DA_REGUA.candidato
+          })}
+          className="t-opcao h-12 w-full justify-center"
         />
+
+        <div className="pt-2">
+          <ReguaDeConcordancia
+            nome={question.itemId}
+            valor={chosen ?? null}
+            rotulos={ROTULOS_DA_REGUA.candidato}
+            tom="pessoa"
+            aria-labelledby="fit-pergunta"
+            aria-describedby="fit-pergunta-dica"
+            onChange={(valor) => {
+              setFaltando(null);
+              setAnswers((current) => ({
+                ...current,
+                [question.itemId]: valor
+              }));
+            }}
+          />
+        </div>
       </div>
 
-      <ReguaDeConcordancia
-        nome={question.itemId}
-        valor={chosen ?? null}
-        rotulos={ROTULOS_DA_REGUA.candidato}
-        tom="pessoa"
-        aria-labelledby="fit-pergunta"
-        aria-describedby="fit-pergunta-dica"
-        onChange={(valor) => {
-          setFaltando(null);
-          setAnswers((current) => ({ ...current, [question.itemId]: valor }));
-        }}
-        onConfirmar={() => {
-          // O toque avança; na última frase, enviar é um gesto à parte.
-          if (isLast) return;
-          setRetomado(false);
-          setStep({ kind: 'question', index: step.index + 1 });
-        }}
-      />
-
-      <div className="mt-auto flex flex-col gap-2.5 pt-4">
+      <div className="mt-auto flex flex-col gap-2.5 pt-4 border-t border-border/40">
         {faltando !== null && faltando >= 0 ? (
           <Card
             role="alert"
@@ -1040,28 +769,25 @@ export function FitQuestionnaireScreen({
         ) : null}
         <Button
           size="lg"
-          className="t-opcao h-12 w-full"
+          className="h-12 sm:h-13 w-full text-[15px] sm:text-base font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg transition-all"
           disabled={chosen === undefined}
           onClick={() => {
             if (isLast) {
               submit();
               return;
             }
-            // O aviso de retomada cumpriu o papel na tela em que ela voltou;
-            // repetido nas nove seguintes vira ruído.
-            setRetomado(false);
             setStep({ kind: 'question', index: step.index + 1 });
           }}
         >
           {isLast ? 'Enviar respostas' : 'Próxima'}
+          <IconArrowRight className="ml-2 size-4" />
         </Button>
         <Button
           variant="ghost"
           size="lg"
-          className="h-12 w-full text-muted-foreground"
+          className="h-11 w-full text-muted-foreground hover:text-foreground text-sm font-medium"
           onClick={() => {
             setFaltando(null);
-            setRetomado(false);
             setStep(
               step.index === 0
                 ? { kind: 'consent' }
@@ -1069,57 +795,22 @@ export function FitQuestionnaireScreen({
             );
           }}
         >
+          <IconArrowLeft className="mr-2 size-4" />
           {step.index === 0 ? 'Voltar ao começo' : 'Voltar uma frase'}
         </Button>
-        <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          Pode fechar e voltar: o que já respondeu fica guardado. O nome da
-          empresa você conhece na entrevista.
-        </p>
+        <div className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground pt-1">
+          <IconLock className="size-3.5 shrink-0 opacity-70" />
+          <span>
+            Pode fechar e voltar: o que já respondeu fica guardado. O nome da
+            empresa você conhece na entrevista.
+          </span>
+        </div>
       </div>
-    </CandidateFrame>
+    </MolduraPorLink>
   );
 }
 
-/**
- * A moldura de todas as telas do candidato.
- *
- * O quadrado "IEL" já vem da casca por link (`layout/iel-shell.tsx`), então
- * aqui fica só o nome do serviço e a etiqueta da vaga — que é o único jeito
- * de a pessoa saber a que candidatura o link se refere sem descobrir a
- * empresa (R5).
- */
-function CandidateFrame({
-  badge,
-  children
-}: {
-  badge: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-5 px-1 pt-2">
-      {/*
-       * Quem é o remetente já está no cabeçalho da casca (Mind RH · IEL ·
-       * Centro de Empregos). Repetir aqui gastava a primeira linha da tela
-       * com uma informação que o candidato acabou de ler; o que sobra é a
-       * vaga, que é o contexto que ele precisa.
-       */}
-      <div className="flex items-center justify-end gap-2">{badge}</div>
-      {children}
-    </div>
-  );
-}
-
-function ConsentItem({
-  label,
-  children
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="text-sm leading-relaxed text-foreground">{children}</p>
-    </div>
-  );
+/** "05/09", do jeito que a frase a diz. */
+function diaMes(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }

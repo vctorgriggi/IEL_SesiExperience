@@ -4,15 +4,15 @@ import type { Company, DataSource, Team } from '../types';
  * Data de referência da base demo. Todas as informações fictícias usam datas
  * fixas para que a interface não mude de conteúdo entre renderizações.
  */
-export const DEMO_REFERENCE_DATE = '2026-09-14';
+export const DEMO_REFERENCE_DATE = '2026-09-20';
 
 export const DEMO_DATA_SOURCES: DataSource[] = [
   {
     id: 'FONTE-EMPREGARE',
-    name: 'Empregare — demonstração',
+    name: 'Empregare',
     kind: 'Sistema de recrutamento',
     description:
-      'Vagas, candidaturas e experiências declaradas no currículo. No protótipo os registros são fictícios e chegam por um evento simulado.',
+      'Vagas, candidaturas e experiências declaradas no currículo, recebidas do sistema de recrutamento do IEL.',
     lastSyncAt: '2026-09-13T18:20:00.000Z',
     receivedRecords: 21,
     status: 'ativa',
@@ -20,7 +20,7 @@ export const DEMO_DATA_SOURCES: DataSource[] = [
   },
   {
     id: 'FONTE-AVALIACAO',
-    name: 'Avaliação externa — demonstração',
+    name: 'Avaliação externa',
     kind: 'Avaliação de aderência',
     description:
       'Resultados de avaliações já realizadas em processos anteriores. A escala, o método e a data de origem são preservados: nada é convertido em nota global.',
@@ -31,7 +31,7 @@ export const DEMO_DATA_SOURCES: DataSource[] = [
   },
   {
     id: 'FONTE-EMPRESA',
-    name: 'Contexto da empresa — demonstração',
+    name: 'Contexto da empresa',
     kind: 'Informações da empresa e da equipe',
     description:
       'Atividades, rotina e condições de trabalho informadas pela empresa. Cada condição indica se foi confirmada pelo gestor ou apenas descrita na vaga.',
@@ -42,10 +42,10 @@ export const DEMO_DATA_SOURCES: DataSource[] = [
   },
   {
     id: 'FONTE-IEL',
-    name: 'Registro IEL — demonstração',
+    name: 'Registro IEL',
     kind: 'Registro interno de análise',
     description:
-      'Expectativas coletadas em atendimento, anotações de análise, esclarecimentos e encaminhamentos. É a única fonte que o protótipo altera localmente.',
+      'Expectativas coletadas em atendimento, anotações de análise, esclarecimentos e encaminhamentos. É a fonte que a equipe do IEL escreve.',
     lastSyncAt: '2026-09-14T08:05:00.000Z',
     receivedRecords: 12,
     status: 'ativa',
@@ -64,7 +64,7 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Marina Duarte',
     contactEmail: 'marina.duarte@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-28',
+    updatedAt: '2026-09-03',
     cultureSuggestions: [
       {
         axisId: 'lideranca-autonomia',
@@ -107,7 +107,7 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Rafael Nogueira',
     contactEmail: 'rafael.nogueira@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-30',
+    updatedAt: '2026-09-05',
     cultureSuggestions: [
       {
         axisId: 'lideranca-autonomia',
@@ -136,7 +136,7 @@ export const DEMO_COMPANIES: Company[] = [
     contactName: 'Sônia Prado',
     contactEmail: 'sonia.prado@example.com',
     sourceId: 'FONTE-EMPRESA',
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-18',
     cultureSuggestions: [
       {
         axisId: 'regras-decisao',
@@ -166,8 +166,8 @@ export const DEMO_TEAMS: Team[] = [
         value: 'Ainda não informado pela empresa.',
         status: 'a-confirmar',
         informed: false,
-        origin: 'Contexto da empresa — demonstração',
-        updatedAt: '2026-08-28'
+        origin: 'Contexto da empresa',
+        updatedAt: '2026-09-03'
       },
       {
         id: 'COND-02',
@@ -176,8 +176,8 @@ export const DEMO_TEAMS: Team[] = [
         value:
           'Pouca sobreposição: o turno da tarde inicia quando a equipe da manhã está encerrando.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-02'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-08'
       },
       {
         id: 'COND-03',
@@ -185,8 +185,8 @@ export const DEMO_TEAMS: Team[] = [
         label: 'Comunicação de prioridades',
         value: 'Checklist impresso entregue no início do turno.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-02'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-08'
       },
       {
         id: 'COND-04',
@@ -195,8 +195,8 @@ export const DEMO_TEAMS: Team[] = [
         value:
           'A rotina é executada sem supervisão direta durante a maior parte do turno.',
         status: 'da-descricao',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-09-02'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-09-08'
       }
     ]
   },
@@ -217,7 +217,7 @@ export const DEMO_TEAMS: Team[] = [
           'Colega de referência acompanha a pessoa nas primeiras quatro semanas.',
         status: 'confirmado',
         origin: 'Contexto da empresa — confirmado pelo gestor',
-        updatedAt: '2026-08-30'
+        updatedAt: '2026-09-05'
       },
       {
         id: 'COND-06',
@@ -226,7 +226,7 @@ export const DEMO_TEAMS: Team[] = [
         value: 'Reunião semanal de prioridades com o gestor da área.',
         status: 'confirmado',
         origin: 'Contexto da empresa — confirmado pelo gestor',
-        updatedAt: '2026-08-30'
+        updatedAt: '2026-09-05'
       },
       {
         id: 'COND-07',
@@ -235,7 +235,7 @@ export const DEMO_TEAMS: Team[] = [
         value: 'Planilha compartilhada somada ao sistema interno de estoque.',
         status: 'confirmado',
         origin: 'Contexto da empresa — confirmado pelo gestor',
-        updatedAt: '2026-08-30'
+        updatedAt: '2026-09-05'
       }
     ]
   },
@@ -255,8 +255,8 @@ export const DEMO_TEAMS: Team[] = [
         value:
           'Documentação parcial: as atividades aparecem apenas em linhas gerais.',
         status: 'a-confirmar',
-        origin: 'Descrição da vaga (Empregare — demonstração)',
-        updatedAt: '2026-08-12'
+        origin: 'Descrição da vaga (Empregare)',
+        updatedAt: '2026-08-18'
       },
       {
         id: 'COND-09',
@@ -265,8 +265,8 @@ export const DEMO_TEAMS: Team[] = [
         value: 'Não informado pela empresa.',
         status: 'a-confirmar',
         informed: false,
-        origin: 'Contexto da empresa — demonstração',
-        updatedAt: '2026-08-12'
+        origin: 'Contexto da empresa',
+        updatedAt: '2026-08-18'
       }
     ]
   }

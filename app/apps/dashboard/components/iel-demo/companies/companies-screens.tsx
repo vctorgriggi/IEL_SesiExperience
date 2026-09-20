@@ -19,6 +19,7 @@ import { CULTURE_INVITE_DEADLINE_DAYS } from '@/features/iel-demo/analysis/cultu
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  competenciasDaEmpresa,
   getCompany,
   getCompanyCultureProfile,
   getCompanyListRows,
@@ -117,6 +118,10 @@ import { PERIODO_PADRAO, SeletorPeriodo } from '../metricas/seletor-periodo';
 import { ValorOculto } from '../metricas/valor-oculto';
 import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarDataCurta, formatarDataHora } from '../shared/datas';
+import {
+  CompetenciasDaEmpresaCard,
+  LinhaDeCompetencias
+} from './competencias-do-questionario';
 import { CompanyCultureTable } from './culture-profile';
 import { CultureInviteForm, CultureSampleTable } from './culture-sample';
 import { CustoDaRotatividadeCard } from './custo-da-rotatividade';
@@ -730,8 +735,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
   if (foraDoEscopo && persona.companyId) {
     return (
       <p className="text-sm text-muted-foreground">
-        Esta empresa está fora do escopo da persona selecionada. O gestor vê
-        apenas a própria empresa.{' '}
+        Esta empresa é de outra conta. O gestor vê apenas a própria empresa.{' '}
         <Link
           className="underline underline-offset-4"
           href={iel.companies.byId(persona.companyId)}
@@ -743,7 +747,12 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
     );
   }
 
-  const suficientes = profile.filter(
+  // O denominador é o que a empresa pediu, não os 11 fixos: com 8
+  // competências escolhidas, "8 de 8" é a base completa, e "8 de 11"
+  // cobraria dela três temas que ela decidiu não medir.
+  const competencias = competenciasDaEmpresa(state, companyId);
+  const pedidos = profile.filter((axis) => competencias.includes(axis.axisId));
+  const suficientes = pedidos.filter(
     (axis) => axis.ready && axis.mean !== null
   ).length;
   const sugestoes = reading.filter(
@@ -768,6 +777,12 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
             {company.institutionalDescription}
           </p>
         ) : null}
+        {/*
+         * O critério fica visível junto do nome da empresa: quem abre a
+         * página precisa saber, antes de ler qualquer número, sobre quantas
+         * competências ele foi medido.
+         */}
+        <LinhaDeCompetencias companyId={companyId} />
       </div>
 
       {/*
@@ -809,22 +824,22 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
           description="Temas fechados"
           icone={IconClipboardCheck}
           tom="empresa"
-          value={`${suficientes} de ${profile.length}`}
+          value={`${suficientes} de ${pedidos.length}`}
           badge={
-            suficientes < profile.length ? (
+            suficientes < pedidos.length ? (
               <Badge
                 variant="outline"
                 className={cn(SELO, BADGE_DE_ESTADO.atencao)}
               >
                 <IconAlertCircle className="size-3" />
-                faltam {profile.length - suficientes}
+                faltam {pedidos.length - suficientes}
               </Badge>
             ) : undefined
           }
           footer={
-            suficientes === profile.length
-              ? 'Os 10 temas fecham'
-              : `${plural(profile.length - suficientes, 'tema em aberto', 'temas em aberto')}`
+            suficientes === pedidos.length
+              ? `${pedidos.length === 1 ? 'A competência pedida fecha' : 'As competências pedidas fecham'}`
+              : `${plural(pedidos.length - suficientes, 'tema em aberto', 'temas em aberto')}`
           }
           hint="Ponto sem base não entra no cálculo"
         />
@@ -887,7 +902,13 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         </TabsList>
 
         <TabsContent value="cultura">
-          <CompanyCultureTable companyId={companyId} />
+          <div className="flex flex-col gap-4">
+            <CompetenciasDaEmpresaCard
+              companyId={companyId}
+              decidedBy={ehAnalista ? 'analista' : 'empresa'}
+            />
+            <CompanyCultureTable companyId={companyId} />
+          </div>
         </TabsContent>
 
         {ehAnalista ? (

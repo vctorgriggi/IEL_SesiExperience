@@ -4,7 +4,7 @@
 **Componente:** `apps/dashboard/components/iel-demo/candidate/minha-candidatura-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/situacao-da-candidatura.ts`
 **Persona:** o próprio candidato, sem login
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-23
 
 ## O que a tela faz
 
@@ -21,24 +21,23 @@ que saem daqui e voltam para cá.
 
 ## O que aparece
 
-- **A situação**, como título da tela: o estado dito em voz alta, com um ícone tingido ao lado
-  (nunca sozinho).
-- **"O que acontece agora"**, em passos numerados: de quem é a vez, o que essa pessoa faz e em
-  quanto tempo. **Nenhum estado termina em silêncio** — este bloco nunca vem vazio.
-- **O caminho de seguir**, quando existe: a quem recorrer, pelo mesmo contato que mandou o link.
-- **A ação principal**, quando a vez é da pessoa: responder, responder mesmo assim (fora do prazo),
-  mudar as respostas ou, depois de contratada, **contar como está sendo**. Quando a vez é do IEL ou
-  da empresa, não há botão — e a tela diz por quê. Corrigir uma resposta já dada aparece em
-  contorno (`peso: 'discreta'`): é direito, não pendência.
-- **"O que você já contou"** (só para quem foi contratado): uma linha por resposta — "Aos 30 dias,
-  você disse que continua na empresa e que está sendo bom." — e a frase de que a empresa não vê.
-- **"O que você respondeu"**: os temas em que combinou com a empresa e aqueles em que ficou
-  diferente, **em palavra, nunca em percentual**.
-- **"O que está registrado sobre você"** (`clarifications/talent-transparency.tsx`), com os
-  registros, a procedência e **"Seus direitos"** — corrigir a resposta e pedir para sair.
-- **"A vaga"**: os quatro campos de `getCandidateJobView` e a frase de que o nome da empresa só
-  aparece na entrevista.
-- **Rodapé de demonstração**: nada é enviado de verdade e o link abre direto.
+Enxuta por pedido do dono do produto (20/09/2026): o título do estado, **uma** linha, no máximo
+**dois** passos e, quando a vez é da pessoa, **um** botão. O resto fica em "Seus dados", a um toque.
+
+- **A situação**, como título da tela, com um ícone tingido ao lado (nunca sozinho), e uma linha.
+- **"O que acontece agora"**, em um ou dois passos numerados: de quem é a vez, o que essa pessoa
+  faz e em quanto tempo. **Nenhum estado termina em silêncio.**
+- **O botão**, quando a vez é da pessoa: responder, responder mesmo assim (fora do prazo),
+  confirmar as respostas reaproveitadas ou, depois de contratada, **contar como está sendo**.
+  Quando a vez é do IEL ou da empresa, não há botão. **Não existe "mudar minhas respostas"**: a
+  resposta é uma só e vale 12 meses.
+- **"Seus dados"** (`clarifications/talent-transparency.tsx`), recolhido num toque, com: **"Suas
+  respostas"** (a cena e o grau no vocabulário da escala, frase a frase — nunca "combinou / ficou
+  diferente", que é comparação), até quando valem, **"O que você já contou"** (só para quem foi
+  contratado), **"A vaga"** (os quatro campos de `getCandidateJobView`, sem o nome da empresa), os
+  registros, a procedência e **"Seus direitos"** — "Precisa corrigir algo? Fale com a pessoa do
+  IEL que mandou este link." e pedir para sair.
+- Sem rodapé de demonstração.
 
 ## Os sete estados
 
@@ -67,15 +66,16 @@ da permanência e **de quem veio**:
 
 | Variante                                               | Tom       | Título                          | O que muda                                                                                                                                                                                                                                                               |
 | ------------------------------------------------------ | --------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Continua (ou ninguém disse nada)                       | `combina` | Você foi contratado             | "Parabéns! A empresa desta vaga contratou você há N dias." Os três passos: aos 30/60/90 o IEL pergunta; não é avaliação e a empresa não vê; e o passo do calendário — a vez é dela ("Contar como está sendo"), a próxima pergunta em N dias, ou as perguntas terminaram. |
-| A pessoa contou que saiu (vale a última resposta dela) | `neutro`  | Você contou que saiu da empresa | "Obrigado por avisar. Sair antes dos 90 dias acontece, não é um erro seu e não vira nota no seu currículo." O currículo continua, a pessoa do IEL fala com ela, a empresa não vê. "Corrigir o que respondi" em contorno.                                                 |
-| A empresa informou saída e a pessoa não disse nada     | `neutro`  | Você foi contratado nesta vaga  | O mais delicado: a pessoa pode não saber que a empresa avisou. Diz o que o IEL sabe e de onde veio, **sem o motivo** que a empresa deu (§5.1), e deixa a porta aberta: "Contar como foi", em contorno, quando já há um marco alcançado.                                  |
+| Continua (ou ninguém disse nada)                       | `combina` | Você foi contratado             | "Parabéns! A empresa contratou você há N dias. Aos 30, 60 e 90 dias o IEL pergunta como está sendo — e a empresa não vê." Dois passos: não é avaliação, quem lê é o IEL; e o do calendário — a vez é dela ("Contar como está sendo"), a próxima pergunta em N dias, ou as perguntas terminaram. |
+| A pessoa contou que saiu (vale a resposta dela)        | `neutro`  | Você contou que saiu da empresa | "Obrigado por avisar. Sair antes dos 90 dias acontece, não é um erro seu e não vira nota no seu currículo." O currículo continua, a pessoa do IEL fala com ela, a empresa não vê. Sem botão de corrigir.                                                                                         |
+| A empresa informou saída e a pessoa não disse nada     | `neutro`  | Você foi contratado nesta vaga  | O mais delicado: a pessoa pode não saber que a empresa avisou. Diz o que o IEL sabe e de onde veio, **sem o motivo** que a empresa deu (§5.1), e deixa a porta aberta: "Contar como foi", em contorno, enquanto ela não respondeu nenhum marco.                                                |
 
 Quando as duas fontes discordam e a pessoa disse que continua, a tela dela mostra o que **ela**
 disse: a divergência é assunto da analista.
 
-O marco que o botão abre sai de `marcoParaContar`: o pendente; sem pendente, o da última resposta
-(corrigir é direito); sem resposta e com a empresa dizendo que saiu, o mais recente alcançado.
+O marco que o botão abre sai de `marcoParaContar`: o pendente; sem pendente e sem resposta nenhuma,
+com a empresa dizendo que saiu, o mais recente alcançado. Marco respondido não reabre: a resposta é
+uma só.
 
 ## Quando a empresa não segue
 
@@ -89,34 +89,29 @@ O marco que o botão abre sai de `marcoParaContar`: o pendente; sem pendente, o 
 - **Nenhum motivo interno.** A justificativa que a empresa registra (`ReferralItem.managerNote`) é
   devolutiva dela para o IEL (PRODUTO.md §5.1); o módulo nem a lê.
 - **Sem falsa esperança.** Não se promete outra vaga nem prazo para ela.
-- **O que continua é o currículo, não as respostas.** O aceite prometeu que as respostas ficam
-  ligadas a esta candidatura (`CANDIDATE_CONSENT_TEXT.retention`) e §5.6 determina que, encerrada a
-  vaga, elas não são reaproveitadas sem novo aceite. A tela diz exatamente isso: o currículo segue
-  no banco de talentos, e numa vaga nova o IEL pede que a pessoa responda de novo.
-- **O bloco de temas ganha uma frase a mais** neste estado: "Estes temas não decidiram sozinhos: a
-  empresa escolhe olhando o currículo inteiro." Sem ela, a lista do que ficou diferente, logo
-  abaixo da notícia, se leria como o motivo.
+- **O currículo continua, e as respostas valem por 12 meses** (§5.6): numa vaga nova o IEL
+  pergunta só o que faltar.
+- **Nada de "combinou / ficou diferente"** logo abaixo da notícia: se leria como o motivo. O que a
+  pessoa vê em "Seus dados" é o que ela respondeu, frase a frase, sem comparação.
 
 ## De onde vêm os dados hoje
 
-- `getSituacaoDaCandidatura`, `getTemasDoCandidato` e `marcoParaContar`, em
-  `features/iel-demo/analysis/situacao-da-candidatura.ts`.
+- `getSituacaoDaCandidatura` e `marcoParaContar`, em
+  `features/iel-demo/analysis/situacao-da-candidatura.ts`; as respostas, de `respostasResolvidas`.
 - A contratação e o que a pessoa já contou vêm de `getSituacaoDeContratacao` (`state/selectors.ts`),
   com os rótulos de `analysis/acompanhamento.ts`.
 - Compostos sobre seletores já existentes: `getApplication`, `getFitResponse`, `getTalentJourney`
-  (que resolve encaminhada / quis entrevistar / não avançou), `getAdherence`,
-  `getCandidateJobView` e `getTalent`.
+  (que resolve encaminhada / quis entrevistar / não avançou), `getCandidateJobView` e `getTalent`.
 - O prazo sai de `CANDIDATE_FIT_DEADLINE_DAYS` (2 dias, R7) contra `DEMO_REFERENCE_DATE` — relógio
   determinístico, nunca `new Date()` solto.
-- Os rótulos dos temas vêm de `COPY.axis`, o glossário de `features/iel-demo/copy.ts`.
 
 ## Ações do usuário
 
-- **Responder / Responder mesmo assim / Mudar minhas respostas** — leva ao questionário
-  (`/fit`), que grava com `answer-fit-questionnaire`. A tela em si não dispara nenhuma ação: é de
-  leitura.
-- **Contar como está sendo / Mudar o que respondi / Corrigir o que respondi / Contar como foi** —
-  levam a [Como está sendo?](24-como-esta-sendo.md), que grava com `answer-check-in`.
+- **Responder agora / Responder mesmo assim / Confirmar minhas respostas** — leva ao questionário
+  (`/fit`), que grava com `answer-fit-questionnaire` ou `reuse-fit-answers`. A tela em si não
+  dispara nenhuma ação: é de leitura.
+- **Contar como está sendo / Contar como foi** — levam a [Como está sendo?](24-como-esta-sendo.md),
+  que grava com `answer-check-in`.
 - **Ver meus dados** — abre o recolhido da transparência.
 
 ## Backend futuro
@@ -133,9 +128,9 @@ O marco que o botão abre sai de `marcoParaContar`: o pendente; sem pendente, o 
   "a empresa quer conversar": quem revela o nome é a pessoa do IEL, na ligação. A vaga só chega por
   `getCandidateJobView`, que é um tipo fechado de quatro campos.
 - **Nunca posição, ranking ou comparação com outros candidatos.**
-- **Nunca percentual.** §5.1 permite mostrar a aderência da própria pessoa, mas um número numa tela
-  sobre a própria vida vira nota. O que volta é palavra, com a frase de que não é nota e não mede
-  desempenho.
+- **Nunca percentual, nunca comparação, nunca "você é assim".** O que volta é o que a pessoa
+  respondeu, no vocabulário da escala.
+- **Nunca "responder de novo".** A resposta é uma só e vale 12 meses; corrigir é pelo IEL.
 - **Nunca anotação interna nem devolutiva da empresa** (§5.1).
 - **Sem login e sem cadastro** (00:08:01).
 - **Celular primeiro**: 390×844 sem rolagem horizontal, alvos de 48px, corpo de 15px.
@@ -155,3 +150,8 @@ contratada.
   90 dias, ganha o botão "Contar como está sendo" quando há pergunta aberta e o bloco "O que você já
   contou". Três textos para o id: continua, contou que saiu, saída informada pela empresa (neutro,
   sem motivo).
+- 2026-09-23 — enxugamento pedido pelo dono do produto: título + uma linha + no máximo dois passos
+  + um botão; textos dos estados com metade das palavras; "Seus dados" recolhido num toque, com
+  "Suas respostas" em vocabulário de escala no lugar de "combinou / ficou diferente"; sem "mudar
+  minhas respostas", "corrigir o que respondi" ou rodapé de demonstração. Estado sem resposta: de
+  274 para 70 palavras.

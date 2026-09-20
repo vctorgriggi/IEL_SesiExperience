@@ -4,7 +4,7 @@
 **Componente:** `apps/dashboard/components/iel-demo/candidate/fit-questionnaire-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/candidate-questionnaire.ts`
 **Persona:** o próprio candidato, sem login
-**Última atualização:** 2026-09-20
+**Última atualização:** 2026-09-23
 
 ## O que a tela faz
 
@@ -24,113 +24,100 @@ Existe em duas formas, com a mesma regra e a mesma gravação: esta, em passos, 
 ## Base legal
 
 O tratamento tem como base o **consentimento do titular** — LGPD, art. 7º, I. Por isso o aceite é o
-passo 0, ocupa uma tela inteira, **nasce desmarcado** e sem ele o questionário não abre: consentimento
-marcado de antemão não é consentimento. A versão do texto aceito vai gravada junto da resposta
-(`CANDIDATE_CONSENT_VERSION`), porque sem ela não há como demonstrar depois a que a pessoa consentiu.
+passo 0, **nasce desmarcado** e sem ele o questionário não abre. A versão do texto aceito vai
+gravada junto da resposta (`CANDIDATE_CONSENT_VERSION`, hoje `2026-09-23`), porque sem ela não há
+como demonstrar depois a que a pessoa consentiu — mas a versão **não aparece na tela**: é
+rastreabilidade, não leitura.
 
-As cinco frases do aceite (`CANDIDATE_CONSENT_TEXT`) aparecem **palavra por palavra**, todas no
-mesmo cartão e todas no mesmo corpo de leitura. Prazo e direitos ficavam numa nota de 12px cinza
-embaixo do cartão, onde ninguém os lia; informação que o art. 9º manda dar de forma "clara,
-adequada e ostensiva" não cabe em letra miúda.
+O que a pessoa lê é o **aceite curto** (`shared/fluxo-por-link.tsx`, `AceiteCurto`): o título
+"Antes de responder", **três linhas** em palavra comum (`CANDIDATE_CONSENT_RESUMO` — o que você
+responde e para quê · quem vê · por quanto tempo vale), a caixa "Li e aceito" e o botão. O texto
+inteiro (`CANDIDATE_CONSENT_TEXT`, cinco frases) existe palavra por palavra atrás de "Ler o texto
+completo", recolhido. Resumo e texto são versionados juntos.
 
 ## O que aparece
 
-- **Passo 0 — abertura e aceite.** Antes do texto legal, quatro respostas em duas frases: quem está
-  perguntando (o IEL), por causa de quê (a vaga em que a pessoa se inscreveu), que não existe
-  resposta certa e que ninguém está testando ela. O tamanho da tarefa vem em três etiquetas — "10
-  frases · uns 5 minutos · sem cadastro" —, porque quem abre um link sem saber o que é decide
-  continuar ou fechar por essa linha. Depois o cartão do aceite, a porta para a conversa, a caixa
-  desmarcada e o botão que só habilita quando ela é marcada.
-- **As frases da vaga como cenas**, uma por tela. O título é a `cena` do instrumento — a mesma
-  ideia da frase do cliente, na primeira pessoa e no chão de fábrica ("Chega uma tarefa nova. Eu
-  começo e vou ajustando no caminho.") —, com a pergunta de apoio "O quanto isso é você?" e um
-  toque discreto, "ver a frase original", que abre a frase da planilha para a analista e o auditor
-  conferirem que é o mesmo instrumento. O cabeçalho diz onde a pessoa está e **quantas ainda
-  faltam** ("Frase 3 de 10 · Faltam 7"); no meio do caminho a tela diz "Metade do caminho".
-- **A régua de um toque** (`shared/regua-de-concordancia.tsx`) no lugar das cinco linhas com
-  bolinha: cinco degraus lado a lado, de 72px, com o número e a palavra escrita em cada um — "Nada
-  a ver comigo · Pouco · Mais ou menos · Bastante · Sou eu" —, os extremos com peso maior. O degrau
-  tocado se preenche no verde-azulado da pessoa e, 350 ms depois, a tela avança sozinha. "Próxima"
-  continua na tela: para quem prefere o botão, para quem voltou a uma frase já respondida (tocar o
-  mesmo degrau não muda nada, então não avança) e para o teclado. Na última frase o toque só
-  seleciona; "Enviar respostas" é um gesto à parte.
-- **Voltar** é um botão de 48px como o de seguir, e a resposta anterior continua marcada. Na
-  primeira frase ele se chama "Voltar ao começo"; nas outras, "Voltar uma frase".
-- **Confirmação** ao fim: "Pronto!", o que foi recebido e o que foi reaproveitado ("Recebemos as
-  suas 7 respostas. As outras 3 vieram do que você já tinha respondido em 01/09"), a **devolutiva
-  pessoal** (`shared/leitura-pessoal.tsx`, com as respostas resolvidas — reaproveitadas e novas —,
-  o primeiro nome e só a atividade e o segmento da vaga como contexto, nunca a empresa), até
-  quando as respostas valem, e **"O que acontece agora"** em três passos numerados — o IEL compara, a empresa recebe só um resumo, e quem avisa é o IEL. O botão
-  principal leva para [Minha candidatura](23-minha-candidatura.md); "Responder de novo" fica
-  abaixo, em segundo plano.
+Três telas, e o que não é a pergunta, a régua ou o botão de seguir não está nelas. O dono do
+produto foi literal (20/09/2026): _"muita informação desnecessária… enxuga bastante, deixa menos
+etapas"_.
+
+- **Abertura.** "Como você prefere trabalhar?", uma linha (quem pergunta, para qual vaga, que não
+  existe resposta certa), as três etiquetas — "7 frases · uns 5 minutos · sem cadastro" —, uma
+  linha de reaproveitamento quando houver ("3 já valem de uma vaga anterior; faltam 7"), o aceite
+  curto e, no rodapé, o link "Prefere responder conversando?".
+- **As frases da vaga, como o cliente as escreveu**, uma por tela: "3 de 7" pequeno no topo com a
+  barra, o `texto` da planilha em título grande, sem edição, "O quanto isso é você?", a **régua de um toque** ("Nada a ver comigo · Pouco ·
+  Mais ou menos · Bastante · Sou eu"), "Próxima" e um "Voltar" discreto. Nada mais: sem frase
+  original, sem "faltam N", sem "metade do caminho", sem aviso de retomada.
+- **Fim.** "Pronto, Jonas.", uma linha (o IEL compara com a empresa desta vaga; se o currículo for
+  enviado, a empresa vê só o quanto combina), o bloco **"Suas respostas"** e **um** botão, "Ver
+  minha candidatura".
 - **A vaga sem o nome da empresa.** `getCandidateJobView` entrega atividade, localidade, segmento e
   turno; o nome da empresa não aparece antes da entrevista (R5).
 
-## A cena e a régua: por que mudou
+## "Suas respostas": linha de teste, não leitura
 
-Os fluxos estavam corretos e acessíveis — e não eram atrativos: frase de planilha, cinco
-bolinhas, "Próxima", dez vezes. Quem lia "Depois de entender uma atividade, consigo seguir com a
-execução sem precisar confirmar cada etapa" não sentia que aquilo era sobre ela. O cliente elogiou
-o protótipo em "pares de situação" justamente por ser _"bem mais fácil de se preencher"_
-(00:40:02), e o público é operacional, de baixo letramento (00:08:01).
+A devolutiva pessoal (`shared/leitura-pessoal.tsx` — traços, "um lugar que combina com você",
+polimento pelo Mind) **saiu das telas de quem responde**. O dono do produto: _"o resultado não pode
+falar 'você é assim, assim e assado', porque isso entra no viés; tem que mostrar como aquelas
+linhas de teste mesmo"_. O instrumento não classifica pessoa (PRODUTO.md §11), e uma frase sobre
+quem a pessoa é, por mais gentil, classifica.
 
-**O instrumento não muda.** São as mesmas 52 frases, a mesma escala 1–5 e a mesma aderência. A
-`cena` é apresentação: a mesma ideia com a mesma direção, na primeira pessoa, em até 14 palavras,
-sem "atividade", "execução", "processo" nem "demanda"; nos itens de polo −1 a cena continua
-invertida. A frase original fica a um toque em cada tela.
+No lugar, `shared/suas-respostas.tsx`: uma linha por frase respondida — a **frase do cliente** e, à direita, o
+grau no vocabulário da escala (`rotuloDaEscala`: _Discordo muito · Discordo · Tanto faz · Concordo
+· Concordo muito_), em ordem de tema. Sem percentual, sem comparação, sem adjetivo. Rodapé: "É o
+que você respondeu. Ninguém vê suas respostas uma a uma além da equipe do IEL." O componente e a
+rota da leitura pessoal continuam existindo para a analista; só não entram aqui.
 
-**Duas leituras da mesma escala.** A analista continua lendo "Discordo muito … Concordo muito"
-(`ESCALA_CONCORDANCIA`). O candidato responde sobre si, e a régua diz isso: "Nada a ver comigo …
-Sou eu" (`ROTULOS_DA_REGUA.candidato`). Os valores são os mesmos; 5 é 5.
+## Uma resposta só
 
-**Acessibilidade.** A régua é um `radiogroup` do shadcn: setas movem e escolhem, Espaço escolhe,
-Enter confirma — pelo teclado o avanço não é automático, porque as setas passariam por três
-degraus antes de parar no certo. O leitor de tela anuncia "Sou eu, 5 de 5". Nada só por cor: a
-palavra está escrita em cada degrau, e o selecionado muda também a borda e o peso. Abaixo de 360px
-a régua empilha, uma linha por degrau.
+**Não há "responder de novo" em lugar nenhum** — nem no formulário, nem na conversa, nem na Minha
+candidatura, nem na tela de reaproveitamento. A resposta é uma só e vale 12 meses (§5.6). Quem já
+respondeu reabre o link e cai no fim, com as respostas e um botão. Precisa corrigir? "Fale com a
+pessoa do IEL que mandou este link" — está em "Seus dados", na Minha candidatura. O reducer continua
+aceitando a substituição (`answer-fit-questionnaire` é idempotente por candidatura), porque é o
+IEL quem a faria.
+
+## A frase e a régua
+
+O instrumento não muda: mesmas 52 frases, mesma escala 1–5, mesma aderência. A frase na tela é o
+`texto` da planilha do cliente, palavra por palavra — as reescritas `cena` e `textoSimples`
+continuam em `instrumento.ts`, sem tela, desde 20/09/2026 (pedido do dono do produto). A
+analista continua lendo "Discordo muito … Concordo muito" (`ESCALA_CONCORDANCIA`); o candidato
+responde sobre si, e a régua diz isso (`ROTULOS_DA_REGUA.candidato`). Os valores são os mesmos.
+
+**Acessibilidade.** A régua é um `radiogroup` do shadcn: setas movem, Espaço escolhe, Enter
+confirma. O leitor de tela anuncia "Sou eu, 5 de 5". Nada só por cor: a palavra está escrita em
+cada degrau. `h1` por tela com o foco levado até ele; erro de frase faltando em `role="alert"`.
 
 ## Reaproveitamento: a resposta é da pessoa
 
-`perguntasQueFaltam` substituiu `perguntasDoCandidato` como fonte das frases, e o contador conta o
-que falta. Isso cria três situações, e nenhuma delas pode ser silenciosa: mostrar menos perguntas
-do que a pessoa esperava, sem dizer por quê, é reuso não informado (LGPD, art. 6º, VI).
+`perguntasQueFaltam` é a fonte das frases, e o contador conta o que falta. Três situações, nenhuma
+silenciosa — mas cada uma numa linha só:
 
-| Situação                                      | O que a tela faz                                                                                                                                                      |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Nada a perguntar** (`reuso.nadaAPerguntar`) | Tela própria, "Você já respondeu isto": o que vai ser usado, de quando, o aceite, e o botão que despacha `reuse-fit-answers`. Não é formulário vazio.                 |
-| **Parcial** (`reuso.reaproveitadas > 0`)      | Cartão antes do aceite: "3 de 10 frases você já respondeu — vieram das suas respostas de 01/09". O questionário pergunta só as 7 que faltam, e o contador diz "de 7". |
-| **Vencido** (`reuso.vencidas > 0`)            | Cartão: "Suas respostas anteriores venceram — passou de 12 meses". As frases todas voltam. A tela de prazo vencido também diz isso, porque é onde essa pessoa cai.    |
-
-**"Quero responder de novo" existe em todas elas**, e responde a lista inteira: é o desfazer que o
-aceite promete ("vale sempre a sua última resposta"). Sem ele a promessa seria falsa. Meia lista
-reaproveitada e meia nova não seria "de novo", então `responderTudo` volta a usar
-`perguntasDoCandidato`.
+| Situação                                      | O que a tela faz                                                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nada a perguntar** (`reuso.nadaAPerguntar`) | Tela própria, "Você já respondeu isto": uma linha, o aceite curto (a primeira linha diz o que vai ser usado) e **só** o botão de confirmar. |
+| **Parcial** (`reuso.reaproveitadas > 0`)      | Uma linha na abertura: "3 já valem de uma vaga anterior; faltam 7". O questionário pergunta só as 7, e o contador diz "de 7".               |
+| **Vencido** (`reuso.vencidas > 0`)            | As frases todas voltam, sem cartão explicando: a pessoa responde 10 e pronto.                                                               |
 
 **A confirmação é dela.** `reuse-fit-answers` grava a versão do aceite vigente
-(`versaoDoAceiteVigente()`), com o texto atual na tela: quem consentiu sob a versão anterior não
-consentiu com o reuso, e reaproveitar em silêncio seria decidir por ela.
-
-**"Já respondeu" deixou de ser "existe registro".** Um registro de 2025 é um registro vencido: a
-tela só abre na confirmação quando existe registro **e** não falta nenhuma frase.
+(`versaoDoAceiteVigente()`). As versões `2026-09-22` e `2026-09-23` permitem o reuso
+(`VERSOES_DE_ACEITE_QUE_PERMITEM_REUSO`); a anterior não.
 
 ## A porta para a conversa
 
 A [conversa guiada](../../app/apps/dashboard/components/iel-demo/chat/conversa-candidato.tsx) existe
-para quem tem dificuldade com formulário — e, até 19/09, só chegava lá quem soubesse digitar
-`/conversa` no endereço. Quem mais precisa dela é exatamente quem não faria isso. Agora a tela de
-abertura oferece "Responder conversando" num cartão próprio, antes do aceite.
+para quem tem dificuldade com formulário. A abertura oferece "Prefere responder conversando?" como
+um link de uma linha no rodapé — não um cartão, para não competir com o aceite.
 
 ## Fechar e voltar
 
 O que já foi respondido fica no **navegador da própria pessoa** (`shared/use-rascunho.ts`), com a
 versão do aceite e a lista de frases daquela vaga gravadas junto: rascunho de outro texto de aceite
-ou de outra lista de frases é descartado, não reaproveitado. Ela fecha na frase 7, volta depois e
-continua na 7, com um aviso em `role="status"` dizendo que voltou de onde parou. O rascunho some no
-envio.
-
-**Rascunho não é resposta.** Nada pela metade chega ao estado da demonstração: o reducer só recebe
-o questionário completo, com o aceite registrado. É também por isso que o rascunho fica no aparelho
-e não no servidor.
+ou de outra lista de frases é descartado. Ela fecha na frase 4, volta depois e continua na 4 — **em
+silêncio**, sem aviso. O rascunho some no envio. Rascunho não é resposta: o reducer só recebe o
+questionário completo, com o aceite registrado.
 
 ## De onde vêm os dados hoje
 
@@ -168,6 +155,8 @@ e não no servidor.
 - **Nenhum caminho sem saída.** Link inválido, prazo vencido e questionário já respondido dizem o
   que houve e oferecem para onde ir. Se um envio for barrado por frase faltando, um `role="alert"`
   diz qual é e leva até ela.
+- **Zero texto de bastidor.** Nada de versão do texto, "demonstração", "frase original", ids de
+  frase ou explicação de método na tela de quem responde. É doc interna, não tela.
 - **Celular primeiro**: 390×844 sem rolagem horizontal, alvos de 48px (72px nos degraus da
   régua), corpo de 15px; `h1` por passo, com o foco levado até ele a cada troca de tela.
 
@@ -195,3 +184,23 @@ Vem de: a candidatura e [Minha candidatura](23-minha-candidatura.md). Alimenta:
   com "ver a frase original" a um toque; as cinco bolinhas viram a régua "Nada a ver comigo … Sou
   eu", que seleciona e avança; a devolutiva pessoal entra no "Pronto!", acima de "O que acontece
   agora". Instrumento, escala e aderência intactos.
+- 2026-09-23 — enxugamento pedido pelo dono do produto: aceite curto de três linhas com o texto
+  inteiro recolhido (versão `2026-09-23`), abertura de uma linha, frases sem frase original nem
+  contadores extras, fim com "Suas respostas" em vocabulário de escala no lugar da devolutiva
+  pessoal, um botão só, e **nenhum "responder de novo"** — a resposta é uma só e vale 12 meses;
+  corrigir é pelo IEL. Zero texto de bastidor. Abertura: de 401 para 129 palavras.
+- 2026-09-20 — **a frase e o tópico do cliente, sem edição.** O dono do produto: _"Não muda as
+  perguntas, nem o sentido dela, nem a categoria, por favor. Ela foi feita com rigor; mudar é meio
+  paia."_ O título da tela passa a ser o `texto` da planilha (`04-perguntas-empresa.xlsx`), e
+  "Suas respostas" também; `cena` e `textoSimples` ficaram no código sem uso de tela. Os temas
+  levam o nome do tópico da planilha ("Orientação para resultados", não "Jeito de entregar") e
+  voltam a ser 11: "Expectativas futuras" deixa de estar dentro de "Adaptação a mudanças e
+  carreira". Frase acima de 120 caracteres desce um degrau (20px) para caber a 390 px.
+- 2026-09-20 — **atalho da equipe: só com sessão da analista.** Quem abre o link com o cookie
+  da Central (`analistaLogada()`, só o cookie — a porta aberta sem senha não conta) vê, no rodapé,
+  "Equipe do IEL · Abrir no Mind RH", que leva ao perfil da pessoa (`/talentos/<talentId>`; sem
+  talento, à vaga). Sem cookie o DOM não tem nem um wrapper. Vale para `/fit`, `/conversa`, Minha
+  candidatura e "Como está sendo?".
+- 2026-09-20 — o número de frases passa a ser **uma por competência que a empresa escolheu** (R11,
+  de 3 a 11), menos o que a pessoa já respondeu dentro da validade. As mensagens de convite e
+  lembrete deixam de dizer "10 frases" e montam o número a partir da candidatura.

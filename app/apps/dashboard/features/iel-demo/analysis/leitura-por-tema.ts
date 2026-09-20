@@ -8,7 +8,7 @@
  * pende em cada tema — na visão dela, porque foi ela quem respondeu.
  *
  * O que já existia era a comparação com uma empresa (`adherence.ts`). Aqui
- * é só um lado: os dez temas, a média dela em cada um e a frase pronta que
+ * é só um lado: os onze temas, a média dela em cada um e a frase pronta que
  * a devolutiva pessoal já usa (`leitura-pessoal.ts`). Nada é reescrito — a
  * frase que a analista lê é a mesma que a pessoa recebeu ao terminar o
  * questionário, então os dois veem a mesma coisa.

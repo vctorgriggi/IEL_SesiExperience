@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
   getSituacaoDaCandidatura,
-  getTemasDoCandidato,
   type SituacaoId
 } from '@/features/iel-demo/analysis/situacao-da-candidatura';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -12,6 +11,7 @@ import {
   getApplication,
   getCandidateJobView,
   getTalent,
+  respostasResolvidas,
   validadeDasRespostas
 } from '@/features/iel-demo/state/selectors';
 import {
@@ -33,38 +33,36 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
 
 import { TalentTransparency } from '../clarifications/talent-transparency';
 import { ICONE_TINGIDO } from '../metricas/cores';
+import { AtalhoDaEquipe } from '../shared/fluxo-por-link';
+import { SuasRespostas } from '../shared/suas-respostas';
 
 /**
  * Minha candidatura: a única tela do produto que responde à pessoa.
  *
- * Até aqui o candidato dava e não recebia. Respondia 10 frases, lia "você não
- * precisa fazer mais nada agora" e acabava ali: não sabia se tinha sido
- * encaminhado, não tinha para onde voltar e, quando a empresa não seguia,
- * ninguém lhe dizia nada. Esta tela responde uma pergunta só — **em que pé
- * está e o que acontece agora** — e nenhum estado dela termina em silêncio.
+ * Responde uma pergunta só — **em que pé está e o que acontece agora** — e
+ * nenhum estado termina em silêncio. Enxuta por pedido do dono do produto
+ * (20/09/2026): o título do estado, uma linha, no máximo dois passos e, quando
+ * a vez é da pessoa, um botão. O resto — o que ela respondeu, o que está
+ * registrado sobre ela, os direitos — fica em "Seus dados", a um toque.
  *
  * ## O que ela nunca mostra
  *
  * O nome da empresa (R5), inclusive quando a empresa quer entrevistar: quem
- * revela o nome é a pessoa do IEL, na ligação. Posição, ranking ou qualquer
- * comparação com outros candidatos — o produto não classifica pessoas, e esta
- * é a tela de quem mais sofreria com uma classificação. E percentual: a
- * aderência dele é dado dele (PRODUTO.md §5.1), mas volta em palavra, no
- * vocabulário de `copy.ts`.
+ * revela o nome é a pessoa do IEL, na ligação. Posição, ranking, percentual
+ * ou qualquer comparação — o produto não classifica pessoas, e esta é a tela
+ * de quem mais sofreria com uma classificação. E nenhum "responder de novo":
+ * a resposta é uma só e vale 12 meses; corrigir é pelo IEL.
  *
  * ## Forma
  *
- * Celular primeiro, uma coluna de 390px, alvos de 48px e corpo de 15px. A
- * ordem é a da conversa: o que aconteceu, o que acontece agora, o que fazer,
- * o que você respondeu, o que está registrado sobre você. Sem login e sem
- * cadastro — o link abre direto (00:08:01).
+ * Celular primeiro, uma coluna de 390px, alvos de 48px e corpo de 15px. Sem
+ * login e sem cadastro — o link abre direto (00:08:01).
  */
 
 /** "05/09/2027": a validade fica longe e precisa do ano. */
@@ -83,20 +81,39 @@ const ICONE_DA_SITUACAO: Record<SituacaoId, TablerIcon> = {
   contratado: IconBriefcase
 };
 
+/** O atalho da equipe: o perfil da pessoa (onde a resposta chega) ou, sem talento, a vaga. */
+function atalhoDoCandidato(
+  application: { talentId: string | null; jobId: string } | null
+): { href: string } | undefined {
+  if (!application) return undefined;
+  return {
+    href: application.talentId
+      ? routes.dashboard.iel.talents.byId(application.talentId).index
+      : routes.dashboard.iel.jobs.byId(application.jobId).index
+  };
+}
+
 export function MinhaCandidaturaScreen({
-  applicationId
+  applicationId,
+  equipeLogada = false
 }: {
   applicationId: string;
+  /** Sessão da analista confirmada pela página: mostra o atalho de volta. */
+  equipeLogada?: boolean;
 }) {
   const { state } = useIelDemo();
 
   const application = getApplication(state, applicationId);
+  const atalho = equipeLogada ? atalhoDoCandidato(application) : undefined;
   const jobView = getCandidateJobView(state, applicationId);
   const situacao = getSituacaoDaCandidatura(state, applicationId);
 
   if (!application || !jobView || !situacao) {
     return (
-      <Moldura badge={null}>
+      <Moldura
+        atalho={atalho}
+        badge={null}
+      >
         <Card>
           <CardHeader>
             <CardTitle>
@@ -113,7 +130,12 @@ export function MinhaCandidaturaScreen({
   }
 
   const talent = getTalent(application.talentId, state);
-  const temas = getTemasDoCandidato(state, applicationId);
+  // O que a pessoa respondeu para esta vaga — daqui ou reaproveitado —, para
+  // devolver frase a frase. Só depois de confirmado: rascunho não é resposta.
+  const respostas =
+    situacao.id !== 'sem-resposta' && situacao.id !== 'prazo-vencido'
+      ? (respostasResolvidas(state, applicationId)?.valores ?? null)
+      : null;
   // A resposta é da pessoa e vale 12 meses: é dela a pergunta "até quando
   // isso que eu respondi continua valendo?", e é aqui que ela volta.
   const validade = validadeDasRespostas(state, application.talentId);
@@ -123,9 +145,12 @@ export function MinhaCandidaturaScreen({
   // contratado, a pergunta "como está sendo?" dos 30, 60 e 90 dias.
   const destinoDaAcao =
     situacao.acao?.destino === 'como-esta-sendo' ? rotas.checkIn : rotas.fit;
+  const temRespostas = respostas !== null && Object.keys(respostas).length > 0;
+  const temContou = Boolean(situacao.contou && situacao.contou.length > 0);
 
   return (
     <Moldura
+      atalho={atalho}
       badge={
         <Badge
           variant="outline"
@@ -189,20 +214,13 @@ export function MinhaCandidaturaScreen({
             ))}
           </ol>
         </CardContent>
-        {situacao.caminho ? (
-          <CardFooter>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {situacao.caminho}
-            </p>
-          </CardFooter>
-        ) : null}
       </Card>
 
       {situacao.acao ? (
         <Button
           size="lg"
-          // Corrigir uma resposta já dada é direito, não pendência: o botão
-          // fica, mas em contorno, sem empurrar.
+          // Contar a própria versão depois que a empresa informou saída é
+          // uma porta aberta, não uma pendência: fica em contorno.
           variant={situacao.acao.peso === 'discreta' ? 'outline' : 'default'}
           className="h-12 w-full text-[15px]"
           asChild
@@ -212,172 +230,66 @@ export function MinhaCandidaturaScreen({
       ) : null}
 
       {/*
-       * O que a pessoa já contou ao IEL depois de contratada. A resposta
-       * dela devolvida a ela, em palavra: quem respondeu aos 30 dias e abre
-       * o link aos 60 vê que a resposta chegou e o que disse.
+       * Seus dados, a um toque: o que a pessoa respondeu (frase a frase, no
+       * vocabulário da escala — nunca comparação), até quando vale, o que
+       * ela contou depois de contratada, a vaga sem o nome da empresa, os
+       * registros e os direitos.
        */}
-      {situacao.contou && situacao.contou.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>O que você já contou</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col gap-2.5">
-              {situacao.contou.map((linha) => (
-                <li
-                  key={linha}
-                  className="flex gap-3"
-                >
-                  <IconCircleCheck
-                    aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                  />
-                  <p className="text-[15px] leading-relaxed text-foreground">
-                    {linha}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              A empresa não vê nada disto. Quem lê é só a equipe do IEL.
-            </p>
-          </CardFooter>
-        </Card>
-      ) : null}
-
-      {temas ? (
-        <Card>
-          <CardHeader>
-            <CardDescription>Suas respostas</CardDescription>
-            <CardTitle className="text-base">
-              <h2>O que você respondeu</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {/*
-             * Palavra, não percentual: §5.1 permite mostrar a aderência da
-             * própria pessoa, mas um número numa tela sobre a própria vida
-             * vira nota. Aqui são os temas em que ela combinou e aqueles em
-             * que ficou diferente — nada de posição nem de outros candidatos.
-             */}
-            <ListaDeTemas
-              titulo="Combinou com a empresa em"
-              temas={temas.combinou}
-              vazio="Nenhum tema combinou desta vez."
-            />
-            <ListaDeTemas
-              titulo="Ficou diferente em"
-              temas={temas.diferente}
-              vazio="Nenhum tema ficou diferente."
-            />
-          </CardContent>
-          <CardFooter className="flex flex-col items-start gap-3">
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Isto não é nota e não mede desempenho. É só a comparação entre o
-              jeito que você prefere trabalhar e o jeito da equipe desta
-              empresa. Ficar diferente em um tema não é erro seu.
-              {/*
-               * Logo abaixo de "esta vaga seguiu com outras pessoas", uma
-               * lista do que ficou diferente se lê como o motivo. Não é: a
-               * empresa recebe até 5 currículos e decide olhando o conjunto.
-               * A frase fecha essa porta antes que ela se abra.
-               */}
-              {situacao.id === 'nao-seguiu'
-                ? ' Estes temas não decidiram sozinhos: a empresa escolhe olhando o currículo inteiro.'
-                : null}
-            </p>
-            {validade?.validaAte ? (
+      {talent ? (
+        <TalentTransparency talentId={talent.id}>
+          <div className="flex flex-col gap-5">
+            {temRespostas && respostas ? (
+              <SuasRespostas
+                papel="candidato"
+                respostas={respostas}
+                moldura="secao"
+              />
+            ) : null}
+            {temRespostas && validade?.validaAte ? (
               <p className="text-sm leading-relaxed text-muted-foreground">
-                As suas respostas ficam guardadas até{' '}
-                {dataPorExtenso(validade.validaAte)}. Se você se candidatar a
-                outra vaga pelo IEL nesse tempo, a gente pergunta só o que
-                faltar — e você pode responder tudo de novo quando quiser.
+                Suas respostas valem até {dataPorExtenso(validade.validaAte)}.
+                Noutra vaga pelo IEL, a gente pergunta só o que faltar.
               </p>
             ) : null}
-          </CardFooter>
-        </Card>
+            {temContou ? (
+              <section className="flex flex-col gap-2">
+                <h3 className="text-sm font-medium">O que você já contou</h3>
+                <ul className="flex flex-col gap-2">
+                  {situacao.contou?.map((linha) => (
+                    <li
+                      key={linha}
+                      className="flex gap-2.5"
+                    >
+                      <IconCircleCheck
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                      />
+                      <p className="text-[15px] leading-relaxed text-foreground">
+                        {linha}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  A empresa não vê nada disto. Quem lê é só a equipe do IEL.
+                </p>
+              </section>
+            ) : null}
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">A vaga</h3>
+              {/* Os quatro campos de `getCandidateJobView`, e só eles (R5). */}
+              <p className="text-[15px] leading-relaxed text-foreground">
+                {jobView.activity} · {jobView.location} · {jobView.sector} ·{' '}
+                {jobView.shift}
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                O nome da empresa você conhece na entrevista.
+              </p>
+            </section>
+          </div>
+        </TalentTransparency>
       ) : null}
-
-      {talent ? <TalentTransparency talentId={talent.id} /> : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            <h2>A vaga</h2>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Os quatro campos de `getCandidateJobView`, e só eles (R5). */}
-          <dl className="flex flex-col gap-3 text-[15px]">
-            <DadoDaVaga
-              rotulo="O que você vai fazer"
-              valor={jobView.activity}
-            />
-            <DadoDaVaga
-              rotulo="Onde"
-              valor={jobView.location}
-            />
-            <DadoDaVaga
-              rotulo="Ramo da empresa"
-              valor={jobView.sector}
-            />
-            <DadoDaVaga
-              rotulo="Turno"
-              valor={jobView.shift}
-            />
-          </dl>
-        </CardContent>
-        <CardFooter>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            O nome da empresa você conhece na entrevista. É assim em todas as
-            vagas do IEL.
-          </p>
-        </CardFooter>
-      </Card>
-
-      <p className="pt-2 text-center text-xs leading-relaxed text-muted-foreground">
-        Demonstração: nada é enviado de verdade e este link abre direto, sem
-        senha e sem cadastro.
-      </p>
     </Moldura>
-  );
-}
-
-function ListaDeTemas({
-  titulo,
-  temas,
-  vazio
-}: {
-  titulo: string;
-  temas: string[];
-  vazio: string;
-}) {
-  return (
-    <section className="flex flex-col gap-1.5">
-      <h3 className="text-xs font-medium text-muted-foreground">{titulo}</h3>
-      {temas.length === 0 ? (
-        <p className="text-[15px] leading-relaxed text-muted-foreground">
-          {vazio}
-        </p>
-      ) : (
-        <p className="text-[15px] leading-relaxed text-foreground">
-          {temas.join(', ')}.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function DadoDaVaga({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-xs font-medium text-muted-foreground">{rotulo}</dt>
-      <dd className="leading-snug text-foreground">{valor}</dd>
-    </div>
   );
 }
 
@@ -388,15 +300,19 @@ function DadoDaVaga({ rotulo, valor }: { rotulo: string; valor: string }) {
  */
 function Moldura({
   badge,
+  atalho,
   children
 }: {
   badge: ReactNode;
+  /** Só com sessão da analista: a volta ao Mind RH, no rodapé. */
+  atalho?: { href: string };
   children: ReactNode;
 }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 px-1 pt-2">
       <div className="flex items-center justify-end gap-2">{badge}</div>
       {children}
+      {atalho ? <AtalhoDaEquipe href={atalho.href} /> : null}
     </div>
   );
 }

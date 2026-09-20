@@ -22,7 +22,7 @@ import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
  * A ordem das perguntas é a da decisão de quem lê: primeiro se a pessoa
  * respondeu (silêncio não é nota baixa), depois se ela é um resgate — alguém
  * que o filtro técnico da origem descartaria e o encontro com a empresa
- * recupera —, depois em quantos dos 10 temas a medida foi possível, e só
+ * recupera —, depois em quantos dos 11 temas a medida foi possível, e só
  * então o veredito.
  */
 export type CandidateState =
@@ -32,7 +32,7 @@ export type CandidateState =
   | 'combina'
   | 'abaixo';
 
-/** Em quantos dos 10 temas a **pessoa** respondeu. */
+/** Em quantos dos 11 temas a **pessoa** respondeu. */
 export function respondidosPelaPessoa(entry: JobRankingEntry): number {
   return entry.adherence.byAxis.filter((axis) => axis.candidateValue !== null)
     .length;

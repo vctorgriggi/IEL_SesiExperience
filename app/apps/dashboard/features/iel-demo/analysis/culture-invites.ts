@@ -52,8 +52,43 @@ export const CULTURE_INVITE_DEADLINE_DAYS = 3;
  * 2026-09-21: o instrumento passou a ser o do cliente — cerca de 15 frases
  * por pessoa numa escala de concordância, uns 5 minutos. O que se coleta
  * mudou, então a versão sobe.
+ * 2026-09-23: o texto sai da tela e vira constante (`CULTURE_CONSENT_TEXT`),
+ * com um resumo de três linhas na frente (`CULTURE_CONSENT_RESUMO`) e o
+ * inteiro atrás de um toque. O que a pessoa lê mudou, então a versão sobe.
  */
-export const CULTURE_CONSENT_VERSION = '2026-09-21';
+export const CULTURE_CONSENT_VERSION = '2026-09-23';
+
+/**
+ * O texto do aceite do colaborador, palavra por palavra — o formulário e a
+ * conversa leem daqui, e é a este texto que `CULTURE_CONSENT_VERSION` se
+ * refere. Cobre o que o art. 9º da LGPD manda informar: para quê, o que é
+ * coletado, quem vê, por quanto tempo.
+ *
+ * "Quem vê" é a frase que decide se a resposta é honesta: a pessoa está
+ * dizendo como é trabalhar na empresa dela, e a chefia pode estar do lado.
+ */
+export const CULTURE_CONSENT_TEXT = {
+  version: CULTURE_CONSENT_VERSION,
+  title: 'Antes de responder',
+  purpose:
+    'Suas respostas entram na média que descreve como se trabalha na empresa. Essa média é comparada com o que cada candidato procura.',
+  collected:
+    'Coletamos só o seu e-mail corporativo, área e papel, que já estavam no convite, e o quanto você concorda com cada frase. Seu nome não é pedido.',
+  whoSees:
+    'Sua resposta não fica com o seu nome: entra numa média com a de todo mundo que responder. Nem a empresa, nem a sua chefia, nem o IEL veem a sua resposta sozinha.',
+  retention: 'O link vale 3 dias e serve uma vez só. Você responde uma vez.'
+} as const;
+
+/**
+ * O aceite em três linhas, mostradas antes da caixa "Li e aceito": para quê,
+ * quem vê, por quanto tempo. Resumo de `CULTURE_CONSENT_TEXT`, versionado
+ * junto — o inteiro fica a um toque.
+ */
+export const CULTURE_CONSENT_RESUMO: readonly string[] = [
+  'Você diz o quanto cada frase é assim aí. Vai para uma média que descreve como é trabalhar na empresa.',
+  'Ninguém vê a sua resposta sozinha: nem a empresa, nem a chefia, nem o IEL. Só a média.',
+  'O link vale 3 dias e serve uma vez só.'
+];
 
 const TOKEN_LENGTH = 16;
 

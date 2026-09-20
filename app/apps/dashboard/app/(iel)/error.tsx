@@ -15,14 +15,12 @@ export default function IelDemoError({
   return (
     <Card className="gap-3">
       <h1 className="text-lg font-semibold text-foreground">
-        Algo falhou nesta tela da demonstração
+        Algo falhou nesta tela
       </h1>
-      <Alert variant="destructive">
-        {error.message || 'Erro inesperado no protótipo.'}
-      </Alert>
+      <Alert variant="destructive">{error.message || 'Erro inesperado.'}</Alert>
       <p className="text-sm text-muted-foreground">
-        Os dados locais da demonstração foram preservados. Você pode tentar
-        novamente ou voltar para a visão geral.
+        O que você registrou foi preservado. Você pode tentar novamente ou
+        voltar para a visão geral.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={reset}>Tentar novamente</Button>

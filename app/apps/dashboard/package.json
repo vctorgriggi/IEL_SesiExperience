@@ -58,6 +58,7 @@
     "lucide-react": "^0.544.0",
     "mapbox-gl": "^3.8.0",
     "markdown-it": "14.1.0",
+    "motion": "^13.4.0",
     "next": "15.5.20",
     "next-safe-action": "8.0.2",
     "next-secure-headers": "2.2.0",

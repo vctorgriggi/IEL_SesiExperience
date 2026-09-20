@@ -470,7 +470,7 @@ describe('reaproveitamento do perfil na vaga 2 (cenas 5 e 6)', () => {
     );
     expect(state.history[0]?.action).toBe('Interesse em entrevista registrado');
     expect(state.history[0]?.description).toContain(
-      'Nenhuma reunião foi agendada'
+      'A analista combina a entrevista'
     );
   });
 

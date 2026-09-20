@@ -25,13 +25,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-01',
     talentId: 'ANA',
     jobId: 'VAG-01',
-    appliedAt: '2026-09-05',
+    appliedAt: '2026-09-11',
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
     technicalMatch: 82,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5501'
     }
@@ -40,13 +40,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-02',
     talentId: 'BRUNO',
     jobId: 'VAG-01',
-    appliedAt: '2026-09-04',
+    appliedAt: '2026-09-10',
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
     technicalMatch: 76,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5502'
     }
@@ -55,13 +55,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-03',
     talentId: 'CARLA',
     jobId: 'VAG-01',
-    appliedAt: '2026-09-06',
+    appliedAt: '2026-09-12',
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 64,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5503'
     }
@@ -70,13 +70,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-04',
     talentId: 'DIEGO',
     jobId: 'VAG-01',
-    appliedAt: '2026-09-02',
+    appliedAt: '2026-09-08',
     externalStage: 'triagem',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
     technicalMatch: 71,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5504'
     }
@@ -85,13 +85,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-05',
     talentId: 'ANA',
     jobId: 'VAG-02',
-    appliedAt: '2026-07-02',
+    appliedAt: '2026-07-08',
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
     technicalMatch: 88,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Horizonte Alimentos',
       id: 'EMPG-DEMO-APP-6601'
     }
@@ -100,13 +100,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-06',
     talentId: 'ELISA',
     jobId: 'VAG-02',
-    appliedAt: '2026-08-28',
+    appliedAt: '2026-09-03',
     externalStage: 'analise-tecnica',
     analysisStage: 'em-andamento',
     referralStage: 'nao-encaminhada',
     technicalMatch: 79,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Horizonte Alimentos',
       id: 'EMPG-DEMO-APP-6602'
     }
@@ -115,13 +115,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-07',
     talentId: 'FABIO',
     jobId: 'VAG-02',
-    appliedAt: '2026-09-01',
+    appliedAt: '2026-09-07',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 45,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Horizonte Alimentos',
       id: 'EMPG-DEMO-APP-6603'
     }
@@ -130,13 +130,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-08',
     talentId: 'CARLA',
     jobId: 'VAG-03',
-    appliedAt: '2026-09-06',
+    appliedAt: '2026-09-12',
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 58,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Oficina Pantanal',
       id: 'EMPG-DEMO-APP-7701'
     }
@@ -145,13 +145,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-09',
     talentId: 'GABRIELA',
     jobId: 'VAG-03',
-    appliedAt: '2026-09-03',
+    appliedAt: '2026-09-09',
     externalStage: 'triagem',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 66,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Oficina Pantanal',
       id: 'EMPG-DEMO-APP-7702'
     }
@@ -160,13 +160,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-10',
     talentId: 'HUGO',
     jobId: 'VAG-03',
-    appliedAt: '2026-09-02',
+    appliedAt: '2026-09-08',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 52,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Oficina Pantanal',
       id: 'EMPG-DEMO-APP-7703'
     }
@@ -189,13 +189,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-11',
     talentId: 'ANA',
     jobId: 'VAG-04',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 74,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5511'
     }
@@ -206,13 +206,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-12',
     talentId: 'FABIO',
     jobId: 'VAG-04',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 51,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5512'
     }
@@ -223,13 +223,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-13',
     talentId: 'HUGO',
     jobId: 'VAG-05',
-    appliedAt: '2025-07-08',
+    appliedAt: '2025-07-14',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-avancou',
     technicalMatch: 49,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5405'
     }
@@ -240,13 +240,13 @@ export const DEMO_APPLICATIONS: Application[] = [
     id: 'CAND-14',
     talentId: 'HUGO',
     jobId: 'VAG-04',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     analysisStage: 'nao-iniciada',
     referralStage: 'nao-encaminhada',
     technicalMatch: 55,
     externalRef: {
-      system: 'Empregare — demonstração',
+      system: 'Empregare',
       account: 'Cerrado Distribuição',
       id: 'EMPG-DEMO-APP-5513'
     }
@@ -286,7 +286,8 @@ const ANA: JeitoDeTrabalhar = {
   'regras-decisao': 4,
   'interacao-convivencia': 3,
   'lideranca-autonomia': 1,
-  'adaptacao-carreira': 3
+  'adaptacao-carreira': 3,
+  'expectativas-futuras': 3
 };
 
 const RESPOSTAS_CURADAS: {
@@ -320,7 +321,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 3,
       'interacao-convivencia': 4,
       'lideranca-autonomia': 5,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     answeredAt: '2026-09-04T19:30:00.000Z',
     acceptedAt: '2026-09-04T19:28:00.000Z'
@@ -339,7 +341,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 4,
       'interacao-convivencia': 2,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     answeredAt: '2026-09-06T08:45:00.000Z',
     acceptedAt: '2026-09-06T08:44:00.000Z'
@@ -358,7 +361,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 3,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     answeredAt: '2026-09-02T21:05:00.000Z',
     acceptedAt: '2026-09-02T21:02:00.000Z'
@@ -385,7 +389,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 5,
       'interacao-convivencia': 2,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     answeredAt: '2026-08-28T17:40:00.000Z',
     acceptedAt: '2026-08-28T17:38:00.000Z'
@@ -405,7 +410,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 4.5,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 1.5,
-      'adaptacao-carreira': 3.5
+      'adaptacao-carreira': 3.5,
+      'expectativas-futuras': 3.5
     },
     answeredAt: '2026-09-01T09:15:00.000Z',
     acceptedAt: '2026-09-01T09:12:00.000Z'
@@ -424,7 +430,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 4,
       'interacao-convivencia': 2,
       'lideranca-autonomia': 3,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     answeredAt: '2026-09-06T08:52:00.000Z',
     acceptedAt: '2026-09-06T08:51:00.000Z'
@@ -443,7 +450,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 3,
       'interacao-convivencia': 2,
       'lideranca-autonomia': 4,
-      'adaptacao-carreira': 4
+      'adaptacao-carreira': 4,
+      'expectativas-futuras': 4
     },
     answeredAt: '2026-09-07T11:00:00.000Z',
     acceptedAt: '2026-09-07T10:58:00.000Z'
@@ -465,7 +473,8 @@ const RESPOSTAS_CURADAS: {
       'regras-decisao': 4,
       'interacao-convivencia': 3,
       'lideranca-autonomia': 2,
-      'adaptacao-carreira': 3
+      'adaptacao-carreira': 3,
+      'expectativas-futuras': 3
     },
     answeredAt: '2025-07-08T15:20:00.000Z',
     acceptedAt: '2025-07-08T15:18:00.000Z',
@@ -661,7 +670,7 @@ export const DEMO_ANALYSIS: AnalysisByApplication = {
     },
     'CRI-103': {
       state: 'divergencia',
-      note: 'Duas fontes discordam: o currículo indica disponibilidade integral (20/11/2025) e o registro IEL de 08/09/2026 indica apenas o período da manhã.',
+      note: 'Duas fontes discordam: o currículo indica disponibilidade integral (26/11/2025) e o registro IEL de 14/09/2026 indica apenas o período da manhã.',
       evidenceIds: ['EVD-DIE-03', 'EVD-DIE-04']
     },
     'CRI-104': {

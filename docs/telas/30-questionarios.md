@@ -30,7 +30,7 @@ nenhum nome, e todo recorte com menos de 5 pessoas sai como "—".
   (verde: questionários, consultas, devolutivas e check-ins que chegaram na semana).
 - **Esperando de quem** — uma linha por espera, em quatro tipos:
   - **Questionário do candidato**: candidatura sem resposta resolvida (`getFitStatus` ≠
-    respondido), de vaga não encerrada e cujo convite já saiu. Prazo: 2 dias da candidatura (R7).
+    respondido), de vaga não encerrada e cujo convite já saiu. Prazo: 2 dias da candidatura (R7 em PRODUTO.md; a tela diz só o prazo).
   - **Consulta ao colaborador**: convite em aberto (sem `answeredAt`), inclusive os vencidos. Prazo:
     `expiresAt` (3 dias do envio ou do último reenvio, R7). Sem nome: aparece o e-mail corporativo e
     a área.
@@ -50,9 +50,9 @@ nenhum nome, e todo recorte com menos de 5 pessoas sai como "—".
   por tipo (com contadores). Lista paginada de 30 em 30 ("Mostrar mais"): a base tem milhares de
   candidaturas.
 - **No celular** (abaixo de `lg`) a tabela vira cartões empilhados, sem rolagem horizontal.
-- **Duas linhas de rodapé**: a regra do lembrete automático ("24 h depois do envio e 24 h antes do
-  prazo, pelo mesmo canal e com o mesmo link") e a linha honesta: "Os lembretes automáticos são
-  simulados nesta demonstração; em produção saem sozinhos nos horários acima."
+- **Uma linha de rodapé**: a regra do lembrete automático ("24 h depois do envio e 24 h antes do
+  prazo, pelo mesmo canal e com o mesmo link"). Que o lembrete ainda não sai sozinho é registro
+  interno (`docs/interno/o-que-e-simulado.md`), não texto de tela.
 - **Vazio**: "Ninguém está devendo resposta ao IEL agora." / "Nada neste recorte. Tire um filtro
   para ver o resto."
 
@@ -110,7 +110,8 @@ lugar no servidor depois da validação (PRODUTO.md §5.8).
   venceu continua na lista até responder ou a analista decidir — sair sozinho seria sumir em
   silêncio.
 - Colaborador nunca aparece com nome (PRODUTO.md §5.2): só e-mail corporativo e área.
-- Nada é enviado pela tela sozinho; lembretes automáticos são simulados e a tela diz isso escrito.
+- Nada é enviado pela tela sozinho; o lembrete automático ainda é simulado, e a tela não diz isso —
+  fala só do prazo e do próximo passo.
 - Texto de tela em palavra de gente: "esperando há 3 dias", "vence hoje", "venceu há 2 dias" — sem
   "SLA", "pendência" ou "solicitação".
 - Aba Análise: nenhum nome, nenhum contato; recorte com menos de 5 pessoas sai como "—".

@@ -7,7 +7,7 @@ import {
   REPORT_VALIDITY_DAYS,
   type ReportAxisMatch
 } from '@/features/iel-demo/analysis/referral-report';
-import { AXIS_LABEL } from '@/features/iel-demo/copy';
+import { AXIS_LABEL, AXIS_SHORT_LABEL } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -68,15 +68,6 @@ const LEGEND_ORDER: ReportAxisMatch[] = [
   'sem-resposta'
 ];
 
-/** Rótulo curto da barrinha: cabe em cinco colunas num celular. */
-const SHORT_AXIS_LABEL: Record<string, string> = {
-  'apoio-inicial': 'Apoio',
-  autonomia: 'Organiza',
-  'comunicacao-prioridades': 'Tarefas',
-  'ritmo-turno': 'Horário',
-  aprendizado: 'Aprende'
-};
-
 /** "14/09": a data como o cabeçalho a diz. */
 function shortDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -133,7 +124,7 @@ function AxisBars({ person }: { person: ReferralReportPerson }) {
             aria-hidden="true"
           />
           <span className="truncate text-[10px] text-muted-foreground">
-            {SHORT_AXIS_LABEL[axis.axisId] ?? AXIS_LABEL[axis.axisId]}
+            {AXIS_SHORT_LABEL[axis.axisId]}
           </span>
           <span className="sr-only">
             {AXIS_LABEL[axis.axisId]}: {REPORT_AXIS_MATCH_LABEL[axis.match]}

@@ -77,6 +77,55 @@ Extraídas da transcrição. Cada uma vincula o MVP.
 | R8  | A empresa envia **só nome e e-mail corporativo** dos colaboradores; o consentimento é dado no aceite do questionário.                                                      | 00:42:48           |
 | R9  | Vaga tem 30 dias; primeira triagem em até 15. Sem devolutiva, o analista cobra e envia nova remessa de 5.                                                                  | 00:36:39           |
 | R10 | O filtro técnico do Empregare configurado errado expurga candidato aderente; é ponto de melhoria.                                                                          | 00:33:04           |
+| R11 | A empresa **escolhe de 3 a 11 competências** entre as 11 do instrumento, e o questionário enviado aos colaboradores se adapta à escolha.                                   | Pedido do IEL, 20/09/2026 |
+
+### 4.1 R11 — a empresa escolhe o que quer medir
+
+O pedido chegou do IEL em 20/09/2026, escrito assim:
+
+> "QUANDO FOR ENVIAR PARA EMPRESA O QUESTIONÁRIO, PERMITIR QUE ELA DECIDA O QUE ELA QUER DENTRE ESSAS POSSIBILIDADES. O fluxo de envio do questionário para os colaboradores da empresa responder deve ser adaptável a escolher quais competências a empresa julga relevante dentre as 11 criadas, podendo selecionar entre 3 a 11 competências."
+
+**O que a escolha manda.** Não é preferência de tela; é o critério de medição da
+empresa, e ela atravessa o produto inteiro:
+
+- **Colaborador** — o bloco de cada convite (`blocoDoConvite`) sai filtrado
+  pelas competências escolhidas. O rodízio continua determinístico e as
+  posições das 52 frases não mudam: o bloco apenas fica menor.
+- **Candidato** — `perguntasDoCandidato` devolve **uma frase por competência
+  escolhida**, de 3 a 11, e não as 11 de antes.
+- **Aderência** — só as competências escolhidas entram na conta e no
+  denominador (`coverage.totalAxes`). O texto "medido em N de N temas"
+  acompanha: uma empresa com 8 competências lê "5 de 8", nunca "5 de 11".
+- **Leitura por tema, Mapa de Cultura e pesos da vaga** — a competência não
+  escolhida **não some da tela**: aparece em cinza, sem número e sem barra,
+  com a frase "A empresa não pediu esta competência". Sumir esconderia o
+  critério de quem lê o percentual.
+
+**As respostas de temas retirados não são apagadas.** Ficam no estado e voltam
+a contar assim que a empresa reincluir o tema. Retirar uma competência é mudar
+o que se mede daqui em diante, não reescrever o que as pessoas já disseram — e
+um convite já respondido nunca muda de conteúdo retroativamente, porque o bloco
+é calculado na abertura do link.
+
+**A faixa 3–11 é validada no reducer, não só no formulário.** A ação
+`set-company-competencies` recusa qualquer escolha fora de 3..11 e registra o
+motivo no histórico, pela mesma razão que o limite de 5 currículos por remessa
+mora no reducer (R6): uma regra que muda o que a aderência mede não pode
+depender de a tela estar certa. O piso de 3 existe porque abaixo disso o
+percentual passa a medir quase nada — 100% em dois temas não é a mesma
+informação que 100% em oito — e o denominador visível perderia o sentido.
+
+**Duas portas, uma ação só.** A analista escolhe junto com a empresa no
+formulário de convite (antes da lista de e-mails), e a empresa reabre a escolha
+na própria página, com "Salvar competências". Nas duas, o nome do tema é o da
+planilha do cliente e a ordem é a de `FIT_AXES`.
+
+**Padrão e compatibilidade.** Empresa que nunca escolheu mede **as 11**:
+`competenciasDaEmpresa` é a única porta de leitura e trata a ausência da chave
+assim. Na base de demonstração, a Colatte (EMP-04) pede 8 — as três que ficam
+de fora são Regras, métodos e decisão; Adaptação a mudanças e carreira; e
+Expectativas futuras, as únicas do traçado dela sem frase pública que as
+sustente.
 
 ## 5. Privacidade por padrão
 
@@ -108,7 +157,7 @@ Não é uma seção de conformidade; é desenho. A regra: **todo dado nasce no m
 
 - Aceite no início de cada questionário, com texto curto dizendo **o que** é coletado, **para quê**, **quem vê**, **por quanto tempo** e **em que mais** a resposta será usada (§5.6). Sem aceite, o questionário não abre.
 - Registro do aceite com data e hora **e com a versão do texto**, junto da resposta. Sem versão não há como demonstrar a que a pessoa consentiu, e é a versão que decide se aquela resposta pode ser reaproveitada em outra candidatura.
-- O aceite diz, em palavra comum, como a pessoa desfaz: responder de novo (vale a última) ou pedir para sair.
+- O aceite diz, em palavra comum, como a pessoa desfaz: pedir correção ou pedir para sair, pelo IEL. A resposta é uma só (decisão do dono do produto, 20/09/2026): não há "responder de novo" em nenhuma tela de quem responde; a substituição continua possível no reducer, porque é o IEL quem a faria. Na tela, o aceite aparece resumido em três linhas (o que responde e para quê, quem vê, por quanto tempo) com o texto inteiro a um toque — e a versão gravada é a do texto inteiro.
 - O candidato pode ver o que está registrado sobre ele e para quem foi enviado — sem nome de empresa, só atividade/localidade/segmento — e pedir correção pelo mesmo canal.
 
 ### 5.4 Links sem login
@@ -132,8 +181,8 @@ Um link sem login é uma credencial portadora. Por isso:
 - **A resposta do candidato é dele e vale 12 meses** (`VALIDADE_DA_RESPOSTA_MESES`, em `analysis/candidate-questionnaire.ts`). O que a pessoa responde é como ela prefere trabalhar, e isso é dela, não da vaga: "o que eu gosto ou não é o candidato" (00:19:47). O que muda de empresa para empresa é o outro lado — o perfil dela e quais frases ela escolheu.
   - **Dentro dos 12 meses**, a resposta vale para as outras candidaturas da mesma pessoa dentro do IEL. O questionário de uma candidatura nova pergunta só a diferença: as frases que aquela empresa escolheu menos as que a pessoa já respondeu. Não sobrando nenhuma, não há formulário — a tela diz que as respostas dela ainda valem e ela confirma o uso, que fica registrado.
   - **Passados os 12 meses**, a resposta é como se não existisse: a frase volta a ser perguntada, e a aderência fica sem base naquele tema em vez de ser calculada sobre dado velho. Vale inclusive para a candidatura em que a resposta foi dada.
-  - **Vale a última.** Duas respostas da mesma pessoa à mesma frase, a mais recente ganha — é assim que ela desfaz: responde de novo. Pedindo para sair, as respostas deixam de ser usadas em qualquer vaga.
-  - **Reuso só com aceite que o preveja.** Guardar por 12 meses e reaproveitar amplia finalidade e retenção sobre dado já coletado, e por isso está escrito no aceite **antes** (versão `2026-09-22`). Quem aceitou uma versão anterior aceitou o oposto — aquele texto dizia que as respostas ficavam ligadas àquela candidatura: a resposta dada sob texto antigo continua valendo só para a candidatura em que foi dada e **nunca** é levada para outra. A frase volta a ser perguntada, sob o texto novo. Nada retroage (LGPD, art. 8º, § 4º).
+  - **Vale a última — e quem substitui é o IEL.** Duas respostas da mesma pessoa à mesma frase, a mais recente ganha. A pessoa não responde de novo pela tela: pede correção ou saída pelo IEL, que faz a substituição. Pedindo para sair, as respostas deixam de ser usadas em qualquer vaga.
+  - **Reuso só com aceite que o preveja.** Guardar por 12 meses e reaproveitar amplia finalidade e retenção sobre dado já coletado, e por isso está escrito no aceite **antes** (versões `2026-09-22` e `2026-09-23`). Quem aceitou uma versão anterior aceitou o oposto — aquele texto dizia que as respostas ficavam ligadas àquela candidatura: a resposta dada sob texto antigo continua valendo só para a candidatura em que foi dada e **nunca** é levada para outra. A frase volta a ser perguntada, sob o texto novo. Nada retroage (LGPD, art. 8º, § 4º).
   - A versão do aceite fica gravada junto da resposta (`consent.version`): é ela que permite demonstrar depois a que a pessoa consentiu (art. 6º, X).
 - Dados de devolutiva (C3) são agregados por empresa para indicador; não identificam o candidato fora do IEL.
 - **Onde o estado da demonstração mora.** Por padrão, no navegador de cada aparelho (`localStorage`), e nada sai da máquina. Com `IEL_ESTADO_COMPARTILHADO=1` e `DATABASE_URL` (Neon/Postgres), o estado passa a morar numa sala única no servidor (`iel_demo_salas`, só o delta sobre a base) com um log das ações (`iel_demo_eventos`, sem poda), para que a resposta dada no celular apareça no notebook da analista. É **base fictícia**: nenhuma pessoa real está gravada, e por isso não há retenção definida — em produção, o dado de pessoa teria tabela própria, prazo e sessão por pessoa.
@@ -178,7 +227,7 @@ Reavaliado em 19/09, com o instrumento de 52 frases no lugar e o ciclo inteiro n
 
 | Must                                   | O que pede                                                                       | O que existe hoje                                                                                                                                                                                                                    | Falta                                                                         |
 | -------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| **M1** Perfil cultural da empresa      | Questionário curto, amostra de colaboradores, perfil = média                     | Instrumento de 52 frases em 10 temas; empresa responde por tema; perfil é a média da amostra; piso de 3 respostas de equipe bloqueia o tema; dispersão gestão × equipe visível; cultura percebida pelo analista ao lado da declarada | Validade do perfil no tempo (C4, prazo a confirmar com o Coringa)             |
+| **M1** Perfil cultural da empresa      | Questionário curto, amostra de colaboradores, perfil = média                     | Instrumento de 52 frases em 11 temas; empresa responde por tema; perfil é a média da amostra; piso de 3 respostas de equipe bloqueia o tema; dispersão gestão × equipe visível; cultura percebida pelo analista ao lado da declarada | Validade do perfil no tempo (C4, prazo a confirmar com o Coringa)             |
 | **M2** Link por colaborador + contador | Analista cadastra nome + e-mail, sistema gera links, mostra N de M, prazo 3 dias | Convites por empresa com link próprio, progresso N de M, prazo, estado por convite e reenvio; bloco de 16 frases por convite, sorteado em matriz                                                                                     | Envio real por e-mail/WhatsApp e token de uso único com expiração no servidor |
 | **M3** Questionário do candidato       | Mesmas dimensões, celular, sem login, na candidatura, sem nome da empresa        | Questionário por candidatura, uma frase por tela, no celular, sem login, com aceite; versão em conversa guiada; vaga sem nome de empresa (R5)                                                                                        | Entrega do link por SMS/e-mail                                                |
 | **M4** Motor de aderência              | % por dimensão e total, corte 35%                                                | Aderência por tema e total, corte de 35% que marca sem eliminar, ausência que não vira zero, plano B por pares quando a frase da empresa não fechou                                                                                  | Calibração contra desfecho real (ver §11.3)                                   |
@@ -229,7 +278,7 @@ Esta seção existe para ser lida em voz alta quando alguém perguntar se isto �
 
 ### 11.1 O que o instrumento é
 
-52 frases da planilha do cliente, em 10 temas, respondidas numa escala de concordância de 5 pontos pelos dois lados. A empresa responde por tema, com uma amostra de colaboradores (mínimo de 3 respostas de equipe para o tema fechar, até 10 convidados); o candidato lê, na versão curta, as frases que a empresa escolheu. A aderência é a proximidade entre as duas respostas, tema a tema, e o resultado é explicável até a frase. O instrumento é visível e ajustável pela analista na tela **Instrumento** (menu Sistema): ela vê as 52 frases por tema e pode desligar uma frase ou mudar se ela separa pessoas, sem sair das 52 frases do cliente e sem deixar um tema sem frase.
+52 frases da planilha do cliente, em 11 temas (os tópicos dela, com o nome dela), respondidas numa escala de concordância de 5 pontos pelos dois lados. A empresa responde por tema, com uma amostra de colaboradores (mínimo de 3 respostas de equipe para o tema fechar, até 10 convidados); o candidato lê as frases que a empresa escolheu, como o cliente as escreveu. A aderência é a proximidade entre as duas respostas, tema a tema, e o resultado é explicável até a frase. O instrumento é visível e ajustável pela analista na tela **Instrumento** (menu Sistema): ela vê as 52 frases por tema e pode desligar uma frase ou mudar se ela separa pessoas, sem sair das 52 frases do cliente e sem deixar um tema sem frase.
 
 ### 11.2 O que ele não é, e o que nenhuma tela pode sugerir que seja
 

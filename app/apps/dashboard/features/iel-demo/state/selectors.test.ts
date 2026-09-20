@@ -421,10 +421,11 @@ describe('persistência local versionada', () => {
     expect(storage.has(DEMO_STORAGE_KEY)).toBe(false);
     // Sobe a cada campo novo no estado persistido — os convites da amostra de
     // colaboradores, os talentos vindos de planilha, o histórico de
-    // importações e, na 7, o dono da resposta de fit (`talentId`) com a
-    // validade de 12 meses. Estado gravado na versão anterior é descartado em
-    // vez de remendado.
-    expect(DEMO_SCHEMA_VERSION).toBe(7);
+    // importações, na 7 o dono da resposta de fit (`talentId`) com a validade
+    // de 12 meses e, na 8, as competências que cada empresa escolheu medir
+    // (`competenciasEscolhidas`, R11). Estado gravado na versão anterior é
+    // descartado em vez de remendado.
+    expect(DEMO_SCHEMA_VERSION).toBe(8);
   });
 
   it('ignora conteúdo corrompido sem quebrar a demonstração', () => {

@@ -25,7 +25,7 @@ Abaixo, quatro abas — a terceira só existe com vaga no contexto:
 - **Onde ela se encaixa** (abre por padrão) — a
   [análise de aderência](21-analise-de-aderencia.md) ancorada na pessoa: a lista de empresas
   comparadas com percentual, faixa e denominador, e, ao lado, a leitura completa da empresa aberta —
-  radar dos dez temas, tema a tema com os dois lados escritos, divergência gestão × equipe e as
+  radar dos onze temas, tema a tema com os dois lados escritos, divergência gestão × equipe e as
   vagas abertas daquela empresa. Com `?vaga=`, a leitura já abre na empresa daquela vaga.
 - **Como ela prefere trabalhar** (`talents/leitura-por-tema.tsx`) — a leitura da pessoa **sem
   empresa do outro lado**, uma linha por tema, na ordem de `FIT_AXES`: um trilho de cinco pontos com o
@@ -44,7 +44,7 @@ Abaixo, quatro abas — a terceira só existe com vaga no contexto:
   disse de si?". É a resposta à pergunta do dono do produto ("na visão de quem?"): na dela.
 
 - **Nesta vaga** (só com `?vaga=`) — a leitura por candidatura, em `talents/talent-fit-view.tsx`: os
-  dois números lado a lado (combina com a empresa e requisitos da vaga), os dez temas, os requisitos,
+  dois números lado a lado (combina com a empresa e requisitos da vaga), os onze temas, os requisitos,
   o sobre a pessoa e o histórico, mais o resumo em texto de `analysis/fit-insights.ts`. O componente
   troca o jargão do instrumento pelo vocabulário da tela na fronteira da apresentação: "eixo" vira
   "tema", "coleta dirigida" vira "pergunta à pessoa", "encaminhamento" vira "envio do currículo". O
