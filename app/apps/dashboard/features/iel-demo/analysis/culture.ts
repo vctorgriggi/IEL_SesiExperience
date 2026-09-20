@@ -81,6 +81,45 @@ export const MIN_RESPOSTAS_ANONIMAS = 2;
  */
 export const LIMIAR_DE_DIVERGENCIA = 1;
 
+/**
+ * Quanto as respostas da equipe variam num tema, em três palavras.
+ *
+ * É o antídoto contra a homogeneização (PRODUTO.md §11.3, "semelhança não é
+ * qualidade"): uma equipe uniforme combina mais fácil com quem se parece com
+ * ela — e também é mais parecida consigo mesma. A tela mostra isso ao lado
+ * da média, sem moralizar: "dividida" não é erro, e "uniforme" não é
+ * virtude. É informação para o olho humano.
+ *
+ * A medida é o desvio-padrão das respostas, na escala de 1 a 5, de todos os
+ * que responderam (gestão, RH e equipe), tirado só das frases discriminantes
+ * que fecham — as mesmas que entram na aderência. Por isso a divergência
+ * gestão × equipe também aparece aqui, como variação.
+ */
+export type DiversidadeDaEquipe = 'uniforme' | 'variada' | 'dividida';
+
+/**
+ * Até este desvio a equipe é "uniforme": quase todo mundo no mesmo degrau
+ * da escala (duas respostas em 4 e uma em 5 dão 0,47).
+ */
+export const DESVIO_MAXIMO_UNIFORME = 0.6;
+
+/**
+ * Até este desvio a equipe é "variada": as respostas se espalham por degraus
+ * vizinhos. A partir daqui é "dividida" — metade em 2 e metade em 4 dá
+ * exatamente 1,0, e é o menor rachamento que vale a palavra.
+ */
+export const DESVIO_MAXIMO_VARIADA = 1;
+
+export const DIVERSIDADE_LABEL: Record<DiversidadeDaEquipe, string> = {
+  uniforme: 'Uniforme',
+  variada: 'Variada',
+  dividida: 'Dividida'
+};
+
+/** Uma linha, para o tooltip: o que a coluna mede e por que ela existe. */
+export const DIVERSIDADE_HINT =
+  'Quanto as respostas da equipe variam neste tema. Equipe uniforme combina mais fácil — e também é mais parecida consigo mesma.';
+
 /** O mínimo que o cálculo precisa de uma resposta registrada. */
 export type RespostaAgregada = {
   itemId: string;
@@ -141,6 +180,12 @@ export type PerfilDoTema = {
   lideranca: number | null;
   equipe: number | null;
   dispersao: CultureDispersion | null;
+  /**
+   * Média dos desvios das frases discriminantes que fecham, na escala de 1 a
+   * 5. `null` enquanto nenhuma fecha: abaixo do piso não há "equipe" para
+   * variar (`diversidadeDoTema`).
+   */
+  desvio: number | null;
 };
 
 export type PerfilCultural = {
@@ -310,7 +355,10 @@ export function calcularPerfilCultural(
     const lideranca = media(liderancaValores);
     const equipe = media(equipeValores);
 
-    const fecha = fechados.some((entrada) => entrada.item.discrimina);
+    const discriminantesFechadas = fechados.filter(
+      (entrada) => entrada.item.discrimina
+    );
+    const fecha = discriminantesFechadas.length > 0;
     const dispersao: CultureDispersion | null =
       !fecha || lideranca === null || equipe === null
         ? null
@@ -328,11 +376,27 @@ export function calcularPerfilCultural(
       porPapel,
       lideranca,
       equipe,
-      dispersao
+      dispersao,
+      desvio: media(discriminantesFechadas.map((e) => e.perfil.desvio))
     };
   });
 
   return { itens, temas };
+}
+
+/**
+ * Quanto a equipe varia num tema, em palavra.
+ *
+ * `null` quando o tema não fecha (`MIN_TEAM_RESPONSES`): com duas respostas
+ * não existe variação de equipe a dizer, e a tela mostra "—".
+ */
+export function diversidadeDoTema(
+  tema: PerfilDoTema
+): DiversidadeDaEquipe | null {
+  if (!tema.fecha || tema.desvio === null) return null;
+  if (tema.desvio < DESVIO_MAXIMO_UNIFORME) return 'uniforme';
+  if (tema.desvio < DESVIO_MAXIMO_VARIADA) return 'variada';
+  return 'dividida';
 }
 
 /**

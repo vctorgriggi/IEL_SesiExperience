@@ -4,7 +4,11 @@ import { useState } from 'react';
 import {
   CULTURE_SCALE_MAX,
   CULTURE_SCALE_MIN,
-  MIN_TEAM_RESPONSES
+  DIVERSIDADE_HINT,
+  DIVERSIDADE_LABEL,
+  diversidadeDoTema,
+  MIN_TEAM_RESPONSES,
+  type DiversidadeDaEquipe
 } from '@/features/iel-demo/analysis/culture';
 import {
   ESCALA_CONCORDANCIA,
@@ -25,6 +29,7 @@ import {
   getCultureSampleProgress,
   getJob,
   MIN_ROLE_RESPONSES_TO_SHOW,
+  perfilDaEmpresa,
   type CompanyCultureAxisProfile,
   type CultureAxisReading,
   type CultureDisplayRespondent,
@@ -38,6 +43,7 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconCircleDashed,
+  IconInfoCircle,
   IconX
 } from '@tabler/icons-react';
 
@@ -151,6 +157,45 @@ function EstadoBadge({ estado }: { estado: EstadoDeLeitura }) {
         className="size-3"
       />
       {COPY.estado(estado)}
+    </Badge>
+  );
+}
+
+/**
+ * Quanto a equipe varia no tema, em tons que não julgam: "dividida" é
+ * atenção (vale olhar), nunca vermelho — não é erro. "Uniforme" fica sem
+ * tinta: combina mais fácil, e também é mais parecida consigo mesma
+ * (PRODUTO.md §11.3); pintar de verde seria dizer que é melhor.
+ */
+const DIVERSIDADE_TOM: Record<DiversidadeDaEquipe, string> = {
+  uniforme: '',
+  variada: BADGE_DE_ESTADO.neutro,
+  dividida: BADGE_DE_ESTADO.atencao
+};
+
+function DiversidadeBadge({
+  diversidade
+}: {
+  diversidade: DiversidadeDaEquipe | null;
+}) {
+  if (diversidade === null) {
+    // Abaixo do piso não há "equipe" para variar: travessão, com o motivo
+    // escrito para quem não vê o traço.
+    return (
+      <span className="text-muted-foreground">
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">
+          Sem respostas suficientes da equipe para dizer quanto variam.
+        </span>
+      </span>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className={cn('font-medium', DIVERSIDADE_TOM[diversidade])}
+    >
+      {DIVERSIDADE_LABEL[diversidade]}
     </Badge>
   );
 }
@@ -429,6 +474,8 @@ export function CompanyCultureTable({
 
   const reading = getCultureReading(state, companyId);
   const profile = getCompanyCultureProfile(state, companyId);
+  // Por tema, o desvio das frases que fecham: é o que a coluna "Equipe" lê.
+  const perfil = perfilDaEmpresa(state, companyId);
   const progress = getCultureSampleProgress(state, companyId);
 
   const job = jobId ? getJob(jobId) : null;
@@ -496,7 +543,8 @@ export function CompanyCultureTable({
         <Table>
           <TableCaption className="sr-only">
             Como a empresa trabalha, ponto a ponto: o que a equipe diz, a
-            leitura por grupo, quantas respostas e o estado de cada ponto
+            leitura por grupo, quantas respostas, quanto a equipe varia e o
+            estado de cada ponto
           </TableCaption>
           <TableHeader className="bg-muted">
             <TableRow>
@@ -519,6 +567,38 @@ export function CompanyCultureTable({
               >
                 Respostas
               </TableHead>
+              {/*
+               * O tooltip fica no cabeçalho, uma vez: explica a coluna, e a
+               * mesma linha vai em `sr-only` para quem não passa o mouse.
+               */}
+              <TableHead
+                scope="col"
+                className="w-[8rem]"
+              >
+                <span className="inline-flex items-center gap-1">
+                  Equipe
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Sobre a coluna Equipe"
+                          className="inline-flex size-3.5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring"
+                        >
+                          <IconInfoCircle
+                            aria-hidden="true"
+                            className="size-3.5"
+                          />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-64 text-pretty">
+                        {DIVERSIDADE_HINT}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="sr-only">{DIVERSIDADE_HINT}</span>
+                </span>
+              </TableHead>
               <TableHead
                 scope="col"
                 className="w-[12rem]"
@@ -536,6 +616,10 @@ export function CompanyCultureTable({
                 ? (axisProfile.mean ?? null)
                 : null;
               const peso = weights?.[entry.axisId];
+              const tema = perfil.temas.find(
+                (item) => item.axisId === entry.axisId
+              );
+              const diversidade = tema ? diversidadeDoTema(tema) : null;
 
               return (
                 <TableRow key={entry.axisId}>
@@ -574,6 +658,9 @@ export function CompanyCultureTable({
                     {respondentsLabel(entry, progress)}
                   </TableCell>
                   <TableCell className="align-middle">
+                    <DiversidadeBadge diversidade={diversidade} />
+                  </TableCell>
+                  <TableCell className="align-middle">
                     <EstadoBadge estado={readRowState(entry, axisProfile)} />
                   </TableCell>
                 </TableRow>
@@ -588,7 +675,7 @@ export function CompanyCultureTable({
           <TableFooter className="bg-transparent">
             <TableRow className="hover:bg-transparent">
               <TableCell
-                colSpan={5}
+                colSpan={6}
                 className="py-2"
               >
                 <TrackLegend withheld={algumOculto} />

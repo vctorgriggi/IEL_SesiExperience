@@ -41,6 +41,7 @@ import { usePageHeader } from '../layout/page-header-context';
 import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarData } from '../shared/datas';
 import { AderenciaDaPessoa } from './aderencia-da-pessoa';
+import { LeituraPorTemaDaPessoa } from './leitura-por-tema';
 import { TalentFitView } from './talent-fit-view';
 
 function iniciais(nome: string): string {
@@ -205,10 +206,16 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
        * A aderência abre primeiro mesmo quando o link traz uma vaga: a
        * leitura da pessoa é a da tela, e a da vaga fica a um clique, na aba
        * ao lado, já com a empresa daquela vaga aberta na leitura.
+       *
+       * "Como ela prefere trabalhar" vem logo depois, e não antes: a analista
+       * abre a pessoa para decidir sobre uma vaga, e a comparação é o que
+       * decide. A leitura só dela responde a pergunta seguinte — "e ela, o
+       * que disse de si?" — e por isso mora na aba seguinte, sem empresa.
        */}
       <Tabs defaultValue="aderencia">
         <TabsList className={ABAS_SEM_ROLAGEM}>
           <TabsTrigger value="aderencia">Onde ela se encaixa</TabsTrigger>
+          <TabsTrigger value="jeito">Como ela prefere trabalhar</TabsTrigger>
           {naVaga ? <TabsTrigger value="vaga">Nesta vaga</TabsTrigger> : null}
           <TabsTrigger value="candidaturas">
             Candidaturas{' '}
@@ -226,6 +233,13 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
             talentId={talent.id}
             talentName={talent.name}
             empresaInicial={job?.companyId ?? null}
+          />
+        </TabsContent>
+
+        <TabsContent value="jeito">
+          <LeituraPorTemaDaPessoa
+            talentId={talent.id}
+            talentName={talent.name}
           />
         </TabsContent>
 
