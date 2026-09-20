@@ -52,7 +52,7 @@ export { contextoDaRota, type MindContexto };
  * A conversa é guiada por chips: cada chip é uma pergunta que o Mind sabe
  * responder a partir dos mesmos seletores da tela (`features/.../chat/mind`).
  * O campo livre manda a pergunta, com as palavras da analista, para
- * `/api/iel/assistant`. Com modelo ligado (DeepSeek), a resposta vem dele,
+ * `/api/iel/assistant`. Com modelo ligado (Gemini), a resposta vem dele,
  * sobre dados pseudonimizados no servidor; sem modelo, o Mind é honesto e
  * diz que responde pelas sugestões. O campo nunca vira porta para contato de
  * pessoa: um pedido de telefone ou e-mail é recusado aqui mesmo, sem chamar
@@ -73,6 +73,9 @@ type Mensagem =
 function nomeDoModelo(corpo: AssistantResponse): string {
   if (corpo.provider === 'deepseek') {
     return `DeepSeek (${corpo.modelo ?? 'modelo padrão'})`;
+  }
+  if (corpo.provider === 'gemini') {
+    return `Gemini (${corpo.modelo ?? 'modelo padrão'})`;
   }
   if (corpo.provider === 'anthropic') return 'Claude (Anthropic)';
   return corpo.provider;

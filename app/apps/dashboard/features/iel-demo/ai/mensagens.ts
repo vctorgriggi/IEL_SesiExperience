@@ -1,7 +1,5 @@
 import 'server-only';
 
-import { env } from '@/env';
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
 import {
@@ -12,9 +10,9 @@ import {
   type MensagemAoCandidato
 } from '../analysis/mensagens';
 import { ALL_COMPANIES } from '../fixtures';
-import { DEEPSEEK_BASE_URL, DEEPSEEK_MODELO_PADRAO } from './deepseek-provider';
-import { polimentoDisponivel } from './leitura-pessoal';
+import { chamarModeloJson, polimentoDisponivel } from './chamar-modelo';
 import { extrairJson } from './model-prompt';
+import { motivoDaFalha } from './openai-compat-provider';
 import { criarPseudonimo } from './pseudonimizar';
 
 /**
@@ -39,8 +37,8 @@ import { criarPseudonimo } from './pseudonimizar';
  * da validação.
  */
 
-/** O modelo tem 5 s: a analista já está olhando a regra fixa. */
-export const MENSAGEM_TIMEOUT_MS = 5_000;
+/** O modelo tem 12 s: a analista já está olhando a regra fixa. */
+export const MENSAGEM_TIMEOUT_MS = 12_000;
 
 /** Tamanho máximo da mensagem reescrita, contando os marcadores. */
 export const MAX_PALAVRAS_DA_MENSAGEM = 90;
@@ -235,63 +233,6 @@ export function montarPedidoDePolimento(entrada: EntradaDaMensagem): {
   };
 }
 
-async function chamarDeepseek(
-  system: string,
-  user: string,
-  signal: AbortSignal
-): Promise<string> {
-  const resposta = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${env.DEEPSEEK_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: env.DEEPSEEK_MODEL ?? DEEPSEEK_MODELO_PADRAO,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      response_format: { type: 'json_object' },
-      thinking: { type: 'disabled' },
-      temperature: 0.4,
-      max_tokens: 400,
-      stream: false
-    }),
-    signal
-  });
-  if (!resposta.ok)
-    throw new Error(`DeepSeek respondeu HTTP ${resposta.status}.`);
-  const corpo = (await resposta.json()) as {
-    choices?: Array<{ message?: { content?: string | null } }>;
-  };
-  const conteudo = corpo.choices?.[0]?.message?.content;
-  if (!conteudo?.trim()) throw new Error('DeepSeek devolveu conteúdo vazio.');
-  return conteudo;
-}
-
-async function chamarAnthropic(
-  system: string,
-  user: string,
-  signal: AbortSignal
-): Promise<string> {
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const message = await client.messages.create(
-    {
-      model: 'claude-sonnet-5',
-      max_tokens: 400,
-      system,
-      messages: [{ role: 'user', content: user }]
-    },
-    { signal }
-  );
-  const bloco = message.content.find((block) => block.type === 'text');
-  if (!bloco || bloco.type !== 'text') {
-    throw new Error('Resposta do modelo sem bloco de texto.');
-  }
-  return bloco.text;
-}
-
 /**
  * Gera a mensagem pela regra e, se der, pede ao Mind para reescrever.
  *
@@ -308,22 +249,20 @@ export async function mensagemComMind(
 
   const { system, user } = montarPedidoDePolimento(entrada);
 
-  const controle = new AbortController();
-  const relogio = setTimeout(() => controle.abort(), MENSAGEM_TIMEOUT_MS);
   try {
-    const texto =
-      env.IEL_AI_PROVIDER === 'deepseek'
-        ? await chamarDeepseek(system, user, controle.signal)
-        : await chamarAnthropic(system, user, controle.signal);
+    const texto = await chamarModeloJson({
+      system,
+      user,
+      maxTokens: 400,
+      timeoutMs: MENSAGEM_TIMEOUT_MS
+    });
     return validarPolimento(entrada, extrairJson(texto)) ?? regra;
   } catch (erro) {
     // Só a mensagem técnica: nada do pedido vai para o log.
     console.warn(
       '[iel/mensagens] Mind indisponível, ficou a regra fixa:',
-      erro instanceof Error ? erro.message : 'erro desconhecido.'
+      motivoDaFalha(erro, MENSAGEM_TIMEOUT_MS)
     );
     return regra;
-  } finally {
-    clearTimeout(relogio);
   }
 }

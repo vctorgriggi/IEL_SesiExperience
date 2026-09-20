@@ -5,6 +5,7 @@ import { env } from '@/env';
 import { anthropicProvider } from './anthropic-provider';
 import { createDeepseekProvider } from './deepseek-provider';
 import { deterministicProvider } from './deterministic-provider';
+import { createGeminiProvider } from './gemini-provider';
 import type { AssistantProvider } from './provider';
 
 export type { AssistantProvider } from './provider';
@@ -22,6 +23,8 @@ export { mensagemComMind } from './mensagens';
  * continua no modo determinístico, e esta função nunca lança por falta de
  * configuração — ela apenas escolhe o provider seguro para o ambiente atual.
  *
+ * - `IEL_AI_PROVIDER=gemini` + `GEMINI_API_KEY` → Gemini (Google), o padrão
+ *   recomendado (`GEMINI_MODEL` opcional, padrão `gemini-3.6-flash`);
  * - `IEL_AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY` → DeepSeek
  *   (`DEEPSEEK_MODEL` opcional, padrão `deepseek-flash`);
  * - `IEL_AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` → Claude.
@@ -30,6 +33,12 @@ export { mensagemComMind } from './mensagens';
  * fixa (R7): o modelo só conta em palavras o que ela já calculou.
  */
 export function getAssistantProvider(): AssistantProvider {
+  if (env.IEL_AI_PROVIDER === 'gemini' && env.GEMINI_API_KEY) {
+    return createGeminiProvider({
+      apiKey: env.GEMINI_API_KEY,
+      model: env.GEMINI_MODEL
+    });
+  }
   if (env.IEL_AI_PROVIDER === 'deepseek' && env.DEEPSEEK_API_KEY) {
     return createDeepseekProvider({
       apiKey: env.DEEPSEEK_API_KEY,

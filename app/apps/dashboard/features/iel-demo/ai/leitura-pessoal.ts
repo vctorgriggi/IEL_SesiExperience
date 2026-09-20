@@ -1,7 +1,5 @@
 import 'server-only';
 
-import { env } from '@/env';
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
 import { FIT_AXES, type FitAxisId } from '../analysis/fit-axes';
@@ -14,8 +12,9 @@ import {
   type MediaDoTema,
   type PapelDaLeitura
 } from '../analysis/leitura-pessoal';
-import { DEEPSEEK_BASE_URL, DEEPSEEK_MODELO_PADRAO } from './deepseek-provider';
+import { chamarModeloJson, polimentoDisponivel } from './chamar-modelo';
 import { extrairJson } from './model-prompt';
+import { motivoDaFalha } from './openai-compat-provider';
 import { criarPseudonimo } from './pseudonimizar';
 
 /**
@@ -37,8 +36,8 @@ import { criarPseudonimo } from './pseudonimizar';
  * e as respostas frase a frase — só a média por tema.
  */
 
-/** Limite para o modelo não ficar mais tempo do que o navegador espera (6 s). */
-export const LEITURA_TIMEOUT_MS = 5_000;
+/** Limite para o modelo não ficar mais tempo do que o navegador espera (14 s). */
+export const LEITURA_TIMEOUT_MS = 12_000;
 
 /** Tamanho máximo de cada frase reescrita, em palavras. */
 export const MAX_PALAVRAS_DO_TRACO = 28;
@@ -217,70 +216,8 @@ export function montarPedidoDePolimento(
   };
 }
 
-async function chamarDeepseek(
-  system: string,
-  user: string,
-  signal: AbortSignal
-): Promise<string> {
-  const resposta = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${env.DEEPSEEK_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: env.DEEPSEEK_MODEL ?? DEEPSEEK_MODELO_PADRAO,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      response_format: { type: 'json_object' },
-      thinking: { type: 'disabled' },
-      temperature: 0.4,
-      max_tokens: 600,
-      stream: false
-    }),
-    signal
-  });
-  if (!resposta.ok)
-    throw new Error(`DeepSeek respondeu HTTP ${resposta.status}.`);
-  const corpo = (await resposta.json()) as {
-    choices?: Array<{ message?: { content?: string | null } }>;
-  };
-  const conteudo = corpo.choices?.[0]?.message?.content;
-  if (!conteudo?.trim()) throw new Error('DeepSeek devolveu conteúdo vazio.');
-  return conteudo;
-}
-
-async function chamarAnthropic(
-  system: string,
-  user: string,
-  signal: AbortSignal
-): Promise<string> {
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const message = await client.messages.create(
-    {
-      model: 'claude-sonnet-5',
-      max_tokens: 600,
-      system,
-      messages: [{ role: 'user', content: user }]
-    },
-    { signal }
-  );
-  const bloco = message.content.find((block) => block.type === 'text');
-  if (!bloco || bloco.type !== 'text') {
-    throw new Error('Resposta do modelo sem bloco de texto.');
-  }
-  return bloco.text;
-}
-
-/** Há provedor e chave? Sem os dois, nem tenta: a regra fixa é a resposta. */
-export function polimentoDisponivel(): boolean {
-  return (
-    (env.IEL_AI_PROVIDER === 'deepseek' && Boolean(env.DEEPSEEK_API_KEY)) ||
-    (env.IEL_AI_PROVIDER === 'anthropic' && Boolean(env.ANTHROPIC_API_KEY))
-  );
-}
+/** Há provedor e chave? Vive em `chamar-modelo.ts`; reexportado por compatibilidade. */
+export { polimentoDisponivel } from './chamar-modelo';
 
 /**
  * Gera a devolutiva pela regra e, se der, pede ao Mind para reescrever.
@@ -302,22 +239,20 @@ export async function leituraPessoalComMind(
   const medias = mediasPorTema(respostas);
   const { system, user } = montarPedidoDePolimento(regra, medias, contexto);
 
-  const controle = new AbortController();
-  const relogio = setTimeout(() => controle.abort(), LEITURA_TIMEOUT_MS);
   try {
-    const texto =
-      env.IEL_AI_PROVIDER === 'deepseek'
-        ? await chamarDeepseek(system, user, controle.signal)
-        : await chamarAnthropic(system, user, controle.signal);
+    const texto = await chamarModeloJson({
+      system,
+      user,
+      maxTokens: 600,
+      timeoutMs: LEITURA_TIMEOUT_MS
+    });
     return validarPolimento(regra, medias, extrairJson(texto)) ?? regra;
   } catch (erro) {
     // Só a mensagem técnica: nada do pedido vai para o log.
     console.warn(
       '[iel/leitura-pessoal] Mind indisponível, ficou a regra fixa:',
-      erro instanceof Error ? erro.message : 'erro desconhecido.'
+      motivoDaFalha(erro, LEITURA_TIMEOUT_MS)
     );
     return regra;
-  } finally {
-    clearTimeout(relogio);
   }
 }

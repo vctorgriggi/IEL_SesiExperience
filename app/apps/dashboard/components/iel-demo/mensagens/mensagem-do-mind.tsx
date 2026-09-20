@@ -71,7 +71,7 @@ export type MensagemDoMindProps = {
 };
 
 /** Quanto a tela espera pelo Mind antes de desistir, em silêncio. */
-const ESPERA_PELO_MIND_MS = 6_000;
+const ESPERA_PELO_MIND_MS = 14_000;
 
 /** Duração da troca de texto: some, troca, volta. */
 const TRANSICAO_MS = 180;

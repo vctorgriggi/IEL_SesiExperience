@@ -28,7 +28,7 @@ import { inMemoryRateLimiter } from '@workspace/rate-limit/in-memory';
  *   pendências — use `montarContextoLivre` (`features/iel-demo/chat/mind-livre.ts`).
  *
  * Resposta (`assistantResponseSchema`): `text`, `citations`, `provider`
- * (`deterministic` | `deepseek` | `anthropic`), `modelo?`, `aviso?` (o
+ * (`deterministic` | `gemini` | `deepseek` | `anthropic`), `modelo?`, `aviso?` (o
  * modelo falhou e a regra fixa respondeu), `leitura?` (só em
  * `leitura-da-pessoa`: `ondeCombina`, `ondeConversar`, `perguntas`).
  *
