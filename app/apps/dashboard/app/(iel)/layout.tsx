@@ -109,7 +109,7 @@ export default async function IelDemoLayout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className={redHatDisplay.variable}>
+    <div className={`${redHatDisplay.variable} ${redHatDisplay.className} font-sans`}>
       <IelDemoProvider
         compartilhado={compartilhado && estadoInicial !== null}
         estadoInicial={estadoInicial}

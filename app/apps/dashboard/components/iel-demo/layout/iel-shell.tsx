@@ -62,12 +62,12 @@ const PREFIXOS_POR_LINK: {
    */
   {
     base: prefixo(routes.dashboard.iel.applications.byId(SENTINELA).index),
-    largura: 'max-w-md',
+    largura: 'max-w-xl',
     cabecalho: true
   },
   {
     base: prefixo(routes.dashboard.iel.cultureInvite.byToken(SENTINELA)),
-    largura: 'max-w-md',
+    largura: 'max-w-xl',
     cabecalho: true
   },
   /*
@@ -170,26 +170,28 @@ function LinkShell({
       className="flex min-h-dvh flex-col bg-background text-foreground"
     >
       {cabecalho ? (
-        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
-          <Image
-            src="/marca/mindrh-wordmark.png"
-            alt="Mind RH"
-            width={2624}
-            height={613}
-            priority
-            className="h-5 w-auto"
-          />
-          <Separator
-            orientation="vertical"
-            className="data-[orientation=vertical]:h-4"
-          />
-          <span className="truncate text-xs text-muted-foreground">
-            IEL · Centro de Empregos
-          </span>
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/50 bg-background/85 px-4 sm:px-8 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/marca/mindrh-wordmark.png"
+              alt="Mind RH"
+              width={2624}
+              height={613}
+              priority
+              className="h-5 w-auto"
+            />
+            <Separator
+              orientation="vertical"
+              className="data-[orientation=vertical]:h-4"
+            />
+            <span className="truncate text-xs font-medium text-muted-foreground">
+              IEL · Centro de Empregos
+            </span>
+          </div>
         </header>
       ) : null}
       <main
-        className={cn('mx-auto w-full flex-1 px-4 pb-24 sm:pb-10', largura)}
+        className={cn('mx-auto w-full flex-1 px-4 py-4 sm:py-6 pb-24 sm:pb-12', largura)}
       >
         {children}
       </main>

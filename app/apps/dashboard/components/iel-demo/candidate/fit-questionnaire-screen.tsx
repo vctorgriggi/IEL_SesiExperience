@@ -35,9 +35,12 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
   IconAlertTriangle,
+  IconArrowLeft,
+  IconArrowRight,
   IconCircleCheck,
   IconClock,
-  IconHistory
+  IconHistory,
+  IconLock
 } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
@@ -114,11 +117,13 @@ import { useRascunho } from '../shared/use-rascunho';
  * conferirem que é o mesmo instrumento. A pergunta de apoio é "O quanto isso
  * é você?", e a escala é a **régua de um toque**
  * (`shared/regua-de-concordancia`): cinco degraus com a palavra escrita, de
- * "Nada a ver comigo" a "Sou eu"; o toque seleciona e, um instante depois,
- * a tela avança sozinha. "Próxima" continua na tela para quem prefere o
- * botão, para quem voltou a uma frase já respondida (o toque no mesmo degrau
- * não muda nada, então não avança) e para o teclado; na última frase o toque
- * só seleciona, e enviar é um gesto à parte.
+ * "Nada a ver comigo" a "Sou eu".
+ *
+ * O toque **seleciona e para aí**. A régua sabe avançar sozinha e a conversa
+ * guiada usa isso, mas aqui não: a tela mudava debaixo do dedo antes de a
+ * pessoa ler o que tinha escolhido, e quem errou o degrau descobria isso já
+ * na frase seguinte. Quem decide passar é "Próxima" — um gesto, uma frase —
+ * e na última frase o mesmo botão envia.
  *
  * As 10 frases são as que a empresa da vaga escolheu (`perguntasDoCandidato`):
  * uma por tema, onde a equipe dela é mais marcante.
@@ -383,9 +388,10 @@ export function FitQuestionnaireScreen({
 
   const badge = (
     <Badge
-      variant="outline"
-      className="font-medium text-muted-foreground"
+      variant="secondary"
+      className="gap-1.5 px-3 py-1 font-medium bg-secondary/80 text-foreground border border-border/70 shadow-2xs text-xs sm:text-[13px]"
     >
+      <span className="size-1.5 rounded-full bg-primary" />
       Vaga de {jobView.activity}
     </Badge>
   );
@@ -930,31 +936,31 @@ export function FitQuestionnaireScreen({
 
   return (
     <CandidateFrame badge={badge}>
-      <div className="flex flex-col gap-2">
-        {/*
-         * O número da pergunta é lido no título, que recebe o foco. À direita
-         * ficava "cerca de 30 s", que não é informação: o que a pessoa quer
-         * saber no meio de uma fila de frases é quantas ainda faltam.
-         */}
+      <div className="flex flex-col gap-2.5 pb-2">
         <div
-          className="flex justify-between text-[13px] text-muted-foreground"
+          className="flex items-center justify-between text-xs sm:text-[13px] font-medium text-muted-foreground"
           aria-hidden="true"
         >
-          <span>{rotuloProgresso}</span>
-          <span>{restantes === 0 ? 'Última' : `Faltam ${restantes}`}</span>
+          <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+              {step.index + 1}
+            </span>
+            {rotuloProgresso}
+          </span>
+          <span className="rounded-full bg-muted/90 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+            {restantes === 0 ? 'Última frase 🎉' : `Faltam ${restantes}`}
+          </span>
         </div>
         <Progress
-          className="h-1.5 bg-muted"
+          className="h-2 bg-muted/80 rounded-full"
           value={valorProgresso}
-          // O `Progress` do kit não repassa `value` ao Radix; sem isto a
-          // barra é lida sem número.
           aria-valuenow={valorProgresso}
           aria-label={rotuloProgresso}
           aria-valuetext={rotuloProgresso}
         />
         {metade && totalQuestions > 4 ? (
-          <p className="text-[13px] leading-snug text-muted-foreground">
-            Metade do caminho.
+          <p className="text-xs font-medium text-muted-foreground">
+            Metade do caminho concluída ✨
           </p>
         ) : null}
       </div>
@@ -962,56 +968,53 @@ export function FitQuestionnaireScreen({
       {retomado ? (
         <p
           role="status"
-          className="rounded-lg border border-dashed px-3 py-2 text-[13px] leading-relaxed text-muted-foreground"
+          className="rounded-xl border border-dashed px-3.5 py-2.5 text-[13px] leading-relaxed text-muted-foreground bg-muted/20"
         >
           Você voltou de onde parou. As frases que já tinha respondido continuam
           respondidas.
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <h1
-          id="fit-pergunta"
-          ref={tituloRef}
-          tabIndex={-1}
-          className="text-[24px] font-semibold leading-[1.25] tracking-tight outline-none [text-wrap:balance]"
-        >
-          <span className="sr-only">{rotuloProgresso}: </span>
-          {question.item.cena}
-        </h1>
-        <p
-          id="fit-pergunta-dica"
-          className="text-[15px] leading-relaxed text-muted-foreground"
-        >
-          O quanto isso é você? Não existe resposta certa.
-        </p>
-        {/* Fecha sozinha quando a frase muda: a chave é a frase. */}
-        <FraseOriginal
-          key={question.itemId}
-          texto={question.item.texto}
-        />
+      <div className="my-auto flex flex-col gap-4 py-4 sm:py-6">
+        <div className="flex flex-col gap-2.5">
+          <h1
+            id="fit-pergunta"
+            ref={tituloRef}
+            tabIndex={-1}
+            className="text-[22px] sm:text-[26px] font-bold leading-snug tracking-tight text-foreground outline-none [text-wrap:balance]"
+          >
+            <span className="sr-only">{rotuloProgresso}: </span>
+            {question.item.cena}
+          </h1>
+          <p
+            id="fit-pergunta-dica"
+            className="text-[14px] sm:text-[15px] leading-relaxed text-muted-foreground"
+          >
+            O quanto isso é você? Não existe resposta certa.
+          </p>
+          <FraseOriginal
+            key={question.itemId}
+            texto={question.item.texto}
+          />
+        </div>
+
+        <div className="pt-2">
+          <ReguaDeConcordancia
+            nome={question.itemId}
+            valor={chosen ?? null}
+            rotulos={ROTULOS_DA_REGUA.candidato}
+            tom="pessoa"
+            aria-labelledby="fit-pergunta"
+            aria-describedby="fit-pergunta-dica"
+            onChange={(valor) => {
+              setFaltando(null);
+              setAnswers((current) => ({ ...current, [question.itemId]: valor }));
+            }}
+          />
+        </div>
       </div>
 
-      <ReguaDeConcordancia
-        nome={question.itemId}
-        valor={chosen ?? null}
-        rotulos={ROTULOS_DA_REGUA.candidato}
-        tom="pessoa"
-        aria-labelledby="fit-pergunta"
-        aria-describedby="fit-pergunta-dica"
-        onChange={(valor) => {
-          setFaltando(null);
-          setAnswers((current) => ({ ...current, [question.itemId]: valor }));
-        }}
-        onConfirmar={() => {
-          // O toque avança; na última frase, enviar é um gesto à parte.
-          if (isLast) return;
-          setRetomado(false);
-          setStep({ kind: 'question', index: step.index + 1 });
-        }}
-      />
-
-      <div className="mt-auto flex flex-col gap-2.5 pt-4">
+      <div className="mt-auto flex flex-col gap-2.5 pt-4 border-t border-border/40">
         {faltando !== null && faltando >= 0 ? (
           <Card
             role="alert"
@@ -1040,7 +1043,7 @@ export function FitQuestionnaireScreen({
         ) : null}
         <Button
           size="lg"
-          className="h-12 w-full text-[15px]"
+          className="h-12 sm:h-13 w-full text-[15px] sm:text-base font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg transition-all"
           disabled={chosen === undefined}
           onClick={() => {
             if (isLast) {
@@ -1054,11 +1057,12 @@ export function FitQuestionnaireScreen({
           }}
         >
           {isLast ? 'Enviar respostas' : 'Próxima'}
+          <IconArrowRight className="ml-2 size-4" />
         </Button>
         <Button
           variant="ghost"
           size="lg"
-          className="h-12 w-full text-muted-foreground"
+          className="h-11 w-full text-muted-foreground hover:text-foreground text-sm font-medium"
           onClick={() => {
             setFaltando(null);
             setRetomado(false);
@@ -1069,12 +1073,16 @@ export function FitQuestionnaireScreen({
             );
           }}
         >
+          <IconArrowLeft className="mr-2 size-4" />
           {step.index === 0 ? 'Voltar ao começo' : 'Voltar uma frase'}
         </Button>
-        <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          Pode fechar e voltar: o que já respondeu fica guardado. O nome da
-          empresa você conhece na entrevista.
-        </p>
+        <div className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground pt-1">
+          <IconLock className="size-3.5 shrink-0 opacity-70" />
+          <span>
+            Pode fechar e voltar: o que já respondeu fica guardado. O nome da
+            empresa você conhece na entrevista.
+          </span>
+        </div>
       </div>
     </CandidateFrame>
   );
@@ -1096,7 +1104,7 @@ function CandidateFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-5 px-1 pt-2">
+    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-xl flex-col gap-4 px-2 sm:px-4 pt-1 pb-6">
       {/*
        * Quem é o remetente já está no cabeçalho da casca (Mind RH · IEL ·
        * Centro de Empregos). Repetir aqui gastava a primeira linha da tela
@@ -1104,7 +1112,9 @@ function CandidateFrame({
        * vaga, que é o contexto que ele precisa.
        */}
       <div className="flex items-center justify-end gap-2">{badge}</div>
-      {children}
+      <div className="flex flex-1 flex-col rounded-3xl border border-border/70 bg-card p-5 sm:p-8 shadow-xl shadow-black/[0.03] transition-all">
+        {children}
+      </div>
     </div>
   );
 }
