@@ -45,8 +45,18 @@ a aba: quem clicou escolheu sair.
 
 ### Aba "Análise de cultura"
 
-A leitura de **um par**: uma pessoa contra uma empresa. Dois passos de busca (pessoa, depois
-empresa) e então:
+A leitura de **um par**: uma pessoa contra uma empresa. A aba **abre já medindo** — o primeiro
+par da base vem escolhido —, e cada nome é um seletor pesquisável que troca aquele lado sem
+desmontar o resto. Abrir em branco custava dois passos de busca e não dizia nada até alguém
+digitar duas vezes; quem chega aqui quer ver a leitura e trocar um lado, não montar um par do
+zero.
+
+Os seletores oferecem só quem tem posição: as pessoas que responderam o questionário e as
+empresas que fecharam o perfil. São os índices de `getCultureMapPoints`, e esse é o recorte certo
+— escolher alguém sem posição abriria a aba num aviso de que não há o que medir, e o seletor
+teria mandado a analista para um beco.
+
+O que a aba mostra:
 
 - **Aderência** em destaque, com barra, faixa, quantos temas foram comparados e em quantos a equipe
   diverge da gestão. Abaixo de dois temas respondidos, o texto avisa para ler o percentual como
@@ -61,7 +71,8 @@ empresa) e então:
 
 ### Aba "Mapa de cultura"
 
-A leitura pelo outro lado: **uma empresa contra a base**. Busca a empresa e mostra o mesmo
+A leitura pelo outro lado: **uma empresa contra a base**. Também abre já com a primeira empresa
+escolhida, e o nome é o mesmo seletor pesquisável. Mostra o mesmo
 `PlanoCultural` da [aba da empresa](15-mapa-de-cultura.md) — empresa no centro, anéis de 85%, 65% e
 35%, cada pessoa no raio da própria aderência — com as cinco primeiras nomeadas embaixo, em ordem.
 
@@ -74,12 +85,12 @@ Inalterada — é o `MindSheet` que já existia, agora aberto pelo leque.
 
 ## De onde vêm os dados hoje
 
-| Aba                | Origem                                                                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Fila               | `components/iel-demo/overview/pendencias.ts` → `montarPendencias(state)`                                                             |
-| Análise de cultura | `getCultureFit(state, talentId, companyId)`; pessoas de `ALL_TALENTS` + `state.importedTalents`, empresas de `getVisibleCompanies`   |
-| Mapa de cultura    | `getCultureMapPoints(state, 'talentos')` e `getCompanyCultureAnswers` para montar o ponto da empresa, como faz `mapa-da-empresa.tsx` |
-| Mind               | `features/iel-demo/chat/mind.ts` e `/api/iel/assistant`                                                                              |
+| Aba                | Origem                                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Fila               | `components/iel-demo/overview/pendencias.ts` → `montarPendencias(state)`                                                                |
+| Análise de cultura | `getCultureFit(state, talentId, companyId)`; as duas listas dos seletores vêm de `getCultureMapPoints`, que já traz só quem tem posição |
+| Mapa de cultura    | `getCultureMapPoints(state, 'talentos')` e `getCompanyCultureAnswers` para montar o ponto da empresa, como faz `mapa-da-empresa.tsx`    |
+| Mind               | `features/iel-demo/chat/mind.ts` e `/api/iel/assistant`                                                                                 |
 
 O recorte é o da persona: o que `getVisible*` não devolve não aparece aqui também.
 
@@ -89,15 +100,16 @@ A empresa do mapa é montada no componente, e não lida de `getCultureMapPoints`
 
 ## Ações do usuário
 
-| Ação                              | O que acontece                                          |
-| --------------------------------- | ------------------------------------------------------- |
-| Clicar no botão do canto          | abre ou fecha o leque                                   |
-| `Esc`, clique fora ou navegar     | fecha o leque (o `Esc` devolve o foco ao botão)         |
-| Escolher uma porta                | abre a aba lateral correspondente                       |
-| Filtrar por prioridade na fila    | recorta a lista, sem tocar no estado                    |
-| Clicar no verbo de uma pendência  | navega e fecha a aba                                    |
-| **Trocar de pessoa / de empresa** | volta ao passo de busca                                 |
-| Abrir a análise completa / o mapa | navega para o perfil da pessoa ou para a aba da empresa |
+| Ação                                   | O que acontece                                          |
+| -------------------------------------- | ------------------------------------------------------- |
+| Clicar no botão do canto               | abre ou fecha o leque                                   |
+| `Esc`, clique fora ou navegar          | fecha o leque (o `Esc` devolve o foco ao botão)         |
+| Escolher uma porta                     | abre a aba lateral correspondente                       |
+| Filtrar por prioridade na fila         | recorta a lista, sem tocar no estado                    |
+| Clicar no verbo de uma pendência       | navega e fecha a aba                                    |
+| Clicar no nome da pessoa ou da empresa | abre o seletor pesquisável daquele lado                 |
+| `Esc` dentro do seletor                | fecha só o seletor, não a aba                           |
+| Abrir a análise completa / o mapa      | navega para o perfil da pessoa ou para a aba da empresa |
 
 Nenhuma ação do reducer é disparada: o leque lê e leva, não escreve.
 
@@ -121,7 +133,8 @@ para o mesmo par.**
   `fixed` com o mesmo `z-40` e, no telefone, estaciona no canto inferior direito — medido em 390px,
   ele ocupa 338,728 num quadrado de 40px, exatamente onde o botão cairia. Empatados no `z`, o
   VLibras vence por vir depois no documento e o leque ficaria inclicável. Por isso o canto direito é
-  dele no telefone (`right-16 sm:right-4`). Do `sm` para cima o VLibras sobe para o meio da lateral.
+  dele no telefone (`right-20 sm:right-6`). Do `sm` para cima o VLibras sobe para o meio da
+  lateral, em outra faixa vertical, e o recuo volta a ser quase o da borda.
 - **O leque é menu de canto, não diálogo**: não prende o foco nem tranca a página. As abas, sim, são
   `Sheet` e se comportam como diálogo.
 
@@ -143,3 +156,5 @@ tomada.
 ## Histórico
 
 - 2026-09-20 — criada. O botão fixo "Pergunte ao Mind" vira leque com quatro portas.
+- 2026-09-20 — as duas abas de cultura deixam de abrir em branco: o alvo vem pré-selecionado e a
+  troca é por seletor pesquisável, no lugar dos passos de busca.
