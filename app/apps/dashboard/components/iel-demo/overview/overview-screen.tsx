@@ -16,23 +16,24 @@ import { DEMO_REFERENCE_DATE } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  ArrowRight,
-  Briefcase,
-  Building2,
-  Check,
-  CircleAlert,
-  Clock,
-  Hourglass,
-  Inbox,
-  MessageCircleQuestion,
-  MessageSquareText,
-  Phone,
-  RefreshCw,
-  Reply,
-  Send,
-  ShieldCheck,
-  type LucideIcon
-} from 'lucide-react';
+  IconAlertCircle,
+  IconArrowBackUp,
+  IconArrowRight,
+  IconBriefcase,
+  IconBuildingSkyscraper,
+  IconCheck,
+  IconClock,
+  IconHourglass,
+  IconInbox,
+  IconInfoCircle,
+  IconMessage,
+  IconMessageCircleQuestion,
+  IconPhone,
+  IconRefresh,
+  IconSend,
+  IconShieldCheck
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -57,11 +58,16 @@ import {
   TableHeader,
   TableRow
 } from '@workspace/ui/shadcn/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@workspace/ui/shadcn/tooltip';
 
 import { RodapeDaTabela, usePaginacao } from '../jobs/table-pagination';
 import { usePageHeader } from '../layout/page-header-context';
 import { ManagerOverview } from '../manager/manager-overview';
-import { ICONE_TINGIDO, LADO } from '../metricas/cores';
+import { ICONE_NO_TOM, LADO } from '../metricas/cores';
 import { formatarNumero } from '../metricas/formato';
 import { Funil } from '../metricas/funil';
 import { KpiCard } from '../metricas/kpi-card';
@@ -71,7 +77,9 @@ import {
   montarPendencias,
   PENDENCIAS_VISIVEIS,
   TIPO_DE_PENDENCIA_LABEL,
+  type NivelDePrioridade,
   type Pendencia,
+  type StatusPrazo,
   type TipoDePendencia
 } from './pendencias';
 
@@ -79,20 +87,18 @@ const ROTA_DO_BI = routes.dashboard.iel.bi;
 
 /**
  * Ícone tingido de cada grupo da fila: o tom diz o tipo de coisa antes do
- * texto. Laranja pede atenção, cinza está parado à espera de alguém, azul é
- * do lado da empresa, verde é pronto para seguir e verde-azulado é resposta
- * de pessoa — inclusive a que falta: ligar para quem foi contratado.
+ * texto.
  */
 const ICONE_DO_GRUPO: Record<
   TipoDePendencia,
-  { Icone: LucideIcon; tom: string }
+  { Icone: TablerIcon; tom: string }
 > = {
-  respostas: { Icone: Inbox, tom: ICONE_TINGIDO.pessoa },
-  perguntas: { Icone: MessageCircleQuestion, tom: ICONE_TINGIDO.atencao },
-  ligacao: { Icone: Phone, tom: ICONE_TINGIDO.pessoa },
-  envio: { Icone: Send, tom: ICONE_TINGIDO.combina },
-  questionario: { Icone: Hourglass, tom: ICONE_TINGIDO.neutro },
-  cultura: { Icone: Building2, tom: ICONE_TINGIDO.empresa }
+  respostas: { Icone: IconInbox, tom: ICONE_NO_TOM.pessoa },
+  perguntas: { Icone: IconMessageCircleQuestion, tom: ICONE_NO_TOM.atencao },
+  ligacao: { Icone: IconPhone, tom: ICONE_NO_TOM.pessoa },
+  envio: { Icone: IconSend, tom: ICONE_NO_TOM.combina },
+  questionario: { Icone: IconHourglass, tom: ICONE_NO_TOM.neutro },
+  cultura: { Icone: IconBuildingSkyscraper, tom: ICONE_NO_TOM.empresa }
 };
 
 /** Pendências em grupos, na ordem em que chegam (já ordenadas por urgência). */
@@ -106,6 +112,71 @@ function agrupar(
     else grupos.push({ tipo: pendencia.tipo, itens: [pendencia] });
   }
   return grupos;
+}
+
+function getPrioridadeInfo(prioridade: NivelDePrioridade): {
+  rotulo: string;
+  badgeClass: string;
+  dotClass: string;
+} {
+  switch (prioridade) {
+    case 'alta':
+      return {
+        rotulo: 'Alta',
+        badgeClass:
+          'bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/25 dark:bg-rose-500/20 dark:text-rose-400',
+        dotClass: 'bg-rose-500'
+      };
+    case 'media':
+      return {
+        rotulo: 'Média',
+        badgeClass:
+          'bg-amber-500/10 text-amber-700 ring-1 ring-inset ring-amber-500/25 dark:bg-amber-500/20 dark:text-amber-400',
+        dotClass: 'bg-amber-500'
+      };
+    case 'normal':
+      return {
+        rotulo: 'Normal',
+        badgeClass:
+          'bg-muted/80 text-muted-foreground ring-1 ring-inset ring-border/50 dark:bg-muted/40 dark:text-muted-foreground',
+        dotClass: 'bg-muted-foreground/60'
+      };
+  }
+}
+
+function getStatusPrazoBadge(status: StatusPrazo, label: string) {
+  switch (status) {
+    case 'atrasado':
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-500/30 dark:text-rose-300">
+          <IconAlertCircle
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-rose-600 animate-pulse"
+          />
+          {label}
+        </span>
+      );
+    case 'urgente':
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-500/30 dark:text-amber-300">
+          <IconClock
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-amber-600"
+          />
+          {label}
+        </span>
+      );
+    case 'no-prazo':
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-0.5 text-xs font-normal text-muted-foreground">
+          <IconCheck
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-muted-foreground/80"
+          />
+          {label}
+        </span>
+      );
+  }
 }
 
 /** "Bom dia", "Boa tarde" ou "Boa noite" pela hora de quem abre. */
@@ -127,23 +198,44 @@ function dataPorExtenso(iso: string): string {
 
 /**
  * A tela de abertura: o que precisa de mim hoje e como o período está indo.
- *
- * A fila continua sendo a primeira coisa à esquerda — é por ela que a
- * analista começa o dia. Acima, quatro números do período; à direita, o
- * funil e as duas pontas (empresa com perfil completo, candidato que
- * respondeu). Os números que vêm do histórico simulado levam o marcador de
- * relógio: são o que o retorno de um toque passa a medir, não medições.
- *
- * O período abre em 90 dias: em 30 a base é pequena e o número balança.
  */
 export function OverviewScreen() {
   const { state, persona } = useIelDemo();
   const [todas, setTodas] = useState(false);
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
+  const [filtroPrioridade, setFiltroPrioridade] = useState<
+    'todas' | NivelDePrioridade
+  >('todas');
 
   const pendencias = useMemo(() => montarPendencias(state), [state]);
-  const lista = todas ? pendencias : pendencias.slice(0, PENDENCIAS_VISIVEIS);
+
+  const contadoresPrioridade = useMemo(() => {
+    const contagem = { alta: 0, media: 0, normal: 0 };
+    for (const p of pendencias) {
+      contagem[p.prioridade]++;
+    }
+    return contagem;
+  }, [pendencias]);
+
+  const pendenciasFiltradas = useMemo(() => {
+    if (filtroPrioridade === 'todas') return pendencias;
+    return pendencias.filter((p) => p.prioridade === filtroPrioridade);
+  }, [pendencias, filtroPrioridade]);
+
+  // Posição global no ranking de prioridade (1º, 2º, 3º...)
+  const mapaRanking = useMemo(() => {
+    const mapa = new Map<string, number>();
+    pendencias.forEach((p, idx) => {
+      mapa.set(p.id, idx + 1);
+    });
+    return mapa;
+  }, [pendencias]);
+
+  const lista = todas
+    ? pendenciasFiltradas
+    : pendenciasFiltradas.slice(0, PENDENCIAS_VISIVEIS);
   const paginacao = usePaginacao(lista);
+  const cabe = pendenciasFiltradas.length <= PENDENCIAS_VISIVEIS;
 
   const kpis = useMemo(() => getInicioKpis(state, periodo), [state, periodo]);
   const funil = useMemo(
@@ -164,94 +256,142 @@ export function OverviewScreen() {
   }
 
   const empregare = integracoes.find((i) => i.id === 'empregare');
-  const cabe = pendencias.length <= PENDENCIAS_VISIVEIS;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          {/* A hora é a de quem abre; no servidor pode dar outra saudação. */}
-          <h1
-            className="text-xl font-semibold tracking-tight"
-            suppressHydrationWarning
-          >
-            {saudacao(new Date().getHours())}
-          </h1>
-          {/* Data e selo na mesma linha: o cabeçalho fica em duas linhas e a
-              primeira dobra ganha espaço para a fila. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p className="text-sm text-muted-foreground">
-              {dataPorExtenso(DEMO_REFERENCE_DATE)} ·{' '}
-              {plural(
-                kpis.vagasAtivas.valor ?? 0,
-                'vaga ativa',
-                'vagas ativas'
-              )}{' '}
-              · {formatarNumero(candidatos)}{' '}
-              {candidatos === 1 ? 'pessoa na base' : 'pessoas na base'}
-            </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1
+              className="text-2xl font-bold tracking-tight text-foreground"
+              suppressHydrationWarning
+            >
+              {saudacao(new Date().getHours())}
+            </h1>
             {empregare ? (
-              <Badge
-                variant="outline"
-                className="gap-1 font-normal text-muted-foreground"
-              >
-                <RefreshCw
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <IconRefresh
                   aria-hidden="true"
                   className="size-3"
                 />
                 {empregare.rotulo} {empregare.detalhe.toLowerCase()}
-              </Badge>
+              </span>
             ) : null}
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/80">
+              {dataPorExtenso(DEMO_REFERENCE_DATE)}
+            </span>
+            <span className="text-muted-foreground/40">•</span>
+            <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 font-medium text-foreground/75">
+              {plural(
+                kpis.vagasAtivas.valor ?? 0,
+                'vaga ativa',
+                'vagas ativas'
+              )}
+            </span>
+            <span className="inline-flex items-center rounded-md bg-muted/60 px-2 py-0.5 font-medium text-foreground/75">
+              {formatarNumero(candidatos)}{' '}
+              {candidatos === 1 ? 'pessoa na base' : 'pessoas na base'}
+            </span>
+          </div>
         </div>
-        <SeletorPeriodo
-          value={periodo}
-          onChange={setPeriodo}
-        />
+
+        <div className="flex items-center gap-2 shrink-0">
+          <SeletorPeriodo
+            value={periodo}
+            onChange={setPeriodo}
+          />
+        </div>
       </div>
 
-      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        data-tour="inicio-indicadores"
+        className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
         <KpiCard
           kpi={kpis.vagasAtivas}
-          icone={Briefcase}
+          icone={IconBriefcase}
           tom="empresa"
         />
         <KpiCard
           kpi={kpis.respostaQuestionario}
-          icone={MessageSquareText}
+          icone={IconMessage}
           tom="pessoa"
         />
         <KpiCard
           kpi={kpis.retornoEmpresas}
-          icone={Reply}
+          icone={IconArrowBackUp}
           tom="empresa"
         />
         <KpiCard
           kpi={kpis.permanencia90}
-          icone={ShieldCheck}
+          icone={IconShieldCheck}
           tom="combina"
         />
       </div>
 
       {/*
        * Fila larga (7/12) e, à direita, o funil e as duas pontas empilhados.
-       * As duas colunas terminam na mesma linha: a fila mostra itens bastantes
-       * para igualar a coluna da direita, e o funil (o cartão que pode
-       * crescer) ocupa o que sobrar, com as etapas distribuídas na altura.
        */}
       <div className="grid items-stretch gap-4 lg:grid-cols-12">
-        <Card className="h-full lg:col-span-7">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
-              Precisa de você hoje
-            </CardTitle>
-            <CardDescription>
-              {pendencias.length === 0
-                ? 'Nada em aberto.'
-                : `${plural(pendencias.length, 'pendência', 'pendências')}, na ordem em que compensa resolver`}
-            </CardDescription>
-            {todas ? (
-              <CardAction>
+        <Card
+          data-tour="inicio-fila"
+          className="h-full rounded-2xl border border-border/75 bg-card/95 shadow-xs lg:col-span-7"
+        >
+          <CardHeader className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-semibold">
+                  Precisa de você hoje
+                </CardTitle>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Sobre o ranking de prioridades"
+                      className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none"
+                    >
+                      <IconInfoCircle
+                        aria-hidden="true"
+                        className="size-3.5"
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-80 rounded-xl p-3 text-xs leading-relaxed shadow-lg">
+                    <div className="font-semibold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <span>Critério do Ranking de Prioridade:</span>
+                    </div>
+                    <ul className="space-y-1.5 text-muted-foreground">
+                      <li>
+                        <strong className="text-rose-600 dark:text-rose-400">
+                          🔴 Alta:
+                        </strong>{' '}
+                        Dúvidas travando o processo ou acompanhamentos com prazo
+                        de 30 dias correndo.
+                      </li>
+                      <li>
+                        <strong className="text-amber-600 dark:text-amber-400">
+                          🟡 Média:
+                        </strong>{' '}
+                        Vagas com candidatos compatíveis prontos para remessa
+                        (ordenadas por maior volume de talentos).
+                      </li>
+                      <li>
+                        <strong className="text-muted-foreground">
+                          ⚪ Normal:
+                        </strong>{' '}
+                        Candidatos pendentes de questionário de fit ou perfil em
+                        aberto.
+                      </li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              {todas ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -262,28 +402,117 @@ export function OverviewScreen() {
                 >
                   Só os {PENDENCIAS_VISIVEIS} mais urgentes
                 </Button>
-              </CardAction>
-            ) : null}
+              ) : null}
+            </div>
+
+            <CardDescription className="text-xs">
+              {pendenciasFiltradas.length === 0
+                ? 'Nenhuma pendência neste filtro.'
+                : `${plural(pendenciasFiltradas.length, 'pendência', 'pendências')} ordenadas por critério de impacto e prazo.`}
+            </CardDescription>
+
+            {/* Filtros rápidos por nível de prioridade */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroPrioridade('todas');
+                  paginacao.irPara(0);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-all cursor-pointer',
+                  filtroPrioridade === 'todas'
+                    ? 'bg-foreground text-background font-semibold shadow-xs'
+                    : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground font-medium'
+                )}
+              >
+                Todas ({pendencias.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroPrioridade('alta');
+                  paginacao.irPara(0);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-all cursor-pointer',
+                  filtroPrioridade === 'alta'
+                    ? 'bg-rose-600 text-white font-semibold shadow-xs'
+                    : 'bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 font-medium dark:text-rose-400'
+                )}
+              >
+                <span className="size-1.5 rounded-full bg-rose-500" />
+                Alta ({contadoresPrioridade.alta})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroPrioridade('media');
+                  paginacao.irPara(0);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-all cursor-pointer',
+                  filtroPrioridade === 'media'
+                    ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                    : 'bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 font-medium dark:text-amber-400'
+                )}
+              >
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                Média ({contadoresPrioridade.media})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroPrioridade('normal');
+                  paginacao.irPara(0);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-all cursor-pointer',
+                  filtroPrioridade === 'normal'
+                    ? 'bg-slate-700 text-white font-semibold shadow-xs'
+                    : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground font-medium'
+                )}
+              >
+                <span className="size-1.5 rounded-full bg-muted-foreground/60" />
+                Normal ({contadoresPrioridade.normal})
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-4">
-            {pendencias.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Quando chegar uma resposta ou uma vaga ficar parada, a linha
-                aparece aqui.
+            {pendenciasFiltradas.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Nenhuma pendência encontrada com o filtro selecionado.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border">
+              <div className="overflow-x-auto rounded-xl border border-border/60">
                 <Table>
                   <TableCaption className="sr-only">
-                    Precisa de você hoje: pendências agrupadas por tipo, da mais
-                    urgente para a menos urgente
+                    Precisa de você hoje: pendências em ordem de prioridade de
+                    impacto e prazo
                   </TableCaption>
-                  <TableHeader className="bg-muted">
+                  <TableHeader className="bg-muted/40">
                     <TableRow>
-                      <TableHead scope="col">O que fazer</TableHead>
                       <TableHead
                         scope="col"
-                        className="w-[180px] text-right"
+                        className="w-[52px] text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
+                        #
+                      </TableHead>
+                      <TableHead
+                        scope="col"
+                        className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
+                        O que fazer & Critério
+                      </TableHead>
+                      <TableHead
+                        scope="col"
+                        className="w-[110px] text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
+                        Prioridade
+                      </TableHead>
+                      <TableHead
+                        scope="col"
+                        className="w-[160px] text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                       >
                         <span className="sr-only">Ação</span>
                       </TableHead>
@@ -292,42 +521,87 @@ export function OverviewScreen() {
                   <TableBody>
                     {agrupar(paginacao.linhas).map((grupo, indice) => (
                       <Fragment key={`${grupo.tipo}-${indice}`}>
-                        <TableRow className="hover:bg-transparent">
-                          {/*
-                           * O nome do grupo é cabeçalho das linhas abaixo: em
-                           * `th`, o leitor de tela o anuncia como tal.
-                           */}
+                        <TableRow className="hover:bg-transparent bg-muted/20 border-b border-border/40">
                           <TableHead
                             scope="colgroup"
-                            colSpan={2}
-                            className="h-auto pt-5 pb-2.5 text-xs font-medium text-muted-foreground"
+                            colSpan={4}
+                            className="h-auto py-2.5 px-4 text-xs font-semibold text-muted-foreground"
                           >
-                            <GrupoDaFila tipo={grupo.tipo} />
+                            <GrupoDaFila
+                              tipo={grupo.tipo}
+                              prioridade={grupo.itens[0]?.prioridade}
+                            />
                           </TableHead>
                         </TableRow>
-                        {grupo.itens.map((pendencia) => (
-                          <TableRow key={pendencia.id}>
-                            <TableCell className="max-w-0 whitespace-normal">
-                              <span className="block truncate font-medium">
-                                {pendencia.titulo}
-                              </span>
-                              <span className="block truncate text-xs text-muted-foreground">
-                                {pendencia.resumo}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                              >
-                                <Link href={pendencia.href}>
-                                  {pendencia.verbo}
-                                </Link>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {grupo.itens.map((pendencia) => {
+                          const rank = mapaRanking.get(pendencia.id) ?? 1;
+                          const prioInfo = getPrioridadeInfo(
+                            pendencia.prioridade
+                          );
+                          const isTop3 = rank <= 3;
+                          return (
+                            <TableRow
+                              key={pendencia.id}
+                              className="hover:bg-muted/30 transition-colors group"
+                            >
+                              <TableCell className="w-[52px] text-center py-3">
+                                <span
+                                  className={cn(
+                                    'inline-flex size-6 items-center justify-center rounded-full text-xs font-bold tabular-nums',
+                                    isTop3
+                                      ? 'bg-rose-500/15 text-rose-700 ring-1 ring-rose-500/30 dark:text-rose-300'
+                                      : 'bg-muted/60 text-muted-foreground'
+                                  )}
+                                >
+                                  {rank}
+                                </span>
+                              </TableCell>
+                              <TableCell className="max-w-0 whitespace-normal py-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="block truncate font-medium text-foreground">
+                                    {pendencia.titulo}
+                                  </span>
+                                  {pendencia.criterio ? (
+                                    <span className="inline-flex items-center rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                      {pendencia.criterio}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <span className="block truncate text-xs text-muted-foreground mt-0.5">
+                                  {pendencia.resumo}
+                                </span>
+                              </TableCell>
+                              <TableCell className="w-[110px] text-center py-3">
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                                    prioInfo.badgeClass
+                                  )}
+                                >
+                                  <span
+                                    className={cn(
+                                      'size-1.5 rounded-full',
+                                      prioInfo.dotClass
+                                    )}
+                                  />
+                                  {prioInfo.rotulo}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right py-3 w-[160px]">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-lg font-medium transition-all hover:border-primary/40 hover:text-primary"
+                                  asChild
+                                >
+                                  <Link href={pendencia.href}>
+                                    {pendencia.verbo}
+                                  </Link>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </Fragment>
                     ))}
                   </TableBody>
@@ -337,7 +611,11 @@ export function OverviewScreen() {
             {todas ? (
               <RodapeDaTabela
                 paginacao={paginacao}
-                resumo={plural(pendencias.length, 'pendência', 'pendências')}
+                resumo={plural(
+                  pendenciasFiltradas.length,
+                  'pendência',
+                  'pendências'
+                )}
               />
             ) : null}
           </CardContent>
@@ -362,10 +640,13 @@ export function OverviewScreen() {
           )}
         </Card>
 
-        <div className="flex flex-col gap-4 lg:col-span-5">
-          <Card className="flex-1">
+        <div
+          data-tour="inicio-funil"
+          className="flex flex-col gap-4 lg:col-span-5"
+        >
+          <Card className="flex-1 rounded-2xl border border-border/75 bg-card/95 shadow-xs">
             <CardHeader>
-              <CardTitle className="flex items-center gap-1 text-base font-semibold">
+              <CardTitle className="flex items-center gap-1.5 text-base font-semibold">
                 Funil do período <MarcadorHistorico />
               </CardTitle>
               <CardDescription>
@@ -378,7 +659,7 @@ export function OverviewScreen() {
                   asChild
                 >
                   <Link href={ROTA_DO_BI}>
-                    Ver no BI <ArrowRight aria-hidden="true" />
+                    Ver no BI <IconArrowRight aria-hidden="true" />
                   </Link>
                 </Button>
               </CardAction>
@@ -391,7 +672,7 @@ export function OverviewScreen() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-2xl border border-border/75 bg-card/95 shadow-xs">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
                 As duas pontas
@@ -419,22 +700,44 @@ export function OverviewScreen() {
   );
 }
 
-/** Nome do grupo da fila com o ícone tingido no tom do tipo. */
-function GrupoDaFila({ tipo }: { tipo: TipoDePendencia }) {
+/** Nome do grupo da fila com o ícone tingido no tom do tipo e badge de prioridade. */
+function GrupoDaFila({
+  tipo,
+  prioridade
+}: {
+  tipo: TipoDePendencia;
+  prioridade?: NivelDePrioridade;
+}) {
   const { Icone, tom } = ICONE_DO_GRUPO[tipo];
+  const prioInfo = prioridade ? getPrioridadeInfo(prioridade) : null;
   return (
-    <span className="flex items-center gap-2">
-      <span
-        aria-hidden="true"
-        className={cn(
-          'flex size-5 shrink-0 items-center justify-center rounded',
-          tom
-        )}
-      >
-        <Icone className="size-3" />
+    <div className="flex items-center justify-between w-full pr-1">
+      <span className="flex items-center gap-2">
+        <Icone
+          aria-hidden="true"
+          className={cn('size-4 shrink-0', tom)}
+        />
+        {/*
+         * 14px, o corpo do produto: o cabeçalho de grupo estava em 12px,
+         * menor do que as linhas que ele encabeça. Quem separa aqui é o peso
+         * e o ícone no tom, não o tamanho para baixo.
+         */}
+        <span className="text-sm font-semibold text-foreground">
+          {TIPO_DE_PENDENCIA_LABEL[tipo]}
+        </span>
       </span>
-      {TIPO_DE_PENDENCIA_LABEL[tipo]}
-    </span>
+      {prioInfo ? (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+            prioInfo.badgeClass
+          )}
+        >
+          <span className={cn('size-1.5 rounded-full', prioInfo.dotClass)} />
+          Prioridade {prioInfo.rotulo}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -451,18 +754,18 @@ function Ponta({ kpi }: { kpi: Kpi }) {
       <div className="flex items-baseline justify-between gap-2 text-sm">
         <span
           id={id}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 font-medium"
         >
           <span
             aria-hidden="true"
-            className={cn('size-2 shrink-0 rounded-full', lado.preenchimento)}
+            className={cn('size-2.5 shrink-0 rounded-full', lado.preenchimento)}
           />
           {kpi.rotulo}
         </span>
         {/* A barra logo abaixo já lê o valor com o rótulo. */}
         <span
           aria-hidden="true"
-          className="text-2xl font-semibold tabular-nums"
+          className="text-2xl font-bold tabular-nums text-foreground"
         >
           {kpi.valor === null ? '—' : `${kpi.valor}%`}
         </span>
@@ -472,10 +775,10 @@ function Ponta({ kpi }: { kpi: Kpi }) {
         aria-labelledby={id}
         value={kpi.valor}
         className={cn(
-          'h-3 bg-muted/70',
+          'h-2.5 bg-muted/60 overflow-hidden rounded-full',
           lado === LADO.empresa
-            ? '[&>[data-slot=progress-indicator]]:bg-[hsl(var(--data-empresa))]'
-            : '[&>[data-slot=progress-indicator]]:bg-[hsl(var(--data-pessoa))]',
+            ? '[&>[data-slot=progress-indicator]]:bg-gradient-to-r [&>[data-slot=progress-indicator]]:from-blue-600 [&>[data-slot=progress-indicator]]:to-indigo-600'
+            : '[&>[data-slot=progress-indicator]]:bg-gradient-to-r [&>[data-slot=progress-indicator]]:from-teal-600 [&>[data-slot=progress-indicator]]:to-emerald-600',
           '[&>[data-slot=progress-indicator]]:rounded-full'
         )}
       />
@@ -492,10 +795,10 @@ function Ponta({ kpi }: { kpi: Kpi }) {
 function Integracao({ integracao }: { integracao: IntegracaoStatus }) {
   const Icone =
     integracao.estado === 'ok'
-      ? Check
+      ? IconCheck
       : integracao.estado === 'atencao'
-        ? CircleAlert
-        : Clock;
+        ? IconAlertCircle
+        : IconClock;
   return (
     <span
       className="flex items-center gap-1"
