@@ -93,15 +93,15 @@ const ROTULO_DA_SECAO =
 const SECAO = '[@media(max-height:860px)]:py-1';
 
 /**
- * O contador de pendências do Início, sobre o azul-noite da barra: pastilha
- * laranja cheia com o texto em azul, e não o inverso — laranja com texto
- * branco não passa contraste em texto pequeno.
+ * O contador do destino aberto, sobre o azul-noite da barra: pastilha laranja
+ * cheia com o texto em azul, e não o inverso — laranja com texto branco não
+ * passa contraste em texto pequeno.
  *
  * O `!` é necessário porque o kit repinta o selo de branco quando o item
- * está ativo (`peer-data-[active=true]`), e justamente no Início, que é onde
- * a analista mais fica, o número sumiria.
+ * está ativo (`peer-data-[active=true]`), e é justamente no ativo que a
+ * pastilha aparece: sem o `!` o número sumiria.
  */
-const SELO_DE_HOJE =
+const SELO_DO_ATIVO =
   'bg-[hsl(var(--brand-accent))] text-[hsl(var(--sidebar))]!';
 
 /** Linha fina entre as seções, só com a barra recolhida (sem os títulos). */
@@ -141,10 +141,7 @@ function ItemDaBarra({
       {selo ??
         (item.badge ? (
           <SidebarMenuBadge
-            className={cn(
-              'tabular-nums',
-              item.label === 'Início' && SELO_DE_HOJE
-            )}
+            className={cn('tabular-nums', item.ativo && SELO_DO_ATIVO)}
           >
             {item.badge}
           </SidebarMenuBadge>

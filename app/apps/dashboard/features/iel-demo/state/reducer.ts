@@ -49,6 +49,7 @@ import type {
   DemoState,
   DemoUiState,
   Evidence,
+  FitReminder,
   HistoryEvent,
   Referral,
   ReferralItem,
@@ -353,6 +354,20 @@ export type DemoAction =
       /** A analista reenvia um convite em aberto e estende o prazo (S4). */
       type: 'resend-culture-invite';
       inviteId: string;
+      at: string;
+    }
+  | {
+      /**
+       * A analista reenvia o questionário de fit a um candidato que ainda
+       * não respondeu (M3).
+       *
+       * Não cria link novo: o link da candidatura é o mesmo, e o canal é o
+       * do convite original — quem recebeu por e-mail é lembrado por e-mail.
+       * Candidatura que já respondeu vira no-op: não se cobra quem entregou.
+       */
+      type: 'resend-fit-invite';
+      applicationId: string;
+      canal: FitReminder['canal'];
       at: string;
     }
   | { type: 'apply-sync-event'; eventId: string; at: string }
@@ -1611,6 +1626,49 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           action: 'Convite reenviado',
           description: `O convite ${invite.id} foi reenviado e o prazo passou de ${invite.expiresAt} para ${expiresAt}. O link continua o mesmo.`,
           entityRef: invite.companyId
+        })
+      };
+    }
+
+    case 'resend-fit-invite': {
+      const application = state.applications.find(
+        (entry) => entry.id === action.applicationId
+      );
+      if (!application) return state;
+      // Quem já respondeu não recebe lembrete: o questionário acabou para
+      // essa pessoa, e cobrar de novo seria erro visível na demonstração.
+      const respondeu = (state.fitResponses ?? []).some(
+        (resposta) => resposta.applicationId === action.applicationId
+      );
+      if (respondeu) return state;
+
+      const lembretes = state.fitReminders ?? [];
+      const anteriores = lembretes.filter(
+        (lembrete) => lembrete.applicationId === action.applicationId
+      ).length;
+
+      return {
+        ...state,
+        fitReminders: [
+          ...lembretes,
+          {
+            applicationId: action.applicationId,
+            canal: action.canal,
+            at: action.at
+          }
+        ],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Lembrete do questionário reenviado',
+          description: `O lembrete da candidatura ${application.id} saiu por ${
+            action.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail'
+          }${
+            anteriores > 0
+              ? ` (${plural(anteriores + 1, 'envio', 'envios')} no total)`
+              : ''
+          }. O link continua o mesmo.`,
+          entityRef: application.id
         })
       };
     }

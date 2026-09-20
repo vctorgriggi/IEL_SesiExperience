@@ -433,6 +433,25 @@ export type CandidateFitResponse = {
   consent: { acceptedAt: string; version: string };
 };
 
+/**
+ * Um lembrete do questionário de fit, reenviado pela analista (M3).
+ *
+ * Lista à parte, e não um contador na candidatura, porque o que a tela cobra
+ * é *quando* foi o último — e porque a candidatura é catálogo: o lembrete é
+ * ato de alguém, tem hora, e precisa sobreviver ao recarregamento junto do
+ * resto do progresso.
+ *
+ * **O link não muda.** Reenviar é mandar de novo o mesmo link da candidatura,
+ * pelo mesmo canal do convite original; não nasce um segundo link, que daria
+ * duas portas para a mesma resposta (R11).
+ */
+export type FitReminder = {
+  applicationId: string;
+  /** O mesmo canal do convite original (espelha `CanalComunicacao`). */
+  canal: 'email' | 'whatsapp';
+  at: string;
+};
+
 export type CriterionAnalysis = {
   state: CriterionState;
   note: string;
@@ -696,6 +715,15 @@ export type DemoState = {
    * "ninguém respondeu ainda".
    */
   fitResponses?: CandidateFitResponse[];
+  /**
+   * Lembretes do questionário reenviados durante a demonstração, na ordem em
+   * que saíram.
+   *
+   * Opcional pelo mesmo motivo de `fitResponses`: há recortes parciais de
+   * `DemoState`, e estado gravado antes deste campo hidrata sem ele. Ausente
+   * equivale a "nenhum lembrete foi reenviado".
+   */
+  fitReminders?: FitReminder[];
   /**
    * Check-ins de quem foi contratado, respondidos pela própria pessoa aos
    * 30, 60 e 90 dias (`analysis/acompanhamento.ts`).

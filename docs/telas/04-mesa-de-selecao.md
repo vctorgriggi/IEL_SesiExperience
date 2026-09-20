@@ -3,7 +3,8 @@
 **Rota:** `/vagas/[jobId]`
 **Componentes:** `apps/dashboard/components/iel-demo/selection/job-screen.tsx`,
 `selection/candidates-table.tsx`, `selection/job-section-cards.tsx`,
-`selection/candidate-state-badge.tsx`, `selection/axis-weights.tsx`
+`selection/candidate-state-badge.tsx`, `selection/axis-weights.tsx`,
+`talents/talent-drawer.tsx`, `talents/comunicacao-do-candidato.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/adherence.ts`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-20
@@ -36,6 +37,12 @@ Atende **M5**.
   Quem não tem medida vai para o fim da ordenação, seja qual for a direção escolhida.
 - **Prioridade por eixo** (`axis-weights.tsx`) — o peso que a empresa declarou para cada eixo nesta
   vaga, com a proposta da análise pendente de confirmação humana.
+- **Detalhe da pessoa**, aberto na própria tela, numa gaveta (`talent-drawer.tsx`) com:
+  - a leitura de fit daquela pessoa naquela vaga (`talent-fit-view.tsx`);
+  - **Comunicação com o candidato** (`comunicacao-do-candidato.tsx`), depois da leitura e não antes:
+    quem abre a gaveta está decidindo sobre a pessoa, e o convite só vira assunto quando falta
+    resposta. Mostra o convite como uma conversa — por onde saiu, se foi aberto, se foi respondido
+    —, quantos lembretes já saíram e quando foi o último, com o botão de reenviar.
 - **Detalhe da pessoa**, aberto na própria tela.
 - **Mensagem do Mind** (`mensagens/mensagem-do-mind.tsx`, gaveta em `mensagens/mensagem-do-mind-sheet.tsx`)
   — no menu ⋮ da linha. O rascunho de WhatsApp para aquela pessoa, na etapa que o estado da
@@ -51,6 +58,9 @@ Atende **M5**.
   `getComparisonSelection`, `getClarificationsByJob`, `getCompanyCultureProfile`,
   `getCultureSampleProgress` e `getRecentHistory`, em `state/selectors.ts`.
 - O percentual vem de `analysis/adherence.ts`, via `getAdherence`.
+- O convite e os lembretes da gaveta vêm de `getComunicacaoDaCandidatura`, em `analysis/analytics.ts`
+  — o **mesmo** evento que alimenta o funil de [Questionários](17-questionario-do-candidato.md), para
+  a tela agregada e a gaveta nunca divergirem. Os lembretes ficam em `state.fitReminders`.
 
 ## Ações do usuário
 
@@ -63,6 +73,9 @@ Atende **M5**.
 - Remover da lista — `remove-from-referral-list`.
 - Confirmar prioridade de eixo — `set-axis-weight`.
 - Abrir pedido de esclarecimento — diálogo em `clarifications/create-clarification-dialog.tsx`.
+- **Reenviar o questionário** a quem ainda não respondeu — `resend-fit-invite`. Não cria link
+  novo: é o mesmo link da candidatura, pelo mesmo canal do convite original (R11). Candidatura já
+  respondida não oferece o botão.
 - Mensagem do Mind — copiar o rascunho de WhatsApp ou simular o envio. Sem ação de reducer: nada é
   enviado e nada é gravado; a analista aprova lendo, ajustando e colando no WhatsApp do IEL.
 
@@ -98,5 +111,7 @@ Entra em: [Comparação](05-comparacao.md), [Perfil do talento](08-perfil-do-tal
   com tabela de quatro leituras, cartões de pendência e aba de resgate. A matriz por critério, o
   painel de evidência e a leitura assistida em painel saíram da tela.
 - 2026-09-19 — o cabeçalho ganhou "Ver aderência", que leva à análise de aderência já nesta vaga.
+- 2026-09-20 — a gaveta da pessoa ganhou "Comunicação com o candidato": o convite contado como
+  conversa e o reenvio do questionário, sem sair da mesa.
 - 2026-09-20 — ganha "Mensagem do Mind" no menu ⋮ da linha: o rascunho de WhatsApp por etapa, da
   regra fixa com polimento do Mind, que a analista aprova com um toque.

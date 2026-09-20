@@ -17,6 +17,7 @@ import { Separator } from '@workspace/ui/shadcn/separator';
 import { SidebarTrigger, useSidebar } from '@workspace/ui/shadcn/sidebar';
 
 import { TourMenu } from '../tour/tour-menu';
+import { NotificacoesMenu } from './notificacoes-menu';
 import {
   usePageHeaderContent,
   type PageHeaderCrumb
@@ -117,6 +118,12 @@ export function SiteHeader() {
          * canto. As ações da página vêm depois porque mudam a cada tela.
          */}
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/*
+           * O sino antes do tour: o que precisa de mim hoje vem antes de como
+           * a tela funciona. Os dois ficam no mesmo canto em todas as telas;
+           * as ações da página vêm depois porque mudam a cada tela.
+           */}
+          <NotificacoesMenu />
           <TourMenu />
           {actions}
         </div>
