@@ -55,6 +55,7 @@ import {
 import {
   getAdherence,
   getApplicationsByJob,
+  getCheckInsDaCandidatura,
   getCompany,
   getCompatibleCount,
   getCultureSampleProgress,
@@ -63,7 +64,8 @@ import {
   getRegisteredReferrals,
   getVisibleCompanies
 } from '../state/selectors';
-import type { DemoState, Job, Referral } from '../types';
+import type { DemoState, Job, Referral, ReferralItem } from '../types';
+import type { FonteDaPermanencia } from './acompanhamento';
 import { ADHERENCE_THRESHOLD } from './adherence';
 import { lerDevolutiva, temDevolutiva } from './devolutiva';
 import { FIT_AXES, type FitAxisId } from './fit-axes';
@@ -319,7 +321,81 @@ function remessas12Meses(): RemessaHistorica[] {
  */
 type RemessaDoPeriodo = RemessaHistorica & { fonte: FonteDoDado };
 
-type ContratacaoApurada = ContratacaoHistorica & { fonte: FonteDoDado };
+type ContratacaoApurada = ContratacaoHistorica & {
+  fonte: FonteDoDado;
+  /** Quem disse se a pessoa ficou: a empresa, a própria pessoa ou os dois. */
+  fonteDaPermanencia: FonteDaPermanencia;
+  /** Empresa e pessoa discordaram; o indicador ficou com a saída. */
+  divergencia: boolean;
+};
+
+/**
+ * O que se sabe da permanência de uma pessoa contratada ao vivo, ouvindo os
+ * dois lados.
+ *
+ * A empresa responde "continua" ou "saiu antes de 90 dias" (C3). A pessoa
+ * responde os check-ins de 30/60/90 (`analysis/acompanhamento.ts`): um
+ * `continua: false` em qualquer marco é saída antes dos 90; `continua: true`
+ * no marco de 90 é permanência apurada. Quando os dois discordam, **vale a
+ * saída** — o indicador é conservador —, e a divergência fica registrada
+ * para o BI dizer de onde veio o número.
+ *
+ * `null` enquanto ninguém apurou nada: contratação em curso não é dado de
+ * permanência.
+ */
+function permanenciaApurada(
+  item: ReferralItem,
+  state: DemoState
+): {
+  ficou90: boolean;
+  apuradoEm: string;
+  fonte: FonteDaPermanencia;
+  divergencia: boolean;
+} | null {
+  const desfecho = lerDevolutiva(item.outcome);
+  if (desfecho.hiring !== 'contratou' || !desfecho.hiringAt) return null;
+
+  const empresa =
+    desfecho.retention !== 'pendente' && desfecho.retentionAt
+      ? { ficou90: desfecho.retention === 'continua', em: desfecho.retentionAt }
+      : null;
+
+  const checkIns = getCheckInsDaCandidatura(state, item.applicationId);
+  const saida = checkIns.find((checkIn) => !checkIn.continua);
+  const aos90 = checkIns.find(
+    (checkIn) => checkIn.marco === 90 && checkIn.continua
+  );
+  const pessoa = saida
+    ? { ficou90: false, em: saida.respondidoEm }
+    : aos90
+      ? { ficou90: true, em: aos90.respondidoEm }
+      : null;
+
+  if (!empresa && !pessoa) return null;
+  if (empresa && pessoa) {
+    const divergencia = empresa.ficou90 !== pessoa.ficou90;
+    const decisiva = divergencia
+      ? empresa.ficou90
+        ? pessoa
+        : empresa
+      : empresa.em > pessoa.em
+        ? empresa
+        : pessoa;
+    return {
+      ficou90: empresa.ficou90 && pessoa.ficou90,
+      apuradoEm: decisiva.em,
+      fonte: 'ambos',
+      divergencia
+    };
+  }
+  const unica = (empresa ?? pessoa)!;
+  return {
+    ficou90: unica.ficou90,
+    apuradoEm: unica.em,
+    fonte: empresa ? 'empresa' : 'pessoa',
+    divergencia: false
+  };
+}
 
 /**
  * O encaminhamento vivo lido como remessa.
@@ -381,19 +457,22 @@ function remessaDoEncaminhamento(
   referral.items.forEach((item, indiceEnvio) => {
     const desfecho = lerDevolutiva(item.outcome);
     if (desfecho.hiring !== 'contratou' || !desfecho.hiringAt) return;
-    const ficou =
-      desfecho.retention === 'pendente'
-        ? null
-        : desfecho.retention === 'continua';
+    // Empresa e pessoa, com a saída valendo em caso de desacordo.
+    const apurada = permanenciaApurada(item, state);
+    const ficou = apurada ? apurada.ficou90 : null;
+    // O check-in de 30 é a única resposta direta sobre o dia 30; quem
+    // continua aos 90 também continuava aos 30. Fora isso, o IEL não
+    // perguntou, e responder por ele seria inventar desfecho.
+    const aos30 = getCheckInsDaCandidatura(state, item.applicationId).find(
+      (checkIn) => checkIn.marco === 30
+    );
     contratados.push({
       indiceEnvio,
       aderencia: Math.round(
         getAdherence(state, item.applicationId)?.total ?? 0
       ),
       contratadoEm: desfecho.hiringAt,
-      // Quem saiu antes dos 90 dias pode ter passado dos 30: o IEL não
-      // perguntou, e responder por ele seria inventar desfecho.
-      ficou30: ficou === true ? true : null,
+      ficou30: aos30 ? aos30.continua : ficou === true ? true : null,
       ficou90: ficou
     });
   });
@@ -468,12 +547,15 @@ function remessasNaJanela(
  * Contratações cuja permanência já é fato dentro da janela.
  *
  * No histórico, o marco é o dia 90 da contratação: contar por data de
- * contratação misturaria gente que ainda não completou o prazo.
+ * contratação misturaria gente que ainda não completou o prazo. O histórico
+ * simulado é devolutiva da empresa: entra com `fonteDaPermanencia: 'empresa'`.
  *
- * Na devolutiva capturada, o marco é o **dia da resposta**. Uma saída antes
- * de 90 dias vira fato no dia em que a empresa avisa, não noventa dias depois
- * de uma contratação que já acabou; e "continua" só pode ser respondido
- * depois que o prazo fechou, porque é só então que a tela pergunta.
+ * Na captura ao vivo, o marco é o **dia da resposta** — da empresa ou da
+ * pessoa (`permanenciaApurada`). Uma saída vira fato no dia em que alguém
+ * avisa, não noventa dias depois de uma contratação que já acabou; e
+ * "continua" só pode ser respondido depois que o prazo fechou, porque é só
+ * então que a tela pergunta. A pessoa é fonte tanto quanto a empresa: o RH
+ * que não volta (00:05:33) deixa de ser o único caminho para o número.
  */
 function contratacoesApuradas90(
   state: DemoState | null,
@@ -484,31 +566,33 @@ function contratacoesApuradas90(
     .filter(
       (c) => c.ficou90 !== null && naJanela(addDays(c.contratadoEm, 90), j)
     )
-    .map((c) => ({ ...c, fonte: 'historico' as const }));
+    .map((c) => ({
+      ...c,
+      fonte: 'historico' as const,
+      fonteDaPermanencia: 'empresa' as const,
+      divergencia: false
+    }));
   if (!state) return historico;
 
   const vivas: ContratacaoApurada[] = [];
   for (const referral of getRegisteredReferrals(state)) {
     for (const [indiceEnvio, item] of referral.items.entries()) {
       const desfecho = lerDevolutiva(item.outcome);
-      if (
-        desfecho.hiring !== 'contratou' ||
-        desfecho.retention === 'pendente' ||
-        !desfecho.retentionAt ||
-        !desfecho.hiringAt ||
-        !naJanela(desfecho.retentionAt, j)
-      ) {
+      const apurada = permanenciaApurada(item, state);
+      if (!apurada || !desfecho.hiringAt || !naJanela(apurada.apuradoEm, j)) {
         continue;
       }
       vivas.push({
         fonte: 'vivo',
+        fonteDaPermanencia: apurada.fonte,
+        divergencia: apurada.divergencia,
         indiceEnvio,
         aderencia: Math.round(
           getAdherence(state, item.applicationId)?.total ?? 0
         ),
         contratadoEm: desfecho.hiringAt,
-        ficou30: desfecho.retention === 'continua' ? true : null,
-        ficou90: desfecho.retention === 'continua'
+        ficou30: apurada.ficou90 ? true : null,
+        ficou90: apurada.ficou90
       });
     }
   }
@@ -543,12 +627,28 @@ export type FonteDoIndicador = {
   pctCapturado: number | null;
 };
 
+/** Quem informou a permanência, na base do KPI de 90 dias. */
+export type FontesDaPermanencia = {
+  /** Só a empresa respondeu (inclui todo o histórico simulado). */
+  empresa: number;
+  /** Só a própria pessoa respondeu, pelo check-in. */
+  pessoa: number;
+  /** Os dois responderam. */
+  ambos: number;
+  /** Dos `ambos`, quantos discordaram; o indicador ficou com a saída. */
+  divergencias: number;
+};
+
 export type ComposicaoDosIndicadores = {
   periodo: Periodo;
   /** Base do KPI "Retorno das empresas": remessas enviadas no período. */
   retornoEmpresas: FonteDoIndicador;
-  /** Base do KPI "Permanência em 90 dias": desfechos apurados no período. */
-  permanencia90: FonteDoIndicador;
+  /**
+   * Base do KPI "Permanência em 90 dias": desfechos apurados no período.
+   * `fontes` diz quem informou — o BI passa a poder dizer "3 vieram da
+   * própria pessoa" em vez de fingir que tudo veio do RH.
+   */
+  permanencia90: FonteDoIndicador & { fontes: FontesDaPermanencia };
   /** Verdadeiro se qualquer um dos dois já tem devolutiva capturada. */
   temCaptura: boolean;
 };
@@ -608,7 +708,17 @@ export function getComposicaoDosIndicadores(
   };
 
   const retornoEmpresas = compor(remessas.map((r) => r.fonte));
-  const permanencia90 = compor(apurados.map((c) => c.fonte));
+  const fontes: FontesDaPermanencia = {
+    empresa: 0,
+    pessoa: 0,
+    ambos: 0,
+    divergencias: 0
+  };
+  for (const c of apurados) {
+    fontes[c.fonteDaPermanencia] += 1;
+    if (c.divergencia) fontes.divergencias += 1;
+  }
+  const permanencia90 = { ...compor(apurados.map((c) => c.fonte)), fontes };
 
   return {
     periodo,

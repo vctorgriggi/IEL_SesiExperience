@@ -8,6 +8,7 @@ import { getStatusIntegracoes } from '@/features/iel-demo/analysis/analytics';
 import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  getAcompanhamento,
   getCompany,
   getCompatibleCount,
   getJobListState,
@@ -24,6 +25,7 @@ import {
   Building2,
   ChartColumn,
   ClipboardList,
+  HeartHandshake,
   HelpCircle,
   Home,
   Plug,
@@ -195,6 +197,18 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
         .length,
     [vagas, state]
   );
+  /*
+   * O contador de Acompanhamento é o mesmo "para ligar hoje" da tela: quem
+   * chegou a um marco, recebeu a pergunta e não respondeu. O seletor já é
+   * memorizado por identidade do estado.
+   */
+  const paraLigarHoje = useMemo(
+    () =>
+      getAcompanhamento(state).filter(
+        (situacao) => situacao.pendentes.length > 0
+      ).length,
+    [state]
+  );
 
   /*
    * O gestor entra pela mesma casca, mas não faz o trabalho da analista:
@@ -264,6 +278,17 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               'Empresas',
               Building2,
               pathname.startsWith(iel.companies.index)
+            ),
+            /*
+             * A segunda metade do ciclo: depois do "contratei", quem ligar
+             * hoje para saber se a pessoa ficou — sem depender do RH.
+             */
+            item(
+              iel.followUp.index,
+              'Acompanhamento',
+              HeartHandshake,
+              pathname.startsWith(iel.followUp.index),
+              paraLigarHoje > 0 ? paraLigarHoje : null
             )
           ]
         },

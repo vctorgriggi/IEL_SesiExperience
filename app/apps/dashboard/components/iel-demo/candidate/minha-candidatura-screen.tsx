@@ -15,6 +15,7 @@ import {
   validadeDasRespostas
 } from '@/features/iel-demo/state/selectors';
 import {
+  BriefcaseIcon,
   CircleCheckIcon,
   ClockIcon,
   PencilLineIcon,
@@ -78,7 +79,8 @@ const ICONE_DA_SITUACAO: Record<SituacaoId, LucideIcon> = {
   'em-analise': CircleCheckIcon,
   enviado: SendHorizonalIcon,
   'quer-conversar': PhoneIcon,
-  'nao-seguiu': UsersIcon
+  'nao-seguiu': UsersIcon,
+  contratado: BriefcaseIcon
 };
 
 export function MinhaCandidaturaScreen({
@@ -116,8 +118,11 @@ export function MinhaCandidaturaScreen({
   // isso que eu respondi continua valendo?", e é aqui que ela volta.
   const validade = validadeDasRespostas(state, application.talentId);
   const Icone = ICONE_DA_SITUACAO[situacao.id];
-  const questionario =
-    routes.dashboard.iel.applications.byId(applicationId).fit;
+  const rotas = routes.dashboard.iel.applications.byId(applicationId);
+  // Dois destinos possíveis: o questionário da vaga ou, para quem foi
+  // contratado, a pergunta "como está sendo?" dos 30, 60 e 90 dias.
+  const destinoDaAcao =
+    situacao.acao?.destino === 'como-esta-sendo' ? rotas.checkIn : rotas.fit;
 
   return (
     <Moldura
@@ -196,11 +201,52 @@ export function MinhaCandidaturaScreen({
       {situacao.acao ? (
         <Button
           size="lg"
+          // Corrigir uma resposta já dada é direito, não pendência: o botão
+          // fica, mas em contorno, sem empurrar.
+          variant={situacao.acao.peso === 'discreta' ? 'outline' : 'default'}
           className="h-12 w-full text-[15px]"
           asChild
         >
-          <Link href={questionario}>{situacao.acao.rotulo}</Link>
+          <Link href={destinoDaAcao}>{situacao.acao.rotulo}</Link>
         </Button>
+      ) : null}
+
+      {/*
+       * O que a pessoa já contou ao IEL depois de contratada. A resposta
+       * dela devolvida a ela, em palavra: quem respondeu aos 30 dias e abre
+       * o link aos 60 vê que a resposta chegou e o que disse.
+       */}
+      {situacao.contou && situacao.contou.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              <h2>O que você já contou</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col gap-2.5">
+              {situacao.contou.map((linha) => (
+                <li
+                  key={linha}
+                  className="flex gap-3"
+                >
+                  <CircleCheckIcon
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  />
+                  <p className="text-[15px] leading-relaxed text-foreground">
+                    {linha}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              A empresa não vê nada disto. Quem lê é só a equipe do IEL.
+            </p>
+          </CardFooter>
+        </Card>
       ) : null}
 
       {temas ? (

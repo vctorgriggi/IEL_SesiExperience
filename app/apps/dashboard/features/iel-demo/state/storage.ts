@@ -1,3 +1,4 @@
+import type { CheckIn } from '../analysis/acompanhamento';
 import { buildInitialDemoState, DEMO_SCHEMA_VERSION } from '../fixtures';
 import { DEMO_REFERENCE_DATE } from '../fixtures/companies';
 import type {
@@ -39,6 +40,12 @@ type PersistedState = {
    * cada carga, e gravá-las de novo seria repetir o que já se reconstrói.
    */
   changedFitResponses: DemoState['fitResponses'];
+  /**
+   * Check-ins que não existiam na base inicial, ou que a substituíram.
+   * Delta por `id` como as respostas de fit: os três semeados voltam a cada
+   * carga e não precisam ser gravados de novo.
+   */
+  changedCheckIns?: CheckIn[];
   referrals: DemoState['referrals'];
   history: DemoState['history'];
   appliedSyncEventIds: DemoState['appliedSyncEventIds'];
@@ -77,6 +84,7 @@ type Baseline = {
   analysis: Map<string, string>;
   evidenceIds: Set<string>;
   fitResponses: Map<string, string>;
+  checkIns: Map<string, string>;
   cultureAnswers: Map<string, string>;
   cultureInvites: Map<string, string>;
 };
@@ -106,6 +114,12 @@ function getBaseline(): Baseline {
       (initial.fitResponses ?? []).map((response) => [
         response.applicationId,
         JSON.stringify(response)
+      ])
+    ),
+    checkIns: new Map(
+      (initial.checkIns ?? []).map((checkIn) => [
+        checkIn.id,
+        JSON.stringify(checkIn)
       ])
     ),
     cultureAnswers: new Map(
@@ -148,6 +162,10 @@ function toPersisted(state: DemoState): PersistedState {
       base.fitResponses.get(response.applicationId) !== JSON.stringify(response)
   );
 
+  const changedCheckIns = (state.checkIns ?? []).filter(
+    (checkIn) => base.checkIns.get(checkIn.id) !== JSON.stringify(checkIn)
+  );
+
   const changedCultureAnswers = state.cultureAnswers.filter(
     (answer) => base.cultureAnswers.get(answer.id) !== JSON.stringify(answer)
   );
@@ -164,6 +182,7 @@ function toPersisted(state: DemoState): PersistedState {
     clarifications: state.clarifications,
     axisWeights: state.axisWeights,
     changedFitResponses,
+    changedCheckIns,
     referrals: state.referrals,
     history: state.history,
     appliedSyncEventIds: state.appliedSyncEventIds,
@@ -199,6 +218,19 @@ function fromPersisted(persisted: PersistedState): DemoState {
     changedCultureInvites.map((invite) => invite.id)
   );
 
+  // A remessa semeada (`fixtures/acompanhamento.ts`) chegou depois de a
+  // demonstração já ter sido aberta em muitos navegadores, e `referrals` é
+  // gravado inteiro, não como delta. Sem isto, quem já tem estado no
+  // localStorage nunca veria a remessa — e ela é a cena do acompanhamento.
+  // Uma remessa da base que o estado gravado não conhece entra na frente;
+  // as gravadas continuam mandando.
+  const persistedReferrals = persisted.referrals ?? state.referrals;
+  const persistedReferralIds = new Set(
+    persistedReferrals.map((referral) => referral.id)
+  );
+  const changedCheckIns = persisted.changedCheckIns ?? [];
+  const changedCheckInIds = new Set(changedCheckIns.map((c) => c.id));
+
   return {
     ...state,
     personaId: persisted.personaId ?? state.personaId,
@@ -206,7 +238,12 @@ function fromPersisted(persisted: PersistedState): DemoState {
     teams: persisted.teams ?? state.teams,
     clarifications: persisted.clarifications ?? state.clarifications,
     axisWeights: persisted.axisWeights ?? state.axisWeights,
-    referrals: persisted.referrals ?? state.referrals,
+    referrals: [
+      ...state.referrals.filter(
+        (referral) => !persistedReferralIds.has(referral.id)
+      ),
+      ...persistedReferrals
+    ],
     history: persisted.history ?? state.history,
     appliedSyncEventIds:
       persisted.appliedSyncEventIds ?? state.appliedSyncEventIds,
@@ -249,6 +286,13 @@ function fromPersisted(persisted: PersistedState): DemoState {
           )
       ),
       ...(persisted.changedFitResponses ?? [])
+    ],
+    // Mesma regra: o check-in gravado vence o da base, por id.
+    checkIns: [
+      ...(state.checkIns ?? []).filter(
+        (checkIn) => !changedCheckInIds.has(checkIn.id)
+      ),
+      ...changedCheckIns
     ]
   };
 }

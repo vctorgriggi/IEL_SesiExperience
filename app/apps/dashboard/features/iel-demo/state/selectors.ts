@@ -1,4 +1,15 @@
 import {
+  JANELA_DO_MARCO_DIAS,
+  marcoAberto,
+  marcoAlcancado,
+  marcoPerdido,
+  MARCOS_DO_ACOMPANHAMENTO,
+  type CheckIn,
+  type FonteDaPermanencia,
+  type MarcoDoAcompanhamento,
+  type SituacaoDeContratacao
+} from '../analysis/acompanhamento';
+import {
   ADHERENCE_THRESHOLD,
   computeAdherence,
   computeThemeAdherence,
@@ -35,6 +46,7 @@ import {
   type CultureInviteRole
 } from '../analysis/culture-invites';
 import {
+  diasEntre,
   diasEsperando,
   estadoDaPermanencia,
   lerDevolutiva,
@@ -109,6 +121,7 @@ import type {
   JobCriterion,
   Persona,
   Referral,
+  ReferralItem,
   SpreadsheetImportRecord,
   Talent,
   TalentPreference,
@@ -2857,6 +2870,315 @@ export function getPendingOutcomes(
     .filter((linha) => linha.waitingDays !== null)
     .sort((a, b) => (b.waitingDays ?? 0) - (a.waitingDays ?? 0));
 }
+
+/* ------------------------------------------------------------------ *
+ * Acompanhamento de quem foi contratado (a pessoa como segunda fonte)
+ * ------------------------------------------------------------------ */
+
+type IndiceDeCheckIns = {
+  porCandidatura: Map<string, CheckIn[]>;
+  porPessoa: Map<string, CheckIn[]>;
+};
+
+/**
+ * Índice candidatura → check-ins e pessoa → check-ins, memorizado por
+ * identidade da lista, no padrão de `indiceDeRespostas`. A fila do
+ * acompanhamento pergunta isso uma vez por contratação; sem índice, seria
+ * uma varredura da lista por linha.
+ */
+const CHECK_INS_CACHE = new WeakMap<CheckIn[], IndiceDeCheckIns>();
+
+const INDICE_DE_CHECK_INS_VAZIO: IndiceDeCheckIns = {
+  porCandidatura: new Map(),
+  porPessoa: new Map()
+};
+
+function ordenarPorMarco(lista: CheckIn[]): CheckIn[] {
+  return lista.sort((a, b) => a.marco - b.marco);
+}
+
+function indiceDeCheckIns(state: DemoState): IndiceDeCheckIns {
+  const checkIns = state.checkIns;
+  if (!checkIns) return INDICE_DE_CHECK_INS_VAZIO;
+
+  let indice = CHECK_INS_CACHE.get(checkIns);
+  if (!indice) {
+    const porCandidatura = new Map<string, CheckIn[]>();
+    const porPessoa = new Map<string, CheckIn[]>();
+    for (const checkIn of checkIns) {
+      const daCandidatura = porCandidatura.get(checkIn.applicationId) ?? [];
+      daCandidatura.push(checkIn);
+      porCandidatura.set(checkIn.applicationId, daCandidatura);
+      const daPessoa = porPessoa.get(checkIn.talentId) ?? [];
+      daPessoa.push(checkIn);
+      porPessoa.set(checkIn.talentId, daPessoa);
+    }
+    porCandidatura.forEach(ordenarPorMarco);
+    porPessoa.forEach(ordenarPorMarco);
+    indice = { porCandidatura, porPessoa };
+    CHECK_INS_CACHE.set(checkIns, indice);
+  }
+  return indice;
+}
+
+/** Check-ins de uma candidatura, em ordem de marco. */
+export function getCheckInsDaCandidatura(
+  state: DemoState,
+  applicationId: string
+): CheckIn[] {
+  return indiceDeCheckIns(state).porCandidatura.get(applicationId) ?? [];
+}
+
+/** Tudo o que esta pessoa respondeu nos check-ins, em qualquer contratação. */
+export function getCheckInsDaPessoa(
+  state: DemoState,
+  talentId: string
+): CheckIn[] {
+  return indiceDeCheckIns(state).porPessoa.get(talentId) ?? [];
+}
+
+type ContratacaoInformada = { referral: Referral; item: ReferralItem };
+
+/**
+ * Índice candidatura → item de remessa contratado, por identidade de
+ * `state.referrals`. Contratação só existe em remessa registrada com
+ * `outcome.hiring === 'contratou'` e data.
+ */
+const CONTRATACOES_CACHE = new WeakMap<
+  Referral[],
+  Map<string, ContratacaoInformada>
+>();
+
+function contratacoesInformadas(
+  state: DemoState
+): Map<string, ContratacaoInformada> {
+  let indice = CONTRATACOES_CACHE.get(state.referrals);
+  if (!indice) {
+    indice = new Map();
+    for (const referral of state.referrals) {
+      if (referral.state !== 'registrado') continue;
+      for (const item of referral.items) {
+        const desfecho = lerDevolutiva(item.outcome);
+        if (desfecho.hiring !== 'contratou' || !desfecho.hiringAt) continue;
+        indice.set(item.applicationId, { referral, item });
+      }
+    }
+    CONTRATACOES_CACHE.set(state.referrals, indice);
+  }
+  return indice;
+}
+
+type LeituraDeFonte = { estado: 'continua' | 'saiu'; em: string } | null;
+
+/** O que a empresa disse da permanência, se disse. */
+function permanenciaSegundoAEmpresa(item: ReferralItem): LeituraDeFonte {
+  const desfecho = lerDevolutiva(item.outcome);
+  if (desfecho.retention === 'pendente' || !desfecho.retentionAt) return null;
+  return {
+    estado: desfecho.retention === 'continua' ? 'continua' : 'saiu',
+    em: desfecho.retentionAt
+  };
+}
+
+/**
+ * O que a pessoa disse da permanência, se disse.
+ *
+ * Um "saiu" em qualquer marco vale: quem saiu não volta a responder que
+ * continua no marco seguinte. Sem "saiu", o check-in mais recente diz que
+ * ela continua.
+ */
+function permanenciaSegundoAPessoa(checkIns: CheckIn[]): LeituraDeFonte {
+  const saida = checkIns.find((checkIn) => !checkIn.continua);
+  if (saida) return { estado: 'saiu', em: saida.respondidoEm };
+  const ultimo = checkIns[checkIns.length - 1];
+  return ultimo ? { estado: 'continua', em: ultimo.respondidoEm } : null;
+}
+
+/**
+ * Junta as duas fontes sem que uma apague a outra.
+ *
+ * Quando discordam, o estado é "saiu": entre a empresa que não voltou a
+ * responder e a pessoa que contou que saiu, o produto assume o pior caso e
+ * marca a divergência para a analista ligar. É diagnóstico, como gestão ×
+ * equipe no mapa de cultura — a diferença é o dado.
+ */
+function combinarPermanencia(
+  empresa: LeituraDeFonte,
+  pessoa: LeituraDeFonte
+): SituacaoDeContratacao['permanencia'] & { divergencia: boolean } {
+  if (!empresa && !pessoa) {
+    return {
+      estado: 'sem-informacao',
+      fonte: null,
+      em: null,
+      divergencia: false
+    };
+  }
+  if (empresa && pessoa) {
+    const divergencia = empresa.estado !== pessoa.estado;
+    const fonte: FonteDaPermanencia = 'ambos';
+    return {
+      estado: divergencia ? 'saiu' : empresa.estado,
+      fonte,
+      em: empresa.em > pessoa.em ? empresa.em : pessoa.em,
+      divergencia
+    };
+  }
+  const unica = (empresa ?? pessoa)!;
+  return {
+    estado: unica.estado,
+    fonte: empresa ? 'empresa' : 'pessoa',
+    em: unica.em,
+    divergencia: false
+  };
+}
+
+function montarSituacao(
+  state: DemoState,
+  contratacao: ContratacaoInformada,
+  hoje: string
+): SituacaoDeContratacao | null {
+  const { referral, item } = contratacao;
+  const application = getApplication(state, item.applicationId);
+  const contratadoEm = lerDevolutiva(item.outcome).hiringAt;
+  if (!application || !contratadoEm) return null;
+
+  const diasNaEmpresa = Math.max(0, diasEntre(contratadoEm, hoje));
+  const checkIns = getCheckInsDaCandidatura(state, item.applicationId);
+  const respondidos = new Set(checkIns.map((checkIn) => checkIn.marco));
+  const empresa = permanenciaSegundoAEmpresa(item);
+  const pessoa = permanenciaSegundoAPessoa(checkIns);
+  const { divergencia, ...permanencia } = combinarPermanencia(empresa, pessoa);
+
+  // Quem já contou que saiu não tem marco a responder: perguntar "você
+  // continua?" de novo seria não ter ouvido a primeira resposta. O mesmo
+  // vale quando a empresa registrou a saída.
+  const encerrado = permanencia.estado === 'saiu';
+
+  const pendentes: MarcoDoAcompanhamento[] = [];
+  const perdidos: MarcoDoAcompanhamento[] = [];
+  let marcoAtual: MarcoDoAcompanhamento | null = null;
+  let proximoMarco: MarcoDoAcompanhamento | null = null;
+  for (const marco of MARCOS_DO_ACOMPANHAMENTO) {
+    if (respondidos.has(marco)) continue;
+    if (encerrado) continue;
+    if (!marcoAlcancado(marco, diasNaEmpresa)) {
+      proximoMarco ??= marco;
+      continue;
+    }
+    if (marcoAberto(marco, diasNaEmpresa)) {
+      pendentes.push(marco);
+      marcoAtual = marco;
+    } else if (marcoPerdido(marco, diasNaEmpresa)) {
+      perdidos.push(marco);
+    }
+  }
+
+  return {
+    applicationId: item.applicationId,
+    talentId: application.talentId,
+    companyId: referral.companyId,
+    jobId: referral.jobId,
+    contratadoEm,
+    diasNaEmpresa,
+    marcoAtual,
+    proximoMarco,
+    checkIns,
+    pendentes,
+    perdidos,
+    permanencia,
+    divergencia,
+    porFonte: {
+      empresa: empresa?.estado ?? null,
+      pessoa: pessoa?.estado ?? null
+    }
+  };
+}
+
+/**
+ * Situação de uma contratação, para a tela da pessoa e a da analista.
+ * `null` se a candidatura não foi contratada (ou a empresa não respondeu).
+ *
+ * Regra de marco: alcançado quando `diasNaEmpresa >= marco`; aberto do dia
+ * do marco até `JANELA_DO_MARCO_DIAS` depois (o de 90 fica aberto até o dia
+ * 120); fechada a janela sem resposta, o marco vai para `perdidos` e não é
+ * mais cobrado. Tudo relativo ao "hoje" da demonstração
+ * (`DEMO_REFERENCE_DATE`, o mesmo dia de `nowIso()`).
+ */
+export function getSituacaoDeContratacao(
+  state: DemoState,
+  applicationId: string,
+  hoje: string = DEMO_REFERENCE_DATE
+): SituacaoDeContratacao | null {
+  const contratacao = contratacoesInformadas(state).get(applicationId);
+  return contratacao ? montarSituacao(state, contratacao, hoje) : null;
+}
+
+/** Há quantos dias o marco pendente mais antigo está aberto. */
+function diasDePendencia(situacao: SituacaoDeContratacao): number {
+  const maisAntigo = situacao.pendentes[0];
+  return maisAntigo === undefined ? -1 : situacao.diasNaEmpresa - maisAntigo;
+}
+
+/** Memoização em dois níveis: identidade de `referrals`, depois de `checkIns`. */
+const ACOMPANHAMENTO_CACHE = new WeakMap<
+  Referral[],
+  WeakMap<CheckIn[], SituacaoDeContratacao[]>
+>();
+const SEM_CHECK_INS: CheckIn[] = [];
+
+/**
+ * Todas as contratações informadas, da mais urgente para a menos: primeiro
+ * quem tem check-in pendente há mais tempo, depois o que pede uma ligação
+ * para a empresa — divergência entre os dois lados, ou saída que só a pessoa
+ * contou e a empresa não informou —, depois o resto (contratação mais
+ * recente primeiro).
+ *
+ * É a fila da analista: quem ela liga hoje. Memorizada porque a tela a
+ * recalcula a cada render e a lista cresce com cada "contratei".
+ */
+export function getAcompanhamento(
+  state: DemoState,
+  hoje: string = DEMO_REFERENCE_DATE
+): SituacaoDeContratacao[] {
+  const checkIns = state.checkIns ?? SEM_CHECK_INS;
+  const memorizavel = hoje === DEMO_REFERENCE_DATE;
+  if (memorizavel) {
+    const cache = ACOMPANHAMENTO_CACHE.get(state.referrals)?.get(checkIns);
+    if (cache) return cache;
+  }
+
+  const situacoes: SituacaoDeContratacao[] = [];
+  for (const contratacao of contratacoesInformadas(state).values()) {
+    const situacao = montarSituacao(state, contratacao, hoje);
+    if (situacao) situacoes.push(situacao);
+  }
+
+  const pedeLigacao = (situacao: SituacaoDeContratacao): boolean =>
+    situacao.divergencia ||
+    (situacao.porFonte.pessoa === 'saiu' && situacao.porFonte.empresa === null);
+  const grupo = (situacao: SituacaoDeContratacao): number =>
+    situacao.pendentes.length > 0 ? 0 : pedeLigacao(situacao) ? 1 : 2;
+  situacoes.sort((a, b) => {
+    const porGrupo = grupo(a) - grupo(b);
+    if (porGrupo !== 0) return porGrupo;
+    if (grupo(a) === 0) return diasDePendencia(b) - diasDePendencia(a);
+    return b.contratadoEm.localeCompare(a.contratadoEm);
+  });
+
+  if (memorizavel) {
+    let porCheckIns = ACOMPANHAMENTO_CACHE.get(state.referrals);
+    if (!porCheckIns) {
+      porCheckIns = new WeakMap();
+      ACOMPANHAMENTO_CACHE.set(state.referrals, porCheckIns);
+    }
+    porCheckIns.set(checkIns, situacoes);
+  }
+  return situacoes;
+}
+
+/** Quantos dias um marco fica aberto; reexportado para a tela não importar a regra de dois lugares. */
+export { JANELA_DO_MARCO_DIAS };
 
 /*
  * Escala: listas e barra lateral com a carteira inteira do IEL.

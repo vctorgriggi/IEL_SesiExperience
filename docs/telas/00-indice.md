@@ -23,31 +23,33 @@ data de **Última atualização** no cabeçalho.
 
 ## Índice
 
-| #   | Tela                                                               | Rota                                | Persona                        |
-| --- | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------ |
-| 01  | [Visão geral](01-visao-geral.md)                                   | `/iel`                              | Analista IEL                   |
-| 02  | [Painel da empresa](02-painel-da-empresa.md)                       | `/iel`                              | Gestor                         |
-| 03  | [Vagas](03-vagas.md)                                               | `/iel/vagas`                        | Analista IEL, Gestor           |
-| 04  | [Mesa de seleção](04-mesa-de-selecao.md)                           | `/iel/vagas/[jobId]`                | Analista IEL                   |
-| 05  | [Comparação entre candidatos](05-comparacao.md)                    | `/iel/vagas/[jobId]/comparar`       | Analista IEL                   |
-| 06  | [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md) | `/iel/vagas/[jobId]/encaminhamento` | Analista IEL                   |
-| 07  | [Talentos](07-talentos.md)                                         | `/iel/talentos`                     | Analista IEL                   |
-| 08  | [Perfil do talento](08-perfil-do-talento.md)                       | `/iel/talentos/[talentId]`          | Analista IEL                   |
-| 09  | [Empresas](09-empresas.md)                                         | `/iel/empresas`                     | Analista IEL                   |
-| 10  | [Contexto da empresa](10-contexto-da-empresa.md)                   | `/iel/empresas/[companyId]`         | Analista IEL, Gestor           |
-| 11  | [Pendências](11-pendencias.md)                                     | `/iel/pendencias`                   | Analista IEL, Gestor           |
-| 12  | [Resposta do destinatário](12-resposta-do-destinatario.md)         | `/iel/pendencias/[id]/responder`    | Talento ou gestor destinatário |
-| 13  | [Encaminhamentos](13-encaminhamentos.md)                           | `/iel/encaminhamentos`              | Analista IEL, Gestor           |
-| 14  | [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md)       | `/iel/encaminhamentos/[referralId]` | Analista IEL, Gestor           |
-| 15  | [Mapa de Cultura](15-mapa-de-cultura.md)                           | aba de `/iel/empresas/[companyId]`  | Analista IEL                   |
-| 16  | [Fontes de dados](16-fontes-de-dados.md)                           | `/iel/fontes-de-dados`              | Analista IEL                   |
-| 17  | [Questionário do candidato](17-questionario-do-candidato.md)       | `/iel/candidatura/[id]/fit`         | Candidato, sem login           |
-| 18  | [Consulta ao colaborador](18-consulta-ao-colaborador.md)           | `/iel/consulta/[token]`             | Colaborador, sem login         |
-| 19  | [Importação de planilha](19-importacao-de-planilha.md)             | `/iel/vagas/[jobId]/importar`       | Analista IEL                   |
-| 20  | [Relatório para a empresa](20-relatorio-para-a-empresa.md)         | `/iel/relatorio/[token]`            | Empresa, sem login             |
-| 21  | [Análise de aderência](21-analise-de-aderencia.md)                 | aba de `/iel/talentos/[talentId]`   | Analista IEL                   |
-| 22  | [Entrada da equipe](22-entrada-da-equipe.md)                       | `/iel/entrar`                       | Equipe do IEL                  |
-| 23  | [Minha candidatura](23-minha-candidatura.md)                       | `/iel/candidatura/[id]`             | Candidato, sem login           |
+| #   | Tela                                                               | Rota                                    | Persona                         |
+| --- | ------------------------------------------------------------------ | --------------------------------------- | ------------------------------- |
+| 01  | [Visão geral](01-visao-geral.md)                                   | `/iel`                                  | Analista IEL                    |
+| 02  | [Painel da empresa](02-painel-da-empresa.md)                       | `/iel`                                  | Gestor                          |
+| 03  | [Vagas](03-vagas.md)                                               | `/iel/vagas`                            | Analista IEL, Gestor            |
+| 04  | [Mesa de seleção](04-mesa-de-selecao.md)                           | `/iel/vagas/[jobId]`                    | Analista IEL                    |
+| 05  | [Comparação entre candidatos](05-comparacao.md)                    | `/iel/vagas/[jobId]/comparar`           | Analista IEL                    |
+| 06  | [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md) | `/iel/vagas/[jobId]/encaminhamento`     | Analista IEL                    |
+| 07  | [Talentos](07-talentos.md)                                         | `/iel/talentos`                         | Analista IEL                    |
+| 08  | [Perfil do talento](08-perfil-do-talento.md)                       | `/iel/talentos/[talentId]`              | Analista IEL                    |
+| 09  | [Empresas](09-empresas.md)                                         | `/iel/empresas`                         | Analista IEL                    |
+| 10  | [Contexto da empresa](10-contexto-da-empresa.md)                   | `/iel/empresas/[companyId]`             | Analista IEL, Gestor            |
+| 11  | [Pendências](11-pendencias.md)                                     | `/iel/pendencias`                       | Analista IEL, Gestor            |
+| 12  | [Resposta do destinatário](12-resposta-do-destinatario.md)         | `/iel/pendencias/[id]/responder`        | Talento ou gestor destinatário  |
+| 13  | [Encaminhamentos](13-encaminhamentos.md)                           | `/iel/encaminhamentos`                  | Analista IEL, Gestor            |
+| 14  | [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md)       | `/iel/encaminhamentos/[referralId]`     | Analista IEL, Gestor            |
+| 15  | [Mapa de Cultura](15-mapa-de-cultura.md)                           | aba de `/iel/empresas/[companyId]`      | Analista IEL                    |
+| 16  | [Fontes de dados](16-fontes-de-dados.md)                           | `/iel/fontes-de-dados`                  | Analista IEL                    |
+| 17  | [Questionário do candidato](17-questionario-do-candidato.md)       | `/iel/candidatura/[id]/fit`             | Candidato, sem login            |
+| 18  | [Consulta ao colaborador](18-consulta-ao-colaborador.md)           | `/iel/consulta/[token]`                 | Colaborador, sem login          |
+| 19  | [Importação de planilha](19-importacao-de-planilha.md)             | `/iel/vagas/[jobId]/importar`           | Analista IEL                    |
+| 20  | [Relatório para a empresa](20-relatorio-para-a-empresa.md)         | `/iel/relatorio/[token]`                | Empresa, sem login              |
+| 21  | [Análise de aderência](21-analise-de-aderencia.md)                 | aba de `/iel/talentos/[talentId]`       | Analista IEL                    |
+| 22  | [Entrada da equipe](22-entrada-da-equipe.md)                       | `/iel/entrar`                           | Equipe do IEL                   |
+| 23  | [Minha candidatura](23-minha-candidatura.md)                       | `/iel/candidatura/[id]`                 | Candidato, sem login            |
+| 24  | [Como está sendo](24-como-esta-sendo.md)                           | `/iel/candidatura/[id]/como-esta-sendo` | Candidato contratado, sem login |
+| 25  | [Acompanhamento](25-acompanhamento.md)                             | `/iel/acompanhamento`                   | Analista IEL                    |
 
 ## Modelo para uma tela nova
 

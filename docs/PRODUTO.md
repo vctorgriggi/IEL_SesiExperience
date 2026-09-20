@@ -94,6 +94,7 @@ Não é uma seção de conformidade; é desenho. A regra: **todo dado nasce no m
 | Outros candidatos                              | sim                            | não                                            | não                     | não                                      |
 | Anotações internas do analista                 | sim                            | **nunca**                                      | não                     | só a contagem de que existem             |
 | Devolutiva da empresa (contratei / não / saiu) | sim                            | a própria                                      | não                     | não                                      |
+| Check-in do contratado (continua? como está?)  | sim                            | **nunca**                                      | não                     | os próprios                              |
 
 ### 5.2 Minimização
 
@@ -132,6 +133,7 @@ Um link sem login é uma credencial portadora. Por isso:
   - **Reuso só com aceite que o preveja.** Guardar por 12 meses e reaproveitar amplia finalidade e retenção sobre dado já coletado, e por isso está escrito no aceite **antes** (versão `2026-09-22`). Quem aceitou uma versão anterior aceitou o oposto — aquele texto dizia que as respostas ficavam ligadas àquela candidatura: a resposta dada sob texto antigo continua valendo só para a candidatura em que foi dada e **nunca** é levada para outra. A frase volta a ser perguntada, sob o texto novo. Nada retroage (LGPD, art. 8º, § 4º).
   - A versão do aceite fica gravada junto da resposta (`consent.version`): é ela que permite demonstrar depois a que a pessoa consentiu (art. 6º, X).
 - Dados de devolutiva (C3) são agregados por empresa para indicador; não identificam o candidato fora do IEL.
+- **O check-in do contratado é da pessoa e vale até 12 meses depois da contratação** (`analysis/acompanhamento.ts`). Aos 30, 60 e 90 dias o IEL pergunta à própria pessoa, por link, se ela continua na empresa e como está sendo. É finalidade nova sobre alguém que já foi contratado, por isso tem aceite próprio (versão `2026-09-22`), gravado em cada resposta. Coleta só as duas respostas e um comentário opcional — nada de saúde, família ou avaliação de chefe. A empresa **nunca** vê o que a pessoa respondeu: é a única forma de ela responder com verdade sobre o próprio emprego. A pessoa pode parar de receber as perguntas e pedir para apagar o que respondeu. Cada marco fica aberto por 30 dias; passado isso, não é mais cobrado. Quando a pessoa diz que saiu e a empresa não informou, as duas versões ficam registradas com a fonte, e o indicador de permanência assume a saída.
 
 ### 5.7 Redução de viés — como desenho de dado
 
@@ -210,7 +212,7 @@ Critério de pronto de cada frente: `bun run typecheck` e `bun run lint` verdes,
 | Testes psicológicos / perfil comportamental completo | Exige instrumento próprio e validação; o Empregare já tem um básico                                                                                | Won't              |
 | Login e área logada para a empresa                   | Etapa a mais = risco de não adesão                                                                                                                 | Won't; 00:23:28    |
 | Gestão do processo seletivo                          | A seleção é da empresa; o IEL faz atração e triagem                                                                                                | Won't; 00:04:30    |
-| Acompanhar a pessoa dentro da empresa                | A gestão do time é da indústria. O que o IEL passa a saber é o desfecho, pela devolutiva de um clique — que deixou de ser fase 2 e está no produto | Briefing; MoSCoW   |
+| Acompanhar a pessoa dentro da empresa                | A gestão do time é da indústria. O que o IEL passa a saber é o desfecho, pela devolutiva de um clique — e, pelo check-in de 30/60/90 dias, se a pessoa continua e como está sendo. O check-in é do IEL com a pessoa, não uma janela para dentro da empresa: não pergunta de chefe, de equipe nem de desempenho | Briefing; MoSCoW   |
 | IA no caminho crítico                                | Custo marginal zero                                                                                                                                | Princípio 1        |
 | Chatbot aberto para o candidato                      | C2, fase 4; ideia aprovada, mas pede IA no caminho do candidato e teste com público real                                                           | MoSCoW             |
 | Nomes de fornecedores no produto                     | O briefing proíbe inventar; o cliente citou a Mindsight como referência do que funcionou e do custo, não como parte da solução                     | Briefing; 00:25:12 |

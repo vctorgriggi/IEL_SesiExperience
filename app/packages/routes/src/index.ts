@@ -164,7 +164,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
              * por vez, respostas por botão e leitura em voz alta. Grava o
              * mesmo que `fit`; muda só a forma.
              */
-            conversation: resolve(`${applicationBase}/conversa`)
+            conversation: resolve(`${applicationBase}/conversa`),
+            /**
+             * Check-in de quem foi contratado: "Você continua na empresa?
+             * Como está sendo?", aos 30, 60 e 90 dias. Abre pela candidatura
+             * porque é dela que se sabe a data da contratação. A resposta é
+             * da pessoa e a empresa nunca a vê (PRODUTO.md §5.1).
+             */
+            checkIn: resolve(`${applicationBase}/como-esta-sendo`)
           };
         }
       },
@@ -207,6 +214,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         index: resolve('/iel/encaminhamentos'),
         byId: (referralId: string) =>
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
+      },
+      /**
+       * Acompanhamento dos contratados: a fila da analista com quem tem
+       * check-in pendente, quem contou que saiu e o que a empresa não
+       * respondeu. É a segunda metade do ciclo que a devolutiva (C3) abre.
+       */
+      followUp: {
+        index: resolve('/iel/acompanhamento')
       },
       /**
        * Legado, mantido de propósito: as duas telas de análise deixaram de

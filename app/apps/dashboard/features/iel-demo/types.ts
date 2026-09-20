@@ -1,3 +1,4 @@
+import type { CheckIn } from './analysis/acompanhamento';
 import type { CultureRespondent } from './analysis/culture';
 import type { CultureInviteRole } from './analysis/culture-invites';
 import type { ReferralOutcome } from './analysis/devolutiva';
@@ -695,6 +696,21 @@ export type DemoState = {
    * "ninguém respondeu ainda".
    */
   fitResponses?: CandidateFitResponse[];
+  /**
+   * Check-ins de quem foi contratado, respondidos pela própria pessoa aos
+   * 30, 60 e 90 dias (`analysis/acompanhamento.ts`).
+   *
+   * Lista à parte, e não um campo no `ReferralItem`, porque a resposta é da
+   * pessoa e a empresa **nunca** a vê (PRODUTO.md §5.1): o item da remessa é
+   * justamente o que a empresa abre pelo link do relatório, e guardar ali o
+   * que a pessoa disse do próprio emprego seria deixar a resposta na gaveta
+   * errada. A candidatura é a chave que liga os dois lados.
+   *
+   * Opcional pelo mesmo motivo de `fitResponses`: há recortes parciais de
+   * `DemoState`, e estado gravado antes deste campo hidrata sem ele. Ausente
+   * equivale a "ninguém respondeu ainda".
+   */
+  checkIns?: CheckIn[];
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

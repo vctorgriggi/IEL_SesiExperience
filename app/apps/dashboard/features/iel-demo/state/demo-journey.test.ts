@@ -8,7 +8,7 @@ import {
 } from '../analysis/criterion-states';
 import { getFitInsights } from '../analysis/fit-insights';
 import {
-  buildInitialDemoState,
+  buildInitialDemoState as buildSeededDemoState,
   COMPARISON_LIMIT,
   DEMO_COMPANIES,
   DEMO_JOBS,
@@ -45,6 +45,16 @@ import {
 } from './selectors';
 
 const AT = '2026-09-15T10:00:00.000Z';
+
+/**
+ * A jornada deste arquivo começa sem a remessa antiga da Horizonte Alimentos
+ * (`fixtures/acompanhamento.ts`): ela já está registrada e contratada na
+ * base, e os passos abaixo contam com `referrals[0]` sendo o que o próprio
+ * teste registrou. O acompanhamento é exercitado à parte.
+ */
+function buildInitialDemoState(): DemoState {
+  return { ...buildSeededDemoState(), referrals: [], checkIns: [] };
+}
 
 function run(state: DemoState, ...actions: DemoAction[]): DemoState {
   return actions.reduce(demoReducer, state);

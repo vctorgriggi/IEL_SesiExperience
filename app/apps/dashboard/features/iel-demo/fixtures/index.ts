@@ -1,5 +1,12 @@
 import type { DemoState, HistoryEvent, Persona } from '../types';
 import {
+  DEMO_ACOMPANHAMENTO_APPLICATIONS,
+  DEMO_ACOMPANHAMENTO_FIT_RESPONSES,
+  DEMO_ACOMPANHAMENTO_TALENTS,
+  DEMO_CHECK_INS,
+  DEMO_REFERRALS
+} from './acompanhamento';
+import {
   DEMO_ANALYSIS,
   DEMO_APPLICATIONS,
   DEMO_FIT_RESPONSES
@@ -38,7 +45,16 @@ const GENERATED = getGeneratedBase();
  */
 export const ALL_COMPANIES = [...DEMO_COMPANIES, ...GENERATED.companies];
 export const ALL_JOBS = [...DEMO_JOBS, ...GENERATED.jobs];
-export const ALL_TALENTS = [...DEMO_TALENTS, ...GENERATED.talents];
+/**
+ * As três pessoas da remessa antiga da Horizonte Alimentos entram depois das
+ * curadas e antes do volume gerado: têm nome e história, mas não são as
+ * protagonistas do roteiro (`fixtures/acompanhamento.ts`).
+ */
+export const ALL_TALENTS = [
+  ...DEMO_TALENTS,
+  ...DEMO_ACOMPANHAMENTO_TALENTS,
+  ...GENERATED.talents
+];
 
 export const ALL_TALENT_CULTURE_ANSWERS = [
   ...DEMO_TALENT_CULTURE_ANSWERS,
@@ -145,6 +161,7 @@ export function buildInitialDemoState(): DemoState {
     dataSources: clone(DEMO_DATA_SOURCES),
     applications: [
       ...clone(DEMO_APPLICATIONS),
+      ...clone(DEMO_ACOMPANHAMENTO_APPLICATIONS),
       ...clone(GENERATED.applications)
     ],
     analysis: { ...clone(DEMO_ANALYSIS), ...clone(GENERATED.analysis) },
@@ -159,11 +176,16 @@ export function buildInitialDemoState(): DemoState {
     spreadsheetImports: [],
     fitResponses: [
       ...clone(DEMO_FIT_RESPONSES),
+      ...clone(DEMO_ACOMPANHAMENTO_FIT_RESPONSES),
       ...clone(GENERATED.fitResponses)
     ],
+    // A remessa da Horizonte Alimentos já contratada há semanas, e o que as
+    // pessoas responderam desde então: sem isso, o acompanhamento só
+    // existiria 30 dias depois de alguém clicar "contratei" ao vivo.
+    checkIns: clone(DEMO_CHECK_INS),
     axisWeights: {},
     clarifications: clone(DEMO_CLARIFICATIONS),
-    referrals: [],
+    referrals: clone(DEMO_REFERRALS),
     history: clone(INITIAL_HISTORY),
     appliedSyncEventIds: [],
     comparison: {},
@@ -196,6 +218,12 @@ export {
   DEMO_TEAMS
 } from './companies';
 export { DEMO_CULTURE_ANSWERS } from './culture';
+export {
+  DEMO_ACOMPANHAMENTO_APPLICATIONS,
+  DEMO_ACOMPANHAMENTO_TALENTS,
+  DEMO_CHECK_INS,
+  DEMO_REFERRALS
+} from './acompanhamento';
 export { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 export { DEMO_CULTURE_INVITES } from './culture-invites';
 export { loadExampleSpreadsheet } from './planilha-exemplo';
