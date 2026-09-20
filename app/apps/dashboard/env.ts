@@ -38,6 +38,13 @@ export const env = createEnv({
      * defina uma senha — e troque pelo login com conta quando houver banco.
      */
     IEL_SENHA_ANALISTA: z.string().min(1).optional(),
+    /*
+     * Estado da demonstração no servidor (`'1'` liga). Só faz efeito junto
+     * com `DATABASE_URL`: é a dupla que faz a resposta do candidato no
+     * celular aparecer no notebook da analista. Sem ela, o estado fica no
+     * localStorage de cada navegador — veja features/iel-demo/state/config.ts.
+     */
+    IEL_ESTADO_COMPARTILHADO: z.enum(['1', '0']).optional(),
     IEL_AI_PROVIDER: z
       .enum(['deterministic', 'anthropic', 'deepseek'])
       .optional(),
@@ -69,6 +76,7 @@ export const env = createEnv({
     SECURITY_X_FRAME_OPTIONS: process.env.SECURITY_X_FRAME_OPTIONS,
     SECURITY_REFERRER_POLICY: process.env.SECURITY_REFERRER_POLICY,
     IEL_SENHA_ANALISTA: process.env.IEL_SENHA_ANALISTA,
+    IEL_ESTADO_COMPARTILHADO: process.env.IEL_ESTADO_COMPARTILHADO,
     IEL_AI_PROVIDER: process.env.IEL_AI_PROVIDER,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,

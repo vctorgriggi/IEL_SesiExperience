@@ -50,6 +50,24 @@ Use este checklist antes e depois de fazer o deploy do dashboard (e de qualquer 
 
 ---
 
+## 5. Mind RH com Neon (estado da demo compartilhado)
+
+Por padrão o estado da demonstração fica no `localStorage` de cada navegador — e o que o candidato responde no celular não chega ao notebook da analista. Para a demo ao vivo entre aparelhos, o estado passa a morar no servidor:
+
+- [ ] **Criar o projeto no Neon** (Postgres gerenciado, plano gratuito serve). Na página do projeto, copie a **connection string pooled** (a que passa pelo pooler, com `-pooler` no host). Ela já vem com `sslmode=require`; o cliente (`packages/database/src/client.ts`) lê isso e liga o TLS.
+- [ ] **Migrar uma vez**, da sua máquina, apontando para o Neon:  
+  `DATABASE_URL='<connection string>' bun --filter @workspace/database migrate`  
+  (ou `push`, em desenvolvimento). Cria `iel_demo_salas` e `iel_demo_eventos`, além das tabelas do kit. O chat exige a extensão `vector` — no Neon ela é permitida; se a migração reclamar, rode `CREATE EXTENSION vector` no SQL Editor do Neon e repita.
+- [ ] **Variáveis na Vercel** (Project → Settings → Environment Variables), para Production e Preview:
+  - `DATABASE_URL` = a connection string pooled;
+  - `IEL_ESTADO_COMPARTILHADO=1`.  
+  Sem as duas juntas, a app continua no modo navegador (não quebra). Depois de salvar, faça um redeploy: variável de ambiente só entra no próximo build.
+- [ ] **Testar o fluxo entre aparelhos**: abra a Central no notebook, entre numa vaga e copie o link do questionário de um candidato; abra o link no celular (rede diferente serve) e responda. Em até 4 segundos a resposta aparece no notebook — a tela sonda `GET /api/iel/estado` enquanto está visível. `curl 'https://<seu-domínio>/api/iel/estado?sala=principal'` deve responder `{ revisao, schemaVersion, persisted }`; se responder `{ "erro": "estado compartilhado desligado" }` (503), falta uma das duas variáveis.
+- [ ] **Reiniciar a demo** antes de apresentar: menu da analista → "Reiniciar demonstração" (faz `DELETE /api/iel/acoes` e volta a sala à base fictícia, em todos os aparelhos).
+- [ ] **O que é e o que não é**: é um estado de demonstração sobre base fictícia, numa sala única (`principal`). A API da demo não autentica — quem tem o link age (R9/R10) — e o log `iel_demo_eventos` cresce a cada ação sem poda. Em produção, sessão por pessoa e retenção definida (`docs/PRODUTO.md` §5).
+
+---
+
 ## Referência rápida
 
 | Item                  | Ação |
@@ -59,5 +77,6 @@ Use este checklist antes e depois de fazer o deploy do dashboard (e de qualquer 
 | Validação de env      | `bun run tools/env-check/env-doctor.ts` antes do deploy. |
 | Vars públicas de env  | Apenas `NEXT_PUBLIC_*` que o cliente realmente precisa. |
 | CORS / segurança      | Opcional: ALLOWED_ORIGINS, SECURITY_X_FRAME_OPTIONS, SECURITY_REFERRER_POLICY (ver .env.example). |
+| Mind RH entre aparelhos | `DATABASE_URL` (Neon, pooled) + `IEL_ESTADO_COMPARTILHADO=1` + `migrate` uma vez. |
 
 Depois de fazer tudo do checklist, continue com seu fluxo normal de deploy (por exemplo, Vercel para o dashboard e Postgres gerenciado ou o `docker-compose.yml` local apenas para desenvolvimento).

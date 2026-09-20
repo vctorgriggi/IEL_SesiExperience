@@ -16,7 +16,10 @@ export const DEMO_STORAGE_KEY = 'iel-demo-state';
 const PERSIST_INTERVAL_MS = 400;
 
 /**
- * O que vai para o localStorage.
+ * O que vai para o localStorage — e, no modo compartilhado, para a coluna
+ * `estado` da sala no banco (`state/servidor.ts`). Um formato só, gravado em
+ * dois lugares: o que o servidor devolve rehidrata pelo mesmo caminho do
+ * navegador.
  *
  * A base tem centenas de candidaturas e milhares de registros, mas quase nada
  * disso muda durante a demonstração — é volume gerado a partir de uma semente
@@ -26,7 +29,7 @@ const PERSIST_INTERVAL_MS = 400;
  * Então guardamos apenas o que divergiu da base inicial. O resto é derivado de
  * novo na leitura.
  */
-type PersistedState = {
+export type PersistedState = {
   schemaVersion: number;
   personaId: string;
   dataSources: DemoState['dataSources'];
@@ -138,7 +141,8 @@ function getBaseline(): Baseline {
   return baseline;
 }
 
-function toPersisted(state: DemoState): PersistedState {
+/** Reduz o estado ao delta gravável. Pura: serve ao navegador e ao servidor. */
+export function toPersisted(state: DemoState): PersistedState {
   const base = getBaseline();
 
   const changedApplications = state.applications.filter(
@@ -199,7 +203,12 @@ function toPersisted(state: DemoState): PersistedState {
   };
 }
 
-function fromPersisted(persisted: PersistedState): DemoState {
+/**
+ * Reconstrói o estado inteiro: base fictícia + delta. Pura e tolerante a
+ * campos ausentes, porque um delta gravado numa versão anterior do mesmo
+ * `schemaVersion` pode não conhecer um campo novo.
+ */
+export function fromPersisted(persisted: PersistedState): DemoState {
   const state = buildInitialDemoState();
 
   const overrides = new Map(

@@ -24,3 +24,5 @@ export * from './support';
 // Chat com IA (conversas, mensagens, créditos)
 export * from './ai-chat';
 
+// Mind RH / IEL (sala da demonstração compartilhada e log de ações)
+export * from './iel';

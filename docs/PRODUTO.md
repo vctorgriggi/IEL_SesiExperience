@@ -117,6 +117,7 @@ Um link sem login é uma credencial portadora. Por isso:
 - **Uso único** por respondente. Reaberto depois de enviado, mostra apenas "resposta registrada".
 - **Sem dado pessoal na URL**: o token é opaco; nome, e-mail e vaga ficam no servidor.
 - **Escopo mínimo**: o link do candidato abre só o questionário daquela candidatura; o do colaborador, só o da sua empresa.
+- **Limite conhecido da demonstração**: a API da demo (`/api/iel/estado`, `/api/iel/acoes`) não autentica — a senha da equipe (`IEL_SENHA_ANALISTA`) protege as telas da analista, não a API; em produção, sessão por pessoa.
 
 ### 5.5 Visibilidade por padrão
 
@@ -133,6 +134,7 @@ Um link sem login é uma credencial portadora. Por isso:
   - **Reuso só com aceite que o preveja.** Guardar por 12 meses e reaproveitar amplia finalidade e retenção sobre dado já coletado, e por isso está escrito no aceite **antes** (versão `2026-09-22`). Quem aceitou uma versão anterior aceitou o oposto — aquele texto dizia que as respostas ficavam ligadas àquela candidatura: a resposta dada sob texto antigo continua valendo só para a candidatura em que foi dada e **nunca** é levada para outra. A frase volta a ser perguntada, sob o texto novo. Nada retroage (LGPD, art. 8º, § 4º).
   - A versão do aceite fica gravada junto da resposta (`consent.version`): é ela que permite demonstrar depois a que a pessoa consentiu (art. 6º, X).
 - Dados de devolutiva (C3) são agregados por empresa para indicador; não identificam o candidato fora do IEL.
+- **Onde o estado da demonstração mora.** Por padrão, no navegador de cada aparelho (`localStorage`), e nada sai da máquina. Com `IEL_ESTADO_COMPARTILHADO=1` e `DATABASE_URL` (Neon/Postgres), o estado passa a morar numa sala única no servidor (`iel_demo_salas`, só o delta sobre a base) com um log das ações (`iel_demo_eventos`, sem poda), para que a resposta dada no celular apareça no notebook da analista. É **base fictícia**: nenhuma pessoa real está gravada, e por isso não há retenção definida — em produção, o dado de pessoa teria tabela própria, prazo e sessão por pessoa.
 - **O check-in do contratado é da pessoa e vale até 12 meses depois da contratação** (`analysis/acompanhamento.ts`). Aos 30, 60 e 90 dias o IEL pergunta à própria pessoa, por link, se ela continua na empresa e como está sendo. É finalidade nova sobre alguém que já foi contratado, por isso tem aceite próprio (versão `2026-09-22`), gravado em cada resposta. Coleta só as duas respostas e um comentário opcional — nada de saúde, família ou avaliação de chefe. A empresa **nunca** vê o que a pessoa respondeu: é a única forma de ela responder com verdade sobre o próprio emprego. A pessoa pode parar de receber as perguntas e pedir para apagar o que respondeu. Cada marco fica aberto por 30 dias; passado isso, não é mais cobrado. Quando a pessoa diz que saiu e a empresa não informou, as duas versões ficam registradas com a fonte, e o indicador de permanência assume a saída.
 
 ### 5.7 Redução de viés — como desenho de dado
