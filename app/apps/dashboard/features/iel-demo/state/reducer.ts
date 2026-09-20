@@ -1,3 +1,12 @@
+import {
+  COMENTARIO_MAX,
+  ehComoEstaSendo,
+  ehMarco,
+  marcoAlcancado,
+  type CheckIn,
+  type ComoEstaSendo,
+  type MarcoDoAcompanhamento
+} from '../analysis/acompanhamento';
 import { VALIDADE_DA_RESPOSTA_MESES } from '../analysis/candidate-questionnaire';
 import {
   addDays,
@@ -8,6 +17,7 @@ import {
 } from '../analysis/culture-invites';
 import {
   DEVOLUTIVA_PENDENTE,
+  diasEntre,
   lerDevolutiva,
   type MotivoNaoContratacao,
   type MotivoSaida,
@@ -259,6 +269,32 @@ export type DemoAction =
       referralId: string;
       applicationId: string;
       at: string;
+    }
+  | {
+      /**
+       * A própria pessoa responde o check-in de 30, 60 ou 90 dias
+       * (`analysis/acompanhamento.ts`).
+       *
+       * Segunda fonte da permanência: "o RH não dá retorno" (00:05:33), e
+       * enquanto só a empresa puder dizer se a pessoa ficou, o dado continua
+       * refém dela. O que a pessoa responde **não sobrescreve** o que a
+       * empresa respondeu — as duas ficam registradas, cada uma com a sua
+       * fonte, e a divergência aparece como diagnóstico.
+       *
+       * Idempotente por (candidatura, marco): responder de novo substitui.
+       * Recusa candidatura que não foi contratada, marco que a pessoa ainda
+       * não alcançou e valor fora da escala. Marco cuja janela já fechou
+       * ainda é aceito: o link pode chegar tarde, e resposta tardia é dado,
+       * não erro.
+       */
+      type: 'answer-check-in';
+      applicationId: string;
+      marco: MarcoDoAcompanhamento;
+      continua: boolean;
+      comoEstaSendo: ComoEstaSendo;
+      comentario?: string;
+      at: string;
+      consentVersion: string;
     }
   | {
       /** A empresa pede um esclarecimento ao IEL sobre um perfil compartilhado. */
@@ -1189,6 +1225,75 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
               ? 'Permanência aos 90 dias confirmada'
               : 'Saída antes de 90 dias informada',
           description: `Permanência registrada para a candidatura ${action.applicationId} na vaga ${referral.jobId}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'answer-check-in': {
+      if (!ehMarco(action.marco) || !ehComoEstaSendo(action.comoEstaSendo)) {
+        return state;
+      }
+      if (!action.consentVersion) return state;
+
+      // O check-in só existe para quem a empresa disse que contratou: sem
+      // "contratei" não há dia zero para contar os 30 dias.
+      const contratacao = state.referrals
+        .filter((referral) => referral.state === 'registrado')
+        .flatMap((referral) => referral.items)
+        .find((item) => item.applicationId === action.applicationId);
+      const desfecho = lerDevolutiva(contratacao?.outcome);
+      if (
+        !contratacao ||
+        desfecho.hiring !== 'contratou' ||
+        !desfecho.hiringAt
+      ) {
+        return state;
+      }
+      if (
+        !marcoAlcancado(action.marco, diasEntre(desfecho.hiringAt, action.at))
+      ) {
+        return state;
+      }
+
+      const application = state.applications.find(
+        (entry) => entry.id === action.applicationId
+      );
+      if (!application) return state;
+
+      const comentario = (action.comentario ?? '')
+        .trim()
+        .slice(0, COMENTARIO_MAX);
+      const checkIn: CheckIn = {
+        // Chave natural: um check-in por marco por candidatura. É o que faz
+        // "responder de novo" substituir em vez de acumular.
+        id: `CHK-${action.applicationId}-${action.marco}`,
+        applicationId: action.applicationId,
+        talentId: application.talentId,
+        marco: action.marco,
+        respondidoEm: action.at,
+        continua: action.continua,
+        comoEstaSendo: action.comoEstaSendo,
+        ...(comentario ? { comentario } : {}),
+        consentVersion: action.consentVersion
+      };
+
+      return {
+        ...state,
+        checkIns: [
+          ...(state.checkIns ?? []).filter((entry) => entry.id !== checkIn.id),
+          checkIn
+        ],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Candidato',
+          action: action.continua
+            ? `Check-in de ${action.marco} dias respondido`
+            : `Saída informada pela pessoa aos ${action.marco} dias`,
+          // Sem nome e sem a resposta: o histórico é lido por qualquer
+          // persona, e o que a pessoa disse do próprio emprego é dela
+          // (PRODUTO.md §5.1).
+          description: `A pessoa da candidatura ${action.applicationId} respondeu o check-in de ${action.marco} dias.`,
           entityRef: action.applicationId
         })
       };

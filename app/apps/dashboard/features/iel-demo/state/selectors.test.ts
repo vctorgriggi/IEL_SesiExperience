@@ -105,9 +105,11 @@ describe('indicadores e agregações da visão geral', () => {
     // curadas do roteiro não são afetadas pelo volume gerado em volta.
     expect(getOverviewMetrics(state, 'todas').openClarifications).toBe(2);
     expect(getOverviewMetrics(state, 'todas').referralsAwaitingReturn).toBe(0);
+    // As 5 incluem as três candidaturas já contratadas da remessa antiga
+    // (`fixtures/acompanhamento.ts`), que a empresa já respondeu.
     expect(getOverviewMetrics(state, 'EMP-02')).toEqual({
       openJobs: 1,
-      applicationsInAnalysis: 2,
+      applicationsInAnalysis: 5,
       openClarifications: 1,
       referralsAwaitingReturn: 0
     });
