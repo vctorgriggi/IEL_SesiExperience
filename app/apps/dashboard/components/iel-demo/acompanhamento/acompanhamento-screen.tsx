@@ -14,12 +14,12 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import type { Talent } from '@/features/iel-demo/types';
 import {
-  Building2,
-  HeartHandshake,
-  LockIcon,
-  Phone,
-  UserCheck
-} from 'lucide-react';
+  IconBuildingSkyscraper,
+  IconHeartHandshake,
+  IconLock,
+  IconPhone,
+  IconUserCheck
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -172,11 +172,14 @@ export function AcompanhamentoScreen() {
         </p>
       </div>
 
-      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        data-tour="acompanhamento-indicadores"
+        className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
         <CartaoDeIndicador
           rotulo="Em acompanhamento"
           valor={totais.emAcompanhamento}
-          icone={HeartHandshake}
+          icone={IconHeartHandshake}
           tom="pessoa"
           rodape="contratados nos últimos 90 dias e um pouco além"
           apoio="Pessoas que a empresa disse ter contratado. O IEL pergunta a cada uma, aos 30, 60 e 90 dias, se continua e como está sendo."
@@ -184,7 +187,7 @@ export function AcompanhamentoScreen() {
         <CartaoDeIndicador
           rotulo="Para ligar hoje"
           valor={totais.paraLigarHoje}
-          icone={Phone}
+          icone={IconPhone}
           tom="atencao"
           rodape={
             totais.paraLigarHoje === 0
@@ -196,7 +199,7 @@ export function AcompanhamentoScreen() {
         <CartaoDeIndicador
           rotulo="Continuam na empresa"
           valor={`${totais.continuam} de ${totais.emAcompanhamento}`}
-          icone={UserCheck}
+          icone={IconUserCheck}
           tom="combina"
           rodape={
             totais.sairam === 0
@@ -212,7 +215,7 @@ export function AcompanhamentoScreen() {
         <CartaoDeIndicador
           rotulo="Empresa não informou"
           valor={totais.empresaNaoInformou}
-          icone={Building2}
+          icone={IconBuildingSkyscraper}
           tom="empresa"
           rodape="nada depois do “contratei”"
           apoio="Contratações em que a empresa clicou “contratei” e não voltou para dizer se a pessoa ficou. É o que a pergunta à pessoa cobre."
@@ -237,8 +240,11 @@ export function AcompanhamentoScreen() {
               ))}
             </TabsList>
           </Tabs>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <LockIcon
+          <span
+            data-tour="acompanhamento-privacidade"
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+          >
+            <IconLock
               aria-hidden="true"
               className="size-3"
             />
@@ -264,7 +270,10 @@ export function AcompanhamentoScreen() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <div
+            data-tour="acompanhamento-fila"
+            className="overflow-x-auto rounded-lg border"
+          >
             <Table>
               <TableCaption className="sr-only">
                 Pessoas contratadas em acompanhamento, na ordem de quem ligar
@@ -354,11 +363,6 @@ export function AcompanhamentoScreen() {
             </Table>
           </div>
         )}
-        <p className="text-xs text-muted-foreground">
-          A ordem é a de quem ligar primeiro: pergunta aberta há mais tempo,
-          depois saída que a empresa não informou, depois o resto. Ninguém aqui
-          está em ranking.
-        </p>
       </div>
 
       {linhaAberta ? (
