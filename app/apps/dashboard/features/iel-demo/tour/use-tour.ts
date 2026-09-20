@@ -23,8 +23,15 @@ import { driver, type Driver, type DriveStep } from 'driver.js';
 
 import type { PassoDoTour, TourDeTela } from './types';
 
-/** Quanto se espera por um alvo depois de trocar de tela. */
-const ESPERA_MAXIMA_MS = 5000;
+/**
+ * Quanto se espera por um alvo depois de trocar de tela.
+ *
+ * Doze segundos parecem muito e não são: em desenvolvimento a rota nova
+ * ainda compila, e o preço de desistir cedo é o balão abrir no meio da tela
+ * sem destacar nada — bem no meio da apresentação. Quem encontra o alvo
+ * antes não espera nada disso.
+ */
+const ESPERA_MAXIMA_MS = 12_000;
 const INTERVALO_DE_TENTATIVA_MS = 80;
 
 /** Leva o navegador até `rota` e resolve quando a tela responde. */
@@ -45,8 +52,30 @@ function esperarAlvo(seletor: string | undefined): Promise<void> {
   });
 }
 
+/**
+ * Onde o navegador está, com a busca junto.
+ *
+ * A busca entra porque há passo que só muda o `?aba=` — o mapa dentro da
+ * empresa, a análise dentro de Questionários. Comparando só o caminho, esses
+ * passos se dariam por cumpridos e o tour apontaria para uma aba fechada.
+ */
+/**
+ * Tira o destaque que sobrou do passo anterior.
+ *
+ * O driver.js marca o elemento destacado com `driver-active-element` e o
+ * limpa ao trocar de passo — mas só enquanto o elemento é o mesmo nó. Num
+ * tour que troca de tela, o nó de antes ou some (e leva a classe junto) ou
+ * sobrevive à navegação, como a barra lateral: aí a classe fica, e a barra
+ * segue destacada por baixo do véu até o fim do tour.
+ */
+function limparDestaque(): void {
+  for (const elemento of document.querySelectorAll('.driver-active-element')) {
+    elemento.classList.remove('driver-active-element');
+  }
+}
+
 function rotaAtual(): string {
-  return window.location.pathname;
+  return `${window.location.pathname}${window.location.search}`;
 }
 
 /**
@@ -80,6 +109,7 @@ export function useDriverDoTour(navegar?: Navegar) {
   const encerrar = useCallback(() => {
     driverRef.current?.destroy();
     driverRef.current = null;
+    limparDestaque();
   }, []);
 
   // Sair da tela no meio do tour não pode deixar o overlay preso na página.
@@ -113,8 +143,10 @@ export function useDriverDoTour(navegar?: Navegar) {
         if (passo.rota && passo.rota !== rotaAtual() && navegar) {
           await navegar(passo.rota);
           await esperarAlvo(passo.seletor);
+          limparDestaque();
           instancia.refresh();
         }
+        limparDestaque();
         instancia.drive(indice);
       };
 
@@ -125,7 +157,19 @@ export function useDriverDoTour(navegar?: Navegar) {
         nextBtnText: 'Próximo',
         prevBtnText: 'Voltar',
         doneBtnText: 'Fechar',
+        /*
+         * Só o "x" fecha. Clique fora e Esc saíam do tour por acidente — no
+         * meio de uma apresentação, com o ponteiro passeando pela tela,
+         * sair sem querer é perder o fio na frente de quem assiste.
+         *
+         * `allowClose` fica ligado porque é ele que desenha o "x" no balão;
+         * quem cala as outras saídas é o `onDestroyStarted` vazio, que é por
+         * onde Esc e clique no véu passam. O "x" tem caminho próprio
+         * (`onCloseClick`) e continua fechando.
+         */
         allowClose: true,
+        onDestroyStarted: () => undefined,
+        onCloseClick: () => encerrar(),
         overlayOpacity: 0.6,
         stagePadding: 6,
         stageRadius: 8,

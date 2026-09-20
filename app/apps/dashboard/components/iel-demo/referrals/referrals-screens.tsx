@@ -262,7 +262,10 @@ export function ReferralsScreen() {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border">
+          <div
+            className="overflow-hidden rounded-lg border"
+            data-tour="enviados-tabela"
+          >
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>

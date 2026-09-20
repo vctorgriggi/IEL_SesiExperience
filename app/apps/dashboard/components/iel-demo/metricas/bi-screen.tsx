@@ -263,6 +263,7 @@ export function BiScreen() {
 
         <TabsContent
           value="reabertura"
+          data-tour="bi-reabertura"
           className="flex flex-col gap-4 pt-2"
         >
           <Reabertura

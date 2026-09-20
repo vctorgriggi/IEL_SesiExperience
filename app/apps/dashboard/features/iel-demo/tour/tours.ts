@@ -8,6 +8,11 @@
  * Os textos seguem a mesma régua do resto do produto (docs/DESIGN.md): uma
  * pergunta por tela, um número, uma ação, sem jargão. E nenhum passo promete
  * o que o produto não faz — o tour é leitura da tela, não argumento de venda.
+ *
+ * A primeira entrada, "A jornada inteira", é o roteiro da apresentação: ela
+ * atravessa as telas na ordem em que o trabalho acontece. Quando uma tela
+ * nova entra no produto, é nela que a tela precisa aparecer — senão a
+ * demonstração continua contando o produto de antes.
  */
 
 import {
@@ -18,7 +23,10 @@ import {
   IconClipboardList,
   IconHeartHandshake,
   IconHome,
+  IconListCheck,
   IconPlug,
+  IconSend,
+  IconUser,
   IconUsers
 } from '@tabler/icons-react';
 
@@ -37,72 +45,165 @@ export const TOURS: TourDeTela[] = [
   {
     id: 'jornada',
     titulo: 'A jornada inteira',
-    descricao: 'Da fila do dia ao retorno da empresa — atravessa as telas',
+    descricao:
+      'O roteiro da apresentação: da fila do dia ao retorno da empresa',
     icone: IconArrowRight,
     rota: iel.index,
+    roteiro: true,
     casaCom: () => false,
     passos: [
       {
         rota: iel.index,
-        titulo: 'O caminho completo, em sete paradas',
-        texto:
-          'Este tour anda sozinho pelas telas: começa no dia da analista, passa pela decisão de quem enviar e termina no que a empresa devolveu. Use o "Próximo" — a navegação é por nossa conta.'
-      },
-      {
-        rota: iel.index,
         seletor: alvo('inicio-fila'),
-        titulo: '1. O que precisa de mim hoje',
+        titulo: 'O que precisa de mim hoje',
         texto:
-          'A fila abre o dia na ordem em que compensa resolver. Cada linha leva à tela onde aquilo se resolve.',
+          'A fila abre o dia na ordem em que compensa resolver: pergunta sem resposta, currículo para enviar, contratado para ligar. Cada linha leva à tela onde aquilo se resolve.',
         lado: 'right'
       },
       {
         rota: iel.index,
         seletor: alvo('inicio-funil'),
-        titulo: '2. Onde o processo perde gente',
+        titulo: 'Onde o processo perde gente',
         texto:
           'Do currículo recebido a quem ficou 90 dias. O degrau que mais encolhe é a próxima conversa com a empresa.',
         lado: 'left'
       },
       {
+        rota: iel.index,
+        seletor: alvo('cabecalho-notificacoes'),
+        titulo: 'A mesma fila, de qualquer tela',
+        texto:
+          'O sino repete o que falta fazer sem obrigar a voltar ao início. O que já foi lido fica no navegador de quem leu, não na base: duas pessoas na mesma sala não apagam o aviso uma da outra.',
+        lado: 'bottom',
+        alinhamento: 'end'
+      },
+      {
+        rota: iel.jobs.byId('VAG-01').index,
+        seletor: alvo('mesa-perfil-da-empresa'),
+        titulo: 'A mesa de seleção começa pela empresa',
+        texto:
+          'Trocamos de tela. Antes de olhar candidato, a mesa diz quantos colaboradores da empresa responderam e quantos temas seguem em aberto. Tema sem base não entra na conta de ninguém.',
+        lado: 'bottom'
+      },
+      {
         rota: iel.jobs.byId('VAG-01').index,
         seletor: alvo('mesa-indicadores'),
-        titulo: '3. A vaga, em quatro números',
+        titulo: 'A vaga, em quatro números',
         texto:
-          'Trocamos de tela. Compatíveis, sem resposta, marcados e resgate — cada cartão é também um filtro da tabela abaixo.',
+          'Compatíveis, sem questionário, marcados e resgate — cada cartão é também um filtro da tabela abaixo. "Marcados" trava em 5, que é o teto de currículos por vaga.',
         lado: 'bottom'
       },
       {
         rota: iel.jobs.byId('VAG-01').index,
         seletor: alvo('mesa-tabela'),
-        titulo: '4. Os dois números, lado a lado',
+        titulo: 'Os dois números, nunca fundidos',
         texto:
-          '"Combina" é a aderência ao jeito de trabalhar da empresa; "Requisitos" vem do sistema de vagas. O resgate traz de volta quem o filtro técnico descartou.',
+          '"Combina" é a aderência ao jeito de trabalhar da empresa; "Requisitos" vem do sistema de vagas. A tensão entre os dois é a informação — e o resgate traz de volta quem o filtro técnico descartou.',
+        lado: 'top'
+      },
+      {
+        rota: iel.jobs.byId('VAG-01').index,
+        seletor: alvo('mesa-enviar'),
+        titulo: 'Marcar e preparar o envio',
+        texto:
+          'Marque até cinco pessoas e o preparo abre com a mensagem para a empresa e a justificativa de cada perfil, revisáveis antes do registro. Nada sai daqui sozinho: quem decide é você.',
+        lado: 'bottom'
+      },
+      {
+        rota: iel.referrals.index,
+        seletor: alvo('enviados-tabela'),
+        titulo: 'O que a empresa fez com o que recebeu',
+        texto:
+          'Cada envio guarda o retrato do que saiu e o retorno da empresa: quem foi chamado, quem foi contratado e o que ficou sem resposta. É o que faltava para cobrar retorno sem depender de memória.',
         lado: 'top'
       },
       {
         rota: iel.companies.byId('EMP-01'),
         seletor: alvo('empresa-temas'),
-        titulo: '5. De onde sai o "combina"',
+        titulo: 'De onde sai o "combina"',
         texto:
-          'Outra tela: a empresa descrita pela própria equipe, tema a tema. Enquanto o mínimo de respostas não fecha, o tema fica em aberto e não pesa na conta de ninguém.',
+          'A empresa descrita pela própria equipe, tema a tema — não pelo RH. Enquanto o mínimo de respostas não fecha, o tema fica em aberto e não pesa na conta de ninguém.',
         lado: 'top'
+      },
+      {
+        rota: `${iel.companies.byId('EMP-01')}?aba=mapa`,
+        seletor: alvo('empresa-mapa'),
+        titulo: 'Quem na base combina com esta cultura',
+        texto:
+          'A mesma leitura na direção inversa: a empresa no centro e as pessoas da base ao redor, inclusive quem ainda não se candidatou. Serve para achar gente para uma vaga que nem abriu.',
+        lado: 'top'
+      },
+      {
+        rota: iel.talents.byId('ANA').index,
+        seletor: alvo('pessoa-aderencia'),
+        titulo: 'A pessoa, e onde ela se encaixa',
+        texto:
+          'No perfil, a aderência é aba: a mesma conta da mesa, agora com a pessoa no centro e as empresas ao redor. Ao lado ficam como ela prefere trabalhar e as candidaturas dela.',
+        lado: 'top'
+      },
+      {
+        rota: `${iel.candidates}?aba=analise`,
+        seletor: alvo('questionarios-abas'),
+        titulo: 'A ponta do candidato, em duas leituras',
+        texto:
+          '"Simples" é a lista de quem ainda não respondeu, com reenvio e cobrança. "Análise" é o agregado: nenhum nome, e recorte com menos de cinco pessoas sai como travessão.',
+        lado: 'bottom'
+      },
+      {
+        rota: `${iel.candidates}?aba=analise`,
+        seletor: alvo('questionarios-funil'),
+        titulo: 'Onde o candidato para',
+        texto:
+          'O ponto de maior abandono diz qual tela precisa de revisão de linguagem — não de mais cobrança. É por isso que o questionário lê a pergunta em voz alta e aceita resposta por número.',
+        lado: 'top'
+      },
+      {
+        rota: iel.instrument.index,
+        seletor: alvo('instrumento-numeros'),
+        titulo: 'As 52 frases, na mão da analista',
+        texto:
+          'O instrumento é do cliente e fica visível: frase desligada não é perguntada nem pesa, e frase em que quase todo mundo concorda entra no perfil da empresa sem contar na aderência.',
+        lado: 'bottom'
       },
       {
         rota: iel.followUp.index,
         seletor: alvo('acompanhamento-fila'),
-        titulo: '6. A contratação durou?',
+        titulo: 'A contratação durou?',
         texto:
-          'A última tela do ciclo. O que a pessoa disse e o que a empresa disse, lado a lado — e quando a empresa cala, quem responde é a pessoa.',
+          'A segunda metade do ciclo, que o IEL nunca teve. O que a pessoa disse e o que a empresa disse, lado a lado — e quando a empresa cala, quem responde é a pessoa.',
         lado: 'top'
       },
       {
         rota: iel.followUp.index,
         seletor: alvo('acompanhamento-privacidade'),
-        titulo: '7. E o que a pessoa diz fica com o IEL',
+        titulo: 'O que a pessoa diz fica com o IEL',
         texto:
-          'A resposta do check-in nunca chega à empresa. É o que torna a pergunta possível.',
+          'A resposta do check-in nunca chega à empresa. Não existe botão nesta tela que compartilhe isso — é o que torna a pergunta possível.',
         lado: 'bottom'
+      },
+      {
+        rota: iel.bi,
+        seletor: alvo('bi-reabertura'),
+        titulo: 'O indicador que o IEL escolheu',
+        texto:
+          'Reabertura da mesma vaga, na mesma empresa, em 90 dias. A linha vertical marca a entrada do Mind RH e só meses fechados entram na comparação. Os dados desta tela são simulados, e ela diz isso em faixa.',
+        lado: 'top'
+      },
+      {
+        rota: iel.dataSources,
+        seletor: alvo('integracoes-campos'),
+        titulo: 'O que fica de fora',
+        texto:
+          'CPF, RG, foto, idade e endereço não entram. Toda conexão nasce no modo mais restrito, e campo novo só entra se alguém do IEL ligar.',
+        lado: 'top'
+      },
+      {
+        rota: iel.index,
+        seletor: alvo('acoes-rapidas'),
+        titulo: 'E o Mind, em qualquer tela',
+        texto:
+          'De volta ao início: o leque abre a fila do dia, a importação da planilha e o Mind, que responde sobre a tela em que você está. Fim do roteiro — o tour de cada tela continua no mesmo botão do cabeçalho.',
+        lado: 'left'
       }
     ]
   },
@@ -138,6 +239,21 @@ export const TOURS: TourDeTela[] = [
         titulo: 'Onde o processo perde gente',
         texto:
           'Do currículo recebido a quem ficou 90 dias. O degrau que mais encolhe é o que merece a próxima conversa com a empresa.',
+        lado: 'left'
+      },
+      {
+        seletor: alvo('cabecalho-notificacoes'),
+        titulo: 'A mesma fila, de qualquer tela',
+        texto:
+          'O sino repete o que falta fazer sem obrigar a voltar para cá. O que já foi lido fica no navegador de quem leu.',
+        lado: 'bottom',
+        alinhamento: 'end'
+      },
+      {
+        seletor: alvo('acoes-rapidas'),
+        titulo: 'O Mind e as ações rápidas',
+        texto:
+          'O leque abre a fila do dia, a importação da planilha e o Mind, que responde sobre a tela em que você está.',
         lado: 'left'
       }
     ]
@@ -190,7 +306,7 @@ export const TOURS: TourDeTela[] = [
       },
       {
         seletor: alvo('mesa-indicadores'),
-        titulo: 'Compatíveis, sem resposta, marcados e resgate',
+        titulo: 'Compatíveis, sem questionário, marcados e resgate',
         texto:
           'Cada cartão é também um filtro da tabela abaixo. "Marcados" trava em 5 — é o teto de currículos por vaga.',
         lado: 'bottom'
@@ -219,6 +335,57 @@ export const TOURS: TourDeTela[] = [
     ]
   },
   {
+    id: 'encaminhamento',
+    titulo: 'Preparo do envio',
+    descricao: 'A mensagem, a justificativa e o que a empresa vai ver',
+    icone: IconSend,
+    rota: iel.jobs.byId('VAG-01').referral,
+    casaCom: (pathname) => pathname.endsWith('/encaminhamento'),
+    passos: [
+      {
+        titulo: 'Antes de a empresa receber',
+        texto:
+          'A lista marcada na mesa vira um envio só, com o que sustenta cada nome. Registrar compartilha as informações com a empresa; o sistema de vagas de origem não é alterado.'
+      },
+      {
+        seletor: alvo('encaminhamento-mensagem'),
+        titulo: 'A mensagem, sugerida e revisável',
+        texto:
+          'A análise assistida escreve o texto; quem assina é a analista. Nenhuma palavra sai daqui sem passar por ela.',
+        lado: 'bottom'
+      },
+      {
+        seletor: alvo('encaminhamento-registrar'),
+        titulo: 'Ver antes de registrar',
+        texto:
+          'A pré-visualização mostra exatamente o que a empresa vai ler, inclusive quais evidências foram autorizadas. Preparar, encaminhar e contratar são ações diferentes.',
+        lado: 'top'
+      }
+    ]
+  },
+  {
+    id: 'enviados',
+    titulo: 'Enviados',
+    descricao: 'O que a empresa fez com cada currículo',
+    icone: IconSend,
+    rota: iel.referrals.index,
+    casaCom: (pathname) => pathname.startsWith(iel.referrals.index),
+    passos: [
+      {
+        titulo: 'O retrato de cada envio',
+        texto:
+          'Cada encaminhamento guarda o que saiu no momento em que saiu: quem foi, com que justificativa e quais evidências.'
+      },
+      {
+        seletor: alvo('enviados-tabela'),
+        titulo: 'O retorno da empresa, na mesma linha',
+        texto:
+          'Chamado para entrevista, contratado, sem resposta. É daqui que sai a cobrança de retorno — e é daqui que a pessoa entra em acompanhamento.',
+        lado: 'top'
+      }
+    ]
+  },
+  {
     id: 'talentos',
     titulo: 'Banco de talentos',
     descricao: 'As pessoas da base, fora do contexto de uma vaga',
@@ -241,6 +408,30 @@ export const TOURS: TourDeTela[] = [
     ]
   },
   {
+    id: 'pessoa',
+    titulo: 'Perfil da pessoa',
+    descricao: 'Onde ela se encaixa e como prefere trabalhar',
+    icone: IconUser,
+    rota: iel.talents.byId('ANA').index,
+    casaCom: (pathname) =>
+      pathname.startsWith(`${iel.talents.index}/`) &&
+      pathname !== iel.talents.index,
+    passos: [
+      {
+        titulo: 'A pessoa, em abas',
+        texto:
+          'A analista abre uma pessoa para decidir sobre uma vaga: a comparação vem primeiro, e a leitura só dela vem depois.'
+      },
+      {
+        seletor: alvo('pessoa-aderencia'),
+        titulo: 'Onde ela se encaixa',
+        texto:
+          'A mesma conta da mesa de seleção, com a pessoa no centro e as empresas ao redor. Empresa sem base suficiente não é ranqueada.',
+        lado: 'top'
+      }
+    ]
+  },
+  {
     id: 'empresas',
     titulo: 'Empresas',
     descricao: 'Como se trabalha em cada empresa',
@@ -258,6 +449,14 @@ export const TOURS: TourDeTela[] = [
         titulo: 'Quantos já responderam',
         texto:
           'Cada empresa mostra o andamento da consulta à equipe. Enquanto o mínimo não fecha, o tema fica em aberto e não pesa.',
+        lado: 'top'
+      },
+      {
+        rota: `${iel.companies.byId('EMP-01')}?aba=mapa`,
+        seletor: alvo('empresa-mapa'),
+        titulo: 'Quem combina com esta cultura',
+        texto:
+          'Dentro de uma empresa, o mapa é aba: a cultura no centro e as pessoas da base ao redor, inclusive quem ainda não se candidatou.',
         lado: 'top'
       }
     ]
@@ -313,6 +512,13 @@ export const TOURS: TourDeTela[] = [
           'Quantos abriram, quantos concluíram, em quanto tempo e por qual aparelho. É a saúde da ponta do candidato.'
       },
       {
+        seletor: alvo('questionarios-abas'),
+        titulo: 'Duas leituras da mesma coisa',
+        texto:
+          '"Simples" é a lista de quem ainda não respondeu, com reenvio e cobrança. "Análise" é o agregado, sem nome nenhum.',
+        lado: 'bottom'
+      },
+      {
         seletor: alvo('questionarios-indicadores'),
         titulo: 'Abertura, conclusão e consentimento',
         texto:
@@ -325,6 +531,35 @@ export const TOURS: TourDeTela[] = [
         texto:
           'O ponto de maior abandono diz qual tela precisa de revisão de linguagem — não de mais cobrança.',
         lado: 'top'
+      }
+    ]
+  },
+  {
+    id: 'instrumento',
+    titulo: 'Instrumento',
+    descricao: 'As 52 frases do cliente, ligadas ou desligadas',
+    icone: IconListCheck,
+    rota: iel.instrument.index,
+    casaCom: (pathname) => pathname.startsWith(iel.instrument.index),
+    passos: [
+      {
+        titulo: 'O que o produto pergunta',
+        texto:
+          'As 52 frases do cliente, em 10 temas: é o que candidato e colaborador respondem, e é o que pesa na aderência.'
+      },
+      {
+        seletor: alvo('instrumento-numeros'),
+        titulo: 'Quantas estão valendo',
+        texto:
+          'Frase desligada não é perguntada nem pesa. O que já foi respondido continua guardado; só sai da conta.',
+        lado: 'bottom'
+      },
+      {
+        seletor: alvo('instrumento-filtros'),
+        titulo: 'Achar a frase e voltar atrás',
+        texto:
+          'Busca por texto ou por id ("I12"), filtro por tema, e um botão que devolve o instrumento ao do cliente.',
+        lado: 'bottom'
       }
     ]
   },
@@ -349,10 +584,10 @@ export const TOURS: TourDeTela[] = [
         lado: 'bottom'
       },
       {
-        seletor: alvo('bi-grafico'),
+        seletor: alvo('bi-reabertura'),
         titulo: 'Antes e depois',
         texto:
-          'A linha vertical marca a entrada do Mind RH. Só meses fechados entram na comparação.',
+          'A linha vertical marca a entrada do Mind RH. Só meses fechados entram na comparação. As outras duas abas trazem a qualidade do match e a operação.',
         lado: 'top'
       }
     ]

@@ -666,6 +666,16 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
   const vagaDoLink = searchParams.get('vaga');
   const [aba, setAba] = useState<AbaDaEmpresa>(abaDoLink ?? 'cultura');
 
+  /*
+   * Trocar só o `?aba=` não remonta a tela, e o estado ficaria na aba
+   * anterior: é o que acontece quando o tour guiado sai da cultura para o
+   * mapa sem sair da empresa. A aba do link manda enquanto ela existir; o
+   * clique em outra aba continua valendo, porque o link não muda no clique.
+   */
+  useEffect(() => {
+    if (abaDoLink) setAba(abaDoLink);
+  }, [abaDoLink]);
+
   const company = getCompany(companyId);
   const ehAnalista = persona.kind === 'analista';
   const foraDoEscopo =
@@ -891,7 +901,10 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         </TabsContent>
 
         {ehAnalista ? (
-          <TabsContent value="mapa">
+          <TabsContent
+            value="mapa"
+            data-tour="empresa-mapa"
+          >
             <MapaDaEmpresa
               companyId={companyId}
               vagaInicial={vagaDoLink}

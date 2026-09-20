@@ -117,6 +117,7 @@ export function NotificacoesMenu() {
           size="icon"
           className="relative"
           aria-label={rotulo}
+          data-tour="cabecalho-notificacoes"
         >
           <IconBell aria-hidden="true" />
           {contador > 0 ? (

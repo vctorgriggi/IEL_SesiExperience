@@ -64,6 +64,14 @@ export type TourDeTela = {
    */
   rota: string;
   /**
+   * O tour que atravessa o produto, e não uma tela.
+   *
+   * É o roteiro da apresentacao: o diálogo o tira da lista e o mostra em
+   * cartão próprio, porque escolher "o produto inteiro" e escolher "esta
+   * tela" são decisões diferentes. Só um tour deve marcá-lo.
+   */
+  roteiro?: boolean;
+  /**
    * Prefixos que também contam como "estou nesta tela".
    *
    * A mesa de seleção é `/vagas/<id>`, que não é igual a `/vagas`: sem isto,

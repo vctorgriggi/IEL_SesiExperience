@@ -130,7 +130,10 @@ export function InstrumentoScreen() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div
+        className="grid gap-4 sm:grid-cols-3"
+        data-tour="instrumento-numeros"
+      >
         <NumeroDoCabecalho
           rotulo="Frases ligadas"
           valor={`${totalAtivas} de ${ITENS_DO_INSTRUMENTO.length}`}
@@ -171,7 +174,10 @@ export function InstrumentoScreen() {
         foi respondido continua guardado; só sai da conta.
       </p>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+        data-tour="instrumento-filtros"
+      >
         <div className="relative sm:w-64">
           <IconSearch
             aria-hidden

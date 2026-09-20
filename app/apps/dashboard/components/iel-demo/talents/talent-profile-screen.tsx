@@ -228,7 +228,10 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="aderencia">
+        <TabsContent
+          value="aderencia"
+          data-tour="pessoa-aderencia"
+        >
           <AderenciaDaPessoa
             talentId={talent.id}
             talentName={talent.name}

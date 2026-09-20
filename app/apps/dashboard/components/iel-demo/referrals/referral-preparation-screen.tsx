@@ -188,7 +188,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
         </Alert>
       ) : null}
 
-      <Card>
+      <Card data-tour="encaminhamento-mensagem">
         <CardHeader>
           <CardTitle>Mensagem para a empresa</CardTitle>
           <CardDescription>
@@ -321,7 +321,7 @@ export function ReferralPreparationScreen({ jobId }: { jobId: string }) {
         })}
       </ul>
 
-      <Card>
+      <Card data-tour="encaminhamento-registrar">
         <CardContent className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
             Preparar a lista, encaminhar para análise e contratar são ações

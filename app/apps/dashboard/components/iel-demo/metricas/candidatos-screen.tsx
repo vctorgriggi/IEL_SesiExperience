@@ -181,7 +181,10 @@ export function CandidatosScreen() {
         }}
         className="gap-6"
       >
-        <TabsList className={ABAS_SEM_ROLAGEM}>
+        <TabsList
+          className={ABAS_SEM_ROLAGEM}
+          data-tour="questionarios-abas"
+        >
           <TabsTrigger value="simples">Simples</TabsTrigger>
           <TabsTrigger value="analise">Análise</TabsTrigger>
         </TabsList>
