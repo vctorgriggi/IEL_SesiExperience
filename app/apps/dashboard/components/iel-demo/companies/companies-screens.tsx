@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ESTADO_ROTEIRO_LABEL,
   getEmpresasKpis,
@@ -101,6 +102,7 @@ import {
 } from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { MapaDaEmpresa } from '../mapa-cultural/mapa-da-empresa';
 import {
   BADGE_DE_ESTADO,
   LADO,
@@ -117,6 +119,7 @@ import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarDataCurta, formatarDataHora } from '../shared/datas';
 import { CompanyCultureTable } from './culture-profile';
 import { CultureInviteForm, CultureSampleTable } from './culture-sample';
+import { CustoDaRotatividadeCard } from './custo-da-rotatividade';
 
 /**
  * A empresa vista pelo analista.
@@ -631,10 +634,34 @@ export function CompaniesScreen() {
   );
 }
 
+/** As abas do detalhe da empresa, na ordem em que aparecem. */
+const ABAS_DA_EMPRESA = [
+  'cultura',
+  'mapa',
+  'colaboradores',
+  'ligacao',
+  'custo',
+  'vagas'
+] as const;
+
+type AbaDaEmpresa = (typeof ABAS_DA_EMPRESA)[number];
+
 export function CompanyDetailScreen({ companyId }: { companyId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const iel = routes.dashboard.iel;
   const [convidando, setConvidando] = useState(false);
+  /*
+   * A aba entra por `?aba=`: é assim que a rota legada do mapa de cultura e o
+   * botão do cabeçalho da vaga chegam direto na aba certa, sem precisar de
+   * uma rota por aba. `?vaga=` só serve à aba do mapa, para abrir o escopo já
+   * nos inscritos daquela vaga.
+   */
+  const searchParams = useSearchParams();
+  const abaDoLink = ABAS_DA_EMPRESA.find(
+    (aba) => aba === searchParams.get('aba')
+  );
+  const vagaDoLink = searchParams.get('vaga');
+  const [aba, setAba] = useState<AbaDaEmpresa>(abaDoLink ?? 'cultura');
 
   const company = getCompany(companyId);
   const ehAnalista = persona.kind === 'analista';
@@ -800,14 +827,38 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         />
       </div>
 
-      <Tabs defaultValue="cultura">
+      <Tabs
+        value={aba}
+        onValueChange={(valor) => {
+          const escolhida = ABAS_DA_EMPRESA.find((item) => item === valor);
+          if (escolhida) setAba(escolhida);
+        }}
+      >
         <TabsList className={ABAS_SEM_ROLAGEM}>
           <TabsTrigger value="cultura">Como a empresa trabalha</TabsTrigger>
+          {/*
+           * O mapa de cultura era tela solta no menu e abria na base inteira.
+           * Aqui ele responde a pergunta de quem está nesta página: quem na
+           * base combina com esta cultura. É leitura da base de pessoas do
+           * IEL, então fica fora da visão do gestor (PRODUTO.md §5.1).
+           */}
+          {ehAnalista ? (
+            <TabsTrigger value="mapa">Mapa de cultura</TabsTrigger>
+          ) : null}
           {ehAnalista ? (
             <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
           ) : null}
           {ehAnalista ? (
             <TabsTrigger value="ligacao">Ligação</TabsTrigger>
+          ) : null}
+          {/*
+           * O custo de reabrir fica ao lado da Ligação porque é na ligação
+           * que ele é usado: o IEL não cobra pelo serviço, então a adesão da
+           * empresa à consulta se convence com este número. É peça do
+           * analista, não da empresa (MoSCoW S5).
+           */}
+          {ehAnalista ? (
+            <TabsTrigger value="custo">Custo de reabrir</TabsTrigger>
           ) : null}
           <TabsTrigger value="vagas">
             Vagas{' '}
@@ -825,6 +876,15 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         </TabsContent>
 
         {ehAnalista ? (
+          <TabsContent value="mapa">
+            <MapaDaEmpresa
+              companyId={companyId}
+              vagaInicial={vagaDoLink}
+            />
+          </TabsContent>
+        ) : null}
+
+        {ehAnalista ? (
           <TabsContent
             value="colaboradores"
             className="flex flex-col gap-4"
@@ -836,6 +896,15 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         {ehAnalista ? (
           <TabsContent value="ligacao">
             <RoteiroDaLigacao companyId={companyId} />
+          </TabsContent>
+        ) : null}
+
+        {ehAnalista ? (
+          <TabsContent value="custo">
+            <CustoDaRotatividadeCard
+              companyId={companyId}
+              companyName={company.name}
+            />
           </TabsContent>
         ) : null}
 

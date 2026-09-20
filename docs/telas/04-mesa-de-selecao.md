@@ -47,8 +47,10 @@ Atende **M5**.
 
 ## Ações do usuário
 
-- Ver aderência — abre a [Análise de aderência](21-analise-de-aderencia.md) já nesta vaga. Leitura,
-  sem ação de reducer.
+- Mapa da empresa — abre o [Mapa de Cultura](15-mapa-de-cultura.md) da empresa desta vaga, com o
+  escopo já nos inscritos dela. Era "Ver aderência" e levava a uma tela que repetia este ranking com
+  outra roupa; a aderência por vaga é o que esta mesa já mostra, e o que faltava era o passo de trás
+  — a cultura da empresa e quem na base combina com ela. Leitura, sem ação de reducer.
 - Marcar candidatura para comparação — `toggle-comparison` (limite `COMPARISON_LIMIT`).
 - Adicionar à lista de encaminhamento — `add-to-referral-list` (limite `REFERRAL_LIMIT`, cinco).
 - Remover da lista — `remove-from-referral-list`.

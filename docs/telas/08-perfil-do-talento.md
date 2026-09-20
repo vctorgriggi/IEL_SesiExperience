@@ -2,41 +2,52 @@
 
 **Rota:** `/iel/talentos/[talentId]` — com `?vaga=<jobId>` para ler o perfil no contexto de uma vaga
 **Componentes:** `apps/dashboard/components/iel-demo/talents/talent-profile-screen.tsx`,
-`talents/talent-fit-view.tsx`
+`talents/aderencia-da-pessoa.tsx`, `talents/talent-fit-view.tsx`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-19
 
 ## O que a tela faz
 
-Reúne tudo que a base sabe sobre uma pessoa e, quando há vaga no contexto, a leitura dessa pessoa
-naquela vaga. Sem vaga, a tela diz explicitamente que compatibilidade depende da oportunidade e não
-mostra análise por critério.
+Reúne o que a base sabe sobre uma pessoa e responde, por padrão, a pergunta que faz o banco de
+talentos valer: **em quais empresas ela se encaixa**. Até 19/09 a tela só respondia alguma coisa com
+uma vaga no link; sem vaga ela dizia que compatibilidade depende da oportunidade e parava por aí. A
+aderência é da cultura da empresa, não da vaga (00:31:38) — então ela existe para a pessoa mesmo
+quando nenhuma vaga está aberta.
 
 ## O que aparece
 
-**Sem vaga no contexto**, a tela não tenta responder o que não dá: diz que o percentual depende da
-oportunidade e lista as candidaturas da pessoa, com o resultado de cada uma e a data.
+**Cabeçalho** com iniciais no lugar de foto, função, cidade e a contagem de candidaturas. Com vaga
+no contexto, entram as ações daquela vaga (voltar para a vaga, perguntar à pessoa, marcar para envio
+respeitando o limite de cinco).
 
-**Com vaga no contexto**, a leitura fica em `talents/talent-fit-view.tsx`:
+Abaixo, três abas — a terceira só existe com vaga no contexto:
 
-- **Cabeçalho** com iniciais no lugar de foto, a função e as ações da vaga (marcar para envio,
-  respeitando o limite de cinco).
-- **Aderência** naquela vaga, com o denominador à vista e a leitura eixo a eixo.
-- **Leitura em texto**, vinda de `analysis/fit-insights.ts`. O componente troca o jargão do
-  instrumento pelo vocabulário da tela na fronteira da apresentação: "eixo" vira "ponto do dia a
-  dia", "coleta dirigida" vira "pergunta à pessoa", "encaminhamento" vira "envio do currículo". O
+- **Onde ela se encaixa** (abre por padrão) — a
+  [análise de aderência](21-analise-de-aderencia.md) ancorada na pessoa: a lista de empresas
+  comparadas com percentual, faixa e denominador, e, ao lado, a leitura completa da empresa aberta —
+  radar dos dez temas, tema a tema com os dois lados escritos, divergência gestão × equipe e as
+  vagas abertas daquela empresa. Com `?vaga=`, a leitura já abre na empresa daquela vaga.
+- **Nesta vaga** (só com `?vaga=`) — a leitura por candidatura, em `talents/talent-fit-view.tsx`: os
+  dois números lado a lado (combina com a empresa e requisitos da vaga), os dez temas, os requisitos,
+  o sobre a pessoa e o histórico, mais o resumo em texto de `analysis/fit-insights.ts`. O componente
+  troca o jargão do instrumento pelo vocabulário da tela na fronteira da apresentação: "eixo" vira
+  "tema", "coleta dirigida" vira "pergunta à pessoa", "encaminhamento" vira "envio do currículo". O
   texto de origem mora em `features/`, que é domínio de outra mão; enquanto não for reescrito lá, a
   troca acontece aqui.
+- **Candidaturas** — a jornada da pessoa: cada vaga, a empresa, o resultado e a data, com o link que
+  reabre o perfil naquele contexto.
 
 ## De onde vêm os dados hoje
 
 `getTalent`, `getApplicationsByTalent`, `getJob`, `getCompany`, `getTalentJourney`,
-`getReferralListSelection` e `getAdherence`, este último sobre `analysis/adherence.ts`.
+`getReferralListSelection` e `getAdherence` (por candidatura); a aba de aderência usa
+`getCultureMapPoints`, `getCultureFit` e `getTalentCompanyAdherence`, todos memorizados por `state`.
 
 ## Ações do usuário
 
 - Marcar para envio — `add-to-referral-list` (limite `REFERRAL_LIMIT`, cinco).
 - Remover da lista — `remove-from-referral-list`.
+- Trocar de aba e escolher a empresa da leitura — estado local, sem ação de reducer.
 
 ## Backend futuro
 
@@ -47,16 +58,24 @@ oportunidade e lista as candidaturas da pessoa, com o resultado de cada uma e a 
 
 ## Regras e limites
 
-- Os eixos descrevem **condição de trabalho**, nunca traço de personalidade ou dado de saúde.
+- Os temas descrevem **condição de trabalho**, nunca traço de personalidade ou dado de saúde.
+- **Ordenar empresas para uma pessoa não é ranquear pessoas.** A lista de "melhores pessoas"
+  continua não existindo, e o rodapé da aba diz isso.
 - Nota interna é interna: não acompanha encaminhamento.
 - Toda informação exibida aponta origem, fonte e data.
+- O gestor não abre o perfil de uma pessoa: ele vê pessoas apenas dentro de uma remessa enviada
+  pelo IEL.
 
 ## Ligações
 
 Vem de: [Talentos](07-talentos.md), [Mesa de seleção](04-mesa-de-selecao.md),
-[Comparação](05-comparacao.md).
-Entra em: [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md).
+[Comparação](05-comparacao.md), [Mapa de Cultura](15-mapa-de-cultura.md).
+Entra em: [Preparação do encaminhamento](06-preparacao-do-encaminhamento.md),
+[Contexto da empresa](10-contexto-da-empresa.md).
 
 ## Histórico
 
 - 2026-09-19 — criada, já com o bloco do Mapa de Cultura.
+- 2026-09-19 — ganha abas e passa a abrir na **análise de aderência da pessoa**: em quais empresas
+  ela se encaixa, e não só na vaga pela qual o link chegou. A tela deixou de depender de `?vaga=`
+  para dizer alguma coisa.

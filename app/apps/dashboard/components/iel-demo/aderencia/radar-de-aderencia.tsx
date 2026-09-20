@@ -73,8 +73,8 @@ export function RadarDeAderencia({
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground/80">
-          Escala de {CULTURE_SCALE_MIN} a {CULTURE_SCALE_MAX}: três opções do
-          questionário, não uma nota.
+          Escala de concordância de {CULTURE_SCALE_MIN} a {CULTURE_SCALE_MAX},
+          do questionário. Não é nota.
         </p>
       </figcaption>
     </figure>

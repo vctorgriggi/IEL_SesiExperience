@@ -44,7 +44,8 @@ e os catálogos de empresa.
 
 ## Ligações
 
-Entra em: [Contexto da empresa](10-contexto-da-empresa.md).
+Entra em: [Contexto da empresa](10-contexto-da-empresa.md) e, por ele, no
+[Mapa de Cultura](15-mapa-de-cultura.md) daquela empresa.
 
 ## Histórico
 

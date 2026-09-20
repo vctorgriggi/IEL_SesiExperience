@@ -139,12 +139,21 @@ export function JobScreen({ jobId }: { jobId: string }) {
     ],
     actions: job ? (
       <>
+        {/*
+         * Era "Ver aderência", e levava a uma tela que repetia esta mesa com
+         * outra roupa. A aderência por vaga é o que esta página já mostra; o
+         * que faltava era o passo de trás — a cultura da empresa e quem na
+         * base combina com ela —, e isso agora é aba da empresa, aberta já
+         * nos inscritos desta vaga.
+         */}
         <Button
           variant="ghost"
           size="sm"
           asChild
         >
-          <Link href={iel.adherence.byJob(job.id)}>Ver aderência</Link>
+          <Link href={iel.companies.cultureMapById(job.companyId, job.id)}>
+            Mapa da empresa
+          </Link>
         </Button>
         <Button
           variant="ghost"
