@@ -229,7 +229,7 @@ Esta seção existe para ser lida em voz alta quando alguém perguntar se isto �
 
 ### 11.1 O que o instrumento é
 
-52 frases da planilha do cliente, em 10 temas, respondidas numa escala de concordância de 5 pontos pelos dois lados. A empresa responde por tema, com uma amostra de colaboradores (mínimo de 3 respostas de equipe para o tema fechar, até 10 convidados); o candidato lê, na versão curta, as frases que a empresa escolheu. A aderência é a proximidade entre as duas respostas, tema a tema, e o resultado é explicável até a frase.
+52 frases da planilha do cliente, em 10 temas, respondidas numa escala de concordância de 5 pontos pelos dois lados. A empresa responde por tema, com uma amostra de colaboradores (mínimo de 3 respostas de equipe para o tema fechar, até 10 convidados); o candidato lê, na versão curta, as frases que a empresa escolheu. A aderência é a proximidade entre as duas respostas, tema a tema, e o resultado é explicável até a frase. O instrumento é visível e ajustável pela analista na tela **Instrumento** (menu Sistema): ela vê as 52 frases por tema e pode desligar uma frase ou mudar se ela separa pessoas, sem sair das 52 frases do cliente e sem deixar um tema sem frase.
 
 ### 11.2 O que ele não é, e o que nenhuma tela pode sugerir que seja
 

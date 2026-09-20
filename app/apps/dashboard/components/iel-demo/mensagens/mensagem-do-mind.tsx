@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  diasEsperando as diasEsperandoDevolutiva,
+  lerDevolutiva
+} from '@/features/iel-demo/analysis/devolutiva';
+import {
+  destinatarioDaEtapa,
   ETAPA_LABEL,
   ETAPAS_DA_MENSAGEM,
   gerarMensagem,
@@ -15,9 +20,15 @@ import {
   CANDIDATE_FIT_DEADLINE_DAYS,
   getApplication,
   getCandidateJobView,
+  getCompany,
+  getJob,
+  getRegisteredReferrals,
+  getReportTokenForJob,
   getSituacaoDeContratacao,
   getTalent
 } from '@/features/iel-demo/state/selectors';
+import { nowIso } from '@/features/iel-demo/state/storage';
+import type { DemoState } from '@/features/iel-demo/types';
 import { Copy, Send, SparklesIcon } from 'lucide-react';
 
 import { baseUrl, routes } from '@workspace/routes';
@@ -106,14 +117,66 @@ function prazoDoQuestionario(appliedAt: string): string | undefined {
   return formatarDataCurta(limite.toISOString().slice(0, 10));
 }
 
-/** Qual link cada etapa leva: questionário, "minha candidatura" ou check-in. */
-function linkDaEtapa(etapa: EtapaDaMensagem, applicationId: string): string {
+/**
+ * Qual link cada etapa leva: questionário, "minha candidatura", check-in —
+ * ou, na cobrança ao RH, o relatório da vaga que a empresa abre sem login.
+ */
+function linkDaEtapa(
+  etapa: EtapaDaMensagem,
+  applicationId: string,
+  jobId: string | undefined
+): string {
   const candidatura = routes.dashboard.iel.applications.byId(applicationId);
   if (etapa === 'convite-questionario' || etapa === 'lembrete-questionario') {
     return linkAbsoluto(candidatura.fit);
   }
   if (etapa === 'como-esta-sendo') return linkAbsoluto(candidatura.checkIn);
+  if (etapa === 'cobrar-devolutiva' && jobId) {
+    return linkAbsoluto(
+      routes.dashboard.iel.report.byToken(getReportTokenForJob(jobId))
+    );
+  }
   return linkAbsoluto(candidatura.index);
+}
+
+/** O que a cobrança ao RH precisa saber desta pessoa enviada. */
+type Cobranca = {
+  empresa: string;
+  /** Primeiro nome do contato do RH: é a quem a mensagem fala. */
+  contato: string;
+  pessoaEnviada: string;
+  diasEsperando: number | undefined;
+};
+
+/**
+ * A remessa registrada em que esta candidatura foi enviada, para a etapa
+ * `cobrar-devolutiva`. `null` quando a pessoa ainda não foi enviada — a
+ * regra fixa então fala de "a empresa" e "a pessoa", sem inventar.
+ */
+function cobrancaDaCandidatura(
+  state: DemoState,
+  applicationId: string,
+  pessoaEnviada: string
+): Cobranca | null {
+  for (const referral of getRegisteredReferrals(state)) {
+    const item = referral.items.find(
+      (entry) => entry.applicationId === applicationId
+    );
+    if (!item) continue;
+    const company = getCompany(referral.companyId);
+    return {
+      empresa: company?.name ?? '',
+      contato: primeiroNome(company?.contactName ?? ''),
+      pessoaEnviada,
+      diasEsperando:
+        diasEsperandoDevolutiva(
+          lerDevolutiva(item.outcome),
+          referral.createdAt,
+          nowIso()
+        ) ?? undefined
+    };
+  }
+  return null;
 }
 
 export function MensagemDoMind({
@@ -139,7 +202,15 @@ export function MensagemDoMind({
    * sobre os valores, não sobre os objetos — senão o pedido ao Mind sairia
    * a cada render, e não a cada mudança de pessoa ou de etapa.
    */
-  const nome = primeiroNome(talento?.name ?? '');
+  const destinatario = destinatarioDaEtapa(etapa);
+  const nomeDaPessoa = talento?.name ?? '';
+  // A cobrança fala com o RH, não com a pessoa: quem, empresa e há quanto
+  // tempo vêm da remessa registrada. Só é lida nessa etapa.
+  const cobranca =
+    destinatario === 'empresa'
+      ? cobrancaDaCandidatura(state, applicationId, nomeDaPessoa)
+      : null;
+  const nome = cobranca ? cobranca.contato : primeiroNome(nomeDaPessoa);
   const atividade = vaga?.activity;
   const localidade = vaga?.location;
   const turno = vaga?.shift;
@@ -147,9 +218,16 @@ export function MensagemDoMind({
     ? prazoDoQuestionario(application.appliedAt)
     : undefined;
   const marco = contratacao?.marcoAtual ?? contratacao?.pendentes[0];
-  const link = linkDaEtapa(etapa, applicationId);
+  const link = linkDaEtapa(etapa, applicationId, application?.jobId);
+  const empresa = cobranca?.empresa;
+  const pessoaEnviada = cobranca?.pessoaEnviada;
+  const diasEsperando = cobranca?.diasEsperando;
+  const vagaParaOSimulador = application
+    ? getJob(application.jobId)?.title
+    : undefined;
 
-  // A entrada da regra fixa, montada só com o que o candidato pode ver.
+  // A entrada da regra fixa, montada só com o que o candidato pode ver —
+  // salvo na cobrança ao RH, em que empresa e pessoa entram de propósito.
   const entrada = useMemo<EntradaDaMensagem | null>(() => {
     if (!atividade) return null;
     return {
@@ -161,9 +239,25 @@ export function MensagemDoMind({
       ...(prazo ? { prazo } : {}),
       ...(marco ? { marco } : {}),
       link,
-      ...(analista ? { analista } : {})
+      ...(analista ? { analista } : {}),
+      ...(empresa ? { empresa } : {}),
+      ...(pessoaEnviada ? { pessoaEnviada } : {}),
+      ...(diasEsperando !== undefined ? { diasEsperando } : {})
     };
-  }, [etapa, nome, atividade, localidade, turno, prazo, marco, link, analista]);
+  }, [
+    etapa,
+    nome,
+    atividade,
+    localidade,
+    turno,
+    prazo,
+    marco,
+    link,
+    analista,
+    empresa,
+    pessoaEnviada,
+    diasEsperando
+  ]);
 
   const regra = useMemo(
     () => (entrada ? gerarMensagem(entrada) : null),
@@ -372,9 +466,13 @@ export function MensagemDoMind({
       </p>
 
       <SimularEnvioDialog
-        destinatario="candidato"
+        destinatario={destinatario}
         link={mensagem.link ?? link}
-        contexto={{ atividade, cidade: localidade }}
+        contexto={
+          destinatario === 'empresa'
+            ? { empresa, vaga: vagaParaOSimulador }
+            : { atividade, cidade: localidade }
+        }
         textoPronto={texto}
         open={simulando}
         onOpenChange={(aberto) => {

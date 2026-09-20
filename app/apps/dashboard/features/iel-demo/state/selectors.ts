@@ -32,7 +32,7 @@ import {
 } from '../analysis/criterion-states';
 import {
   calcularPerfilCultural,
-  escolherPerguntasDoCandidato,
+  marcaDaEmpresa,
   MIN_RESPOSTAS_ANONIMAS,
   MIN_TEAM_RESPONSES,
   type CultureDispersion,
@@ -57,8 +57,14 @@ import {
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
   blocoDoConvite,
+  configuracaoDoInstrumento,
+  discrimina,
   getItem,
+  itemAtivo,
+  itemPadraoDoTema,
+  itensAtivosDoTema,
   rotuloDaEscala,
+  type ConfiguracaoDoInstrumento,
   type ItemDoInstrumento
 } from '../analysis/instrumento';
 import {
@@ -1776,9 +1782,15 @@ export type CompanyCultureAxisProfile = {
  * a identidade do array basta para saber se o perfil mudou. Sem isto a mesa de
  * seleção recalcularia o perfil da empresa uma vez por candidatura.
  */
+/*
+ * A chave é dupla: a lista de respostas **e** a configuração do instrumento
+ * (`state.instrumento`), porque uma frase desligada pela analista sai da
+ * conta do perfil. Ausente, a configuração é a de fábrica — uma referência
+ * só, o que mantém a memória válida entre renderizações.
+ */
 const PERFIL_CACHE = new WeakMap<
   DemoState['cultureAnswers'],
-  Map<string, PerfilCultural>
+  WeakMap<ConfiguracaoDoInstrumento, Map<string, PerfilCultural>>
 >();
 const RESPOSTAS_POR_EMPRESA = new WeakMap<
   DemoState['cultureAnswers'],
@@ -1815,16 +1827,114 @@ export function perfilDaEmpresa(
   state: DemoState,
   empresaId: string
 ): PerfilCultural {
-  let porEmpresa = PERFIL_CACHE.get(state.cultureAnswers);
+  const config = configuracaoDoInstrumento(state);
+  let porConfig = PERFIL_CACHE.get(state.cultureAnswers);
+  if (!porConfig) {
+    porConfig = new WeakMap();
+    PERFIL_CACHE.set(state.cultureAnswers, porConfig);
+  }
+  let porEmpresa = porConfig.get(config);
   if (!porEmpresa) {
     porEmpresa = new Map();
-    PERFIL_CACHE.set(state.cultureAnswers, porEmpresa);
+    porConfig.set(config, porEmpresa);
   }
   const guardado = porEmpresa.get(empresaId);
   if (guardado) return guardado;
-  const perfil = calcularPerfilCultural(respostasDaEmpresa(state, empresaId));
+  // Resposta a uma frase desligada continua guardada (é dado de quem
+  // respondeu), mas não entra na média enquanto a frase estiver desligada.
+  const respostas = respostasDaEmpresa(state, empresaId).filter((answer) =>
+    itemAtivo(answer.itemId, config)
+  );
+  const perfil = calcularPerfilCultural(respostas);
   porEmpresa.set(empresaId, perfil);
   return perfil;
+}
+
+/**
+ * As 10 frases do candidato, uma por tema, respeitando o que a analista
+ * ajustou no instrumento.
+ *
+ * É a mesma regra de `escolherPerguntasDoCandidato` (`analysis/culture.ts`):
+ * em cada tema, a frase que separa pessoas, fecha na empresa e em que a
+ * equipe é mais marcante; sem base, a padrão do tema. A diferença é que
+ * "separa pessoas" e "padrão" leem a configuração — uma frase desligada
+ * nunca é escolhida, e a padrão pode ter sido substituída.
+ */
+function escolherPerguntasComConfig(
+  perfil: PerfilCultural,
+  config: ConfiguracaoDoInstrumento
+): PerguntaDoCandidato[] {
+  return FIT_AXES.map((axis) => {
+    let melhor: { itemId: string; marca: number } | null = null;
+    for (const item of itensAtivosDoTema(axis.id, config)) {
+      if (!discrimina(item, config)) continue;
+      const doItem = perfil.itens[item.id];
+      if (!doItem?.fecha) continue;
+      const marca = marcaDaEmpresa(doItem);
+      if (!melhor || marca > melhor.marca) {
+        melhor = { itemId: item.id, marca };
+      }
+    }
+    return melhor
+      ? { itemId: melhor.itemId, axisId: axis.id, semBaseDaEmpresa: false }
+      : {
+          itemId: itemPadraoDoTema(axis.id, config),
+          axisId: axis.id,
+          semBaseDaEmpresa: true
+        };
+  });
+}
+
+/**
+ * Onde cada frase do instrumento está sendo usada: em quantas empresas com
+ * perfil fechado ela é a escolhida para o candidato (com base), e quantas
+ * empresas têm perfil fechado em ao menos um tema.
+ *
+ * Percorre só as empresas com alguma resposta de cultura — com ~2.500
+ * empresas, calcular o perfil de todas para descartar quase todas custaria
+ * cada renderização. Memorizado por identidade das respostas e da
+ * configuração, como o perfil.
+ */
+export type UsoDoInstrumento = {
+  /** Quantas empresas com perfil fechado escolheram a frase (por id). */
+  escolhidaEm: Record<string, number>;
+  /** Empresas em que ao menos um tema fecha. */
+  empresasComPerfil: number;
+};
+
+const USO_CACHE = new WeakMap<
+  DemoState['cultureAnswers'],
+  WeakMap<ConfiguracaoDoInstrumento, UsoDoInstrumento>
+>();
+
+export function usoDoInstrumento(state: DemoState): UsoDoInstrumento {
+  const config = configuracaoDoInstrumento(state);
+  let porConfig = USO_CACHE.get(state.cultureAnswers);
+  if (!porConfig) {
+    porConfig = new WeakMap();
+    USO_CACHE.set(state.cultureAnswers, porConfig);
+  }
+  const guardado = porConfig.get(config);
+  if (guardado) return guardado;
+
+  const escolhidaEm: Record<string, number> = {};
+  let empresasComPerfil = 0;
+  const comResposta = new Set(
+    state.cultureAnswers.map((answer) => answer.companyId)
+  );
+  for (const companyId of comResposta) {
+    const perfil = perfilDaEmpresa(state, companyId);
+    if (!perfil.temas.some((tema) => tema.fecha)) continue;
+    empresasComPerfil += 1;
+    for (const pergunta of escolherPerguntasComConfig(perfil, config)) {
+      if (pergunta.semBaseDaEmpresa) continue;
+      escolhidaEm[pergunta.itemId] = (escolhidaEm[pergunta.itemId] ?? 0) + 1;
+    }
+  }
+
+  const uso = { escolhidaEm, empresasComPerfil };
+  porConfig.set(config, uso);
+  return uso;
 }
 
 /**
@@ -1880,7 +1990,10 @@ export function perguntasDoCandidato(
   const perfil = job
     ? perfilDaEmpresa(state, job.companyId)
     : calcularPerfilCultural([]);
-  return escolherPerguntasDoCandidato(perfil).map((pergunta) => ({
+  return escolherPerguntasComConfig(
+    perfil,
+    configuracaoDoInstrumento(state)
+  ).map((pergunta) => ({
     ...pergunta,
     item: getItem(pergunta.itemId)!
   }));
@@ -2295,7 +2408,8 @@ export function getAdherence(
     resolvidas && Object.keys(resolvidas.valores).length > 0
       ? resolvidas.valores
       : null,
-    getAxisWeights(state, job)
+    getAxisWeights(state, job),
+    configuracaoDoInstrumento(state)
   );
 }
 
@@ -2600,7 +2714,7 @@ export function getInviteByToken(
     expiresAt: invite.expiresAt,
     daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
     status: readInviteStatus(invite, DEMO_REFERENCE_DATE),
-    bloco: blocoDoConvite(invite)
+    bloco: blocoDoConvite(invite, configuracaoDoInstrumento(state))
   };
 }
 

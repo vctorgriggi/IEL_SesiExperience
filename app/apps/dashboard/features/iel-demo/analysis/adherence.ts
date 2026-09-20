@@ -31,7 +31,15 @@
 
 import { CULTURE_SCALE_MAX, CULTURE_SCALE_MIN } from './culture';
 import { FIT_AXES, type FitAxisId } from './fit-axes';
-import { alinharAoPolo, getItem, parDoItem } from './instrumento';
+import {
+  alinharAoPolo,
+  CONFIGURACAO_DE_FABRICA,
+  discrimina,
+  getItem,
+  itemAtivo,
+  parDoItem,
+  type ConfiguracaoDoInstrumento
+} from './instrumento';
 
 /**
  * Corte de compatibilidade, em pontos percentuais.
@@ -210,13 +218,18 @@ function reguaDaEmpresa(
 export function computeAdherence(
   profile: CompanyItemMeans,
   response: CandidateItemValues | null,
-  weights: Partial<Record<FitAxisId, AdherenceWeight>>
+  weights: Partial<Record<FitAxisId, AdherenceWeight>>,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
 ): AdherenceResult {
   const byItem: AdherenceItemEntry[] = [];
 
   for (const [itemId, candidateValue] of Object.entries(response ?? {})) {
     const item = getItem(itemId);
-    if (!item || !item.discrimina) continue;
+    // Uma frase desligada pela analista, ou marcada como "não separa
+    // pessoas", não pesa — mesmo que a pessoa a tenha respondido antes do
+    // ajuste. A resposta fica guardada; só não entra na conta.
+    if (!item || !itemAtivo(itemId, config) || !discrimina(item, config))
+      continue;
     const regua = reguaDaEmpresa(itemId, profile);
     byItem.push({
       itemId,

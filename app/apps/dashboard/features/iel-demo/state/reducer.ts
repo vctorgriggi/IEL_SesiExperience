@@ -26,10 +26,15 @@ import {
 import type { FitAxisId } from '../analysis/fit-axes';
 import { getFitAxis } from '../analysis/fit-axes';
 import {
+  ajustarInstrumento,
   alinharAoPolo,
   blocoDoConvite,
+  configuracaoDoInstrumento,
+  discrimina,
   getItem,
+  instrumentoDeFabrica,
   isValorDaEscala,
+  itemAtivo,
   itensDoTema,
   type ValorDaEscala
 } from '../analysis/instrumento';
@@ -376,6 +381,24 @@ export type DemoAction =
       sourceId: DataSourceId;
       status: 'ativa' | 'indisponivel';
       error: string | null;
+      at: string;
+    }
+  | {
+      /**
+       * A analista liga/desliga uma frase do instrumento ou muda se ela
+       * separa pessoas (tela Instrumento). Idempotente: repetir o mesmo
+       * ajuste não muda o estado nem registra histórico. As regras que
+       * impedem deixar um tema sem frase ficam em `ajustarInstrumento`.
+       */
+      type: 'set-instrumento-item';
+      itemId: string;
+      ativa?: boolean;
+      discrimina?: boolean;
+      at: string;
+    }
+  | {
+      /** "Voltar ao instrumento do cliente": apaga todos os ajustes. */
+      type: 'reset-instrumento';
       at: string;
     };
 
@@ -1554,7 +1577,11 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         };
       }
 
-      const bloco = new Set(blocoDoConvite(invite).map((item) => item.id));
+      const bloco = new Set(
+        blocoDoConvite(invite, configuracaoDoInstrumento(state)).map(
+          (item) => item.id
+        )
+      );
       const answers: CultureAnswer[] = Object.entries(action.answers)
         .filter(
           ([itemId, value]) => bloco.has(itemId) && isValorDaEscala(value)
@@ -1690,6 +1717,69 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       return {
         ...state,
         appliedSyncEventIds: [...state.appliedSyncEventIds, action.eventId]
+      };
+    }
+
+    case 'set-instrumento-item': {
+      const atual = configuracaoDoInstrumento(state);
+      const proxima = ajustarInstrumento(atual, action.itemId, {
+        ativa: action.ativa,
+        discrimina: action.discrimina
+      });
+      if (proxima === atual) return state;
+
+      const item = getItem(action.itemId);
+      const tema = item ? getFitAxis(item.tema).label : action.itemId;
+      const mudancas: string[] = [];
+      if (
+        action.ativa !== undefined &&
+        itemAtivo(action.itemId, proxima) !== itemAtivo(action.itemId, atual)
+      ) {
+        mudancas.push(action.ativa ? 'ligada' : 'desligada');
+      }
+      if (
+        item &&
+        action.discrimina !== undefined &&
+        discrimina(item, proxima) !== discrimina(item, atual)
+      ) {
+        mudancas.push(
+          action.discrimina
+            ? 'passa a separar pessoas'
+            : 'deixa de separar pessoas'
+        );
+      }
+
+      return {
+        ...state,
+        instrumento: proxima,
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Instrumento ajustado',
+          description: `Frase ${action.itemId} (${tema}) ${mudancas.join(' e ')} pela analista. Respostas já dadas continuam guardadas; a frase só ${
+            action.ativa === false
+              ? 'deixa de ser perguntada e de pesar'
+              : 'muda de peso'
+          } daqui em diante.`,
+          entityRef: action.itemId
+        })
+      };
+    }
+
+    case 'reset-instrumento': {
+      const atual = configuracaoDoInstrumento(state);
+      if (instrumentoDeFabrica(atual)) return state;
+      return {
+        ...state,
+        instrumento: undefined,
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Analista IEL',
+          action: 'Instrumento restaurado',
+          description:
+            'O instrumento voltou ao do cliente: as 52 frases ligadas e a marcação original de quais separam pessoas.',
+          entityRef: null
+        })
       };
     }
 

@@ -1016,11 +1016,228 @@ export function indiceDoConvite(inviteId: string): number {
 }
 
 /** As frases que aquele convite responde, na ordem do rodízio. */
-export function blocoDoConvite(convite: {
-  id: string;
-  companyId: string;
-}): ItemDoInstrumento[] {
+export function blocoDoConvite(
+  convite: {
+    id: string;
+    companyId: string;
+  },
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): ItemDoInstrumento[] {
+  // O rodízio é fixo (as posições das 52 não mudam com a configuração, para
+  // um convite já enviado continuar com o mesmo bloco); uma frase desligada
+  // pela analista simplesmente sai do bloco, que fica um pouco menor.
   return blocoDoIndice(convite.companyId, indiceDoConvite(convite.id))
     .map((itemId) => getItem(itemId))
-    .filter((item): item is ItemDoInstrumento => item !== null);
+    .filter(
+      (item): item is ItemDoInstrumento =>
+        item !== null && itemAtivo(item.id, config)
+    );
+}
+
+/* ------------------------------------------------------------------ *
+ * Ajuste pela analista (tela Instrumento)
+ * ------------------------------------------------------------------ */
+
+/**
+ * O que a analista mudou no instrumento pela interface.
+ *
+ * As 52 frases continuam sendo as do cliente — ninguém escreve frase nova
+ * aqui. O que se controla é (a) quais estão **ligadas**, e portanto são
+ * perguntadas e pesam, e (b) quais **separam pessoas** (`discrimina`),
+ * sobrescrevendo a marcação de fábrica. Vazio significa "o instrumento do
+ * cliente, como está no código".
+ *
+ * Mora no `DemoState` (e não em `localStorage`) porque muda o que o
+ * candidato recebe e o que a aderência conta: é decisão do IEL, vale para a
+ * sala inteira e precisa acompanhar a base no modo compartilhado.
+ */
+export type ConfiguracaoDoInstrumento = {
+  /** Ids das frases desligadas. */
+  desligadas: string[];
+  /** `discrimina` sobrescrito por frase; ausente = o valor de fábrica. */
+  discriminaOverride: Record<string, boolean>;
+};
+
+/** A configuração de fábrica: uma referência só, para servir de chave de cache. */
+export const CONFIGURACAO_DE_FABRICA: ConfiguracaoDoInstrumento = Object.freeze(
+  {
+    desligadas: [],
+    discriminaOverride: {}
+  }
+) as ConfiguracaoDoInstrumento;
+
+/** A configuração de um estado que talvez não tenha nenhuma. */
+export function configuracaoDoInstrumento(
+  state: { instrumento?: ConfiguracaoDoInstrumento } | null | undefined
+): ConfiguracaoDoInstrumento {
+  return state?.instrumento ?? CONFIGURACAO_DE_FABRICA;
+}
+
+export function itemAtivo(
+  itemId: string,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): boolean {
+  return !config.desligadas.includes(itemId);
+}
+
+/** A frase separa pessoas, considerando o que a analista sobrescreveu. */
+export function discrimina(
+  item: ItemDoInstrumento,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): boolean {
+  return config.discriminaOverride[item.id] ?? item.discrimina;
+}
+
+export function itensAtivos(
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): ItemDoInstrumento[] {
+  return ITENS_DO_INSTRUMENTO.filter((item) => itemAtivo(item.id, config));
+}
+
+export function itensAtivosDoTema(
+  tema: FitAxisId,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): ItemDoInstrumento[] {
+  return itensDoTema(tema).filter((item) => itemAtivo(item.id, config));
+}
+
+/**
+ * A frase padrão do tema com a configuração em vigor.
+ *
+ * É a de `ITEM_PADRAO_POR_TEMA` enquanto estiver ligada e separar pessoas.
+ * Se a analista a desligou, a primeira ativa que separa pessoas assume — a
+ * regra que protege o candidato é "todo tema tem uma frase para perguntar",
+ * não "a frase padrão é fixa".
+ */
+export function itemPadraoDoTema(
+  tema: FitAxisId,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): string {
+  const deFabrica = ITEM_PADRAO_POR_TEMA[tema];
+  const padrao = getItem(deFabrica);
+  if (padrao && itemAtivo(deFabrica, config) && discrimina(padrao, config)) {
+    return deFabrica;
+  }
+  const ativos = itensAtivosDoTema(tema, config);
+  return (
+    ativos.find((item) => discrimina(item, config))?.id ??
+    ativos[0]?.id ??
+    deFabrica
+  );
+}
+
+/** Por que uma mudança não pode ser feita, em palavra comum, ou `null`. */
+export type BloqueioDoInstrumento = string | null;
+
+/**
+ * As regras que protegem o produto ao desligar uma frase.
+ *
+ * 1. Um tema nunca fica sem frase ligada: sem isso o candidato não teria o
+ *    que responder ali e o tema sumiria da aderência.
+ * 2. Um tema nunca fica sem frase ligada que separe pessoas: só elas são
+ *    escolhidas para o candidato (`escolherPerguntasDoCandidato`).
+ * 3. A frase padrão pode ser desligada — ela é só a primeira da fila —, desde
+ *    que outra do tema assuma (o que as regras 1 e 2 já garantem).
+ */
+export function motivoParaNaoDesligar(
+  itemId: string,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): BloqueioDoInstrumento {
+  const item = getItem(itemId);
+  if (!item || !itemAtivo(itemId, config)) return null;
+  const outrasAtivas = itensAtivosDoTema(item.tema, config).filter(
+    (outro) => outro.id !== itemId
+  );
+  if (outrasAtivas.length === 0) {
+    return 'É a última frase ligada deste tema. Um tema sem frase não pode ser perguntado nem comparado.';
+  }
+  if (
+    discrimina(item, config) &&
+    !outrasAtivas.some((outro) => discrimina(outro, config))
+  ) {
+    return 'É a última frase ligada deste tema que separa pessoas. Sem ela, o candidato não teria o que responder aqui.';
+  }
+  return null;
+}
+
+/** Idem para marcar uma frase como "não separa pessoas". */
+export function motivoParaNaoDesmarcarDiscrimina(
+  itemId: string,
+  config: ConfiguracaoDoInstrumento = CONFIGURACAO_DE_FABRICA
+): BloqueioDoInstrumento {
+  const item = getItem(itemId);
+  if (!item || !discrimina(item, config) || !itemAtivo(itemId, config)) {
+    return null;
+  }
+  const outrasQueSeparam = itensAtivosDoTema(item.tema, config).filter(
+    (outro) => outro.id !== itemId && discrimina(outro, config)
+  );
+  if (outrasQueSeparam.length === 0) {
+    return 'É a única frase ligada deste tema que separa pessoas. Ligue outra antes de desmarcar esta.';
+  }
+  return null;
+}
+
+/**
+ * Aplica um ajuste da analista respeitando as regras acima.
+ *
+ * Devolve a **mesma** referência quando nada muda (o reducer usa isso para
+ * não registrar histórico de uma ação repetida). Um ajuste barrado pelas
+ * regras também devolve a mesma referência: a tela já explica o bloqueio
+ * antes de deixar tocar, e o reducer não pode confiar só nela.
+ */
+export function ajustarInstrumento(
+  config: ConfiguracaoDoInstrumento,
+  itemId: string,
+  ajuste: { ativa?: boolean; discrimina?: boolean }
+): ConfiguracaoDoInstrumento {
+  const item = getItem(itemId);
+  if (!item) return config;
+
+  let proxima = config;
+
+  if (ajuste.discrimina !== undefined) {
+    const atual = discrimina(item, proxima);
+    if (ajuste.discrimina !== atual) {
+      if (
+        ajuste.discrimina === false &&
+        motivoParaNaoDesmarcarDiscrimina(itemId, proxima)
+      ) {
+        return config;
+      }
+      // Voltar ao valor de fábrica apaga o override em vez de gravar o
+      // mesmo valor: a configuração "vazia" continua significando "fábrica".
+      const overrides = { ...proxima.discriminaOverride };
+      if (ajuste.discrimina === item.discrimina) delete overrides[itemId];
+      else overrides[itemId] = ajuste.discrimina;
+      proxima = { ...proxima, discriminaOverride: overrides };
+    }
+  }
+
+  if (ajuste.ativa !== undefined) {
+    const atual = itemAtivo(itemId, proxima);
+    if (ajuste.ativa !== atual) {
+      if (ajuste.ativa === false && motivoParaNaoDesligar(itemId, proxima)) {
+        return config;
+      }
+      proxima = {
+        ...proxima,
+        desligadas: ajuste.ativa
+          ? proxima.desligadas.filter((id) => id !== itemId)
+          : [...proxima.desligadas, itemId].sort()
+      };
+    }
+  }
+
+  return proxima;
+}
+
+/** A configuração está no valor de fábrica? */
+export function instrumentoDeFabrica(
+  config: ConfiguracaoDoInstrumento
+): boolean {
+  return (
+    config.desligadas.length === 0 &&
+    Object.keys(config.discriminaOverride).length === 0
+  );
 }

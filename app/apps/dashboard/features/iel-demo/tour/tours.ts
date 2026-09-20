@@ -303,7 +303,8 @@ export const TOURS: TourDeTela[] = [
     titulo: 'Questionários',
     descricao: 'Comunicação, resposta e consentimento',
     icone: IconClipboardList,
-    rota: iel.candidates,
+    // A tela abre na aba Simples; os alvos do tour estão na Análise.
+    rota: `${iel.candidates}?aba=analise`,
     casaCom: (pathname) => pathname === iel.candidates,
     passos: [
       {

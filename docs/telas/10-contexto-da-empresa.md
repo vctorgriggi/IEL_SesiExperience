@@ -7,7 +7,7 @@
 `companies/culture-profile.tsx`, `companies/culture-sample.tsx`,
 `companies/custo-da-rotatividade.tsx` e `mapa-cultural/mapa-da-empresa.tsx`
 **Persona:** Analista IEL e gestor da própria empresa
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -24,6 +24,16 @@ que a equipe relata fica registrada em vez de ser resolvida no muque.
   - as vozes que responderam (gestão, RH, equipe) e a alternativa mais respondida em cada uma;
   - o estado do eixo: convergente, divergente, só a gestão respondeu, consulta à equipe sem base
     suficiente, ninguém respondeu;
+  - a coluna **Equipe**: quanto as respostas variam naquele tema, em três palavras —
+    **Uniforme** (desvio-padrão abaixo de 0,6 na escala de 1 a 5, sem tinta), **Variada** (abaixo de
+    1,0, cinza) ou **Dividida** (1,0 ou mais: metade em "discordo" e metade em "concordo", em
+    laranja de atenção, nunca vermelho — dividida não é erro). O desvio é a média dos desvios das
+    frases discriminantes que fecham, de todos os que responderam (gestão, RH e equipe), então a
+    divergência gestão × equipe também aparece aqui. Abaixo de `MIN_TEAM_RESPONSES` a célula mostra
+    "—". O tooltip do cabeçalho diz o porquê da coluna: "Quanto as respostas da equipe variam neste
+    tema. Equipe uniforme combina mais fácil — e também é mais parecida consigo mesma." É o antídoto
+    contra a homogeneização (PRODUTO.md §11.3), mostrado sem moralizar. Limiares e função em
+    `analysis/culture.ts` (`DESVIO_MAXIMO_UNIFORME`, `DESVIO_MAXIMO_VARIADA`, `diversidadeDoTema`);
   - a **proposta da análise** quando existe: alternativa sugerida a partir de texto que a empresa já
     escreveu, com o trecho de origem, pendente até alguém confirmar ou corrigir.
 - **Amostra de colaboradores** (`companies/culture-sample.tsx`) — quem foi convidado e quem ainda
@@ -104,6 +114,9 @@ dias daquela empresa, do histórico em `fixtures/outcomes.ts`, indexado uma vez 
 - Abaixo de `MIN_TEAM_RESPONSES`, a tela diz que a consulta não tem base suficiente em vez de tratar
   duas respostas como "a equipe".
 - Divergência entre gestão e equipe é informação, não erro a corrigir escolhendo um lado.
+- **Equipe uniforme não é equipe melhor.** A coluna "Equipe" existe para lembrar que semelhança não
+  é qualidade: uma equipe que responde igual combina mais fácil com quem se parece com ela. A tela
+  mostra a variação e não a julga.
 - Os eixos descrevem prática de trabalho, nunca traço de pessoa.
 - **O custo é da vaga reaberta, nunca de quem saiu.** A unidade de conta é a posição que voltou ao
   Empregare. Em nenhum lugar uma demissão identificável vira linha de despesa.
@@ -137,3 +150,5 @@ Alimenta: [Perfil do talento](08-perfil-do-talento.md), [Mesa de seleção](04-m
 - 2026-09-19 — entra a aba "Mapa de cultura", que era tela solta no menu lateral. A tela passa a
   aceitar `?aba=` para abrir direto numa aba, que é como o link legado do mapa e o botão da mesa de
   seleção chegam aqui.
+- 2026-09-20 — a tabela "Como a empresa trabalha" ganha a coluna **Equipe** (uniforme / variada /
+  dividida), a variação das respostas por tema, com o piso de respostas respeitado.

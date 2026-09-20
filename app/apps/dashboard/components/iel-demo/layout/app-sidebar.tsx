@@ -28,6 +28,7 @@ import {
   IconHeartHandshake,
   IconHelpCircle,
   IconHome,
+  IconListCheck,
   IconPlug,
   IconSearch,
   IconUsers
@@ -414,7 +415,21 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               Sistema
             </SidebarGroupLabel>
             <SidebarMenu>
-              {/* Integrações é assunto do IEL: o gestor não vê. */}
+              {/*
+               * Instrumento e Integrações são assunto do IEL: o gestor não
+               * vê. O instrumento vem antes porque é conteúdo do produto
+               * (as frases), e Integrações é encanamento.
+               */}
+              {eGestor ? null : (
+                <ItemDaBarra
+                  item={item(
+                    iel.instrument.index,
+                    'Instrumento',
+                    IconListCheck,
+                    pathname.startsWith(iel.instrument.index)
+                  )}
+                />
+              )}
               {eGestor ? null : (
                 <ItemDaBarra
                   item={item(
