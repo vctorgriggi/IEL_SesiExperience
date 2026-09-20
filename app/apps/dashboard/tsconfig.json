@@ -1,20 +1,18 @@
 {
   "extends": "@workspace/typescript-config/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    /*
+     * Sem `baseUrl`. Com `moduleResolution: "bundler"` (vem de
+     * `@workspace/typescript-config/base.json`), `paths` resolve relativo ao
+     * diretório deste arquivo, então `baseUrl` não fazia nada aqui além de
+     * disparar o aviso de depreciação do TypeScript 6/7 — que pede
+     * `ignoreDeprecations` e para de funcionar de vez no 7.0. Tirar é a
+     * correção; silenciar serix  a só adiar.
+     */
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "next-env.d.ts",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
