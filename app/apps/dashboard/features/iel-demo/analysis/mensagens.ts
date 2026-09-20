@@ -16,7 +16,9 @@
  *
  * - **R5**: o nome da empresa não aparece antes da entrevista (00:22:21,
  *   00:38:43). A vaga é dita por atividade, localidade e turno; na etapa
- *   "a empresa quer conversar", quem revela é a ligação da analista.
+ *   "a empresa quer conversar", quem revela é a ligação da analista. A
+ *   exceção é `cobrar-devolutiva`, que não vai ao candidato: vai ao RH da
+ *   empresa, e ali empresa e pessoa são nomeadas.
  * - **Sem promessa nem culpa**: nem "você vai ser contratado", nem
  *   "reprovado". "Não foi desta vez" diz que a empresa seguiu com outras
  *   pessoas, que o currículo continua no banco e que o IEL segue junto.
@@ -36,7 +38,13 @@ export type EtapaDaMensagem =
   /** A empresa seguiu com outras pessoas. */
   | 'nao-foi-desta-vez'
   /** Check-in de quem foi contratado, aos 30, 60 e 90 dias. */
-  | 'como-esta-sendo';
+  | 'como-esta-sendo'
+  /**
+   * A única etapa que não vai ao candidato: o IEL cobra do RH da empresa o
+   * "contratou?" de uma pessoa enviada (R9). Aqui o nome da empresa e o da
+   * pessoa aparecem — é comunicação IEL → empresa, e R5 não se aplica.
+   */
+  | 'cobrar-devolutiva';
 
 export const ETAPAS_DA_MENSAGEM: EtapaDaMensagem[] = [
   'convite-questionario',
@@ -44,8 +52,18 @@ export const ETAPAS_DA_MENSAGEM: EtapaDaMensagem[] = [
   'curriculo-enviado',
   'empresa-quer-conversar',
   'nao-foi-desta-vez',
-  'como-esta-sendo'
+  'como-esta-sendo',
+  'cobrar-devolutiva'
 ];
+
+/** Quem recebe a mensagem de cada etapa. */
+export type DestinatarioDaMensagem = 'candidato' | 'empresa';
+
+export function destinatarioDaEtapa(
+  etapa: EtapaDaMensagem
+): DestinatarioDaMensagem {
+  return etapa === 'cobrar-devolutiva' ? 'empresa' : 'candidato';
+}
 
 /** Como cada etapa aparece no seletor da analista. */
 export const ETAPA_LABEL: Record<EtapaDaMensagem, string> = {
@@ -54,7 +72,8 @@ export const ETAPA_LABEL: Record<EtapaDaMensagem, string> = {
   'curriculo-enviado': 'Currículo enviado à empresa',
   'empresa-quer-conversar': 'A empresa quer conversar',
   'nao-foi-desta-vez': 'Não foi desta vez',
-  'como-esta-sendo': 'Como está sendo? (30/60/90)'
+  'como-esta-sendo': 'Como está sendo? (30/60/90)',
+  'cobrar-devolutiva': 'Cobrar a devolutiva (ao RH da empresa)'
 };
 
 export type MarcoDaMensagem = 30 | 60 | 90;
@@ -75,8 +94,21 @@ export type EntradaDaMensagem = {
   link?: string;
   /** Primeiro nome de quem assina. Sem ele, assina o IEL. */
   analista?: string;
+  /**
+   * Só em `cobrar-devolutiva`, que vai ao RH: o nome da empresa, o da pessoa
+   * enviada e há quantos dias o IEL espera. Em toda etapa ao candidato estes
+   * campos são ignorados — a regra fixa nem os lê.
+   */
+  empresa?: string;
+  pessoaEnviada?: string;
+  diasEsperando?: number;
 };
 
+/**
+ * A mensagem pronta. O nome ficou de quando toda etapa ia ao candidato; a
+ * de `cobrar-devolutiva` vai ao RH da empresa, e `destinatarioDaEtapa` diz
+ * qual é qual.
+ */
 export type MensagemAoCandidato = {
   etapa: EtapaDaMensagem;
   canal: 'whatsapp';
@@ -211,6 +243,27 @@ function linhas(entrada: EntradaDaMensagem): Array<string | null> {
           link
         ),
         'Se algo não estiver bom, me conta por aqui que eu te ligo.'
+      ];
+    }
+
+    case 'cobrar-devolutiva': {
+      // IEL → RH: aqui a empresa é nomeada, e a pessoa também — é a única
+      // etapa em que R5 não vale, porque quem lê é a própria empresa.
+      const empresa = entrada.empresa?.trim() || 'a empresa';
+      const pessoa = entrada.pessoaEnviada?.trim() || 'a pessoa';
+      const vagaDaEmpresa = `vaga de ${entrada.atividade.trim()}`;
+      const dias = entrada.diasEsperando;
+      const quando =
+        dias === undefined
+          ? `Enviamos o currículo de ${pessoa} para a ${vagaDaEmpresa}, aí na ${empresa}.`
+          : dias <= 0
+            ? `Hoje enviamos o currículo de ${pessoa} para a ${vagaDaEmpresa}, aí na ${empresa}.`
+            : `Faz ${dias} ${dias === 1 ? 'dia' : 'dias'} que enviamos o currículo de ${pessoa} para a ${vagaDaEmpresa}, aí na ${empresa}.`;
+      return [
+        abertura(entrada),
+        `${quando} Vocês chegaram a conversar? Contrataram?`,
+        comLink('É um toque só, na página dos currículos:', link),
+        'Com o retorno, a gente fecha a vaga ou manda mais 5 pessoas. Qualquer dúvida, é só responder aqui.'
       ];
     }
   }

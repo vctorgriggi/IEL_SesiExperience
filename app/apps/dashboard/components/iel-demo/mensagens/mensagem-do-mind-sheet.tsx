@@ -1,6 +1,9 @@
 'use client';
 
-import type { EtapaDaMensagem } from '@/features/iel-demo/analysis/mensagens';
+import {
+  destinatarioDaEtapa,
+  type EtapaDaMensagem
+} from '@/features/iel-demo/analysis/mensagens';
 import type {
   Application,
   FitStatus,
@@ -18,8 +21,9 @@ import {
 import { MensagemDoMind } from './mensagem-do-mind';
 
 /**
- * A gaveta "Mensagem do Mind": abre da mesa de seleção e dos Enviados com a
- * pessoa e a etapa que a tela deduziu. O conteúdo é `MensagemDoMind`; aqui
+ * A gaveta "Mensagem do Mind": abre da mesa de seleção, dos Enviados e da
+ * lista de Questionários (aba Simples) com a pessoa e a etapa que a tela
+ * deduziu. O conteúdo é `MensagemDoMind`; aqui
  * só mora a moldura e a dedução da etapa, para as duas telas deduzirem do
  * mesmo jeito.
  */
@@ -85,8 +89,9 @@ export function MensagemDoMindSheet({
         <SheetHeader className="border-b">
           <SheetTitle className="text-base">Mensagem do Mind</SheetTitle>
           <SheetDescription className="text-xs">
-            O rascunho de WhatsApp para esta pessoa, nesta etapa. Sem o nome da
-            empresa até a entrevista.
+            {destinatarioDaEtapa(etapa) === 'empresa'
+              ? 'O rascunho de WhatsApp para o RH da empresa, cobrando o retorno sobre esta pessoa.'
+              : 'O rascunho de WhatsApp para esta pessoa, nesta etapa. Sem o nome da empresa até a entrevista.'}
           </SheetDescription>
         </SheetHeader>
         <div className="p-4">

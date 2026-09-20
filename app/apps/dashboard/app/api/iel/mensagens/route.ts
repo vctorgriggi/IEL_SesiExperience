@@ -21,7 +21,9 @@ import { inMemoryRateLimiter } from '@workspace/rate-limit/in-memory';
  * a rota devolve um rascunho; quem aprova e manda é a analista.
  *
  * Corpo: `{ etapa, entrada: { primeiroNome, atividade, localidade?, turno?,
- * prazo?, marco?, link?, analista? } }`. Resposta: `MensagemAoCandidato`.
+ * prazo?, marco?, link?, analista?, empresa?, pessoaEnviada?,
+ * diasEsperando? } }`. Resposta: `MensagemAoCandidato`. Os três últimos só
+ * valem em `cobrar-devolutiva`, a etapa que vai ao RH da empresa.
  *
  * O que sai para o provedor de IA, quando há chave (PRODUTO.md §5.8): a
  * etapa, o texto da regra fixa com marcadores no lugar do nome, da cidade,
@@ -60,7 +62,12 @@ const corpoSchema = z.object({
     marco: z.union([z.literal(30), z.literal(60), z.literal(90)]).optional(),
     // Absoluto: é o que a pessoa vai tocar no celular.
     link: z.string().trim().url().max(300).optional(),
-    analista: z.string().trim().max(40).optional()
+    analista: z.string().trim().max(40).optional(),
+    // Só na etapa `cobrar-devolutiva` (IEL → RH da empresa); no provedor
+    // viram `[empresa]` e `[pessoa]`.
+    empresa: z.string().trim().max(120).optional(),
+    pessoaEnviada: z.string().trim().max(80).optional(),
+    diasEsperando: z.number().int().min(0).max(3650).optional()
   })
 });
 

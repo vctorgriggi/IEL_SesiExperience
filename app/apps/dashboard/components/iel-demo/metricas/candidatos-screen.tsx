@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   CANAL_LABEL,
   getCandidatosKpis,
@@ -45,10 +46,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@workspace/ui/shadcn/select';
-import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/shadcn/tabs';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
 import { ABAS_SEM_ROLAGEM } from '../shared/abas';
+import { SolicitacoesSimples } from '../solicitacoes/solicitacoes-simples';
 import { LADO, PREENCHIMENTO_CLARO, PREENCHIMENTO_DE_ESTADO } from './cores';
 import { formatarNumero } from './formato';
 import { Funil } from './funil';
@@ -63,16 +70,30 @@ const TODOS = 'todos';
 
 type AbaDoFunil = 'total' | CanalComunicacao;
 
+/** As duas leituras da tela: a lista de espera e a análise agregada. */
+const ABAS_DA_TELA = ['simples', 'analise'] as const;
+type AbaDaTela = (typeof ABAS_DA_TELA)[number];
+
 /**
- * Questionários: envio, resposta e consentimento.
+ * Questionários, em duas abas.
  *
- * Não é a lista de pessoas (essa é o Banco de talentos). A tela responde uma
- * pergunta: "o convite chega, é aberto e o questionário é concluído?". Por
- * isso só há agregados — nenhum nome, nenhum contato — e todo recorte com
- * menos de 5 pessoas sai como "—".
+ * **Simples** (abre por padrão) é a lista operacional: de quem o IEL está
+ * esperando resposta, desde quando, o prazo e o que fazer — reenviar,
+ * mandar a mensagem do Mind, cobrar a empresa. O dono do produto pediu
+ * "cobrar, reenviar, acompanhar o status: como estamos?", e isso estava
+ * espalhado por quatro telas.
+ *
+ * **Análise** é o que a tela sempre foi: "o convite chega, é aberto e o
+ * questionário é concluído?". Só agregados — nenhum nome, nenhum contato —
+ * e todo recorte com menos de 5 pessoas sai como "—". A lista de pessoas
+ * continua sendo o Banco de talentos.
  */
 export function CandidatosScreen() {
   const { state } = useIelDemo();
+  // `?aba=analise` abre direto na análise (é como o tour guiado chega).
+  const searchParams = useSearchParams();
+  const abaDoLink = ABAS_DA_TELA.find((aba) => aba === searchParams.get('aba'));
+  const [abaDaTela, setAbaDaTela] = useState<AbaDaTela>(abaDoLink ?? 'simples');
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
   const [vaga, setVaga] = useState<string>(TODAS);
   const [canal, setCanal] = useState<string>(TODOS);
@@ -145,206 +166,235 @@ export function CandidatosScreen() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight">
-            Questionários
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Envio, resposta e consentimento
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <SeletorPeriodo
-            value={periodo}
-            onChange={setPeriodo}
-          />
-          <Select
-            value={vaga}
-            onValueChange={setVaga}
-          >
-            <SelectTrigger
-              size="sm"
-              className="w-[200px]"
-              aria-label="Vaga"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value={TODAS}>Todas as vagas</SelectItem>
-              {vagas.map((job) => (
-                <SelectItem
-                  key={job.id}
-                  value={job.id}
-                >
-                  {job.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={canal}
-            onValueChange={setCanal}
-          >
-            <SelectTrigger
-              size="sm"
-              className="w-[150px]"
-              aria-label="Canal"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value={TODOS}>Todos os canais</SelectItem>
-              <SelectItem value="email">{CANAL_LABEL.email}</SelectItem>
-              <SelectItem value="whatsapp">{CANAL_LABEL.whatsapp}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">Questionários</h1>
+        <p className="text-sm text-muted-foreground">
+          De quem o IEL está esperando resposta, e como o questionário está indo
+        </p>
       </div>
 
-      <div
-        data-tour="questionarios-indicadores"
-        className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      <Tabs
+        value={abaDaTela}
+        onValueChange={(valor) => {
+          const aba = ABAS_DA_TELA.find((item) => item === valor);
+          if (aba) setAbaDaTela(aba);
+        }}
+        className="gap-6"
       >
-        <KpiCard
-          kpi={kpis.taxaAbertura}
-          icone={IconMailOpened}
-          tom="pessoa"
-        />
-        <KpiCard
-          kpi={kpis.conclusao}
-          icone={IconClipboardCheck}
-          tom="pessoa"
-        />
-        <KpiCard
-          kpi={{ ...kpis.tempoMedioResposta, rotulo: 'Tempo médio' }}
-          quedaEBoa
-          icone={IconClockHour4}
-          tom="neutro"
-          rodape={
-            celular === null
-              ? 'Sem aberturas no recorte'
-              : `${celular}% pelo celular`
-          }
-        />
-        <KpiCard
-          kpi={kpis.consentimentos}
-          icone={IconShieldCheck}
-          tom="combina"
-          apoio="Aceite com versão e horário, antes da primeira pergunta."
-        />
-      </div>
+        <TabsList className={ABAS_SEM_ROLAGEM}>
+          <TabsTrigger value="simples">Simples</TabsTrigger>
+          <TabsTrigger value="analise">Análise</TabsTrigger>
+        </TabsList>
 
-      {/* Os dois cartões com a mesma altura: o funil e a lista de abandono
+        <TabsContent value="simples">
+          <SolicitacoesSimples />
+        </TabsContent>
+
+        <TabsContent
+          value="analise"
+          className="flex flex-col gap-6"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Envio, resposta e consentimento, em números. Nenhum nome aqui.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <SeletorPeriodo
+                value={periodo}
+                onChange={setPeriodo}
+              />
+              <Select
+                value={vaga}
+                onValueChange={setVaga}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className="w-[200px]"
+                  aria-label="Vaga"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value={TODAS}>Todas as vagas</SelectItem>
+                  {vagas.map((job) => (
+                    <SelectItem
+                      key={job.id}
+                      value={job.id}
+                    >
+                      {job.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={canal}
+                onValueChange={setCanal}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className="w-[150px]"
+                  aria-label="Canal"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value={TODOS}>Todos os canais</SelectItem>
+                  <SelectItem value="email">{CANAL_LABEL.email}</SelectItem>
+                  <SelectItem value="whatsapp">
+                    {CANAL_LABEL.whatsapp}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div
+            data-tour="questionarios-indicadores"
+            className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          >
+            <KpiCard
+              kpi={kpis.taxaAbertura}
+              icone={IconMailOpened}
+              tom="pessoa"
+            />
+            <KpiCard
+              kpi={kpis.conclusao}
+              icone={IconClipboardCheck}
+              tom="pessoa"
+            />
+            <KpiCard
+              kpi={{ ...kpis.tempoMedioResposta, rotulo: 'Tempo médio' }}
+              quedaEBoa
+              icone={IconClockHour4}
+              tom="neutro"
+              rodape={
+                celular === null
+                  ? 'Sem aberturas no recorte'
+                  : `${celular}% pelo celular`
+              }
+            />
+            <KpiCard
+              kpi={kpis.consentimentos}
+              icone={IconShieldCheck}
+              tom="combina"
+              apoio="Aceite com versão e horário, antes da primeira pergunta."
+            />
+          </div>
+
+          {/* Os dois cartões com a mesma altura: o funil e a lista de abandono
           ocupam a altura toda, com as linhas distribuídas, e o rodapé de cada
           um fica colado embaixo. */}
-      <div
-        data-tour="questionarios-funil"
-        className="grid items-stretch gap-4 lg:grid-cols-2"
-      >
-        <Card className="h-full shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
-              Funil da comunicação
-            </CardTitle>
-            <CardDescription>
-              Do convite enviado ao questionário concluído
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-4">
-            <Tabs
-              value={abaValida}
-              onValueChange={(valor) => {
-                if (
-                  valor === 'total' ||
-                  valor === 'email' ||
-                  valor === 'whatsapp'
-                )
-                  setAba(valor);
-              }}
-            >
-              <TabsList className={ABAS_SEM_ROLAGEM}>
-                <TabsTrigger value="total">Total</TabsTrigger>
-                <TabsTrigger
-                  value="email"
-                  disabled={filtros.canal === 'whatsapp'}
+          <div
+            data-tour="questionarios-funil"
+            className="grid items-stretch gap-4 lg:grid-cols-2"
+          >
+            <Card className="h-full shadow-xs">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  Funil da comunicação
+                </CardTitle>
+                <CardDescription>
+                  Do convite enviado ao questionário concluído
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col gap-4">
+                <Tabs
+                  value={abaValida}
+                  onValueChange={(valor) => {
+                    if (
+                      valor === 'total' ||
+                      valor === 'email' ||
+                      valor === 'whatsapp'
+                    )
+                      setAba(valor);
+                  }}
                 >
-                  {CANAL_LABEL.email}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="whatsapp"
-                  disabled={filtros.canal === 'email'}
-                >
-                  {CANAL_LABEL.whatsapp}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Funil
-              etapas={etapas}
-              titulo={`Funil da comunicação, ${
-                abaValida === 'total' ? 'total' : CANAL_LABEL[abaValida]
-              }`}
+                  <TabsList className={ABAS_SEM_ROLAGEM}>
+                    <TabsTrigger value="total">Total</TabsTrigger>
+                    <TabsTrigger
+                      value="email"
+                      disabled={filtros.canal === 'whatsapp'}
+                    >
+                      {CANAL_LABEL.email}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="whatsapp"
+                      disabled={filtros.canal === 'email'}
+                    >
+                      {CANAL_LABEL.whatsapp}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Funil
+                  etapas={etapas}
+                  titulo={`Funil da comunicação, ${
+                    abaValida === 'total' ? 'total' : CANAL_LABEL[abaValida]
+                  }`}
+                />
+              </CardContent>
+              <CardFooter className="mt-auto text-sm text-muted-foreground">
+                Quem abre e não conclui recebe um lembrete em 24 horas.
+              </CardFooter>
+            </Card>
+
+            <OndeOCandidatoPara
+              oculto={abandono.oculto}
+              abertos={abandono.abertos}
+              pontos={abandono.pontos}
             />
-          </CardContent>
-          <CardFooter className="mt-auto text-sm text-muted-foreground">
-            Quem abre e não conclui recebe um lembrete em 24 horas.
-          </CardFooter>
-        </Card>
+          </div>
 
-        <OndeOCandidatoPara
-          oculto={abandono.oculto}
-          abertos={abandono.abertos}
-          pontos={abandono.pontos}
-        />
-      </div>
-
-      <Card className="shadow-xs">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Privacidade por padrão
-          </CardTitle>
-          <CardDescription>
-            O que a analista vê de cada candidato
-          </CardDescription>
-          <CardAction>
-            <Button
-              asChild
-              size="sm"
-              variant="outline"
-            >
-              <Link href={routes.dashboard.iel.talents.index}>
-                Ver pessoas
-                <IconArrowRight aria-hidden="true" />
-              </Link>
-            </Button>
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid gap-4 md:grid-cols-3">
-            {PRIVACIDADE.map((item) => (
-              <li
-                key={item.titulo}
-                className="flex gap-3"
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-md',
-                    LADO.pessoa.fundo,
-                    LADO.pessoa.texto
-                  )}
+          <Card className="shadow-xs">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">
+                Privacidade por padrão
+              </CardTitle>
+              <CardDescription>
+                O que a analista vê de cada candidato
+              </CardDescription>
+              <CardAction>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
                 >
-                  <item.icone className="size-4" />
-                </span>
-                <div className="flex flex-col gap-1">
-                  <p className="font-medium">{item.titulo}</p>
-                  <p className="text-sm text-muted-foreground">{item.texto}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+                  <Link href={routes.dashboard.iel.talents.index}>
+                    Ver pessoas
+                    <IconArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <ul className="grid gap-4 md:grid-cols-3">
+                {PRIVACIDADE.map((item) => (
+                  <li
+                    key={item.titulo}
+                    className="flex gap-3"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'flex size-8 shrink-0 items-center justify-center rounded-md',
+                        LADO.pessoa.fundo,
+                        LADO.pessoa.texto
+                      )}
+                    >
+                      <item.icone className="size-4" />
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">{item.titulo}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.texto}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

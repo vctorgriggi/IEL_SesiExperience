@@ -33,8 +33,9 @@ import { criarPseudonimo } from './pseudonimizar';
  *
  * O que não sai: o nome da pessoa, a cidade, o link (que carrega o id da
  * candidatura), o nome de quem assina, e o nome da empresa (R5) — que a
- * entrada nem tem. Os marcadores voltam ao lugar aqui, no servidor, depois
- * da validação.
+ * entrada só tem na etapa `cobrar-devolutiva`, ao RH, e mesmo ali sai como
+ * `[empresa]` (a pessoa enviada, como `[pessoa]`). Os marcadores voltam ao
+ * lugar aqui, no servidor, depois da validação.
  */
 
 /** O modelo tem 12 s: a analista já está olhando a regra fixa. */
@@ -71,15 +72,27 @@ const PALAVRAS_VEDADAS = [
   '%'
 ];
 
-/** Os marcadores que o modelo precisa devolver intactos. */
-const MARCADORES = ['[nome]', '[cidade]', '[link]', '[analista]'] as const;
+/**
+ * Os marcadores que o modelo precisa devolver intactos. `[empresa]` e
+ * `[pessoa]` só existem na etapa `cobrar-devolutiva` (IEL → RH): a empresa é
+ * nomeada para quem lê, mas o nome não sai para o provedor.
+ */
+const MARCADORES = [
+  '[nome]',
+  '[cidade]',
+  '[link]',
+  '[analista]',
+  '[empresa]',
+  '[pessoa]'
+] as const;
 
 const SYSTEM_PROMPT = `Você é o Mind, do IEL (Centro de Empregos da Indústria). Vai reescrever uma mensagem de WhatsApp que uma analista do IEL manda a uma pessoa que se candidatou a uma vaga. A mensagem abaixo já diz tudo o que precisa ser dito; a sua tarefa é deixá-la mais natural e mais próxima daquela atividade e daquele turno, do jeito que se fala com alguém que trabalha no chão de fábrica e lê no celular. Português do Brasil, palavra comum, frases curtas.
 
 Regras que não podem ser quebradas:
 - Não invente nada: nem data, nem lugar, nem o que a empresa disse. Mesma etapa, mesma informação, mesma direção.
-- Os marcadores [nome], [cidade], [link] e [analista] são preenchidos depois. Copie cada um exatamente como está, na mesma quantidade, e não crie marcador novo.
+- Os marcadores [nome], [cidade], [link], [analista], [empresa] e [pessoa] são preenchidos depois. Copie cada um exatamente como está, na mesma quantidade, e não crie marcador novo.
 - Nunca diga o nome da empresa nem sugira qual é: a pessoa só fica sabendo na entrevista.
+- Na etapa "cobrar-devolutiva" quem lê é o RH da própria empresa ([empresa]), e [pessoa] é quem o IEL enviou: a mensagem pergunta, com jeito, se conversaram e se contrataram. Continua curta e sem cobrança ríspida.
 - Nada de promessa ("você vai ser contratado", "garantido"), nada de pressão ("urgente", "última chance"), nada de nota, "aprovado", "reprovado", "eliminado", "processo seletivo", "prezado", "candidato".
 - Comece dizendo quem é, como a mensagem original. Termine com um fecho humano, sem exagero. No máximo um emoji, e só se couber.
 - Até ${MAX_PALAVRAS_DA_MENSAGEM} palavras. Quebre em parágrafos curtos com uma linha em branco entre eles.
@@ -139,7 +152,9 @@ function entradaComMarcadores(entrada: EntradaDaMensagem): EntradaDaMensagem {
     primeiroNome: '[nome]',
     ...(entrada.localidade?.trim() ? { localidade: '[cidade]' } : {}),
     ...(entrada.link?.trim() ? { link: '[link]' } : {}),
-    ...(entrada.analista?.trim() ? { analista: '[analista]' } : {})
+    ...(entrada.analista?.trim() ? { analista: '[analista]' } : {}),
+    ...(entrada.empresa?.trim() ? { empresa: '[empresa]' } : {}),
+    ...(entrada.pessoaEnviada?.trim() ? { pessoaEnviada: '[pessoa]' } : {})
   };
 }
 
@@ -151,7 +166,9 @@ function valoresDosMarcadores(
     '[nome]': entrada.primeiroNome.trim(),
     '[cidade]': entrada.localidade?.trim() ?? '',
     '[link]': entrada.link?.trim() ?? '',
-    '[analista]': entrada.analista?.trim() ?? ''
+    '[analista]': entrada.analista?.trim() ?? '',
+    '[empresa]': entrada.empresa?.trim() ?? '',
+    '[pessoa]': entrada.pessoaEnviada?.trim() ?? ''
   };
 }
 
@@ -224,6 +241,9 @@ export function montarPedidoDePolimento(entrada: EntradaDaMensagem): {
     ...(entrada.turno ? { turno: entrada.turno } : {}),
     ...(entrada.prazo ? { prazo: entrada.prazo } : {}),
     ...(entrada.marco ? { marco: entrada.marco } : {}),
+    ...(entrada.diasEsperando !== undefined
+      ? { diasEsperando: entrada.diasEsperando }
+      : {}),
     texto: gerarMensagem(entradaComMarcadores(entrada)).texto
   });
 
