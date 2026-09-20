@@ -174,18 +174,20 @@ describe('reenvio do convite (S4)', () => {
 });
 
 describe('progresso da amostra', () => {
-  it('conta 7 de 10 na Cerrado, com prazo vencendo em 1 dia', () => {
+  // 2026-09-19 (seed das empresas reais): a base passou a parecer completa e
+  // a segunda leva da Cerrado respondeu — 10 de 10, prazo ainda o mesmo.
+  it('conta 10 de 10 na Cerrado, com prazo vencendo em 1 dia', () => {
     const progresso = getCultureSampleProgress(
       buildInitialDemoState(),
       'EMP-01'
     );
 
-    expect(progresso.answered).toBe(7);
+    expect(progresso.answered).toBe(10);
     expect(progresso.total).toBe(10);
     expect(progresso.deadline).toBe('2026-09-15');
     expect(progresso.daysLeft).toBe(1);
     expect(progresso.overdue).toBe(false);
-    expect(progresso.byRole.equipe).toEqual({ answered: 7, total: 10 });
+    expect(progresso.byRole.equipe).toEqual({ answered: 10, total: 10 });
     expect(progresso.requiredForProfile).toBe(3);
     expect(progresso.ready).toBe(true);
   });
@@ -223,14 +225,16 @@ describe('progresso da amostra', () => {
 describe('tela do colaborador (PRODUTO.md §5)', () => {
   it('devolve só empresa, prazo e situação — sem nome nem e-mail', () => {
     const state = buildInitialDemoState();
-    const convite = getCultureInvites(state, 'EMP-01').at(-1)!;
+    // O último convite da Cerrado passou a estar respondido (seed de
+    // 2026-09-19); o único aberto e no prazo é o da Colatte.
+    const convite = getCultureInvites(state, 'EMP-04').at(-1)!;
     const vista = getInviteByToken(state, convite.token);
 
     expect(vista).toEqual({
       inviteId: convite.id,
-      companyName: 'Cerrado Distribuição',
+      companyName: 'Colatte',
       expiresAt: convite.expiresAt,
-      daysLeft: 1,
+      daysLeft: 2,
       status: 'aberto'
     });
     expect(JSON.stringify(vista)).not.toContain('@');

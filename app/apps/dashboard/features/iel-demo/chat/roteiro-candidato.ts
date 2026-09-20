@@ -15,8 +15,9 @@
 
 import { CANDIDATE_CONSENT_TEXT } from '../analysis/candidate-questionnaire';
 import {
-  ESCALA_CONCORDANCIA,
   isValorDaEscala,
+  ROTULOS_DA_REGUA,
+  type RotuloDaRegua,
   type ValorDaEscala
 } from '../analysis/instrumento';
 import type { CandidateJobView } from '../state/selectors';
@@ -55,30 +56,53 @@ function saudacao(vaga: CandidateJobView): PassoRoteiro[] {
   ];
 }
 
-/** Uma frase do questionário, como a conversa a mostra. */
-export type FraseDoRoteiro = { itemId: string; texto: string };
+/**
+ * Uma frase do questionário, como a conversa a mostra: a cena no balão e a
+ * frase original do cliente a um toque atrás dela.
+ */
+export type FraseDoRoteiro = { itemId: string; cena: string; original: string };
 
-/** Os 5 botões da escala, com o rótulo escrito, um por linha no celular. */
-export function opcoesDaEscala(): { id: string; label: string }[] {
-  return ESCALA_CONCORDANCIA.map((ponto) => ({
-    id: String(ponto.valor),
-    label: ponto.rotulo
+/** Quem responde, e portanto que palavras a régua mostra. */
+export type PapelDoRoteiro = 'candidato' | 'colaborador';
+
+/**
+ * As opções da escala com os rótulos da régua: os ids são os valores
+ * (`'1'`…`'5'`), então a resposta gravada é a mesma de sempre. São o que o
+ * "Ouvir" lê depois da cena e o que a bolha da pessoa repete.
+ */
+export function opcoesDaEscala(
+  rotulos: RotuloDaRegua[]
+): { id: string; label: string }[] {
+  return rotulos.map((degrau) => ({
+    id: String(degrau.valor),
+    label: degrau.rotulo
   }));
 }
 
-/** As frases como passos de pergunta da conversa. */
+/** A pergunta de apoio de cada papel: sobre si, ou sobre o ambiente. */
+const PERGUNTA_DE_APOIO: Record<PapelDoRoteiro, string> = {
+  candidato: 'O quanto isso é você?',
+  colaborador: 'O quanto isso é assim aí?'
+};
+
+/** As frases como passos de pergunta da conversa, com a régua. */
 export function passosDasFrases(
   frases: FraseDoRoteiro[],
-  apoio?: string
+  papel: PapelDoRoteiro
 ): PassoRoteiro[] {
+  const rotulos = ROTULOS_DA_REGUA[papel];
   return frases.map(
     (frase, index): PassoRoteiro => ({
       tipo: 'pergunta',
       id: `p-${frase.itemId}`,
       chave: frase.itemId,
-      texto: frase.texto,
-      apoio: apoio ?? `Frase ${index + 1} de ${frases.length}`,
-      opcoes: opcoesDaEscala()
+      texto: frase.cena,
+      original: frase.original,
+      apoio: `${PERGUNTA_DE_APOIO[papel]} · Frase ${index + 1} de ${frases.length}`,
+      opcoes: opcoesDaEscala(rotulos),
+      // O colaborador descreve a empresa: o degrau preenche em azul, que é
+      // o lado da empresa na leitura de cor (DESIGN.md §8).
+      regua: { rotulos, tom: papel === 'candidato' ? 'pessoa' : 'empresa' }
     })
   );
 }
@@ -123,7 +147,7 @@ export function montarRoteiroCandidato({
   variante: VarianteCandidato;
   vaga: CandidateJobView | null;
   respondidoEm: string | null;
-  /** As frases que ainda faltam perguntar, já no texto simples. */
+  /** As frases que ainda faltam perguntar, como cena e frase original. */
   frases: FraseDoRoteiro[];
   /** O reaproveitamento desta candidatura, quando há o que dizer. */
   reuso?: ReusoDoRoteiro | null;
@@ -298,9 +322,9 @@ export function montarRoteiroCandidato({
         tipo: 'mensagem',
         id: 'combinado',
         texto:
-          'Combinado. Para cada frase, toque no quanto você concorda com ela.'
+          'Combinado. Vou mandar situações do dia a dia. Para cada uma, toque no quanto ela é você.'
       },
-      ...passosDasFrases(frases),
+      ...passosDasFrases(frases, 'candidato'),
       {
         tipo: 'fim',
         id: 'fim',

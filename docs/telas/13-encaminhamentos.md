@@ -4,7 +4,7 @@
 **Componente:** `ReferralsScreen`, em
 `apps/dashboard/components/iel-demo/referrals/referrals-screens.tsx`
 **Persona:** Analista IEL e gestor (cada um vê o seu recorte)
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -34,6 +34,10 @@ mudado desde então.
 ## Ações do usuário
 
 - Abrir o detalhe de um encaminhamento.
+- No detalhe, por pessoa, **"Avisar a pessoa"** (só a analista): abre a gaveta "Mensagem do Mind"
+  (`mensagens/mensagem-do-mind-sheet.tsx`) com a etapa que o retorno da empresa define — sem retorno →
+  currículo enviado; "quero entrevistar" → a empresa quer conversar; "não avançar" → não foi desta
+  vez; contratou → como está sendo. Copiar ou simular o envio; nada é enviado nem gravado.
 
 ## Backend futuro
 
@@ -56,3 +60,5 @@ Entra em: [Detalhe do encaminhamento](14-detalhe-do-encaminhamento.md).
 - 2026-09-19 — registra o link do relatório para a empresa (S3), gerado após o encaminhamento.
 - 2026-09-19 — ganha a coluna "O que aconteceu", com o desfecho capturado pela devolutiva de um
   clique (C3).
+- 2026-09-20 — o detalhe ganha "Avisar a pessoa" por perfil: o rascunho de WhatsApp do Mind com a
+  etapa deduzida do retorno da empresa.

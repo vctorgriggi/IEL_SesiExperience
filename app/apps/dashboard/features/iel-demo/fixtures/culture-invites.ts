@@ -18,9 +18,9 @@ import type { CultureRespondentInvite } from '../types';
  *
  * As três empresas cobrem os três estados que a visão geral precisa mostrar:
  *
- * - **Cerrado Distribuição**: consulta em andamento, prazo vencendo amanhã.
- *   A segunda leva de convites saiu depois da primeira, e é o prazo dela que
- *   a tela mostra.
+ * - **Cerrado Distribuição**: consulta completa, 10 de 10, em duas levas. A
+ *   divergência entre gestão e equipe em "Autonomia" continua: é diagnóstico,
+ *   não incompletude.
  * - **Horizonte Alimentos**: consulta completa — gestão, RH e 10 pessoas da
  *   equipe, o bastante para toda frase ter ao menos 3 respostas da equipe.
  * - **Oficina Pantanal**: prazo vencido com 3 de 8. O perfil não fecha, e a
@@ -70,6 +70,13 @@ function buildInvite(seed: InviteSeed): CultureRespondentInvite {
 const PRIMEIRA_LEVA_CERRADO = '2026-09-05';
 const SEGUNDA_LEVA_CERRADO = '2026-09-12';
 const RESPOSTA_EQUIPE_CERRADO = '2026-09-08';
+/**
+ * A segunda leva respondeu no dia seguinte ao envio. Os três convites
+ * (INV-EMP01-08..10) continuam existindo com os mesmos tokens — estão em
+ * documentação —, mas respondidos: a base de demonstração tem de parecer
+ * completa, e a Cerrado fecha os 10 temas.
+ */
+const RESPOSTA_SEGUNDA_LEVA_CERRADO = '2026-09-13';
 
 const INVITE_SEEDS: InviteSeed[] = [
   ...[
@@ -97,7 +104,7 @@ const INVITE_SEEDS: InviteSeed[] = [
       role: 'equipe' as const,
       area: 'Expedição',
       sentAt: SEGUNDA_LEVA_CERRADO,
-      answeredAt: null
+      answeredAt: RESPOSTA_SEGUNDA_LEVA_CERRADO
     })
   ),
 

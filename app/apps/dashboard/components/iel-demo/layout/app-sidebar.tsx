@@ -66,6 +66,7 @@ import {
   SidebarSeparator
 } from '@workspace/ui/shadcn/sidebar';
 
+import { pedeLigacaoHoje } from '../acompanhamento/leitura';
 import { normalizarBusca } from '../jobs/busca';
 import { ITEM_ATIVO, PREENCHIMENTO_DE_ESTADO } from '../metricas/cores';
 import { montarPendencias } from '../overview/pendencias';
@@ -200,10 +201,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
    * memorizado por identidade do estado.
    */
   const paraLigarHoje = useMemo(
-    () =>
-      getAcompanhamento(state).filter(
-        (situacao) => situacao.pendentes.length > 0
-      ).length,
+    () => getAcompanhamento(state).filter(pedeLigacaoHoje).length,
     [state]
   );
 

@@ -7,6 +7,7 @@ import {
   MOTIVO_SAIDA_LABEL,
   PERMANENCIA_DIAS
 } from '@/features/iel-demo/analysis/devolutiva';
+import type { EtapaDaMensagem } from '@/features/iel-demo/analysis/mensagens';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -29,6 +30,7 @@ import {
   IconCircleCheck,
   IconCircleDashed,
   IconCircleMinus,
+  IconMessageCircle,
   IconSearch
 } from '@tabler/icons-react';
 
@@ -56,6 +58,10 @@ import {
 } from '@workspace/ui/shadcn/table';
 
 import { usePageHeader } from '../layout/page-header-context';
+import {
+  etapaPeloEncaminhamento,
+  MensagemDoMindSheet
+} from '../mensagens/mensagem-do-mind-sheet';
 import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
 import { formatarDataHora } from '../shared/datas';
 import { ReferralReportLink } from './report-link';
@@ -388,6 +394,13 @@ export function ReferralsScreen() {
 export function ReferralDetailScreen({ referralId }: { referralId: string }) {
   const { state, dispatch, persona } = useIelDemo();
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // "Avisar a pessoa": o rascunho de WhatsApp com a etapa que o retorno da
+  // empresa define. Só a analista vê; a empresa não fala com o candidato.
+  const [aviso, setAviso] = useState<{
+    applicationId: string;
+    etapa: EtapaDaMensagem;
+  } | null>(null);
+  const [avisoAberto, setAvisoAberto] = useState(false);
   const iel = routes.dashboard.iel;
 
   const referral = getReferral(state, referralId);
@@ -666,7 +679,21 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                   ) : null}
 
                   {!isManager ? (
-                    <div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setAviso({
+                            applicationId: item.applicationId,
+                            etapa: etapaPeloEncaminhamento(item)
+                          });
+                          setAvisoAberto(true);
+                        }}
+                      >
+                        <IconMessageCircle aria-hidden="true" />
+                        Avisar a pessoa
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -692,6 +719,15 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
           );
         })}
       </ul>
+
+      {aviso ? (
+        <MensagemDoMindSheet
+          applicationId={aviso.applicationId}
+          etapa={aviso.etapa}
+          open={avisoAberto}
+          onOpenChange={setAvisoAberto}
+        />
+      ) : null}
 
       {isManager ? (
         <Alert variant="default">

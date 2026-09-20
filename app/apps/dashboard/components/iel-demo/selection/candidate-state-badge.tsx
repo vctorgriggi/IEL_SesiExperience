@@ -88,7 +88,7 @@ export function CandidateStateBadge({ entry }: { entry: JobRankingEntry }) {
   const rotulo: Record<CandidateState, string> = {
     'sem-resposta': 'Ainda não respondeu',
     resgate: 'Resgate',
-    parcial: `${respondidos} de ${totalAxes} pontos`,
+    parcial: `${respondidos} de ${totalAxes} temas`,
     abaixo: `Abaixo de ${ADHERENCE_THRESHOLD}%`,
     combina: 'Combina'
   };

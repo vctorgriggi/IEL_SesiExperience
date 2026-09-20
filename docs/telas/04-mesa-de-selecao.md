@@ -43,6 +43,14 @@ Atende **M5**.
     quem abre a gaveta está decidindo sobre a pessoa, e o convite só vira assunto quando falta
     resposta. Mostra o convite como uma conversa — por onde saiu, se foi aberto, se foi respondido
     —, quantos lembretes já saíram e quando foi o último, com o botão de reenviar.
+- **Detalhe da pessoa**, aberto na própria tela.
+- **Mensagem do Mind** (`mensagens/mensagem-do-mind.tsx`, gaveta em `mensagens/mensagem-do-mind-sheet.tsx`)
+  — no menu ⋮ da linha. O rascunho de WhatsApp para aquela pessoa, na etapa que o estado da
+  candidatura deduz (sem resposta → convite no prazo, lembrete depois; enviada → currículo enviado;
+  "quero entrevistar" → a empresa quer conversar; "não avançar" → não foi desta vez), com um seletor
+  para trocar. A regra fixa (`analysis/mensagens.ts`) aparece na hora num balão de WhatsApp; o Mind
+  reescreve por cima quando há chave (`/api/iel/mensagens`) e o texto ganha o selo "rascunho do Mind".
+  Campo editável, "Copiar" e "Simular envio". Nunca o nome da empresa (R5).
 
 ## De onde vêm os dados hoje
 
@@ -68,6 +76,8 @@ Atende **M5**.
 - **Reenviar o questionário** a quem ainda não respondeu — `resend-fit-invite`. Não cria link
   novo: é o mesmo link da candidatura, pelo mesmo canal do convite original (R11). Candidatura já
   respondida não oferece o botão.
+- Mensagem do Mind — copiar o rascunho de WhatsApp ou simular o envio. Sem ação de reducer: nada é
+  enviado e nada é gravado; a analista aprova lendo, ajustando e colando no WhatsApp do IEL.
 
 ## Backend futuro
 
@@ -103,3 +113,5 @@ Entra em: [Comparação](05-comparacao.md), [Perfil do talento](08-perfil-do-tal
 - 2026-09-19 — o cabeçalho ganhou "Ver aderência", que leva à análise de aderência já nesta vaga.
 - 2026-09-20 — a gaveta da pessoa ganhou "Comunicação com o candidato": o convite contado como
   conversa e o reenvio do questionário, sem sair da mesa.
+- 2026-09-20 — ganha "Mensagem do Mind" no menu ⋮ da linha: o rascunho de WhatsApp por etapa, da
+  regra fixa com polimento do Mind, que a analista aprova com um toque.

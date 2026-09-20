@@ -4,7 +4,7 @@
 **Componente:** `apps/dashboard/components/iel-demo/candidate/fit-questionnaire-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/candidate-questionnaire.ts`
 **Persona:** o próprio candidato, sem login
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -41,19 +41,53 @@ adequada e ostensiva" não cabe em letra miúda.
   frases · uns 5 minutos · sem cadastro" —, porque quem abre um link sem saber o que é decide
   continuar ou fechar por essa linha. Depois o cartão do aceite, a porta para a conversa, a caixa
   desmarcada e o botão que só habilita quando ela é marcada.
-- **As frases da vaga**, uma por tela, com a escala de concordância em cinco alvos de 60px. O
-  cabeçalho diz onde a pessoa está e **quantas ainda faltam** ("Frase 3 de 10 · Faltam 7"); no
-  meio do caminho a tela diz "Metade do caminho". Ali ficava "cerca de 30 s", que não responde
-  nenhuma pergunta de quem está respondendo.
+- **As frases da vaga como cenas**, uma por tela. O título é a `cena` do instrumento — a mesma
+  ideia da frase do cliente, na primeira pessoa e no chão de fábrica ("Chega uma tarefa nova. Eu
+  começo e vou ajustando no caminho.") —, com a pergunta de apoio "O quanto isso é você?" e um
+  toque discreto, "ver a frase original", que abre a frase da planilha para a analista e o auditor
+  conferirem que é o mesmo instrumento. O cabeçalho diz onde a pessoa está e **quantas ainda
+  faltam** ("Frase 3 de 10 · Faltam 7"); no meio do caminho a tela diz "Metade do caminho".
+- **A régua de um toque** (`shared/regua-de-concordancia.tsx`) no lugar das cinco linhas com
+  bolinha: cinco degraus lado a lado, de 72px, com o número e a palavra escrita em cada um — "Nada
+  a ver comigo · Pouco · Mais ou menos · Bastante · Sou eu" —, os extremos com peso maior. O degrau
+  tocado se preenche no verde-azulado da pessoa e, 350 ms depois, a tela avança sozinha. "Próxima"
+  continua na tela: para quem prefere o botão, para quem voltou a uma frase já respondida (tocar o
+  mesmo degrau não muda nada, então não avança) e para o teclado. Na última frase o toque só
+  seleciona; "Enviar respostas" é um gesto à parte.
 - **Voltar** é um botão de 48px como o de seguir, e a resposta anterior continua marcada. Na
   primeira frase ele se chama "Voltar ao começo"; nas outras, "Voltar uma frase".
 - **Confirmação** ao fim: "Pronto!", o que foi recebido e o que foi reaproveitado ("Recebemos as
-  suas 7 respostas. As outras 3 vieram do que você já tinha respondido em 01/09"), até quando as
-  respostas valem, e **"O que acontece agora"** em três passos numerados — o IEL compara, a empresa recebe só um resumo, e quem avisa é o IEL. O botão
+  suas 7 respostas. As outras 3 vieram do que você já tinha respondido em 01/09"), a **devolutiva
+  pessoal** (`shared/leitura-pessoal.tsx`, com as respostas resolvidas — reaproveitadas e novas —,
+  o primeiro nome e só a atividade e o segmento da vaga como contexto, nunca a empresa), até
+  quando as respostas valem, e **"O que acontece agora"** em três passos numerados — o IEL compara, a empresa recebe só um resumo, e quem avisa é o IEL. O botão
   principal leva para [Minha candidatura](23-minha-candidatura.md); "Responder de novo" fica
   abaixo, em segundo plano.
 - **A vaga sem o nome da empresa.** `getCandidateJobView` entrega atividade, localidade, segmento e
   turno; o nome da empresa não aparece antes da entrevista (R5).
+
+## A cena e a régua: por que mudou
+
+Os fluxos estavam corretos e acessíveis — e não eram atrativos: frase de planilha, cinco
+bolinhas, "Próxima", dez vezes. Quem lia "Depois de entender uma atividade, consigo seguir com a
+execução sem precisar confirmar cada etapa" não sentia que aquilo era sobre ela. O cliente elogiou
+o protótipo em "pares de situação" justamente por ser _"bem mais fácil de se preencher"_
+(00:40:02), e o público é operacional, de baixo letramento (00:08:01).
+
+**O instrumento não muda.** São as mesmas 52 frases, a mesma escala 1–5 e a mesma aderência. A
+`cena` é apresentação: a mesma ideia com a mesma direção, na primeira pessoa, em até 14 palavras,
+sem "atividade", "execução", "processo" nem "demanda"; nos itens de polo −1 a cena continua
+invertida. A frase original fica a um toque em cada tela.
+
+**Duas leituras da mesma escala.** A analista continua lendo "Discordo muito … Concordo muito"
+(`ESCALA_CONCORDANCIA`). O candidato responde sobre si, e a régua diz isso: "Nada a ver comigo …
+Sou eu" (`ROTULOS_DA_REGUA.candidato`). Os valores são os mesmos; 5 é 5.
+
+**Acessibilidade.** A régua é um `radiogroup` do shadcn: setas movem e escolhem, Espaço escolhe,
+Enter confirma — pelo teclado o avanço não é automático, porque as setas passariam por três
+degraus antes de parar no certo. O leitor de tela anuncia "Sou eu, 5 de 5". Nada só por cor: a
+palavra está escrita em cada degrau, e o selecionado muda também a borda e o peso. Abaixo de 360px
+a régua empilha, uma linha por degrau.
 
 ## Reaproveitamento: a resposta é da pessoa
 
@@ -134,8 +168,8 @@ e não no servidor.
 - **Nenhum caminho sem saída.** Link inválido, prazo vencido e questionário já respondido dizem o
   que houve e oferecem para onde ir. Se um envio for barrado por frase faltando, um `role="alert"`
   diz qual é e leva até ela.
-- **Celular primeiro**: 390×844 sem rolagem horizontal, alvos de 48px (60px nas alternativas),
-  corpo de 15px; `h1` por passo, com o foco levado até ele a cada troca de tela.
+- **Celular primeiro**: 390×844 sem rolagem horizontal, alvos de 48px (72px nos degraus da
+  régua), corpo de 15px; `h1` por passo, com o foco levado até ele a cada troca de tela.
 
 ## Ligações
 
@@ -157,3 +191,7 @@ Vem de: a candidatura e [Minha candidatura](23-minha-candidatura.md). Alimenta:
   "cerca de 30 s", porta para a conversa guiada, rascunho no navegador para fechar e voltar, aviso
   de frase faltando em `role="alert"` e correção de quem reabre o link já respondido — que caía na
   tela de aceite porque o passo inicial era decidido antes de o estado chegar do `localStorage`.
+- 2026-09-20 — cena na primeira pessoa e régua de um toque: a frase vira `cena` em título grande,
+  com "ver a frase original" a um toque; as cinco bolinhas viram a régua "Nada a ver comigo … Sou
+  eu", que seleciona e avança; a devolutiva pessoal entra no "Pronto!", acima de "O que acontece
+  agora". Instrumento, escala e aderência intactos.

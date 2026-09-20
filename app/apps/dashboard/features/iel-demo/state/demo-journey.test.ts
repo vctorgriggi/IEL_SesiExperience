@@ -91,17 +91,20 @@ function askManagerAboutSupport(state: DemoState): DemoState {
 describe('base fictícia da Central IEL', () => {
   it('mantém o núcleo curado do roteiro intacto sob o volume gerado', () => {
     const state = buildInitialDemoState();
-    const curated = state.applications.filter(
-      (application) => !application.id.startsWith('GEN-')
+    // O núcleo curado é CAND-01..14; a remessa antiga da Horizonte
+    // (CAND-ACOMP-*) e as candidaturas das empresas reais de Cuiabá
+    // (CAND-21.., seed de 2026-09-19) ficam fora desta contagem.
+    const curated = state.applications.filter((application) =>
+      /^CAND-(0\d|1[0-4])$/.test(application.id)
     );
     const curatedTalents = new Set(
       curated.map((application) => application.talentId)
     );
 
     expect(DEMO_COMPANIES).toHaveLength(3);
-    expect(DEMO_JOBS).toHaveLength(3);
+    expect(DEMO_JOBS).toHaveLength(5);
     expect(DEMO_TALENTS).toHaveLength(8);
-    expect(curated).toHaveLength(10);
+    expect(curated).toHaveLength(14);
     expect(curatedTalents.size).toBe(8);
   });
 
@@ -549,7 +552,8 @@ describe('indicadores, integração e reset', () => {
     expect(
       new Set(
         twice.applications
-          .filter((application) => !application.id.startsWith('GEN-'))
+          // Só o núcleo curado (CAND-01..14): ver o primeiro teste do arquivo.
+          .filter((application) => /^CAND-(0\d|1[0-4])$/.test(application.id))
           .map((application) => application.talentId)
       ).size
     ).toBe(8);

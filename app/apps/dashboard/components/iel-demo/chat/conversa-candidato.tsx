@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   montarRoteiroCandidato,
@@ -13,9 +13,11 @@ import {
   getCandidateJobView,
   getFitResponse,
   getFitStatus,
+  getTalent,
   perguntasDoCandidato,
   perguntasQueFaltam,
   reaproveitamentoDaCandidatura,
+  respostasResolvidas,
   versaoDoAceiteVigente
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
@@ -24,6 +26,7 @@ import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 
+import { LeituraPessoal } from '../shared/leitura-pessoal';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
 import { useMontado } from './use-voz';
 
@@ -93,6 +96,22 @@ export function ConversaCandidato({
       : perguntasQueFaltam(state, applicationId);
   const itemIds = perguntas.map((pergunta) => pergunta.itemId);
 
+  /*
+   * O que a devolutiva lê no fim: as respostas resolvidas desta candidatura
+   * (reaproveitadas e novas), já gravadas pelo `onConcluir`. Contexto sem o
+   * nome da empresa (R5), e estável entre renderizações para a devolutiva
+   * não pedir o texto de novo a cada fala que entra.
+   */
+  const atividade = vaga?.activity;
+  const setor = vaga?.sector;
+  const contextoDaLeitura = useMemo(
+    () => ({ atividade, setor }),
+    [atividade, setor]
+  );
+  const primeiroNome = application
+    ? getTalent(application.talentId, state)?.name.split(' ')[0]
+    : undefined;
+
   if (!montado) return <ConversaCarregando />;
 
   const roteiro = montarRoteiroCandidato({
@@ -101,7 +120,8 @@ export function ConversaCandidato({
     respondidoEm: existente?.answeredAt ?? null,
     frases: perguntas.map((pergunta) => ({
       itemId: pergunta.itemId,
-      texto: pergunta.item.textoSimples
+      cena: pergunta.item.cena,
+      original: pergunta.item.texto
     })),
     reuso: responderTudo ? null : reuso
   });
@@ -151,6 +171,22 @@ export function ConversaCandidato({
           consentVersion: versaoDoAceiteVigente(),
           at: nowIso()
         });
+      }}
+      renderFim={(respostas) => {
+        const resolvidas = respostasResolvidas(state, applicationId)?.valores;
+        const valores =
+          resolvidas && Object.keys(resolvidas).length > 0
+            ? resolvidas
+            : respostasDaEscala(respostas, itemIds);
+        if (!valores || Object.keys(valores).length === 0) return null;
+        return (
+          <LeituraPessoal
+            papel="candidato"
+            respostas={valores}
+            primeiroNome={primeiroNome}
+            contexto={contextoDaLeitura}
+          />
+        );
       }}
       renderAcoesFinais={(acoes) => (
         // A primeira ação do roteiro é a principal; as outras ficam discretas.

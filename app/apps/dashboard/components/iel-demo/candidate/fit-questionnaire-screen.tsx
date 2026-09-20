@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode
@@ -13,8 +14,8 @@ import {
   CANDIDATE_CONSENT_VERSION
 } from '@/features/iel-demo/analysis/candidate-questionnaire';
 import {
-  ESCALA_CONCORDANCIA,
   isValorDaEscala,
+  ROTULOS_DA_REGUA,
   type ValorDaEscala
 } from '@/features/iel-demo/analysis/instrumento';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -23,9 +24,11 @@ import {
   getCandidateJobView,
   getFitResponse,
   getFitStatus,
+  getTalent,
   perguntasDoCandidato,
   perguntasQueFaltam,
   reaproveitamentoDaCandidatura,
+  respostasResolvidas,
   validadeDasRespostas,
   versaoDoAceiteVigente
 } from '@/features/iel-demo/state/selectors';
@@ -51,14 +54,16 @@ import {
 import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
-import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 import { ICONE_TINGIDO } from '../metricas/cores';
 import {
   CaminhoDaConversa,
+  FraseOriginal,
   PassoDoFim,
   TamanhoDaTarefa
 } from '../shared/fluxo-por-link';
+import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { ReguaDeConcordancia } from '../shared/regua-de-concordancia';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 import { useRascunho } from '../shared/use-rascunho';
 
@@ -100,12 +105,30 @@ import { useRascunho } from '../shared/use-rascunho';
  *
  * Uma frase por tela, alvos de 48px, corpo de 15px. O público é operacional
  * e com baixo letramento digital: o que não é a frase atual, o botão de
- * seguir ou o de voltar não está na tela. A frase é o `textoSimples` do
- * instrumento, e a escala de concordância aparece em 5 opções grandes, uma
- * por linha, com o rótulo escrito.
+ * seguir ou o de voltar não está na tela.
+ *
+ * A frase aparece como **cena** (`item.cena`): a mesma ideia do instrumento
+ * na primeira pessoa, como uma situação do dia a dia — "Chega uma tarefa
+ * nova. Eu começo e vou ajustando no caminho." A frase original do cliente
+ * fica a um toque ("ver a frase original"), para a analista e o auditor
+ * conferirem que é o mesmo instrumento. A pergunta de apoio é "O quanto isso
+ * é você?", e a escala é a **régua de um toque**
+ * (`shared/regua-de-concordancia`): cinco degraus com a palavra escrita, de
+ * "Nada a ver comigo" a "Sou eu"; o toque seleciona e, um instante depois,
+ * a tela avança sozinha. "Próxima" continua na tela para quem prefere o
+ * botão, para quem voltou a uma frase já respondida (o toque no mesmo degrau
+ * não muda nada, então não avança) e para o teclado; na última frase o toque
+ * só seleciona, e enviar é um gesto à parte.
  *
  * As 10 frases são as que a empresa da vaga escolheu (`perguntasDoCandidato`):
  * uma por tema, onde a equipe dela é mais marcante.
+ *
+ * ## O fim
+ *
+ * Antes do "O que acontece agora" entra a devolutiva pessoal
+ * (`shared/leitura-pessoal`): a pessoa deu dez respostas e recebe uma leitura
+ * delas de volta, com as resolvidas — reaproveitadas e novas — e nunca o nome
+ * da empresa (R5).
  *
  * ## Fechar e voltar
  *
@@ -224,6 +247,14 @@ export function FitQuestionnaireScreen({
 
   const application = getApplication(state, applicationId);
   const jobView = getCandidateJobView(state, applicationId);
+  // Estável entre renderizações: a devolutiva o usa como dependência de
+  // efeito, e um objeto novo a cada render a faria pedir o texto de novo.
+  const atividadeDaVaga = jobView?.activity;
+  const setorDaVaga = jobView?.sector;
+  const contextoDaLeitura = useMemo(
+    () => ({ atividade: atividadeDaVaga, setor: setorDaVaga }),
+    [atividadeDaVaga, setorDaVaga]
+  );
   const validade = application
     ? validadeDasRespostas(state, application.talentId)
     : null;
@@ -471,6 +502,16 @@ export function FitQuestionnaireScreen({
   }
 
   if (step.kind === 'done') {
+    /*
+     * O que a devolutiva lê: as respostas resolvidas desta candidatura —
+     * as reaproveitadas de outra vaga e as novas —, que é o mesmo conjunto
+     * que a aderência usa. O primeiro nome vem do talento; o contexto é só
+     * a atividade e o segmento, nunca a empresa (R5).
+     */
+    const resolvidas = respostasResolvidas(state, applicationId);
+    const primeiroNome = getTalent(application.talentId, state)?.name.split(
+      ' '
+    )[0];
     return (
       <CandidateFrame badge={badge}>
         <div className="flex flex-col gap-3">
@@ -497,9 +538,20 @@ export function FitQuestionnaireScreen({
               ? `Usamos as ${reuso.reaproveitadas} respostas que você já tinha dado${reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}. Você não precisou responder nada de novo.`
               : reuso && reuso.reaproveitadas > 0
                 ? `Recebemos as suas ${reuso.novas} respostas. As outras ${reuso.reaproveitadas} vieram do que você já tinha respondido${reuso.desde ? ` em ${diaMes(reuso.desde)}` : ''}.`
-                : `Recebemos as suas ${totalQuestions} respostas.`}
+                : totalQuestions > 0
+                  ? `Recebemos as suas ${totalQuestions} respostas.`
+                  : 'Suas respostas já estão registradas.'}
           </p>
         </div>
+
+        {resolvidas && Object.keys(resolvidas.valores).length > 0 ? (
+          <LeituraPessoal
+            papel="candidato"
+            respostas={resolvidas.valores}
+            primeiroNome={primeiroNome}
+            contexto={contextoDaLeitura}
+          />
+        ) : null}
 
         <Card>
           <CardHeader>
@@ -917,60 +969,47 @@ export function FitQuestionnaireScreen({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <h1
           id="fit-pergunta"
           ref={tituloRef}
           tabIndex={-1}
-          className="text-[22px] font-semibold leading-[1.25] tracking-tight outline-none"
+          className="text-[24px] font-semibold leading-[1.25] tracking-tight outline-none [text-wrap:balance]"
         >
           <span className="sr-only">{rotuloProgresso}: </span>
-          {question.item.textoSimples}
+          {question.item.cena}
         </h1>
         <p
           id="fit-pergunta-dica"
-          className="text-sm leading-relaxed text-muted-foreground"
+          className="text-[15px] leading-relaxed text-muted-foreground"
         >
-          O quanto você concorda? Não existe resposta certa.
+          O quanto isso é você? Não existe resposta certa.
         </p>
+        {/* Fecha sozinha quando a frase muda: a chave é a frase. */}
+        <FraseOriginal
+          key={question.itemId}
+          texto={question.item.texto}
+        />
       </div>
 
-      <RadioGroup
-        className="gap-2.5"
+      <ReguaDeConcordancia
+        nome={question.itemId}
+        valor={chosen ?? null}
+        rotulos={ROTULOS_DA_REGUA.candidato}
+        tom="pessoa"
         aria-labelledby="fit-pergunta"
         aria-describedby="fit-pergunta-dica"
-        value={chosen === undefined ? '' : String(chosen)}
-        onValueChange={(value) => {
-          const option = ESCALA_CONCORDANCIA.find(
-            (entry) => String(entry.valor) === value
-          );
-          if (!option) return;
+        onChange={(valor) => {
           setFaltando(null);
-          setAnswers((current) => ({
-            ...current,
-            [question.itemId]: option.valor
-          }));
+          setAnswers((current) => ({ ...current, [question.itemId]: valor }));
         }}
-      >
-        {ESCALA_CONCORDANCIA.map((option) => {
-          const selected = chosen === option.valor;
-          return (
-            <Label
-              key={option.valor}
-              htmlFor={`${question.itemId}-${option.valor}`}
-              data-selected={selected ? '' : undefined}
-              className="flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-[1.35] data-[selected]:border-foreground data-[selected]:bg-muted/50 data-[selected]:ring-1 data-[selected]:ring-foreground"
-            >
-              <RadioGroupItem
-                id={`${question.itemId}-${option.valor}`}
-                className="size-[18px]"
-                value={String(option.valor)}
-              />
-              <span>{option.rotulo}</span>
-            </Label>
-          );
-        })}
-      </RadioGroup>
+        onConfirmar={() => {
+          // O toque avança; na última frase, enviar é um gesto à parte.
+          if (isLast) return;
+          setRetomado(false);
+          setStep({ kind: 'question', index: step.index + 1 });
+        }}
+      />
 
       <div className="mt-auto flex flex-col gap-2.5 pt-4">
         {faltando !== null && faltando >= 0 ? (

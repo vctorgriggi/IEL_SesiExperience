@@ -14,9 +14,23 @@
  * decide o que vira dado é o conversor de cada roteiro.
  */
 
+import type { RotuloDaRegua } from '../analysis/instrumento';
+
 export type ChatOpcao = {
   id: string;
   label: string;
+};
+
+/**
+ * A régua de um toque no lugar dos botões, quando o passo é uma frase do
+ * instrumento: os cinco degraus com a palavra escrita e o tom de quem
+ * responde (a pessoa, ou a empresa que o colaborador descreve). As `opcoes`
+ * continuam existindo com os mesmos ids (`'1'`…`'5'`) e rótulos: são o que
+ * o "Ouvir" lê, o que a bolha da pessoa mostra e o que vira dado.
+ */
+export type ReguaDoPasso = {
+  rotulos: RotuloDaRegua[];
+  tom: 'pessoa' | 'empresa';
 };
 
 /** Uma fala do IEL que não pede resposta. */
@@ -37,6 +51,13 @@ export type PassoPergunta = {
   texto: string;
   apoio?: string;
   opcoes: ChatOpcao[];
+  /** Presente nas frases do instrumento: a régua substitui os botões. */
+  regua?: ReguaDoPasso;
+  /**
+   * A frase original do cliente, quando `texto` é a cena. Fica a um toque
+   * atrás da bolha, para quem quiser conferir que é o mesmo instrumento.
+   */
+  original?: string;
 };
 
 /**
@@ -93,6 +114,8 @@ export type MensagemConversa = {
   passoId: string;
   /** Carimbo ISO, do relógio único da demonstração. */
   em: string;
+  /** A frase original do cliente atrás da cena, quando houver. */
+  original?: string;
 };
 
 export type EstadoConversa = {
@@ -188,15 +211,16 @@ function avancar(
     }
 
     if (passo.tipo === 'pergunta') {
+      const pergunta = mensagemIel(
+        passo.id,
+        'q',
+        passo.texto,
+        em,
+        passo.apoio,
+        falaDaPergunta(passo)
+      );
       historico.push(
-        mensagemIel(
-          passo.id,
-          'q',
-          passo.texto,
-          em,
-          passo.apoio,
-          falaDaPergunta(passo)
-        )
+        passo.original ? { ...pergunta, original: passo.original } : pergunta
       );
       return { ...estado, historico, passoAtual: atual };
     }

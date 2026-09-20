@@ -10,6 +10,7 @@ import {
   type ReactNode
 } from 'react';
 import Image from 'next/image';
+import type { ValorDaEscala } from '@/features/iel-demo/analysis/instrumento';
 import {
   iniciarConversa,
   opcoesEmEspera,
@@ -21,7 +22,8 @@ import {
   type AcaoFinal,
   type ConversaRoteiro,
   type EstadoConversa,
-  type MensagemConversa
+  type MensagemConversa,
+  type ReguaDoPasso
 } from '@/features/iel-demo/chat/motor';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import { IconSquare, IconVolume } from '@tabler/icons-react';
@@ -32,6 +34,11 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import { ScrollArea } from '@workspace/ui/shadcn/scroll-area';
 import { Skeleton } from '@workspace/ui/shadcn/skeleton';
 
+import { FraseOriginal } from '../shared/fluxo-por-link';
+import {
+  ReguaDeConcordancia,
+  type OrigemDaResposta
+} from '../shared/regua-de-concordancia';
 import { useRascunho } from '../shared/use-rascunho';
 import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
 
@@ -52,9 +59,19 @@ import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
  * ler a anterior e marca quem está falando. Com `prefers-reduced-motion`, não
  * há animação nem espera — tudo entra de uma vez.
  *
+ * ## A cena e a régua
+ *
+ * Numa frase do instrumento, a bolha traz a cena ("Chega uma tarefa nova. Eu
+ * começo e vou ajustando no caminho.") com a frase original do cliente a um
+ * toque, e o rodapé mostra a régua de um toque no lugar dos cinco botões:
+ * o degrau tocado se preenche e, um instante depois, vira a resposta. Pelo
+ * teclado a régua só seleciona, e um botão "Confirmar" aparece para fechar
+ * a resposta (Enter também serve).
+ *
  * ## Áudio
  *
- * Cada bolha do IEL tem "Ouvir"; numa pergunta, a leitura inclui as opções.
+ * Cada bolha do IEL tem "Ouvir"; numa pergunta, a leitura inclui a cena e
+ * os degraus da régua.
  * "Ouvir tudo", no topo, começa desligado e, ligado, lê o bloco atual e cada
  * fala nova. Só leitura: nada é gravado.
  *
@@ -72,6 +89,12 @@ export type ConversaGuiadaProps = {
   onConcluir?: (respostas: Record<string, string>) => void;
   /** As ações do fim, desenhadas por quem monta. */
   renderAcoesFinais?: (acoes: AcaoFinal[]) => ReactNode;
+  /**
+   * O que entra na conversa logo depois da primeira fala do fim ("Pronto,
+   * recebemos…") e antes das seguintes, que dizem o que acontece agora: é
+   * onde a devolutiva pessoal cabe. Só depois do aceite.
+   */
+  renderFim?: (respostas: Record<string, string>) => ReactNode;
   /**
    * Verdadeiro quando a conversa recomeça por um toque da pessoa ("Responder
    * de novo"): o botão que ela tocou some, e o foco precisa de um lugar para
@@ -114,6 +137,7 @@ export function ConversaGuiada({
   onPrimeiraResposta,
   onConcluir,
   renderAcoesFinais,
+  renderFim,
   focarAoAbrir = false,
   rascunhoChave
 }: ConversaGuiadaProps) {
@@ -129,7 +153,9 @@ export function ConversaGuiada({
 
   const fimRef = useRef<HTMLDivElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
-  const primeiraOpcaoRef = useRef<HTMLButtonElement>(null);
+  // O grupo de resposta do rodapé: botões ou régua. O foco vai para o
+  // primeiro botão que houver nele.
+  const opcoesRef = useRef<HTMLDivElement>(null);
   const acoesRef = useRef<HTMLDivElement>(null);
   const esperaRef = useRef<HTMLParagraphElement>(null);
   const ultimoFaladoRef = useRef(-1);
@@ -170,12 +196,23 @@ export function ConversaGuiada({
     [roteiro]
   );
 
+  // Quem monta troca a função a cada renderização; a retomada acontece uma
+  // vez, no efeito de leitura do navegador, e chama a versão atual.
+  const onPrimeiraRespostaRef = useRef(onPrimeiraResposta);
+  useEffect(() => {
+    onPrimeiraRespostaRef.current = onPrimeiraResposta;
+  });
+
   const aoRetomar = useCallback((rascunho: RascunhoDaConversa) => {
     setEstado(rascunho.estado);
     // Sem isto, as falas já lidas voltariam a entrar uma a uma, com
     // "digitando…" entre elas — a pessoa esperaria de novo o que já leu.
     setRevelados(rascunho.estado.historico.length);
     respondeuRef.current = true;
+    // Retomar vale como o primeiro toque: quem monta congela o roteiro aqui.
+    // Sem isto, a última resposta mudava o estado para "já respondeu", o
+    // roteiro trocava no meio e a pessoa nunca via o "Pronto, obrigado".
+    onPrimeiraRespostaRef.current?.();
   }, []);
 
   const { restaurado, gravar, apagar } = useRascunho<RascunhoDaConversa>({
@@ -190,8 +227,12 @@ export function ConversaGuiada({
     if (!rascunhoChave || !restaurado) return;
     if (estado.encerrada || estado.aceite !== 'aceito') {
       // O fim apaga o rascunho: o que valia como "continue de onde parou" já
-      // virou resposta gravada.
-      if (estado.encerrada) apagar();
+      // virou resposta gravada. Só o fim a que a pessoa chegou tocando: a
+      // base da demonstração chega do navegador depois da primeira
+      // renderização, e nesse instante um convite reenviado ao vivo ainda
+      // parece vencido — um roteiro só de fim, que apagaria o rascunho de
+      // quem fechou e voltou.
+      if (estado.encerrada && respondeuRef.current) apagar();
       return;
     }
     gravar({ roteiroId, passos: totalDePassos, estado });
@@ -291,7 +332,9 @@ export function ConversaGuiada({
   useEffect(() => {
     if (!respondeuRef.current) return;
     if (alvoDoFoco.startsWith('opcoes')) {
-      primeiraOpcaoRef.current?.focus({ preventScroll: true });
+      opcoesRef.current
+        ?.querySelector<HTMLElement>('button:not([disabled])')
+        ?.focus({ preventScroll: true });
       return;
     }
     if (alvoDoFoco === 'acoes') {
@@ -475,23 +518,50 @@ export function ConversaGuiada({
           className="flex flex-col gap-3 py-4"
         >
           {visiveis.map((mensagem, index) => (
-            <Bolha
-              key={mensagem.id}
-              mensagem={mensagem}
-              textoId={idDoTexto(index)}
-              voz={voz}
-              mutavel={mutavel?.id === mensagem.id && tudoVisivel}
-              onMudar={mudar}
-            />
+            <Fragment key={mensagem.id}>
+              <Bolha
+                mensagem={mensagem}
+                textoId={idDoTexto(index)}
+                voz={voz}
+                mutavel={mutavel?.id === mensagem.id && tudoVisivel}
+                onMudar={mudar}
+              />
+              {/* A devolutiva entra depois da primeira fala do fim e antes
+                  das que dizem o que acontece agora. */}
+              {renderFim &&
+              estado.encerrada &&
+              estado.aceite === 'aceito' &&
+              mensagem.autor === 'iel' &&
+              mensagem.id.endsWith(':f0') ? (
+                <div className="py-1">{renderFim(estado.respostas)}</div>
+              ) : null}
+            </Fragment>
           ))}
         </div>
         {digitando ? <Digitando /> : null}
         <div ref={fimRef} />
       </ScrollArea>
 
-      <footer className="flex shrink-0 flex-col gap-2 border-t pt-3 pb-[max(env(safe-area-inset-bottom),1rem)]">
-        {opcoes.length > 0 ? (
+      {/*
+       * No celular o botão do VLibras pousa no canto de baixo, à direita, a
+       * 12–52px do pé da tela (`iel-theme.css`). Com a régua no rodapé, o
+       * quinto degrau — "Sou eu", justamente o extremo — ficava por baixo
+       * dele; o rodapé reserva essa altura até 640px, e nada acima disso.
+       */}
+      <footer className="flex shrink-0 flex-col gap-2 border-t pt-3 pb-[max(env(safe-area-inset-bottom),3.75rem)] sm:pb-[max(env(safe-area-inset-bottom),1rem)]">
+        {opcoes.length > 0 && passo?.tipo === 'pergunta' && passo.regua ? (
+          <div ref={opcoesRef}>
+            <ReguaDaConversa
+              key={passo.id}
+              nome={`${baseId}-${passo.id}`}
+              regua={passo.regua}
+              labelledBy={idDaPergunta}
+              onResponder={tocar}
+            />
+          </div>
+        ) : opcoes.length > 0 ? (
           <div
+            ref={opcoesRef}
             role="group"
             aria-labelledby={idDaPergunta}
             aria-label={idDaPergunta ? undefined : 'Escolha uma resposta'}
@@ -500,7 +570,6 @@ export function ConversaGuiada({
             {opcoes.map((opcao, index) => (
               <Fragment key={opcao.id}>
                 <Button
-                  ref={index === 0 ? primeiraOpcaoRef : undefined}
                   type="button"
                   variant="outline"
                   aria-describedby={`${baseId}-opcao-${index}`}
@@ -574,6 +643,7 @@ function Bolha({
             {mensagem.apoio}
           </p>
         ) : null}
+        {mensagem.original ? <FraseOriginal texto={mensagem.original} /> : null}
       </div>
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
         {/* A hora é só visual: lida a cada fala nova, ela atrasaria a
@@ -627,6 +697,55 @@ function Bolha({
           </Button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * A régua no rodapé da conversa: um toque responde.
+ *
+ * Tem estado próprio (o degrau tocado) e é remontada a cada pergunta pela
+ * `key`, então uma espera pendente nunca responde a frase seguinte. Pelo
+ * teclado a seleção não avança sozinha — as setas passariam por três
+ * degraus até parar no certo —, e um botão "Confirmar" aparece para fechar
+ * a resposta; Enter no degrau faz o mesmo.
+ */
+function ReguaDaConversa({
+  nome,
+  regua,
+  labelledBy,
+  onResponder
+}: {
+  nome: string;
+  regua: ReguaDoPasso;
+  labelledBy?: string;
+  onResponder: (opcaoId: string) => void;
+}) {
+  const [valor, setValor] = useState<ValorDaEscala | null>(null);
+  const [origem, setOrigem] = useState<OrigemDaResposta | null>(null);
+  return (
+    <div className="flex flex-col gap-2">
+      <ReguaDeConcordancia
+        nome={nome}
+        valor={valor}
+        rotulos={regua.rotulos}
+        tom={regua.tom}
+        aria-labelledby={labelledBy}
+        onChange={(escolhido, como) => {
+          setValor(escolhido);
+          setOrigem(como);
+        }}
+        onConfirmar={(escolhido) => onResponder(String(escolhido))}
+      />
+      {valor !== null && origem === 'teclado' ? (
+        <Button
+          type="button"
+          className="h-12 w-full text-[15px]"
+          onClick={() => onResponder(String(valor))}
+        >
+          Confirmar resposta
+        </Button>
+      ) : null}
     </div>
   );
 }

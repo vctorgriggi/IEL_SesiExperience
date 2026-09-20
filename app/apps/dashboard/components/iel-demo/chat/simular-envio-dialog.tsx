@@ -49,6 +49,12 @@ export type SimularEnvioDialogProps = {
   /** Caminho (`/candidatura/...`, `/consulta/...`) ou URL completa do link que a pessoa recebe. */
   link: string;
   contexto: SimularEnvioContexto;
+  /**
+   * A mensagem inteira, já com link e prazo, quando ela vem de fora — do
+   * rascunho do Mind (`mensagens/mensagem-do-mind.tsx`). Com ela, o diálogo
+   * mostra esse texto no lugar do genérico, nos dois canais.
+   */
+  textoPronto?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
@@ -136,6 +142,7 @@ export function SimularEnvioDialog({
   destinatario,
   link,
   contexto,
+  textoPronto,
   open,
   onOpenChange
 }: SimularEnvioDialogProps) {
@@ -146,8 +153,15 @@ export function SimularEnvioDialog({
   const url = urlCompleta(link);
   const prazo = PRAZO[destinatario];
 
-  const textoParaCopiar =
-    canal === 'whatsapp'
+  // O texto pronto já traz link e prazo no corpo: nada é acrescentado.
+  const paragrafosProntos = textoPronto
+    ?.split(/\n{2,}/)
+    .map((paragrafo) => paragrafo.trim())
+    .filter(Boolean);
+
+  const textoParaCopiar = paragrafosProntos
+    ? paragrafosProntos.join('\n\n')
+    : canal === 'whatsapp'
       ? `${mensagem.whatsapp}\n\n${url}\n\n${prazo}`
       : [
           `Assunto: ${mensagem.assunto}`,
@@ -215,11 +229,24 @@ export function SimularEnvioDialog({
               </div>
               <div className="flex flex-1 flex-col gap-2 bg-secondary/60 p-3">
                 <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-tl-none border bg-background p-2.5 text-xs leading-relaxed shadow-xs">
-                  <p>{mensagem.whatsapp}</p>
-                  <p className="break-all font-medium text-primary underline underline-offset-2">
-                    {url}
-                  </p>
-                  <p className="text-muted-foreground">{prazo}</p>
+                  {paragrafosProntos ? (
+                    paragrafosProntos.map((paragrafo, indice) => (
+                      <p
+                        key={`${indice}-${paragrafo.slice(0, 16)}`}
+                        className="break-words whitespace-pre-wrap"
+                      >
+                        {paragrafo}
+                      </p>
+                    ))
+                  ) : (
+                    <>
+                      <p>{mensagem.whatsapp}</p>
+                      <p className="break-all font-medium text-primary underline underline-offset-2">
+                        {url}
+                      </p>
+                      <p className="text-muted-foreground">{prazo}</p>
+                    </>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -236,13 +263,26 @@ export function SimularEnvioDialog({
                 </span>
               </div>
               <div className="flex flex-1 flex-col gap-2 p-3 text-xs leading-relaxed">
-                {mensagem.email.map((paragrafo) => (
-                  <p key={paragrafo}>{paragrafo}</p>
-                ))}
-                <p className="break-all font-medium text-primary underline underline-offset-2">
-                  {url}
-                </p>
-                <p className="text-muted-foreground">{prazo}</p>
+                {paragrafosProntos ? (
+                  paragrafosProntos.map((paragrafo, indice) => (
+                    <p
+                      key={`${indice}-${paragrafo.slice(0, 16)}`}
+                      className="break-words whitespace-pre-wrap"
+                    >
+                      {paragrafo}
+                    </p>
+                  ))
+                ) : (
+                  <>
+                    {mensagem.email.map((paragrafo) => (
+                      <p key={paragrafo}>{paragrafo}</p>
+                    ))}
+                    <p className="break-all font-medium text-primary underline underline-offset-2">
+                      {url}
+                    </p>
+                    <p className="text-muted-foreground">{prazo}</p>
+                  </>
+                )}
                 <p className="text-muted-foreground">{REMETENTE}</p>
               </div>
             </TabsContent>

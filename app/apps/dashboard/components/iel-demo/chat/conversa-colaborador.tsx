@@ -15,6 +15,7 @@ import { nowIso } from '@/features/iel-demo/state/storage';
 
 import { Badge } from '@workspace/ui/shadcn/badge';
 
+import { LeituraPessoal } from '../shared/leitura-pessoal';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
 import { useMontado } from './use-voz';
 
@@ -60,6 +61,18 @@ export function ConversaColaborador({ token }: { token: string }) {
         ) : null
       }
       onPrimeiraResposta={() => setTravado(convite)}
+      // A devolutiva, sem nome: só o que a pessoa acabou de responder.
+      renderFim={(respostas) => {
+        if (!convite) return null;
+        const answers = respostasDoColaborador(respostas, convite);
+        if (!answers) return null;
+        return (
+          <LeituraPessoal
+            papel="colaborador"
+            respostas={answers}
+          />
+        );
+      }}
       onConcluir={(respostas) => {
         if (!convite) return;
         const answers = respostasDoColaborador(respostas, convite);

@@ -12,6 +12,7 @@ import {
   IconChevronsRight,
   IconColumns3,
   IconDotsVertical,
+  IconMessageCircle,
   IconSearch
 } from '@tabler/icons-react';
 
@@ -130,6 +131,12 @@ export type CandidatesTableProps = {
   onOpenPerson: (entry: JobRankingEntry) => void;
   onAskPerson: (entry: JobRankingEntry) => void;
   /**
+   * "Mensagem do Mind": o rascunho de WhatsApp para esta pessoa, na etapa
+   * em que ela está. Opcional porque a tabela também serve a telas que não
+   * mandam mensagem.
+   */
+  onMessagePerson?: (entry: JobRankingEntry) => void;
+  /**
    * Aba controlada por fora: o cartão "Resgate" da vaga abre esta tabela já
    * na aba Resgate. Sem ela, a tabela guarda a própria aba.
    */
@@ -156,6 +163,7 @@ export function CandidatesTable({
   onToggleComparison,
   onOpenPerson,
   onAskPerson,
+  onMessagePerson,
   tab,
   onTabChange
 }: CandidatesTableProps) {
@@ -611,6 +619,14 @@ export function CandidatesTable({
                           <DropdownMenuItem onSelect={() => onAskPerson(entry)}>
                             {COPY.questions.ask}
                           </DropdownMenuItem>
+                          {onMessagePerson ? (
+                            <DropdownMenuItem
+                              onSelect={() => onMessagePerson(entry)}
+                            >
+                              <IconMessageCircle aria-hidden="true" />
+                              Mensagem do Mind
+                            </DropdownMenuItem>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
