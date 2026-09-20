@@ -14,8 +14,14 @@
 
 import type { TablerIcon } from '@tabler/icons-react';
 
-/** Lado em que o balão se abre, quando o espaço permite. */
-export type LadoDoPasso = 'top' | 'right' | 'bottom' | 'left' | 'over';
+/**
+ * Lado em que o balão se abre, quando o espaço permite.
+ *
+ * São os quatro lados do `Side` do driver.js, e nada além: o que for
+ * acrescentado aqui precisa existir lá, ou o `paraDriveStep` deixa de
+ * compilar.
+ */
+export type LadoDoPasso = 'top' | 'right' | 'bottom' | 'left';
 
 /** Alinhamento do balão em relação ao alvo. */
 export type AlinhamentoDoPasso = 'start' | 'center' | 'end';
