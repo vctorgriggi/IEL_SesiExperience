@@ -108,7 +108,7 @@ export function ReguaDeConcordancia({
   return (
     <div className="flex flex-col">
       <RadioGroup
-        className="grid grid-cols-5 gap-1.5 max-[359px]:grid-cols-1"
+        className="grid grid-cols-5 gap-2 sm:gap-2.5 max-[420px]:grid-cols-1"
         aria-labelledby={labelledBy}
         aria-describedby={[describedBy, dicaId].filter(Boolean).join(' ')}
         value={valor === null ? '' : String(valor)}
@@ -148,30 +148,28 @@ export function ReguaDeConcordancia({
                 }, 300);
               }}
               className={cn(
-                // O alvo inteiro é o degrau; o botão do Radix fica invisível
-                // dentro dele e o anel de foco aparece no degrau.
-                'relative flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl border bg-background px-1 py-2 text-center text-[12px] font-medium leading-tight transition-colors select-none',
+                'group relative flex min-h-[84px] sm:min-h-[96px] cursor-pointer flex-col items-center justify-between rounded-2xl border border-foreground/15 bg-card p-2 sm:p-3 text-center text-[12px] sm:text-[13px] font-medium leading-tight shadow-2xs transition-all duration-200 select-none',
                 'has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-background',
-                'max-[359px]:min-h-14 max-[359px]:flex-row max-[359px]:justify-start max-[359px]:gap-2.5 max-[359px]:px-4 max-[359px]:text-left max-[359px]:text-[15px]',
+                'max-[420px]:min-h-14 max-[420px]:flex-row max-[420px]:justify-between max-[420px]:gap-3 max-[420px]:px-4 max-[420px]:text-left max-[420px]:text-[14px]',
                 // Os extremos pesam mais: são as âncoras da escala.
                 extremo
-                  ? 'border-foreground/40 font-semibold text-foreground'
-                  : 'text-foreground/85',
+                  ? 'border-foreground/30 font-semibold text-foreground'
+                  : 'text-foreground/90',
                 selecionado
-                  ? cn(ICONE_TINGIDO[tom], LADO[tom].borda, 'font-semibold')
-                  : 'hover:bg-muted/40'
+                  ? cn(
+                      ICONE_TINGIDO[tom],
+                      LADO[tom].borda,
+                      'font-bold shadow-lg shadow-black/10 scale-[1.03] z-10'
+                    )
+                  : 'hover:border-foreground/40 hover:bg-muted/50 hover:-translate-y-0.5 hover:shadow-md'
               )}
             >
               <RadioGroupItem
                 id={id}
                 value={String(degrau.valor)}
                 className="sr-only"
-                // O número fica só para o leitor de tela: na tela, quem responde vê a
-                // palavra — número em cima da palavra lia como nota de 1 a 5.
                 aria-label={`${degrau.rotulo}, ${degrau.valor} de ${ultimo}`}
                 onKeyDown={(evento) => {
-                  // Enter confirma o degrau focado: é o único jeito de avançar
-                  // pelo teclado sem depender do botão de seguir.
                   if (evento.key !== 'Enter') return;
                   const focado = degrau.valor;
                   if (valor !== focado) onChange(focado, 'teclado');
@@ -179,14 +177,44 @@ export function ReguaDeConcordancia({
                   onConfirmarRef.current?.(focado);
                 }}
               />
-              {/* Só a palavra: o número em cima dela lia como nota de 1 a 5.
-                O leitor de tela continua ouvindo "rótulo, N de 5". */}
+              {/* Pontinhos indicadores do grau na escala (1 a 5) */}
+              <div
+                className="flex items-center gap-1 max-[420px]:order-last"
+                aria-hidden="true"
+              >
+                {Array.from({ length: ultimo }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      'size-1.5 rounded-full transition-all duration-200',
+                      i <= indice
+                        ? selecionado
+                          ? 'bg-white scale-110'
+                          : 'bg-foreground/40'
+                        : selecionado
+                          ? 'bg-white/30'
+                          : 'bg-foreground/15'
+                    )}
+                  />
+                ))}
+              </div>
+
+              {/* Rótulo da régua */}
               <span
                 aria-hidden="true"
-                className="whitespace-normal [text-wrap:balance]"
+                className={cn(
+                  'whitespace-normal [text-wrap:balance] transition-colors py-0.5',
+                  selecionado ? 'text-white' : ''
+                )}
               >
                 {degrau.rotulo}
               </span>
+
+              {/* Espaçador sutil para alinhar os textos na vertical */}
+              <div
+                className="hidden sm:block h-1 w-full"
+                aria-hidden="true"
+              />
             </Label>
           );
         })}
