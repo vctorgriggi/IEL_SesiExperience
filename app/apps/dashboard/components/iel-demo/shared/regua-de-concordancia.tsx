@@ -177,27 +177,34 @@ export function ReguaDeConcordancia({
                   onConfirmarRef.current?.(focado);
                 }}
               />
-              {/* Pontinhos indicadores do grau na escala (1 a 5) */}
-              <div
-                className="flex items-center gap-1 max-[420px]:order-last"
+              {/*
+                O número do degrau, escrito.
+
+                Estava aqui uma fileira de pontinhos preenchidos até a posição
+                do degrau — a mesma informação, em código que só quem enxerga
+                a régua inteira decifra. O número diz a posição sem pedir
+                comparação, e é o que a voz dita ("toque no número. Um: nada a
+                ver comigo"): quem ouviu "três" acha o três na tela sem ler
+                "mais ou menos".
+
+                Ele já esteve na régua antes e saiu, porque número em cima da
+                palavra lia como nota de 1 a 5 — "tirei 2 nesta pergunta". A
+                pastilha é o que separa uma coisa da outra: pequena, redonda e
+                em tom de apoio, ela lê como etiqueta de posição, e não como
+                placar. O leitor de tela continua ouvindo "rótulo, N de 5" e
+                não lê a pastilha duas vezes.
+              */}
+              <span
                 aria-hidden="true"
+                className={cn(
+                  'flex size-6 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold tabular-nums transition-colors',
+                  selecionado
+                    ? 'bg-white/25 text-white'
+                    : 'bg-muted text-muted-foreground'
+                )}
               >
-                {Array.from({ length: ultimo }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      'size-1.5 rounded-full transition-all duration-200',
-                      i <= indice
-                        ? selecionado
-                          ? 'bg-white scale-110'
-                          : 'bg-foreground/40'
-                        : selecionado
-                          ? 'bg-white/30'
-                          : 'bg-foreground/15'
-                    )}
-                  />
-                ))}
-              </div>
+                {degrau.valor}
+              </span>
 
               {/* Rótulo da régua */}
               <span

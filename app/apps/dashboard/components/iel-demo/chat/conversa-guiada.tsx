@@ -40,7 +40,7 @@ import {
   type OrigemDaResposta
 } from '../shared/regua-de-concordancia';
 import { useRascunho } from '../shared/use-rascunho';
-import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
+import { useMovimentoReduzido, useVoz, type Voz } from '../shared/use-voz';
 
 /**
  * A conversa guiada no celular (C2): o IEL fala, a pessoa toca.

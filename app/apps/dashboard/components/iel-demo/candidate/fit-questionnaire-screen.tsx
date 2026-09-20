@@ -66,6 +66,7 @@ import {
   TamanhoDaTarefa
 } from '../shared/fluxo-por-link';
 import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { falaDaFrase, OuvirAFrase } from '../shared/ouvir-a-frase';
 import { ReguaDeConcordancia } from '../shared/regua-de-concordancia';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 import { useRascunho } from '../shared/use-rascunho';
@@ -998,6 +999,23 @@ export function FitQuestionnaireScreen({
           />
         </div>
 
+        {/*
+          O botão de ouvir vem antes da régua, e não depois.
+
+          Quem depende dele não vai varrer a tela atrás de um controle: ele
+          precisa estar no caminho de leitura, entre a frase e a resposta, no
+          instante em que a pessoa trava. A largura inteira é de propósito —
+          é o mesmo alvo dos degraus, não um ícone de canto.
+        */}
+        <OuvirAFrase
+          id={question.itemId}
+          texto={falaDaFrase({
+            cena: question.item.cena,
+            rotulos: ROTULOS_DA_REGUA.candidato
+          })}
+          className="h-12 w-full justify-center text-[15px]"
+        />
+
         <div className="pt-2">
           <ReguaDeConcordancia
             nome={question.itemId}
@@ -1008,7 +1026,10 @@ export function FitQuestionnaireScreen({
             aria-describedby="fit-pergunta-dica"
             onChange={(valor) => {
               setFaltando(null);
-              setAnswers((current) => ({ ...current, [question.itemId]: valor }));
+              setAnswers((current) => ({
+                ...current,
+                [question.itemId]: valor
+              }));
             }}
           />
         </div>
