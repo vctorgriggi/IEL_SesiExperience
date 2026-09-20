@@ -255,6 +255,11 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
       cultureMap: resolve('/mapa-de-cultura'),
       /** Integrações: o que entra, o que sai e o que fica de fora. */
       dataSources: resolve('/fontes-de-dados'),
+      /**
+       * Instrumento: as 52 frases do cliente, visíveis e ajustáveis pela
+       * analista (menu Sistema).
+       */
+      instrument: { index: resolve('/instrumento') },
       /** Comunicação, questionário e consentimento dos candidatos. */
       candidates: resolve('/candidatos'),
       /** Análises com dado agregado. */

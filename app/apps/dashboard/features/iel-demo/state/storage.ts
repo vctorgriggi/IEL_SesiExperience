@@ -80,6 +80,12 @@ export type PersistedState = {
   importedTalents: DemoState['importedTalents'];
   /** Importações já aplicadas, com a impressão digital de cada planilha. */
   spreadsheetImports: DemoState['spreadsheetImports'];
+  /**
+   * Ajustes da analista no instrumento (frases desligadas, `discrimina`
+   * sobrescrito). É pequeno e já é um delta por natureza: vazio significa o
+   * instrumento do cliente. Ausente em gravações anteriores a este campo.
+   */
+  instrumento?: DemoState['instrumento'];
 };
 
 type Baseline = {
@@ -199,7 +205,8 @@ export function toPersisted(state: DemoState): PersistedState {
     changedCultureAnswers,
     changedCultureInvites,
     importedTalents: state.importedTalents ?? [],
-    spreadsheetImports: state.spreadsheetImports ?? []
+    spreadsheetImports: state.spreadsheetImports ?? [],
+    instrumento: state.instrumento
   };
 }
 
@@ -283,6 +290,7 @@ export function fromPersisted(persisted: PersistedState): DemoState {
     importedTalents: persisted.importedTalents ?? state.importedTalents,
     spreadsheetImports:
       persisted.spreadsheetImports ?? state.spreadsheetImports,
+    instrumento: persisted.instrumento ?? state.instrumento,
     analysis: { ...state.analysis, ...(persisted.changedAnalysis ?? {}) },
     evidences: [...state.evidences, ...(persisted.addedEvidences ?? [])],
     // A resposta gravada vence a da base: refazer o questionário substitui,

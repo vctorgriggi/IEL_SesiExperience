@@ -3,7 +3,10 @@ import type { CultureRespondent } from './analysis/culture';
 import type { CultureInviteRole } from './analysis/culture-invites';
 import type { ReferralOutcome } from './analysis/devolutiva';
 import type { FitAxisId } from './analysis/fit-axes';
-import type { ValorDaEscala } from './analysis/instrumento';
+import type {
+  ConfiguracaoDoInstrumento,
+  ValorDaEscala
+} from './analysis/instrumento';
 
 /**
  * Domínio da Central de Seleção IEL (protótipo).
@@ -739,6 +742,15 @@ export type DemoState = {
    * equivale a "ninguém respondeu ainda".
    */
   checkIns?: CheckIn[];
+  /**
+   * O que a analista ajustou no instrumento pela tela Instrumento: frases
+   * desligadas e `discrimina` sobrescrito (`analysis/instrumento.ts`).
+   *
+   * Opcional pelo mesmo motivo de `fitResponses`: estado gravado antes deste
+   * campo hidrata sem ele, e ausente equivale ao instrumento do cliente como
+   * está no código. Não muda `DEMO_SCHEMA_VERSION`.
+   */
+  instrumento?: ConfiguracaoDoInstrumento;
   clarifications: Clarification[];
   referrals: Referral[];
   history: HistoryEvent[];

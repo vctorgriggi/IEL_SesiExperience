@@ -53,6 +53,8 @@ data de **Última atualização** no cabeçalho.
 | 26  | [Tour guiado](26-tour-guiado.md)                                   | diálogo do cabeçalho                | Analista IEL                    |
 | 27  | [Ações rápidas](27-acoes-rapidas.md)                               | botão fixo do canto                 | Analista IEL                    |
 | 28  | [Notificações](28-notificacoes.md)                                 | sino do cabeçalho                   | Analista IEL                    |
+| 29  | [Instrumento](29-instrumento.md)                                   | `/instrumento`                      | Analista IEL                    |
+| 30  | [Questionários](30-questionarios.md)                               | `/candidatos`                       | Analista IEL                    |
 
 ## Modelo para uma tela nova
 

@@ -53,6 +53,7 @@
     "./shadcn/sidebar": "./src/components/shadcn/sidebar.tsx",
     "./shadcn/skeleton": "./src/components/shadcn/skeleton.tsx",
     "./shadcn/table": "./src/components/shadcn/table.tsx",
+    "./shadcn/switch": "./src/components/shadcn/switch.tsx",
     "./shadcn/tabs": "./src/components/shadcn/tabs.tsx",
     "./shadcn/tooltip": "./src/components/shadcn/tooltip.tsx",
     "./sidebar": "./src/components/layout/sidebar/index.ts",
