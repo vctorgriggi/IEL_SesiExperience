@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url);
+// `URL.pathname` devolve `/C:/...` no Windows, e o `join` com essa barra à
+// frente produzia `C:\C:\...`. `fileURLToPath` é quem converte a URL para o
+// caminho do sistema — nos dois sistemas.
+const root = fileURLToPath(new URL('..', import.meta.url));
 const files = [
   'src/components/actions/button.tsx',
   'src/components/forms/native-select.tsx',
@@ -14,21 +18,27 @@ const files = [
   'src/components/pricing/pricing-grid.tsx'
 ];
 
+/*
+ * Sem a flag `g`: `RegExp.test` guarda `lastIndex` entre chamadas quando ela
+ * está ligada, e como os mesmos objetos são reusados a cada arquivo, o
+ * segundo arquivo começava a busca no meio e deixava passar violação. Aqui
+ * só interessa "casou ou não", que é o que `test` sem `g` responde.
+ */
 const bannedPatterns = [
-  /bg-white/g,
-  /text-neutral-/g,
-  /bg-neutral-/g,
-  /border-neutral-/g,
-  /#[0-9a-fA-F]{3,8}/g,
-  /style=\{\{/g,
-  /font-family/g,
-  /shadow-\[/g
+  /bg-white/,
+  /text-neutral-/,
+  /bg-neutral-/,
+  /border-neutral-/,
+  /#[0-9a-fA-F]{3,8}/,
+  /style=\{\{/,
+  /font-family/,
+  /shadow-\[/
 ];
 
 const violations = [];
 
 for (const file of files) {
-  const content = readFileSync(join(root.pathname, file), 'utf8');
+  const content = readFileSync(join(root, file), 'utf8');
   for (const pattern of bannedPatterns) {
     if (pattern.test(content)) {
       violations.push(`${file}: matched ${pattern}`);
