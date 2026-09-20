@@ -19,7 +19,6 @@ import {
   faixaDeAderencia,
   temBaseParaRanquear
 } from '@/features/iel-demo/analysis/mapa-cultural';
-import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -27,9 +26,6 @@ import {
   getCompanyCultureAnswers,
   getCultureFit,
   getCultureMapPoints,
-  getTalent,
-  getVisibleCompanies,
-  getVisibleTalentIds,
   type CultureMapPoint
 } from '@/features/iel-demo/state/selectors';
 import {
@@ -42,7 +38,7 @@ import {
   IconMessageCircleQuestion,
   IconPhone,
   IconPlus,
-  IconSearch,
+  IconSelector,
   IconSend,
   IconUserSearch,
   type TablerIcon
@@ -51,7 +47,14 @@ import {
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
-import { Input } from '@workspace/ui/shadcn/input';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@workspace/ui/shadcn/command';
 import { ScrollArea } from '@workspace/ui/shadcn/scroll-area';
 import {
   Sheet,
@@ -262,7 +265,7 @@ export function AcoesRapidas() {
        */}
       <div
         ref={raizRef}
-        className="fixed right-16 bottom-4 z-40 flex flex-col items-end gap-2 sm:right-4"
+        className="fixed right-20 bottom-4 z-40 flex flex-col items-end gap-2 sm:right-6"
       >
         {/*
          * As ações saem de baixo para cima, e a lista é escrita na ordem
@@ -446,123 +449,154 @@ function ordenarEncaixes(lista: Encaixe[]): Encaixe[] {
   });
 }
 
+/** Uma linha da lista de um seletor. */
+type Opcao = { id: string; nome: string; detalhe: string; busca: string };
+
 /**
- * A busca que abre as duas abas de cultura.
+ * O seletor de alvo das abas de cultura: um nome escrito, que abre uma busca.
  *
- * Nenhuma das duas mede coisa nenhuma sem um alvo — a cultura é de *uma*
- * pessoa ou de *uma* empresa. Esconder essa escolha num seletor dentro do
- * botão do canto faria o leque prometer uma leitura que ele não tem ainda.
+ * Antes eram dois passos em branco — a aba abria numa caixa de busca vazia e
+ * não dizia nada até alguém digitar. Agora ela abre já medindo um par, e
+ * trocar qualquer um dos lados é um clique no próprio nome.
+ *
+ * O filtro é feito aqui, e não pelo `cmdk` (`shouldFilter={false}`), pelo
+ * mesmo motivo da busca global: entregar 2.500 empresas ao componente para
+ * ele esconder quase todas custaria cada tecla. A lista mostra no máximo oito
+ * e diz quantas havia.
  */
-function EscolhaDoAlvo({
-  itens,
+function SeletorDeAlvo({
   rotulo,
+  alvo,
+  opcoes,
   dica,
   vazio,
-  aoEscolher
+  aoEscolher,
+  className
 }: {
-  itens: { id: string; nome: string; detalhe: string; busca: string }[];
-  /** Nome do campo para quem usa leitor de tela. */
+  /** O que este lado é, para quem usa leitor de tela: "Pessoa", "Empresa". */
   rotulo: string;
+  alvo: Alvo;
+  opcoes: Opcao[];
   dica: string;
-  /** O que dizer quando a busca não acha ninguém. */
   vazio: string;
   aoEscolher: (alvo: Alvo) => void;
+  className?: string;
 }) {
+  const [aberto, setAberto] = useState(false);
   const [consulta, setConsulta] = useState('');
   const termo = normalizarBusca(consulta);
 
   const achados = useMemo(() => {
-    if (!termo) return [];
-    return itens
-      .filter((item) => item.busca.includes(termo))
-      .slice(0, RESULTADOS_NA_BUSCA);
-  }, [itens, termo]);
+    const todos = termo
+      ? opcoes.filter((opcao) => opcao.busca.includes(termo))
+      : opcoes;
+    return { itens: todos.slice(0, RESULTADOS_NA_BUSCA), total: todos.length };
+  }, [opcoes, termo]);
+
+  // Fechar limpa a busca: reabrir no meio do que se digitou antes esconderia
+  // a lista inteira sem dizer por quê.
+  const fechar = () => {
+    setAberto(false);
+    setConsulta('');
+  };
+
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        className={cn(
+          'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
+          className
+        )}
+        onClick={() => setAberto(true)}
+        aria-label={`${rotulo}: ${alvo.nome}. Trocar`}
+      >
+        <span className="min-w-0 flex-1 truncate">{alvo.nome}</span>
+        <IconSelector
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+      </button>
+    );
+  }
 
   return (
-    <>
-      <div className="border-b p-4">
-        <div className="relative">
-          <IconSearch
-            aria-hidden="true"
-            className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            value={consulta}
-            onChange={(evento) => setConsulta(evento.target.value)}
-            placeholder={dica}
-            aria-label={rotulo}
-            autoComplete="off"
-            className="pl-9"
-          />
-        </div>
-      </div>
-      <ScrollArea className="flex-1">
-        {!termo ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            Escreva o nome para começar.
-          </p>
-        ) : achados.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {vazio}
-          </p>
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {achados.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer flex-col items-start gap-0.5 px-4 py-3 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                  onClick={() => aoEscolher({ id: item.id, nome: item.nome })}
-                >
-                  <span className="text-sm font-medium">{item.nome}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {item.detalhe}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </ScrollArea>
-    </>
+    <Command
+      label={dica}
+      shouldFilter={false}
+      className="rounded-md border bg-popover"
+    >
+      <CommandInput
+        placeholder={dica}
+        value={consulta}
+        onValueChange={setConsulta}
+        autoFocus
+        onKeyDown={(evento) => {
+          // Esc fecha só o seletor. Sem isto ele sobe para o `Sheet` e a aba
+          // inteira fecha junto, levando embora o par que já estava montado.
+          if (evento.key === 'Escape') {
+            evento.preventDefault();
+            evento.stopPropagation();
+            fechar();
+          }
+        }}
+      />
+      <CommandList className="max-h-56">
+        <CommandEmpty>{vazio}</CommandEmpty>
+        <CommandGroup
+          heading={
+            achados.total > achados.itens.length
+              ? `${rotulo} · ${achados.itens.length} de ${achados.total}`
+              : rotulo
+          }
+        >
+          {achados.itens.map((opcao) => (
+            <CommandItem
+              key={opcao.id}
+              value={opcao.id}
+              onSelect={() => {
+                aoEscolher({ id: opcao.id, nome: opcao.nome });
+                fechar();
+              }}
+            >
+              <IconCheck
+                aria-hidden="true"
+                className={cn(
+                  'size-4 shrink-0',
+                  opcao.id === alvo.id ? 'opacity-100' : 'opacity-0'
+                )}
+              />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{opcao.nome}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {opcao.detalhe}
+                </span>
+              </span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
   );
 }
 
 /** O ranking curto, igual nas duas direções: nome, barra, faixa. */
 function RankingDeEncaixes({
   encaixes,
-  cabecalho,
   vazio,
   antes,
-  rodape,
-  aoTrocar,
-  rotuloDaTroca
+  rodape
 }: {
   encaixes: Encaixe[];
-  cabecalho: string;
   vazio: string | null;
   /** O que vem antes da lista, dentro da rolagem — o mapa, quando há um. */
   antes?: ReactNode;
   rodape: ReactNode;
-  aoTrocar: () => void;
-  rotuloDaTroca: string;
 }) {
+  // Quem é o alvo já está escrito no seletor, logo acima da rolagem: repetir
+  // o nome aqui seria o mesmo dado duas vezes na mesma dobra.
   return (
     <>
-      <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
-        <span className="min-w-0 truncate text-sm font-medium">
-          {cabecalho}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          onClick={aoTrocar}
-        >
-          {rotuloDaTroca}
-        </Button>
-      </div>
-
       <ScrollArea className="flex-1">
         {/* O mapa vem antes da lista e fica mesmo quando a lista não tem o
             que mostrar: ele é a leitura, a lista é o recorte dela. */}
@@ -637,12 +671,42 @@ function RankingDeEncaixes({
 }
 
 /**
+ * Monta a lista de um seletor a partir dos pontos do mapa.
+ *
+ * Os índices de `getCultureMapPoints` já trazem só quem tem posição — quem
+ * respondeu o questionário, do lado das pessoas; quem fechou o perfil, do
+ * lado das empresas. É exatamente o recorte que o seletor deve oferecer:
+ * escolher alguém sem posição abriria a aba num aviso de que não há o que
+ * medir, e o seletor teria mandado a pessoa para um beco.
+ */
+function opcoesDosPontos(pontos: CultureMapPoint[]): Opcao[] {
+  return pontos.map((ponto) => ({
+    id: ponto.id,
+    nome: ponto.name,
+    detalhe: ponto.detail,
+    busca: normalizarBusca(ponto.name)
+  }));
+}
+
+/** A primeira opção da lista, para a aba abrir já medindo alguma coisa. */
+function primeiraOpcao(opcoes: Opcao[]): Alvo | null {
+  const primeira = opcoes[0];
+  return primeira ? { id: primeira.id, nome: primeira.nome } : null;
+}
+
+/**
  * A análise de cultura de um par: uma pessoa e uma empresa.
  *
- * É a leitura individual — não um ranking. A analista escolhe quem e onde, e
- * a aba responde as duas coisas que a conversa com a empresa pede: o número
- * (a aderência, pela mesma `getCultureFit` do perfil) e o desenho (os dois
- * pontos no plano cultural, com a linha entre eles).
+ * É a leitura individual — não um ranking. A aba abre já com um par
+ * escolhido e mede as duas coisas que a conversa com a empresa pede: o
+ * número (a aderência, pela mesma `getCultureFit` do perfil) e o desenho (os
+ * dois pontos no plano cultural, com a linha entre eles).
+ *
+ * Abrir já medindo é decisão, não conveniência: a versão anterior abria em
+ * dois passos de busca vazios e não dizia nada até alguém digitar duas
+ * vezes. Quem chega aqui quer ver a leitura e trocar um dos lados, não
+ * montar um par do zero — então o par vem montado e cada nome é o botão que
+ * o troca.
  *
  * O mapa aqui é o `PlanoCultural` da aba da empresa, sem cópia, mas em
  * posição absoluta: cada um fica no quadrante que as respostas produzem, e a
@@ -658,56 +722,38 @@ function CulturaSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { state, persona } = useIelDemo();
+  const { state } = useIelDemo();
   const [pessoa, setPessoa] = useState<Alvo | null>(null);
   const [empresa, setEmpresa] = useState<Alvo | null>(null);
 
-  // Fechar e reabrir começa do zero: o par de dez minutos atrás não é a
-  // pergunta de agora.
+  /*
+   * Os índices só são montados com a aba aberta: são 268 pessoas e 2.500
+   * empresas, e normalizar todo nome a cada render da casca seria trabalho
+   * jogado fora em toda tela do produto.
+   */
+  const pessoas = useMemo(
+    () => (open ? opcoesDosPontos(getCultureMapPoints(state, 'talentos')) : []),
+    [open, state]
+  );
+  const empresas = useMemo(
+    () => (open ? opcoesDosPontos(getCultureMapPoints(state, 'empresas')) : []),
+    [open, state]
+  );
+
+  // Abrir escolhe o primeiro par; fechar esquece, porque o par de dez
+  // minutos atrás não é a pergunta de agora.
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setPessoa(primeiraOpcao(pessoas));
+      setEmpresa(primeiraOpcao(empresas));
+    } else {
       setPessoa(null);
       setEmpresa(null);
     }
+    // As listas não mudam com a aba aberta; depender delas aqui desfaria a
+    // escolha da analista a cada mexida no estado da demonstração.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  /*
-   * O mesmo recorte da busca global: o que a persona não pode ver aqui também
-   * não aparece. Os índices só existem com a aba aberta — são 271 pessoas
-   * hoje, mas a base cresce, e normalizar todo nome a cada render da casca
-   * seria trabalho jogado fora em toda tela.
-   */
-  const pessoas = useMemo(() => {
-    if (!open) return [];
-    const lista =
-      persona.kind === 'gestor'
-        ? getVisibleTalentIds(state)
-            .map((id) => getTalent(id, state))
-            .filter((talent) => talent !== null)
-        : [...ALL_TALENTS, ...(state.importedTalents ?? [])];
-    return lista.map((talent) => ({
-      id: talent.id,
-      nome: talent.name,
-      detalhe: talent.city,
-      busca: normalizarBusca(talent.name)
-    }));
-  }, [open, state, persona.kind]);
-
-  const empresas = useMemo(() => {
-    if (!open) return [];
-    return getVisibleCompanies(state).map((company) => ({
-      id: company.id,
-      nome: company.name,
-      detalhe: company.location,
-      busca: normalizarBusca(company.name)
-    }));
-  }, [open, state]);
-
-  const descricao = !pessoa
-    ? 'Escolha a pessoa. Depois a empresa.'
-    : !empresa
-      ? `Agora a empresa para medir ${primeiroNome(pessoa.nome)}.`
-      : `${primeiroNome(pessoa.nome)} e ${empresa.nome}, lado a lado.`;
 
   return (
     <Sheet
@@ -720,53 +766,43 @@ function CulturaSheet({
       >
         <SheetHeader className="border-b">
           <SheetTitle className="text-base">Análise de cultura</SheetTitle>
-          <SheetDescription className="text-xs">{descricao}</SheetDescription>
+          <SheetDescription className="text-xs">
+            Uma pessoa e uma empresa, lado a lado. Clique num nome para trocar.
+          </SheetDescription>
         </SheetHeader>
 
-        {!pessoa ? (
-          <EscolhaDoAlvo
-            itens={pessoas}
-            rotulo="Buscar pessoa pelo nome"
-            dica="Nome da pessoa"
-            vazio="Ninguém com esse nome na base."
-            aoEscolher={setPessoa}
-          />
-        ) : !empresa ? (
+        {pessoa && empresa ? (
           <>
-            {/* O passo 1 continua à vista: quem está sendo medido não pode
-                sumir enquanto se escolhe contra o quê. */}
-            <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
-              <span className="min-w-0 truncate text-sm font-medium">
-                {pessoa.nome}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                onClick={() => setPessoa(null)}
-              >
-                Trocar de pessoa
-              </Button>
+            <div className="flex flex-col gap-1 border-b p-2">
+              <SeletorDeAlvo
+                rotulo="Pessoa"
+                alvo={pessoa}
+                opcoes={pessoas}
+                dica="Buscar pessoa pelo nome"
+                vazio="Ninguém com esse nome respondeu o questionário."
+                aoEscolher={setPessoa}
+                className="text-sm font-medium"
+              />
+              <SeletorDeAlvo
+                rotulo="Empresa"
+                alvo={empresa}
+                opcoes={empresas}
+                dica="Buscar empresa pelo nome"
+                vazio="Nenhuma empresa com esse nome fechou o perfil."
+                aoEscolher={setEmpresa}
+                className="text-sm text-muted-foreground"
+              />
             </div>
-            <EscolhaDoAlvo
-              itens={empresas}
-              rotulo="Buscar empresa pelo nome"
-              dica="Nome da empresa"
-              vazio="Nenhuma empresa com esse nome na carteira."
-              aoEscolher={setEmpresa}
+            <AnaliseDoPar
+              pessoa={pessoa}
+              empresa={empresa}
+              aoSair={() => onOpenChange(false)}
             />
           </>
         ) : (
-          <AnaliseDoPar
-            pessoa={pessoa}
-            empresa={empresa}
-            aoTrocarPessoa={() => {
-              setPessoa(null);
-              setEmpresa(null);
-            }}
-            aoTrocarEmpresa={() => setEmpresa(null)}
-            aoSair={() => onOpenChange(false)}
-          />
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            Ainda não há pessoa e empresa com perfil de cultura para comparar.
+          </p>
         )}
       </SheetContent>
     </Sheet>
@@ -782,14 +818,10 @@ function primeiroNome(nome: string): string {
 function AnaliseDoPar({
   pessoa,
   empresa,
-  aoTrocarPessoa,
-  aoTrocarEmpresa,
   aoSair
 }: {
   pessoa: Alvo;
   empresa: Alvo;
-  aoTrocarPessoa: () => void;
-  aoTrocarEmpresa: () => void;
   aoSair: () => void;
 }) {
   const { state } = useIelDemo();
@@ -850,35 +882,6 @@ function AnaliseDoPar({
 
   return (
     <>
-      <div className="flex flex-col gap-1 border-b px-4 py-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-sm font-medium">
-            {pessoa.nome}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={aoTrocarPessoa}
-          >
-            Trocar
-          </Button>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-sm text-muted-foreground">
-            {empresa.nome}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={aoTrocarEmpresa}
-          >
-            Trocar
-          </Button>
-        </div>
-      </div>
-
       <ScrollArea className="flex-1">
         {/* `falta` já cobre os três casos sem leitura; o `!leitura` aqui é
             para o compilador estreitar o tipo dentro do outro ramo. */}
@@ -1066,21 +1069,24 @@ function MapaSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const { state } = useIelDemo();
-  const [escolhida, setEscolhida] = useState<Alvo | null>(null);
+  const [empresa, setEmpresa] = useState<Alvo | null>(null);
+
+  /*
+   * Só as empresas com perfil fechado: são as que têm posição para ficar no
+   * centro do plano. Oferecer as 2.500 da carteira mandaria a analista para
+   * um aviso de que não há o que medir.
+   */
+  const empresas = useMemo(
+    () => (open ? opcoesDosPontos(getCultureMapPoints(state, 'empresas')) : []),
+    [open, state]
+  );
 
   useEffect(() => {
-    if (!open) setEscolhida(null);
+    setEmpresa(open ? primeiraOpcao(empresas) : null);
+    // A lista não muda com a aba aberta; depender dela aqui desfaria a
+    // escolha da analista a cada mexida no estado da demonstração.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  const empresas = useMemo(() => {
-    if (!open) return [];
-    return getVisibleCompanies(state).map((company) => ({
-      id: company.id,
-      nome: company.name,
-      detalhe: company.location,
-      busca: normalizarBusca(company.name)
-    }));
-  }, [open, state]);
 
   return (
     <Sheet
@@ -1094,26 +1100,33 @@ function MapaSheet({
         <SheetHeader className="border-b">
           <SheetTitle className="text-base">Mapa de cultura</SheetTitle>
           <SheetDescription className="text-xs">
-            {escolhida
-              ? `Quem se encaixa na cultura da ${escolhida.nome}.`
-              : 'Escolha a empresa para ver quem se encaixa na cultura dela.'}
+            Quem da base se encaixa na cultura da empresa. Clique no nome para
+            trocar.
           </SheetDescription>
         </SheetHeader>
 
-        {escolhida ? (
-          <EncaixesDaEmpresa
-            alvo={escolhida}
-            aoTrocar={() => setEscolhida(null)}
-            aoSair={() => onOpenChange(false)}
-          />
+        {empresa ? (
+          <>
+            <div className="border-b p-2">
+              <SeletorDeAlvo
+                rotulo="Empresa"
+                alvo={empresa}
+                opcoes={empresas}
+                dica="Buscar empresa pelo nome"
+                vazio="Nenhuma empresa com esse nome fechou o perfil."
+                aoEscolher={setEmpresa}
+                className="text-sm font-medium"
+              />
+            </div>
+            <EncaixesDaEmpresa
+              alvo={empresa}
+              aoSair={() => onOpenChange(false)}
+            />
+          </>
         ) : (
-          <EscolhaDoAlvo
-            itens={empresas}
-            rotulo="Buscar empresa pelo nome"
-            dica="Nome da empresa"
-            vazio="Nenhuma empresa com esse nome na carteira."
-            aoEscolher={setEscolhida}
-          />
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            Nenhuma empresa fechou o perfil de cultura ainda.
+          </p>
         )}
       </SheetContent>
     </Sheet>
@@ -1123,11 +1136,9 @@ function MapaSheet({
 /** As pessoas que se encaixam na empresa escolhida. */
 function EncaixesDaEmpresa({
   alvo,
-  aoTrocar,
   aoSair
 }: {
   alvo: Alvo;
-  aoTrocar: () => void;
   aoSair: () => void;
 }) {
   const { state } = useIelDemo();
@@ -1220,9 +1231,6 @@ function EncaixesDaEmpresa({
   return (
     <RankingDeEncaixes
       encaixes={encaixes}
-      cabecalho={alvo.nome}
-      rotuloDaTroca="Trocar de empresa"
-      aoTrocar={aoTrocar}
       antes={
         pontoDaEmpresa ? (
           <div className="flex flex-col gap-2 border-b p-4">
