@@ -100,6 +100,15 @@ export function IelDemoProvider({
   const stateRef = useRef(state);
   const sincroniaRef = useRef<Sincronia | null>(null);
   const revisaoInicial = estadoInicial?.revisao ?? 0;
+  /*
+   * O layout é dinâmico (lê `headers()`), então a cada navegação ele lê a
+   * sala de novo e entrega outro `estadoInicial`. Se a revisão inicial
+   * fosse dependência do efeito abaixo, cada troca de tela recriaria a
+   * sincronia e a fila da anterior — com ações ainda não enviadas — seria
+   * descartada. A revisão inicial só importa na primeira montagem; depois
+   * quem manda é o que o servidor devolve.
+   */
+  const revisaoInicialRef = useRef(revisaoInicial);
 
   useEffect(() => {
     stateRef.current = state;
@@ -127,7 +136,7 @@ export function IelDemoProvider({
     if (!compartilhado) return;
     const sincronia = criarSincronia({
       sala,
-      revisaoInicial,
+      revisaoInicial: revisaoInicialRef.current,
       aoReceber: ({ persisted }) => {
         dispatchLocal({
           type: 'hydrate',
@@ -142,7 +151,7 @@ export function IelDemoProvider({
       parar();
       sincroniaRef.current = null;
     };
-  }, [compartilhado, sala, revisaoInicial]);
+  }, [compartilhado, sala]);
 
   const dispatch = useCallback(
     (action: DemoAction) => {

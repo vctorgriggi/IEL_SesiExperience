@@ -166,6 +166,8 @@ export function ReguaDeConcordancia({
                 id={id}
                 value={String(degrau.valor)}
                 className="sr-only"
+                // O número fica só para o leitor de tela: na tela, quem responde vê a
+                // palavra — número em cima da palavra lia como nota de 1 a 5.
                 aria-label={`${degrau.rotulo}, ${degrau.valor} de ${ultimo}`}
                 onKeyDown={(evento) => {
                   // Enter confirma o degrau focado: é o único jeito de avançar
@@ -177,17 +179,8 @@ export function ReguaDeConcordancia({
                   onConfirmarRef.current?.(focado);
                 }}
               />
-              {/* O número ancora a escala para quem lê pouco; a palavra é a
-                resposta. O leitor de tela ouve só "rótulo, N de 5". */}
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'text-[11px] tabular-nums',
-                  selecionado ? 'opacity-90' : 'text-muted-foreground'
-                )}
-              >
-                {degrau.valor}
-              </span>
+              {/* Só a palavra: o número em cima dela lia como nota de 1 a 5.
+                O leitor de tela continua ouvindo "rótulo, N de 5". */}
               <span
                 aria-hidden="true"
                 className="whitespace-normal [text-wrap:balance]"
