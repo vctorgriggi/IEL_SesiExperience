@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { CULTURE_CONSENT_VERSION } from '@/features/iel-demo/analysis/culture-invites';
 import {
-  ESCALA_CONCORDANCIA,
   isValorDaEscala,
+  ROTULOS_DA_REGUA,
   type ValorDaEscala
 } from '@/features/iel-demo/analysis/instrumento';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
@@ -24,14 +24,16 @@ import {
 import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
-import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 import { ICONE_TINGIDO } from '../metricas/cores';
 import {
   CaminhoDaConversa,
+  FraseOriginal,
   PassoDoFim,
   TamanhoDaTarefa
 } from '../shared/fluxo-por-link';
+import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { ReguaDeConcordancia } from '../shared/regua-de-concordancia';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 import { useRascunho } from '../shared/use-rascunho';
 
@@ -42,7 +44,27 @@ import { useRascunho } from '../shared/use-rascunho';
  * daquele convite (16 das 52 do instrumento, amostragem em matriz), uma frase
  * por tela, na escala de concordância, sem login. Quem abre isto é um
  * colaborador operacional no celular, no intervalo do turno: uma pergunta por
- * vez, alternativas de 60px, um botão só e nada para configurar.
+ * vez, uma régua de um toque e nada para configurar.
+ *
+ * ## A cena e a régua
+ *
+ * A frase aparece como **cena** (`item.cena`), a mesma ideia do instrumento
+ * na primeira pessoa e no chão de fábrica; a frase original do cliente fica
+ * a um toque ("ver a frase original"), para a analista e o auditor conferirem
+ * que é o mesmo instrumento. Quem responde aqui descreve o **ambiente**, não
+ * a si: a pergunta de apoio é "O quanto isso é assim aí?" e os degraus da
+ * régua (`ROTULOS_DA_REGUA.colaborador`) vão de "Não é assim aqui" a "É bem
+ * assim aqui", preenchidos no azul da empresa — é o lado da empresa que a
+ * resposta forma. O toque seleciona e, um instante depois, a tela avança;
+ * "Próxima" continua para quem prefere o botão, para quem voltou a uma frase
+ * já respondida e para o teclado. Na última, enviar é um gesto à parte.
+ *
+ * ## O fim
+ *
+ * Antes do "O que acontece agora" entra a devolutiva pessoal
+ * (`shared/leitura-pessoal`), montada só com as respostas que a pessoa acabou
+ * de enviar, sem nome. Quem reabre o link depois não a vê de novo: a resposta
+ * já virou média e a tela não guarda a individual.
  *
  * ## Por que esta tela importa mais do que parece
  *
@@ -139,6 +161,12 @@ export function CultureInviteScreen({ token }: { token: string }) {
   const [accepted, setAccepted] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [finished, setFinished] = useState(false);
+  // O que foi enviado nesta sessão, para a devolutiva: a tela não relê a
+  // resposta individual do estado, porque ali ela já é média.
+  const [enviadas, setEnviadas] = useState<Record<
+    string,
+    ValorDaEscala
+  > | null>(null);
   const [retomado, setRetomado] = useState(false);
   const [faltando, setFaltando] = useState<number | null>(null);
 
@@ -157,7 +185,6 @@ export function CultureInviteScreen({ token }: { token: string }) {
   const totalQuestions = bloco.length;
   const itemIds = bloco.map((item) => item.id);
   const chaveDasFrases = itemIds.join(',');
-  const respondivel = Boolean(invite) && invite?.status === 'aberto';
 
   const lerRascunho = useCallback(
     (bruto: unknown): RascunhoDaConsulta | null => {
@@ -197,10 +224,18 @@ export function CultureInviteScreen({ token }: { token: string }) {
     setRetomado(true);
   }, []);
 
+  /*
+   * Retoma sem olhar o status: a base da demonstração chega do navegador
+   * num efeito, depois da primeira renderização, e um convite que a analista
+   * reenviou ao vivo ainda parece vencido nesse instante — condicionar a
+   * retomada a `respondivel` jogava fora o rascunho de quem fechou e voltou.
+   * Se o link não estiver aberto, as telas de vencido e respondido vêm antes
+   * do passo e o rascunho simplesmente não aparece.
+   */
   const { restaurado, gravar, apagar } = useRascunho<RascunhoDaConsulta>({
     chave: `iel-rascunho:consulta:${token}`,
     ler: lerRascunho,
-    aoRestaurar: respondivel ? aoRetomar : () => undefined
+    aoRestaurar: aoRetomar
   });
 
   useEffect(() => {
@@ -239,6 +274,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
     });
     apagar();
     setFaltando(null);
+    setEnviadas(completas);
     setFinished(true);
   };
 
@@ -279,6 +315,13 @@ export function CultureInviteScreen({ token }: { token: string }) {
           >
             <p>Obrigado. Você não precisa fazer mais nada.</p>
           </InviteNotice>
+
+          {enviadas ? (
+            <LeituraPessoal
+              papel="colaborador"
+              respostas={enviadas}
+            />
+          ) : null}
 
           <Card>
             <CardHeader>
@@ -341,10 +384,16 @@ export function CultureInviteScreen({ token }: { token: string }) {
              * qualquer outra: quem está pedindo, por que a pessoa foi
              * escolhida e que não existe resposta certa.
              */}
+            {/*
+             * Quem pediu, com nome: a equipe do IEL que atende esta empresa.
+             * "O IEL junto com a empresa" era institucional demais; quem
+             * abre o link no intervalo quer saber quem quer a opinião dela e
+             * por quê. (A marca da empresa entraria aqui, mas `Company` não
+             * tem logo; sem campo, nada de inventar.)
+             */}
             <p className="text-[15px] leading-relaxed text-muted-foreground">
-              Quem pergunta é o IEL, o Centro de Empregos da Indústria, junto
-              com a {invite.companyName}. Quem responde é quem vive o dia a dia
-              daí — por isso você recebeu este link.
+              A equipe do IEL que atende a {invite.companyName} pediu a opinião
+              de quem vive o dia a dia daí. Por isso você recebeu este link.
             </p>
             <p className="text-[15px] leading-relaxed text-muted-foreground">
               Não existe resposta certa nem errada. Responda pelo que acontece
@@ -511,66 +560,52 @@ export function CultureInviteScreen({ token }: { token: string }) {
                 </p>
               ) : null}
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <h1
                   id="consulta-pergunta"
                   ref={tituloRef}
                   tabIndex={-1}
-                  className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+                  className="text-[24px] font-semibold leading-[1.25] tracking-tight outline-none [text-wrap:balance]"
                 >
                   <span className="sr-only">{rotuloProgresso}: </span>
-                  {question.texto}
+                  {question.cena}
                 </h1>
                 <p
                   id="consulta-pergunta-dica"
-                  className="text-sm leading-relaxed text-muted-foreground"
+                  className="text-[15px] leading-relaxed text-muted-foreground"
                 >
-                  O quanto você concorda? Responda pelo que vale de verdade no
-                  seu dia a dia, não pelo que deveria ser.
+                  O quanto isso é assim aí? Responda pelo que acontece de
+                  verdade, não pelo que deveria ser.
                 </p>
+                {/* Fecha sozinha quando a frase muda: a chave é a frase. */}
+                <FraseOriginal
+                  key={question.id}
+                  texto={question.texto}
+                />
               </div>
 
-              <RadioGroup
+              <ReguaDeConcordancia
+                nome={question.id}
+                valor={chosen ?? null}
+                rotulos={ROTULOS_DA_REGUA.colaborador}
+                tom="empresa"
                 aria-labelledby="consulta-pergunta"
                 aria-describedby="consulta-pergunta-dica"
-                className="gap-2.5"
-                value={chosen === undefined ? '' : String(chosen)}
-                onValueChange={(value) => {
-                  const option = ESCALA_CONCORDANCIA.find(
-                    (entry) => String(entry.valor) === value
-                  );
-                  if (!option) return;
+                onChange={(valor) => {
                   setFaltando(null);
                   setAnswers((current) => ({
                     ...current,
-                    [question.id]: option.valor
+                    [question.id]: valor
                   }));
                 }}
-              >
-                {ESCALA_CONCORDANCIA.map((option) => {
-                  const selected = chosen === option.valor;
-                  const id = `${question.id}-${option.valor}`;
-                  return (
-                    <Label
-                      key={option.valor}
-                      htmlFor={id}
-                      className={cn(
-                        'flex min-h-[60px] cursor-pointer items-center gap-3 rounded-xl border p-4 text-[15px] font-medium leading-snug transition-colors',
-                        selected
-                          ? 'border-foreground bg-muted/50 ring-1 ring-foreground'
-                          : 'hover:bg-muted/40'
-                      )}
-                    >
-                      <RadioGroupItem
-                        id={id}
-                        value={String(option.valor)}
-                        className="size-[18px]"
-                      />
-                      <span className="whitespace-normal">{option.rotulo}</span>
-                    </Label>
-                  );
-                })}
-              </RadioGroup>
+                onConfirmar={() => {
+                  // O toque avança; na última frase, enviar é um gesto à
+                  // parte.
+                  if (isLast) return;
+                  setRetomado(false);
+                  setStep({ kind: 'question', index: step.index + 1 });
+                }}
+              />
 
               <div className="mt-auto flex flex-col gap-2.5 pt-4">
                 {faltando !== null && faltando >= 0 ? (

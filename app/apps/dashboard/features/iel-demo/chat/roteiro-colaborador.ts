@@ -2,9 +2,10 @@
  * Roteiro da conversa do colaborador: "Como é trabalhar aqui?" (M2 + M7).
  *
  * As mesmas frases do bloco daquele convite (`blocoDoConvite`, cerca de 15
- * das 52 do instrumento), no texto original, mesmo aceite e mesma ação do
- * reducer (`answer-culture-invite`) que a tela em passos de
- * `companies/culture-invite-screen`. O link é de uso único e vale 3 dias
+ * das 52 do instrumento), como cena — com a frase original a um toque —,
+ * mesmo aceite e mesma ação do reducer (`answer-culture-invite`) que a tela
+ * em passos de `companies/culture-invite-screen`. A régua é a do colaborador:
+ * ele descreve o ambiente ("É bem assim aqui"), não a si. O link é de uso único e vale 3 dias
  * (PRODUTO.md §5.4): convite respondido ou vencido vira uma mensagem final,
  * sem nenhuma pergunta.
  *
@@ -111,10 +112,15 @@ export function montarRoteiroColaborador(
         tipo: 'mensagem',
         id: 'combinado',
         texto:
-          'Combinado. Para cada frase, diga o quanto ela vale para você no dia a dia do seu setor.'
+          'Combinado. Vou mandar situações do dia a dia. Para cada uma, toque no quanto ela é assim aí no seu setor.'
       },
       ...passosDasFrases(
-        convite.bloco.map((item) => ({ itemId: item.id, texto: item.texto }))
+        convite.bloco.map((item) => ({
+          itemId: item.id,
+          cena: item.cena,
+          original: item.texto
+        })),
+        'colaborador'
       ),
       {
         tipo: 'fim',
