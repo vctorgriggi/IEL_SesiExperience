@@ -130,10 +130,10 @@ export function JobSectionCards({
       />
 
       <CartaoDeIndicador
-        leitura={`Sem resposta: ${plural(semResposta, 'pessoa', 'pessoas')}. O prazo de resposta, de ${plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}, termina em ${prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem não responde sai do processo.`}
+        leitura={`Sem questionário: ${plural(semResposta, 'pessoa', 'pessoas')}. O prazo de resposta, de ${plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}, termina em ${prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem não responde sai do processo.`}
         icone={IconClock}
         tom="atencao"
-        rotulo="Sem resposta"
+        rotulo="Sem questionário"
         valor={semResposta}
         selo={
           <Badge

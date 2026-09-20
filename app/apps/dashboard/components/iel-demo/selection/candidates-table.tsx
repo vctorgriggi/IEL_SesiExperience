@@ -76,7 +76,7 @@ const ABA_LEGENDA: Record<Aba, string> = {
   sugeridos: 'Sugeridos',
   todos: 'Todos',
   resgate: 'Resgate',
-  'sem-resposta': 'Sem resposta'
+  'sem-resposta': 'Sem questionário'
 };
 
 type Coluna = 'combina' | 'requisitos' | 'estado';
@@ -150,7 +150,7 @@ export type CandidatesTableProps = {
  * As quatro abas não filtram a mesma pergunta de quatro jeitos: elas são
  * quatro perguntas. "Sugeridos" é a remessa provável; "Todos" é a vaga
  * inteira, paginada; "Resgate" é quem o filtro técnico da origem descartaria
- * e o encontro com a empresa recupera; "Sem resposta" é quem ainda não deu
+ * e o encontro com a empresa recupera; "Sem questionário" é quem ainda não deu
  * medida nenhuma — e por isso não aparece como zero em lugar nenhum.
  */
 export function CandidatesTable({
@@ -258,7 +258,7 @@ export function CandidatesTable({
               Resgate <Badge variant="secondary">{rescue.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="sem-resposta">
-              Sem resposta{' '}
+              Sem questionário{' '}
               <Badge variant="secondary">{semResposta.length}</Badge>
             </TabsTrigger>
           </TabsList>
