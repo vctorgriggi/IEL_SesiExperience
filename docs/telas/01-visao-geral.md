@@ -1,6 +1,6 @@
 # Visão geral
 
-**Rota:** `/iel`
+**Rota:** `/`
 **Componentes:** `apps/dashboard/components/iel-demo/overview/overview-screen.tsx`,
 `overview/pendencias.ts`
 **Persona:** Analista IEL (o gestor cai em [Painel da empresa](02-painel-da-empresa.md))

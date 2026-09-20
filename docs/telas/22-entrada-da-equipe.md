@@ -1,7 +1,7 @@
 # Entrada da equipe
 
-**Rota:** `/iel/entrar`
-**Componentes:** `apps/dashboard/app/(iel)/iel/entrar/{page.tsx,entrar-form.tsx,actions.ts}`
+**Rota:** `/entrar`
+**Componentes:** `apps/dashboard/app/(iel)/entrar/{page.tsx,entrar-form.tsx,actions.ts}`
 **Regra:** `apps/dashboard/features/iel-demo/acesso/sessao.ts`
 **Persona:** equipe do IEL (analista)
 **Última atualização:** 2026-09-19
@@ -31,7 +31,7 @@ Nenhum dado do domínio. A tela lê apenas duas coisas do servidor:
 - `acessoExigeSenha()` — há `IEL_SENHA_ANALISTA` definida?
 - `temSessaoDaAnalista()` — o cookie `iel-acesso` é válido?
 
-Sem a variável definida, a porta fica aberta e `/iel/entrar` redireciona para `/iel`. É assim que o
+Sem a variável definida, a porta fica aberta e `/entrar` redireciona para `/`. É assim que o
 protótipo roda na máquina de quem desenvolve, sem configurar nada.
 
 ## Ações do usuário

@@ -1,6 +1,6 @@
 # Contexto da empresa
 
-**Rota:** `/iel/empresas/[companyId]` — `?aba=` abre direto numa aba (`mapa`, `colaboradores`,
+**Rota:** `/empresas/[companyId]` — `?aba=` abre direto numa aba (`mapa`, `colaboradores`,
 `ligacao`, `custo`, `vagas`), e `&vaga=<jobId>` recorta o mapa nos inscritos daquela vaga
 **Componente:** `CompanyDetailScreen`, em
 `apps/dashboard/components/iel-demo/companies/companies-screens.tsx`, com

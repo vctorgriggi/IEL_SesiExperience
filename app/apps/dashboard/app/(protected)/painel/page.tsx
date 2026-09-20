@@ -3,7 +3,12 @@ import { getUserOrganizations } from '@/features/organizations/data/get-user-org
 
 import { routes } from '@workspace/routes';
 
-export default async function ProtectedRootPage() {
+/**
+ * Entrada do painel do kit. Era a raiz `/` até o Mind RH assumir a raiz do
+ * app: só resolve para onde a pessoa deve cair (primeira organização ou
+ * onboarding) e nunca desenha nada.
+ */
+export default async function PainelPage() {
   const organizations = await getUserOrganizations();
   if (organizations.length === 0) {
     redirect(routes.dashboard.onboarding.index);

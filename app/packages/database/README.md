@@ -31,6 +31,16 @@ O app de chat usa `pgvector` na base de conhecimento. Em desenvolvimento o
 `docker-compose.yml` da raiz já sobe a imagem certa; em Postgres gerenciado,
 confirme que `CREATE EXTENSION vector` é permitido antes de migrar.
 
+## Mind RH (IEL): sala da demonstração
+
+`src/schemas/iel/` guarda o estado da demonstração quando ele mora no servidor
+(`IEL_ESTADO_COMPARTILHADO=1` + `DATABASE_URL`): `iel_demo_salas` tem uma linha
+por sala com o **delta** sobre a base fictícia (`estado` jsonb, o mesmo
+`PersistedState` do localStorage) e uma `revisao` que sobe a cada gravação;
+`iel_demo_eventos` é o log só-de-escrita das ações aplicadas. É dado de
+demonstração: a base é fictícia e o log não é podado. Quem lê e grava é
+`apps/dashboard/features/iel-demo/state/servidor.ts`.
+
 ## Comandos
 
 Todos rodam a partir da raiz do monorepo com `bun --filter @workspace/database <script>`.

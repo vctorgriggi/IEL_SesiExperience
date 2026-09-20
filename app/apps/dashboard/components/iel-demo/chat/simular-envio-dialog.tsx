@@ -46,7 +46,7 @@ export type SimularEnvioContexto = {
 
 export type SimularEnvioDialogProps = {
   destinatario: SimularEnvioDestinatario;
-  /** Caminho (`/iel/...`) ou URL completa do link que a pessoa recebe. */
+  /** Caminho (`/candidatura/...`, `/consulta/...`) ou URL completa do link que a pessoa recebe. */
   link: string;
   contexto: SimularEnvioContexto;
   open: boolean;

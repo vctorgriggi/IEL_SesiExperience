@@ -69,7 +69,7 @@ export default async function InvitationRequestPage({
         description="Este convite expirou ou não existe mais."
       >
         <Link
-          href={routes.dashboard.index}
+          href={routes.dashboard.painel}
           className="w-full"
         >
           Ir para organizações
@@ -92,7 +92,7 @@ export default async function InvitationRequestPage({
       }
       footer={
         <Link
-          href={routes.dashboard.index}
+          href={routes.dashboard.painel}
           className={linkClass}
         >
           Recusar e voltar

@@ -1,6 +1,6 @@
 # Resposta do destinatário
 
-**Rota:** `/iel/pendencias/[clarificationId]/responder`
+**Rota:** `/pendencias/[clarificationId]/responder`
 **Componente:** `apps/dashboard/components/iel-demo/clarifications/recipient-experience-screen.tsx`
 **Persona:** A pessoa ou o gestor que recebeu a pergunta
 **Última atualização:** 2026-09-19

@@ -11,7 +11,7 @@ export default async function SupportLayout({ children }: PropsWithChildren) {
   const permissions = can(membership);
 
   if (!permissions.viewSupport) {
-    redirect(routes.dashboard.index);
+    redirect(routes.dashboard.painel);
   }
 
   return <>{children}</>;

@@ -17,5 +17,5 @@ export default async function OnboardingUserPage() {
     redirect(routes.dashboard.onboarding.index);
   }
 
-  redirect(routes.dashboard.index);
+  redirect(routes.dashboard.painel);
 }

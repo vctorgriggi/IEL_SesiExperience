@@ -1,6 +1,6 @@
 # Pendências
 
-**Rota:** `/iel/pendencias`
+**Rota:** `/pendencias`
 **Componente:** `apps/dashboard/components/iel-demo/clarifications/clarifications-screen.tsx`
 **Persona:** Analista IEL (o gestor vê as perguntas dirigidas à própria equipe)
 **Última atualização:** 2026-09-19

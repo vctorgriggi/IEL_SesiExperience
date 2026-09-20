@@ -1,6 +1,6 @@
 # Preparação do encaminhamento
 
-**Rota:** `/iel/vagas/[jobId]/encaminhamento`
+**Rota:** `/vagas/[jobId]/encaminhamento`
 **Componente:** `apps/dashboard/components/iel-demo/referrals/referral-preparation-screen.tsx`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-19

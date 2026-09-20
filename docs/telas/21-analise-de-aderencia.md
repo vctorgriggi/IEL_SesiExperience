@@ -1,8 +1,8 @@
 # Análise de aderência
 
-**Rota:** aba **Onde ela se encaixa** em `/iel/talentos/[talentId]` (abre por padrão; com
+**Rota:** aba **Onde ela se encaixa** em `/talentos/[talentId]` (abre por padrão; com
 `?vaga=<jobId>` a leitura já abre na empresa daquela vaga)
-**Rota legada:** `/iel/analise-de-aderencia` **redireciona** para a mesa da vaga (`?vaga=`) ou para a
+**Rota legada:** `/analise-de-aderencia` **redireciona** para a mesa da vaga (`?vaga=`) ou para a
 lista de vagas — link antigo não dá 404
 **Componentes:** `apps/dashboard/components/iel-demo/talents/aderencia-da-pessoa.tsx`, com
 `aderencia/radar-de-aderencia.tsx` e `aderencia/pontos-do-dia.tsx`

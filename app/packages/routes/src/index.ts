@@ -79,20 +79,32 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
     },
     select: (slug: string) => resolve(`/select/${encodeSegment(slug)}`),
     /**
-     * Central de Seleção IEL — protótipo de demonstração.
+     * Entrada do painel do kit (organizações): resolve para a primeira
+     * organização da pessoa ou para o onboarding. Era a raiz `/` até o Mind
+     * RH assumir a raiz do app, em 19/09/2026; os fluxos de login e convite
+     * do kit apontam para cá, não para `index`.
+     */
+    painel: resolve('/painel'),
+    /**
+     * Mind RH — Central de Seleção IEL, o produto principal deste app.
+     *
+     * `iel` aqui é o nome do produto, não mais um prefixo de caminho: as telas
+     * vivem na raiz (`/`, `/vagas`, `/candidatura/<id>`...). Os links antigos
+     * em `/iel/**` continuam valendo por redirecionamento em
+     * `apps/dashboard/next.config.ts`. A API segue em `/api/iel/**`.
      *
      * Área isolada, com dados fictícios e estado local: não compartilha rotas,
-     * sessão ou banco com a área autenticada do produto.
+     * sessão ou banco com a área autenticada do kit.
      */
     iel: {
-      index: resolve('/iel'),
+      index: resolve('/'),
       /** Porta da analista: os links de candidato e empresa não passam por aqui. */
-      signIn: resolve('/iel/entrar'),
+      signIn: resolve('/entrar'),
       jobs: {
-        index: resolve('/iel/vagas'),
+        index: resolve('/vagas'),
         byId: (jobId: string) => {
           const encodedJobId = encodeSegment(jobId);
-          const jobBase = `/iel/vagas/${encodedJobId}`;
+          const jobBase = `/vagas/${encodedJobId}`;
           return {
             index: resolve(jobBase),
             comparison: resolve(`${jobBase}/comparar`),
@@ -108,9 +120,9 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         }
       },
       talents: {
-        index: resolve('/iel/talentos'),
+        index: resolve('/talentos'),
         byId: (talentId: string) => {
-          const talentBase = `/iel/talentos/${encodeSegment(talentId)}`;
+          const talentBase = `/talentos/${encodeSegment(talentId)}`;
           return {
             index: resolve(talentBase),
             /** Perfil lido no contexto de uma vaga específica. */
@@ -120,9 +132,9 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         }
       },
       companies: {
-        index: resolve('/iel/empresas'),
+        index: resolve('/empresas'),
         byId: (companyId: string) =>
-          resolve(`/iel/empresas/${encodeSegment(companyId)}`),
+          resolve(`/empresas/${encodeSegment(companyId)}`),
         /**
          * O mapa de cultura daquela empresa, que é uma aba do contexto dela.
          *
@@ -134,7 +146,7 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
          */
         cultureMapById: (companyId: string, jobId?: string) =>
           resolve(
-            `/iel/empresas/${encodeSegment(companyId)}?aba=mapa${
+            `/empresas/${encodeSegment(companyId)}?aba=mapa${
               jobId ? `&vaga=${encodeSegment(jobId)}` : ''
             }`
           )
@@ -150,7 +162,7 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        */
       applications: {
         byId: (applicationId: string) => {
-          const applicationBase = `/iel/candidatura/${encodeSegment(applicationId)}`;
+          const applicationBase = `/candidatura/${encodeSegment(applicationId)}`;
           return {
             /**
              * "Minha candidatura": em que pé está o processo e o que acontece
@@ -185,13 +197,13 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        */
       cultureInvite: {
         byToken: (token: string) =>
-          resolve(`/iel/consulta/${encodeSegment(token)}`),
+          resolve(`/consulta/${encodeSegment(token)}`),
         /**
          * A mesma consulta em forma de conversa guiada (C2). Irmã de
          * `byToken`, que continua devolvendo a string da tela em passos.
          */
         conversationByToken: (token: string) =>
-          resolve(`/iel/consulta/${encodeSegment(token)}/conversa`)
+          resolve(`/consulta/${encodeSegment(token)}/conversa`)
       },
       /**
        * Relatório que a empresa recebe com os currículos enviados (S3).
@@ -203,17 +215,17 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        */
       report: {
         byToken: (token: string) =>
-          resolve(`/iel/relatorio/${encodeSegment(token)}`)
+          resolve(`/relatorio/${encodeSegment(token)}`)
       },
       clarifications: {
-        index: resolve('/iel/pendencias'),
+        index: resolve('/pendencias'),
         respond: (clarificationId: string) =>
-          resolve(`/iel/pendencias/${encodeSegment(clarificationId)}/responder`)
+          resolve(`/pendencias/${encodeSegment(clarificationId)}/responder`)
       },
       referrals: {
-        index: resolve('/iel/encaminhamentos'),
+        index: resolve('/encaminhamentos'),
         byId: (referralId: string) =>
-          resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
+          resolve(`/encaminhamentos/${encodeSegment(referralId)}`)
       },
       /**
        * Acompanhamento dos contratados: a fila da analista com quem tem
@@ -221,7 +233,7 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        * respondeu. É a segunda metade do ciclo que a devolutiva (C3) abre.
        */
       followUp: {
-        index: resolve('/iel/acompanhamento')
+        index: resolve('/acompanhamento')
       },
       /**
        * Legado, mantido de propósito: as duas telas de análise deixaram de
@@ -235,18 +247,18 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        * para cá — use os destinos novos.
        */
       adherence: {
-        index: resolve('/iel/analise-de-aderencia'),
+        index: resolve('/analise-de-aderencia'),
         byJob: (jobId: string) =>
-          resolve(`/iel/analise-de-aderencia?vaga=${encodeSegment(jobId)}`)
+          resolve(`/analise-de-aderencia?vaga=${encodeSegment(jobId)}`)
       },
       /** Legado: redireciona para o mapa dentro da empresa. */
-      cultureMap: resolve('/iel/mapa-de-cultura'),
+      cultureMap: resolve('/mapa-de-cultura'),
       /** Integrações: o que entra, o que sai e o que fica de fora. */
-      dataSources: resolve('/iel/fontes-de-dados'),
+      dataSources: resolve('/fontes-de-dados'),
       /** Comunicação, questionário e consentimento dos candidatos. */
-      candidates: resolve('/iel/candidatos'),
+      candidates: resolve('/candidatos'),
       /** Análises com dado agregado. */
-      bi: resolve('/iel/bi')
+      bi: resolve('/bi')
     },
     openEvents: {
       bySlug: (slug: string) => {

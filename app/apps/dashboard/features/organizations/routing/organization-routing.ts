@@ -6,9 +6,27 @@ export const RESERVED_FIRST_SEGMENTS = new Set([
   'calendar',
   'events',
   'home',
-  // Protótipo da Central de Seleção IEL: rota pública de demonstração, não é
-  // slug de organização.
+  // Mind RH (IEL) mora na raiz: cada primeiro segmento dele é rota do
+  // produto, não slug de organização. Sem esta lista o middleware carimbaria
+  // `x-organization-slug: vagas`, e uma organização do kit com um desses
+  // slugs ficaria inalcançável. `iel` fica pelos links antigos, que redirecionam.
+  'acompanhamento',
+  'analise-de-aderencia',
+  'bi',
+  'candidatos',
+  'candidatura',
+  'consulta',
+  'empresas',
+  'encaminhamentos',
+  'entrar',
+  'fontes-de-dados',
   'iel',
+  'mapa-de-cultura',
+  'painel',
+  'pendencias',
+  'relatorio',
+  'talentos',
+  'vagas',
   'invitations',
   'invite',
   'map',

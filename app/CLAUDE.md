@@ -22,7 +22,7 @@ SaaS starter kit in a Bun monorepo.
 
 ```text
 apps/
-  dashboard/       # Main app (:3000), auth, product API and the IEL prototype (/iel)
+  dashboard/       # Main app (:3000): Mind RH (IEL) at the root, auth and product API
 
 packages/
   ai/              # AI chat domain: conversations, messages, credits
@@ -84,8 +84,8 @@ bun run tools/env-check/env-doctor.ts
 
 ## Local URLs
 
-- Dashboard: `http://localhost:3000`
-- IEL prototype: `http://localhost:3000/iel`
+- Mind RH (IEL), na raiz: `http://localhost:3000/` (os links antigos em `/iel/**` redirecionam)
+- Painel do kit (organizações): `http://localhost:3000/painel`
 
 ## Docker & Database
 

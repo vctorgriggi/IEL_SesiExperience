@@ -96,8 +96,10 @@ export function IelShell({
 }) {
   const pathname = usePathname();
 
-  // A porta da Central desenha a própria tela, com a marca no centro.
-  if (pathname.startsWith(routes.dashboard.iel.signIn)) return children;
+  // A porta da Central desenha a própria tela, com a marca no centro. Compara
+  // exato: é uma tela só, e com o produto na raiz um prefixo curto casaria
+  // com mais do que ela.
+  if (pathname === routes.dashboard.iel.signIn) return children;
 
   const porLink = PREFIXOS_POR_LINK.find((rota) =>
     pathname.startsWith(rota.base)

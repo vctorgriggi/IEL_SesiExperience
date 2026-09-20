@@ -1,6 +1,6 @@
 # Encaminhamentos
 
-**Rota:** `/iel/encaminhamentos`
+**Rota:** `/encaminhamentos`
 **Componente:** `ReferralsScreen`, em
 `apps/dashboard/components/iel-demo/referrals/referrals-screens.tsx`
 **Persona:** Analista IEL e gestor (cada um vê o seu recorte)

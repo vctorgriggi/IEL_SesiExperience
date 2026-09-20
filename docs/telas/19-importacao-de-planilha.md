@@ -1,6 +1,6 @@
 # Importação de planilha
 
-**Rota:** `/iel/vagas/[jobId]/importar`
+**Rota:** `/vagas/[jobId]/importar`
 **Componentes:** `apps/dashboard/components/iel-demo/import/import-screen.tsx`,
 `import/upload-step.tsx`, `import/review-step.tsx`, `import/decision-group.tsx`,
 `import/import-history.tsx`, `import/import-entry.tsx`

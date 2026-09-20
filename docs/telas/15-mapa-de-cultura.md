@@ -1,8 +1,8 @@
 # Mapa de Cultura
 
-**Rota:** aba **Mapa de cultura** em `/iel/empresas/[companyId]` — o link direto é
-`/iel/empresas/[companyId]?aba=mapa`, e `&vaga=<jobId>` abre o escopo já nos inscritos daquela vaga
-**Rota legada:** `/iel/mapa-de-cultura` **redireciona** para a aba (link antigo não dá 404)
+**Rota:** aba **Mapa de cultura** em `/empresas/[companyId]` — o link direto é
+`/empresas/[companyId]?aba=mapa`, e `&vaga=<jobId>` abre o escopo já nos inscritos daquela vaga
+**Rota legada:** `/mapa-de-cultura` **redireciona** para a aba (link antigo não dá 404)
 **Componentes:**
 `apps/dashboard/components/iel-demo/mapa-cultural/mapa-da-empresa.tsx`,
 `mapa-cultural/plano-cultural.tsx`,

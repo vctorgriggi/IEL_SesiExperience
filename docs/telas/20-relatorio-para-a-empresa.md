@@ -1,6 +1,6 @@
 # Relatório para a empresa
 
-**Rota:** `/iel/relatorio/[token]`
+**Rota:** `/relatorio/[token]`
 **Componentes:** `apps/dashboard/components/iel-demo/referrals/referral-report-screen.tsx`,
 `referrals/devolutiva-da-empresa.tsx`, `referrals/report-link.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/referral-report.ts`,

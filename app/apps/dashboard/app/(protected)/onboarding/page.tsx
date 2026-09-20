@@ -14,7 +14,7 @@ export default async function OnboardingIndexPage() {
     session?.user as { completedOnboarding?: boolean } | undefined
   )?.completedOnboarding;
   if (completedOnboarding) {
-    redirect(routes.dashboard.index);
+    redirect(routes.dashboard.painel);
   }
 
   const memberships =

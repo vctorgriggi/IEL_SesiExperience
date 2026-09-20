@@ -1,6 +1,6 @@
 # Detalhe do encaminhamento
 
-**Rota:** `/iel/encaminhamentos/[referralId]`
+**Rota:** `/encaminhamentos/[referralId]`
 **Componente:** `ReferralDetailScreen`, em
 `apps/dashboard/components/iel-demo/referrals/referrals-screens.tsx`
 **Persona:** Analista IEL e gestor da empresa destinatária

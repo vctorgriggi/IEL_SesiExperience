@@ -1,6 +1,6 @@
 # Como está sendo?
 
-**Rota:** `/iel/candidatura/[applicationId]/como-esta-sendo`
+**Rota:** `/candidatura/[applicationId]/como-esta-sendo`
 **Componente:** `apps/dashboard/components/iel-demo/candidate/check-in-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/acompanhamento.ts` e
 `getSituacaoDeContratacao` em `state/selectors.ts`; o marco a abrir vem de `marcoParaContar` em

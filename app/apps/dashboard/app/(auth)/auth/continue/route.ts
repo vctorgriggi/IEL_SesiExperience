@@ -10,7 +10,7 @@ import { routes } from '@workspace/routes';
  */
 export async function GET(request: NextRequest): Promise<Response> {
   const target = sanitizeRedirectTo(request.nextUrl.searchParams.get('to'), {
-    fallback: routes.dashboard.index,
+    fallback: routes.dashboard.painel,
     currentOrigin: request.nextUrl.origin
   });
 
