@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { entrarNaCentral } from './entrar';
+
 /**
  * O menu de quem apresenta.
  *
@@ -28,6 +30,8 @@ async function verComo(page: Page, persona: string): Promise<void> {
 test.describe('Central de Seleção IEL — demonstração', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/iel');
+    // Com senha configurada, a porta vem antes do produto.
+    await entrarNaCentral(page);
     // Cada execução começa da base fictícia inicial.
     await page.evaluate(() => window.localStorage.removeItem('iel-demo-state'));
     await page.reload();
