@@ -710,7 +710,8 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
               size="sm"
               onClick={cobrar}
             >
-              Cobrar {emAberto.length} que faltam
+              Cobrar {emAberto.length} que{' '}
+              {emAberto.length === 1 ? 'falta' : 'faltam'}
             </Button>
           ) : null}
         </>
@@ -753,6 +754,17 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         <p className="text-sm text-muted-foreground">
           {company.sector} · {company.location} · contato: {company.contactName}
         </p>
+        {/*
+         * A descrição institucional vem inteira, sem corte: nas empresas
+         * reais da base é nela que está a nota "perfil ilustrativo, derivado
+         * de informação pública" — cortar a linha esconderia justamente o
+         * aviso que a torna honesta.
+         */}
+        {company.institutionalDescription ? (
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            {company.institutionalDescription}
+          </p>
+        ) : null}
       </div>
 
       {/*

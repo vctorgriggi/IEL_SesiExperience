@@ -5,7 +5,7 @@
 `apps/dashboard/components/iel-demo/acompanhamento/acompanhamento-screen.tsx` (gaveta em
 `detalhe-da-pessoa.tsx`, leitura em `leitura.ts`)
 **Persona:** Analista IEL
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -17,36 +17,58 @@ ciclo, e a que não depende do RH.
 
 ## O que aparece
 
-- **Cabeçalho**: "Quem foi contratado, o que cada lado disse e para quem ligar hoje."
-- **Quatro cartões**: em acompanhamento (contratados informados pela empresa); **para ligar hoje**
-  (pergunta aberta sem resposta — cada uma fica aberta 30 dias); **continuam na empresa** (X de N,
-  com quantos saíram antes dos 90 dias e quantas dessas saídas só a pessoa contou); **empresa não
-  informou** (nada depois do "contratei").
-- **Abas** Todos · Ligar hoje · Saíram · Em dia, com contador, e ao lado a frase de privacidade:
-  "O que a pessoa responde nunca vai para a empresa."
-- **A fila**, uma linha por pessoa, na ordem de quem ligar primeiro (pergunta aberta há mais tempo →
-  saída que a empresa não informou → o resto): nome (abre a gaveta), empresa · vaga; "na empresa há
-  N dias" com o relógio ("aos 30 dias · aberto há 15", "próxima pergunta aos 90 dias, em 15 dias",
-  "acompanhamento encerrado"); **o que a pessoa disse** (Continua/Saiu · rótulo escrito de "como está
-  sendo" · o marco · o comentário); **o que a empresa disse** (Continua/Saiu/Não informou); e o
-  **estado**: _Ligar hoje_ (atenção), _Saiu — só a pessoa avisou_ (difere), _Empresa e pessoa dizem
-  coisas diferentes_ (difere), _Saiu_, _Sem resposta_ (janela fechou), _Antes dos 30 dias_ (neutros),
-  _Em dia_ (combina). A linha de rodapé diz que a ordem é de ligação, não de ranking.
-- **Gaveta da pessoa** (`Drawer` à direita; de baixo no celular): estado e a frase de privacidade; **os
-  90 dias** — os três marcos com Respondeu (data, Continua/Saiu · como está sendo, comentário), Ligar
-  hoje (aberto há N dias), Sem resposta, Ainda não chegou (em N dias) ou Não se pergunta mais (depois
-  de uma saída); **o que a empresa disse** e quando — ou "Nada depois do 'contratei' de dd/mm/aaaa",
-  e, se a pessoa contou uma saída, "A saída só está registrada porque a pessoa contou; a empresa
-  ainda não informou"; **Ligação**, com o botão **Registrar ligação**, que abre o roteiro curto para
-  ler ao telefone (muda com a situação: sem resposta, saiu, divergência, em dia; termina sempre com
-  "O que você me contar fica só com o IEL. A empresa não vê o que você responde."), um lembrete para a
-  analista e o campo "O que ouvi"; links **Abrir como ela vê** (Minha candidatura) e **A pergunta que
-  ela recebe** (o link do check-in que a analista manda).
-- **Estado vazio**: "Ninguém em acompanhamento ainda. A fila começa quando uma empresa responder
+A tela responde duas perguntas, nesta ordem: **"para quem eu ligo hoje?"** e **"como estão os que a
+gente colocou?"**. Tudo o mais é apoio.
+
+- **Cabeçalho**: "Para quem ligar hoje e como estão as pessoas que foram contratadas."
+- **Três cartões**, com nome que se entende sem legenda: **Contratados** (rodapé "que o IEL
+  acompanha até os 90 dias"); **Ficaram** ("N de M", rodapé "M já passaram dos 90 dias" — só quem já
+  teve tempo de ficar entra na conta; sem ninguém nos 90, mostra "—" e "ninguém passou dos 90 dias
+  ainda"); **Saíram antes dos 90** (rodapé "K que só a pessoa contou", "a empresa avisou todas" ou
+  "ninguém, pelo que se sabe").
+- **Ligar hoje** — uma lista curta, não uma tabela, com a frase de privacidade ao lado do título
+  ("O que a pessoa responde nunca vai para a empresa."). Cada item: nome · empresa, **o motivo em
+  uma frase** e o botão **Ligar**, que abre a gaveta já no roteiro. Entram aqui os dois primeiros
+  grupos da fila: pergunta aberta sem resposta ("Está há 45 dias e ainda não contou como está
+  sendo") e saída que só um lado contou ("Contou que saiu; a empresa não avisou" / "Contou que saiu;
+  a empresa diz que continua"). Vazia: "Ninguém para ligar hoje." Não há cartão para isso: a lista é
+  o número.
+- **Como estão os contratados** — todo mundo, uma linha por pessoa, na ordem de quem ligar primeiro:
+  nome (abre a gaveta) e empresa · vaga; **"dia 45 de 90"** com uma barra fina dos 90 dias e os três
+  pontos (30, 60, 90: verde respondeu, laranja aberto, cinza sem resposta, vazado ainda não chegou;
+  a barra fica vermelha depois de uma saída); **uma frase só** juntando os dois lados ("Aos 60 dias
+  contou que continua e que está sendo muito bom · a empresa não informou"); e a **situação** em
+  badge curta: _Ligar hoje_ (laranja), _Tudo certo_ (verde), _Saiu_ (vermelho), _Sem resposta_ e
+  _Antes dos 30 dias_ (cinza). No celular a tabela vira cartões empilhados. Rodapé: "A ordem é a de
+  quem ligar primeiro. Ninguém aqui está em ranking."
+- **Gaveta da pessoa** (`Drawer` à direita; de baixo no celular): badge, a frase de privacidade e a
+  **mesma frase da linha**; **Os 90 dias** — os três marcos com Respondeu (data, Continua/Saiu · como
+  está sendo, comentário), Ligar hoje (aberto há N dias), Sem resposta, Ainda não chegou (em N dias)
+  ou Não se pergunta mais (depois de uma saída); **A empresa avisou alguma coisa?** — "Não. Nada
+  depois do 'contratei' de dd/mm/aaaa." (e, se a pessoa contou uma saída, "A saída só está
+  registrada porque a pessoa contou.") ou "Sim: continua/saiu, avisado em dd/mm/aaaa."; **Ligação**,
+  com o botão **Registrar ligação**, que abre o roteiro curto para ler ao telefone (muda com a
+  situação: sem resposta, saiu, os dois lados diferem, tudo certo; termina sempre com "O que você me
+  contar fica só com o IEL. A empresa não vê o que você responde."), um lembrete para a analista e o
+  campo "O que ouvi"; links **Abrir como a pessoa vê** (Minha candidatura) e **A pergunta que a
+  pessoa recebe** (o link do check-in que a analista manda). Vindo do botão **Ligar**, a gaveta já
+  abre com o roteiro à mostra.
+- **Estado vazio**: "Ninguém contratado ainda. A lista começa quando uma empresa responder
   'contratei' a um envio."
 
-Nas colunas da tabela, "como está sendo" é sempre a palavra (Muito ruim … Muito bom), nunca o número
-da escala; não há nota nem ranking de pessoas.
+As frases de uma linha, para os três casos da base (`leitura.ts`, `fraseDaLinha` e
+`motivoDaLigacao`):
+
+| Pessoa | Ligar hoje                                         | Frase da linha                                                                      | Badge      |
+| ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| Marcos | Está há 45 dias e ainda não contou como está sendo | Está há 45 dias e ainda não contou como está sendo · a empresa não informou         | Ligar hoje |
+| Renata | Contou que saiu; a empresa não avisou              | Contou que saiu · a empresa não avisou                                              | Saiu       |
+| Júlia  | —                                                  | Aos 60 dias contou que continua e que está sendo muito bom · a empresa não informou | Tudo certo |
+
+Vocabulário: nada de "marco", "janela", "check-in", "retenção" ou "acompanhamento encerrado" em
+texto de tela — é "aos 30 dias", "ainda não contou", "contou que saiu", "tudo certo". "Como está
+sendo" é sempre a palavra (Muito ruim … Muito bom), nunca o número da escala; não há nota nem
+ranking de pessoas.
 
 ## De onde vêm os dados hoje
 
@@ -54,12 +76,14 @@ da escala; não há nota nem ranking de pessoas.
 a empresa informou a permanência), `getApplication`, `getTalent`, `getCompany`, `getJob`; a base de
 demonstração vem de `fixtures/acompanhamento.ts` (Júlia, Marcos e Renata na Horizonte Alimentos) e
 dos check-ins em `state.checkIns`. A leitura de cada linha (estado, relógio, roteiro) é calculada em
-`leitura.ts`, função pura sobre `SituacaoDeContratacao`. A anotação da ligação fica no `localStorage`
+`leitura.ts`, função pura sobre `SituacaoDeContratacao` — a mesma `motivoDaLigacao` alimenta o grupo
+"Ligar para quem foi contratado" do Início, para o motivo não existir em duas versões. A anotação da
+ligação fica no `localStorage`
 do navegador, por candidatura, como o roteiro da empresa. Relógio em `DEMO_REFERENCE_DATE`.
 
 ## Ações do usuário
 
-- Trocar de aba e abrir a gaveta de uma pessoa — estado local.
+- Abrir a gaveta de uma pessoa (pelo nome, ou pelo botão Ligar, já no roteiro) — estado local.
 - **Registrar ligação** → guarda "o que ouvi" no navegador (`mind-rh:ligacao-acompanhamento:<id>`);
   não dispara ação do reducer.
 - Abrir a Minha candidatura da pessoa e a tela do check-in.
@@ -91,4 +115,14 @@ para quem foi contratado** da fila de [Visão geral](01-visao-geral.md). Sai par
 
 ## Histórico
 
+- 2026-09-20 — reorganizada para clareza. O dono do produto achou a tela confusa ("a legenda das
+  coisas, nome de tabelas, fluxo"): quatro cartões (um deles, "Empresa não informou 3", era ruído
+  quando eram 3 de 3), abas que misturavam urgência com desfecho (Ligar hoje × Saíram × Em dia), duas
+  colunas para comparar ("o que a pessoa disse / o que a empresa disse"), estados longos ("Saiu — só
+  a pessoa avisou") e um relógio ("aos 30 dias · aberto há 15") que exigia saber o que é marco e
+  janela. A tela passou a responder as duas perguntas da analista, na ordem: **Ligar hoje** (lista
+  com o motivo em uma frase e o botão Ligar) e **Como estão os contratados** (uma frase por pessoa,
+  "dia N de 90", badge de uma palavra). Saíram as abas, a coluna dupla e o cartão "Empresa não
+  informou" (virou o fim da frase da linha). O motivo de ligação passou a ser uma função só, usada
+  aqui e no Início.
 - 2026-09-19 — criada.

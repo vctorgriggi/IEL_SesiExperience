@@ -1,4 +1,3 @@
-import { rotuloDoMarco } from '@/features/iel-demo/analysis/acompanhamento';
 import { COPY } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import {
@@ -16,6 +15,8 @@ import {
 import type { DemoState } from '@/features/iel-demo/types';
 
 import { routes } from '@workspace/routes';
+
+import { motivoDaLigacao, pedeLigacaoHoje } from '../acompanhamento/leitura';
 
 /**
  * Uma coisa que precisa da analista hoje, com o verbo que a resolve.
@@ -56,7 +57,7 @@ export const TIPO_DE_PENDENCIA_LABEL: Record<TipoDePendencia, string> = {
   ligacao: 'Ligar para quem foi contratado',
   envio: 'Currículos para enviar',
   questionario: 'Candidatos sem responder',
-  cultura: 'Empresas com perfil aberto'
+  cultura: 'Empresas com tema para conferir'
 };
 
 /**
@@ -150,24 +151,26 @@ export function montarPendencias(state: DemoState): Pendencia[] {
 
   /*
    * Quem foi contratado, chegou aos 30, 60 ou 90 dias e não respondeu se
-   * continua. Vem logo depois das perguntas sem resposta: a janela fecha em
-   * 30 dias e, passada, a pessoa não é mais perguntada — é a ligação de hoje
-   * ou nunca. A fila já chega na ordem de quem espera há mais tempo.
+   * continua. Vem logo depois das perguntas sem resposta: a pergunta fica
+   * aberta 30 dias e, passados, a pessoa não é mais perguntada — é a
+   * ligação de hoje ou nunca. A fila já chega na ordem de quem espera há
+   * mais tempo, e o motivo é a mesma frase do bloco "Ligar hoje" do
+   * Acompanhamento (`motivoDaLigacao`): um texto só, em dois lugares.
    */
   for (const situacao of getAcompanhamento(state)) {
-    const marco = situacao.pendentes[0];
-    if (marco === undefined) continue;
+    // Mesma regra da tela de Acompanhamento: pergunta aberta sem resposta,
+    // saída que só a pessoa contou ou lados que diferem.
+    if (!pedeLigacaoHoje(situacao)) continue;
+    const motivo = motivoDaLigacao(situacao);
+    if (!motivo) continue;
     const application = getApplication(state, situacao.applicationId);
     const talent = application ? getTalent(application.talentId, state) : null;
     if (!talent) continue;
-    const aberto = situacao.diasNaEmpresa - marco;
     pendencias.push({
       id: `${situacao.applicationId}-ligacao`,
       tipo: 'ligacao',
       titulo: talent.name,
-      resumo: `aos ${rotuloDoMarco(marco)} sem resposta${
-        aberto > 0 ? ` há ${plural(aberto, 'dia', 'dias')}` : ''
-      } · ${getCompany(situacao.companyId)?.name ?? situacao.companyId}`,
+      resumo: `${motivo} · ${getCompany(situacao.companyId)?.name ?? situacao.companyId}`,
       href: iel.followUp.index,
       verbo: 'Abrir acompanhamento',
       urgencia: 3
@@ -177,14 +180,29 @@ export function montarPendencias(state: DemoState): Pendencia[] {
   // Só as empresas com alguma resposta de cultura: sem resposta não há ponto
   // em aberto, e percorrer a carteira inteira custaria cada render da barra.
   for (const company of getCompaniesWithCultureAnswers(state)) {
-    const emAberto = getCultureAttentionPoints(state, company.id).length;
-    if (emAberto === 0) continue;
+    const pontos = getCultureAttentionPoints(state, company.id);
+    if (pontos.length === 0) continue;
+
+    // Dois motivos diferentes pedem ações diferentes: tema sem resposta
+    // suficiente pede cobrar a equipe; gestão e equipe divergindo pede uma
+    // conversa. Juntar os dois em "sem resposta" mandava a analista cobrar
+    // uma empresa que já respondeu tudo.
+    const divergentes = pontos.filter((p) => p.state === 'divergente').length;
+    const semBase = pontos.length - divergentes;
+    const partes = [
+      semBase > 0
+        ? `${plural(semBase, 'tema', 'temas')} sem resposta suficiente da equipe`
+        : null,
+      divergentes > 0
+        ? `${plural(divergentes, 'tema em que gestão e equipe divergem', 'temas em que gestão e equipe divergem')}`
+        : null
+    ].filter((parte): parte is string => parte !== null);
 
     pendencias.push({
       id: `${company.id}-cultura`,
       tipo: 'cultura',
       titulo: company.name,
-      resumo: `${plural(emAberto, 'tema', 'temas')} sem resposta suficiente da equipe`,
+      resumo: partes.join(' · '),
       href: routes.dashboard.iel.companies.byId(company.id),
       verbo: 'Abrir a empresa',
       urgencia: 6

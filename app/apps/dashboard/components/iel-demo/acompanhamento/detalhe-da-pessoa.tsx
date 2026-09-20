@@ -41,6 +41,7 @@ import { formatarData, formatarDataCurta } from '../shared/datas';
 import {
   ESTADO_DA_LINHA_LABEL,
   estadoDaLinha,
+  fraseDaLinha,
   linhaDoTempo,
   roteiroDaLigacao,
   TOM_DO_ESTADO,
@@ -189,13 +190,35 @@ function LinhaDoTempo({ situacao }: { situacao: SituacaoDeContratacao }) {
  * ------------------------------------------------------------------ */
 
 /**
+ * Devolve o foco ao botão que abriu a gaveta.
+ *
+ * A lista da tela existe duas vezes no DOM (cartões no celular, tabela no
+ * desktop), então o botão não tem `id`: tem uma chave em
+ * `data-retorno-de-foco`, e aqui se foca o exemplar visível.
+ */
+function focarBotaoDeOrigem(chave: string): boolean {
+  const candidatos = document.querySelectorAll<HTMLElement>(
+    `[data-retorno-de-foco="${CSS.escape(chave)}"]`
+  );
+  for (const candidato of candidatos) {
+    if (candidato.offsetParent !== null) {
+      candidato.focus();
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * A pessoa contratada em gaveta, sobre a fila.
  *
  * Quem abre está decidindo para quem ligar agora; navegar para outra página
- * perderia a fila e a aba. Aqui ficam o relógio dos 90 dias, o que cada
- * lado disse e o roteiro da ligação. Não há nenhum botão que mande algo
- * para a empresa, de propósito: o que a pessoa responde é dela
- * (PRODUTO.md §5.1).
+ * perderia a fila. Aqui ficam o relógio dos 90 dias, o que a empresa avisou
+ * e o roteiro da ligação. Não há nenhum botão que mande algo para a
+ * empresa, de propósito: o que a pessoa responde é dela (PRODUTO.md §5.1).
+ *
+ * Os nomes são os mesmos da lista: a frase de uma linha aparece de novo aqui
+ * em cima, para a gaveta não dizer a mesma coisa com outras palavras.
  */
 export function DetalheDaPessoa({
   situacao,
@@ -205,6 +228,7 @@ export function DetalheDaPessoa({
   empresaInformouEm,
   open,
   onOpenChange,
+  comecarPeloRoteiro = false,
   retornarFocoPara
 }: {
   situacao: SituacaoDeContratacao;
@@ -215,7 +239,9 @@ export function DetalheDaPessoa({
   empresaInformouEm: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** `id` do botão com o nome da pessoa, que recebe o foco ao fechar. */
+  /** Vindo do botão Ligar, a gaveta já abre com o roteiro à mostra. */
+  comecarPeloRoteiro?: boolean;
+  /** Chave `data-retorno-de-foco` do botão que abriu, que recebe o foco ao fechar. */
   retornarFocoPara?: string;
 }) {
   const isMobile = useIsMobile();
@@ -230,11 +256,19 @@ export function DetalheDaPessoa({
   const [salva, setSalva] = useState<AnotacaoDaLigacao | null>(null);
   const [rascunho, setRascunho] = useState('');
 
-  // localStorage só existe no navegador: lê depois de montar, por pessoa.
+  /*
+   * localStorage só existe no navegador: lê depois de montar, por pessoa. A
+   * cada abertura o roteiro começa recolhido — ou aberto, quando quem abriu
+   * foi o botão Ligar. Não mexe enquanto fecha, para não piscar o roteiro
+   * durante a animação.
+   */
   useEffect(() => {
-    setSalva(lerAnotacao(situacao.applicationId));
-    setRegistrando(false);
-  }, [situacao.applicationId]);
+    if (!open) return;
+    const anotacao = lerAnotacao(situacao.applicationId);
+    setSalva(anotacao);
+    setRascunho(anotacao?.texto ?? '');
+    setRegistrando(comecarPeloRoteiro);
+  }, [situacao.applicationId, open, comecarPeloRoteiro]);
 
   const abrirRoteiro = () => {
     setRascunho(salva?.texto ?? '');
@@ -266,12 +300,8 @@ export function DetalheDaPessoa({
       <DrawerContent
         className="data-[vaul-drawer-direction=right]:sm:max-w-[560px]"
         onCloseAutoFocus={(evento) => {
-          const alvo = retornarFocoPara
-            ? document.getElementById(retornarFocoPara)
-            : null;
-          if (!alvo) return;
-          evento.preventDefault();
-          alvo.focus();
+          if (retornarFocoPara && focarBotaoDeOrigem(retornarFocoPara))
+            evento.preventDefault();
         }}
       >
         <DrawerHeader className="flex-row items-center gap-3 border-b text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
@@ -306,21 +336,25 @@ export function DetalheDaPessoa({
         </DrawerHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-4 text-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className={BADGE_DE_ESTADO[TOM_DO_ESTADO[estado]]}
-            >
-              {ESTADO_DA_LINHA_LABEL[estado]}
-            </Badge>
-            {/* A frase mais importante da gaveta, escrita, não só implícita. */}
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <LockIcon
-                aria-hidden="true"
-                className="size-3"
-              />
-              O que a pessoa responde nunca vai para a empresa.
-            </span>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className={BADGE_DE_ESTADO[TOM_DO_ESTADO[estado]]}
+              >
+                {ESTADO_DA_LINHA_LABEL[estado]}
+              </Badge>
+              {/* A frase mais importante da gaveta, escrita, não só implícita. */}
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <LockIcon
+                  aria-hidden="true"
+                  className="size-3"
+                />
+                O que a pessoa responde nunca vai para a empresa.
+              </span>
+            </div>
+            {/* A mesma frase da lista: a gaveta detalha, não reformula. */}
+            <p>{fraseDaLinha(situacao)}</p>
           </div>
 
           <section className="flex flex-col gap-3">
@@ -329,32 +363,30 @@ export function DetalheDaPessoa({
           </section>
 
           <section className="flex flex-col gap-2">
-            <h3 className="text-base font-medium">O que a empresa disse</h3>
+            <h3 className="text-base font-medium">
+              A empresa avisou alguma coisa?
+            </h3>
             <p>
               {empresaDisse === null ? (
                 <>
-                  Nada depois do “contratei” de{' '}
+                  Não. Nada depois do “contratei” de{' '}
                   {formatarData(situacao.contratadoEm)}.
                   {situacao.porFonte.pessoa === 'saiu' ? (
-                    <>
-                      {' '}
-                      A saída só está registrada porque a pessoa contou; a
-                      empresa ainda não informou.
-                    </>
+                    <> A saída só está registrada porque a pessoa contou.</>
                   ) : null}
                 </>
               ) : (
                 <>
-                  {empresaDisse === 'continua' ? 'Continua' : 'Saiu'}
+                  Sim: {empresaDisse === 'continua' ? 'continua' : 'saiu'}
                   {empresaInformouEm
-                    ? `, informado em ${formatarData(empresaInformouEm)}`
+                    ? `, avisado em ${formatarData(empresaInformouEm)}`
                     : ''}
                   .
                   {situacao.divergencia ? (
                     <>
                       {' '}
-                      A pessoa disse o contrário; as duas versões ficam
-                      registradas, cada uma com a fonte.
+                      A pessoa contou o contrário; as duas versões ficam
+                      registradas, cada uma com quem disse.
                     </>
                   ) : null}
                 </>
