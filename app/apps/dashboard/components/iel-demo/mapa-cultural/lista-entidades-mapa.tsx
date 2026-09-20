@@ -158,7 +158,7 @@ export function ListaEntidadesMapa({
                   <p className="mb-1.5 mt-3 border-t border-border/60 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Sem base suficiente para posição
                     <span className="ml-1 font-normal normal-case tracking-normal">
-                      · menos de {MINIMO_DE_EIXOS_PARA_RANQUEAR} eixos
+                      · menos de {MINIMO_DE_EIXOS_PARA_RANQUEAR} temas
                       respondidos pelos dois lados
                     </span>
                   </p>
@@ -207,15 +207,15 @@ export function ListaEntidadesMapa({
                         </p>
                         {isReferencia ? (
                           <span className="rounded-full bg-primary/20 px-1.5 py-0.2 text-[9px] font-bold text-primary">
-                            Empresa Alvo
+                            Esta empresa
                           </span>
                         ) : null}
                       </div>
                       <p className="truncate text-[11px] text-muted-foreground">
                         {TIPO_DE_CULTURA_LABEL[ponto.culture]} ·{' '}
-                        {ponto.position.eixosRespondidos.length} eixos
+                        {ponto.position.eixosRespondidos.length} temas
                         {ponto.divergentAxes > 0
-                          ? ` · ${ponto.divergentAxes} diverg.`
+                          ? ` · ${ponto.divergentAxes} com divergência`
                           : ''}
                       </p>
                     </div>
@@ -253,12 +253,12 @@ export function ListaEntidadesMapa({
                         {!temBaseParaRanquear(aderencia) ? (
                           <>
                             só {aderencia.coverage.answeredAxes} de{' '}
-                            {FIT_AXES.length} eixos em comum
+                            {FIT_AXES.length} temas em comum
                           </>
                         ) : aderencia.compatible ? (
                           <>
                             aderência · {aderencia.coverage.answeredAxes} de{' '}
-                            {FIT_AXES.length} eixos
+                            {FIT_AXES.length} temas
                           </>
                         ) : (
                           <span className="font-medium text-warning">

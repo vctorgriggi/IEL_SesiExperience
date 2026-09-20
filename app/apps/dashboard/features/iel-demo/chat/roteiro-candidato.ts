@@ -2,7 +2,7 @@
  * Roteiro da conversa do candidato (M3 + M7, em forma de conversa — C2).
  *
  * Diz o mesmo que o questionário em telas (`candidate/fit-questionnaire-screen`)
- * e grava a mesma coisa: as 10 frases são as de `perguntasDoCandidato` (as
+ * e grava a mesma coisa: as frases são as de `perguntasDoCandidato` (as
  * que a empresa da vaga escolheu), respondidas na escala de concordância; o
  * aceite é o de `CANDIDATE_CONSENT_TEXT`, e o
  * resultado sai pela mesma ação do reducer. Muda só a forma — uma fala por
@@ -25,6 +25,12 @@ import type { ConversaRoteiro, PassoRoteiro } from './motor';
 export type VarianteCandidato =
   | 'invalido'
   | 'novo'
+  /**
+   * Nada a perguntar: as respostas que a pessoa já deu cobrem esta vaga e
+   * continuam dentro dos 12 meses. A conversa pede só a confirmação — usar em
+   * silêncio seria decidir por ela.
+   */
+  | 'reaproveita'
   | 'ja-respondeu'
   | 'expirado';
 
@@ -95,17 +101,32 @@ export function respostasDaEscala(
   return resultado;
 }
 
+/** O que a conversa precisa saber sobre reaproveitamento. */
+export type ReusoDoRoteiro = {
+  /** Quantas frases esta empresa pergunta. */
+  perguntadas: number;
+  /** Quantas já vieram de resposta anterior da própria pessoa. */
+  reaproveitadas: number;
+  /** Quantas respostas anteriores venceram os 12 meses. */
+  vencidas: number;
+  /** Data da resposta reaproveitada mais antiga (ISO), ou `null`. */
+  desde: string | null;
+};
+
 export function montarRoteiroCandidato({
   variante,
   vaga,
   respondidoEm,
-  frases
+  frases,
+  reuso
 }: {
   variante: VarianteCandidato;
   vaga: CandidateJobView | null;
   respondidoEm: string | null;
-  /** As 10 frases da vaga, já no texto simples. */
+  /** As frases que ainda faltam perguntar, já no texto simples. */
   frases: FraseDoRoteiro[];
+  /** O reaproveitamento desta candidatura, quando há o que dizer. */
+  reuso?: ReusoDoRoteiro | null;
 }): ConversaRoteiro {
   if (variante === 'invalido' || !vaga) {
     return {
@@ -138,7 +159,57 @@ export function montarRoteiroCandidato({
               : 'Suas respostas desta vaga já estão com a gente.',
             'Você não precisa fazer mais nada. Se quiser mudar alguma, responda de novo: fica valendo a última.'
           ],
-          acoes: ['responder-de-novo', 'ver-registro']
+          acoes: ['ver-candidatura', 'responder-de-novo']
+        }
+      ]
+    };
+  }
+
+  if (variante === 'reaproveita' && reuso) {
+    return {
+      id: 'candidato-reaproveita',
+      passos: [
+        ...saudacao(vaga),
+        {
+          tipo: 'mensagem',
+          id: 'reuso',
+          texto: reuso.desde
+            ? `Boa notícia: não tem frase nova. As ${reuso.perguntadas} que esta empresa pergunta são as mesmas que você respondeu em ${diaMes(reuso.desde)}.`
+            : `Boa notícia: não tem frase nova. As ${reuso.perguntadas} que esta empresa pergunta são as mesmas que você já respondeu.`
+        },
+        {
+          tipo: 'mensagem',
+          id: 'reuso-quem-ve',
+          texto: CANDIDATE_CONSENT_TEXT.whoSees
+        },
+        {
+          /*
+           * O aceite volta porque o texto mudou junto com a regra: quem
+           * consentiu sob a versão antiga não consentiu com o reuso. E porque
+           * a confirmação é dela — reaproveitar calado seria decidir por ela.
+           */
+          tipo: 'aceite',
+          id: 'aceite',
+          texto: 'Posso usar as suas respostas nesta vaga?',
+          apoio: `Nenhuma frase nova é perguntada. Versão do texto: ${CANDIDATE_CONSENT_TEXT.version}.`,
+          detalhes: [
+            CANDIDATE_CONSENT_TEXT.retention,
+            CANDIDATE_CONSENT_TEXT.rights
+          ],
+          recusa: [
+            'Tudo bem, nada foi usado nesta vaga.',
+            'Se mudar de ideia, é só abrir este link de novo. Você também pode responder tudo outra vez: vale sempre a sua última resposta.'
+          ]
+        },
+        {
+          tipo: 'fim',
+          id: 'fim',
+          textos: [
+            'Combinado, obrigado! Esta vaga já está com as suas respostas.',
+            'Agora o IEL compara o seu jeito de trabalhar com o de quem já trabalha na empresa desta vaga.',
+            'Se a empresa quiser conversar, quem avisa você é o IEL, pelo mesmo contato que mandou este link.'
+          ],
+          acoes: ['ver-candidatura', 'responder-de-novo']
         }
       ]
     };
@@ -156,7 +227,7 @@ export function montarRoteiroCandidato({
             'O prazo para responder terminou: as perguntas ficavam abertas por 2 dias.',
             'O IEL continua com o seu currículo. Se a vaga voltar a precisar de respostas, você recebe um link novo.'
           ],
-          acoes: ['responder-mesmo-assim']
+          acoes: ['responder-mesmo-assim', 'ver-candidatura']
         }
       ]
     };
@@ -166,16 +237,42 @@ export function montarRoteiroCandidato({
     id: 'candidato',
     passos: [
       ...saudacao(vaga),
-      {
-        tipo: 'mensagem',
-        id: 'convite',
-        texto:
-          'São 10 frases sobre como você prefere trabalhar. Para cada uma, diga se concorda ou discorda. Leva uns 5 minutos e não existe resposta certa.'
-      },
+      /*
+       * A finalidade primeiro, na palavra versionada do aceite — ela já diz
+       * quantas frases são e para que servem. A mensagem seguinte é a desta
+       * conversa: quanto tempo leva e que não é prova. Estavam na ordem
+       * inversa e a pessoa lia duas vezes seguidas, quase igual, "São 10
+       * frases sobre como você prefere trabalhar".
+       */
       {
         tipo: 'mensagem',
         id: 'aceite-para-que',
         texto: CANDIDATE_CONSENT_TEXT.purpose
+      },
+      ...(reuso && reuso.reaproveitadas > 0
+        ? [
+            {
+              tipo: 'mensagem' as const,
+              id: 'reuso-parcial',
+              texto: reuso.desde
+                ? `Você já tinha respondido ${reuso.reaproveitadas} dessas frases em ${diaMes(reuso.desde)}, e elas continuam valendo. Então vou perguntar só as ${frases.length} que faltam.`
+                : `Você já tinha respondido ${reuso.reaproveitadas} dessas frases, e elas continuam valendo. Então vou perguntar só as ${frases.length} que faltam.`
+            }
+          ]
+        : reuso && reuso.vencidas > 0
+          ? [
+              {
+                tipo: 'mensagem' as const,
+                id: 'reuso-vencido',
+                texto: `O que você respondeu antes passou de 12 meses, e depois desse prazo a gente não usa mais. Por isso as ${frases.length} frases voltam.`
+              }
+            ]
+          : []),
+      {
+        tipo: 'mensagem',
+        id: 'convite',
+        texto:
+          'Leva uns 5 minutos. Não existe resposta certa nem errada, e ninguém está testando você.'
       },
       {
         tipo: 'mensagem',
@@ -209,10 +306,11 @@ export function montarRoteiroCandidato({
         id: 'fim',
         textos: [
           `Pronto, recebemos as suas ${frases.length} respostas. Obrigado!`,
-          'Agora o IEL compara o que você respondeu com o jeito de trabalhar da empresa desta vaga. Se o seu currículo for enviado, a empresa vê o resultado por tema, nunca as suas respostas uma a uma.',
-          'Se a empresa quiser conversar, o contato vem por quem já fala com você. Você não precisa fazer mais nada agora.'
+          'Agora o IEL compara o seu jeito de trabalhar com o de quem já trabalha na empresa desta vaga.',
+          'Se o seu currículo for enviado, a empresa recebe só um resumo do quanto vocês combinam. As suas respostas, uma a uma, ela nunca vê.',
+          'Se a empresa quiser conversar, quem avisa você é o IEL, pelo mesmo contato que mandou este link. Guarde este link para acompanhar a sua candidatura.'
         ],
-        acoes: ['ver-registro', 'responder-de-novo']
+        acoes: ['ver-candidatura', 'responder-de-novo']
       }
     ]
   };

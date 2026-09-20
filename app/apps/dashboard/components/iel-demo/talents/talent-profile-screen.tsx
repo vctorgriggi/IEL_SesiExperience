@@ -30,9 +30,17 @@ import {
   TableHeader,
   TableRow
 } from '@workspace/ui/shadcn/table';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@workspace/ui/shadcn/tabs';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { formatarData } from '../shared/datas';
+import { AderenciaDaPessoa } from './aderencia-da-pessoa';
 import { TalentFitView } from './talent-fit-view';
 
 function iniciais(nome: string): string {
@@ -46,10 +54,15 @@ function iniciais(nome: string): string {
 /**
  * O perfil completo, em página.
  *
- * É o mesmo conteúdo da gaveta — os dois cartões e as quatro abas —, porque
- * seria outra leitura da mesma pessoa se fosse escrito duas vezes. O que muda
- * é o entorno: aqui cabe o cabeçalho da casca, e o rodapé fixo vira uma linha
- * de ações no topo.
+ * A pergunta da tela mudou em 19/09: era "esta pessoa combina com a vaga pela
+ * qual você chegou?", e sem vaga no link a tela não respondia nada. Agora a
+ * leitura padrão é a da pessoa — **em quais empresas ela se encaixa** —,
+ * porque é isso que faz o banco de talentos valer, e porque o fit é da
+ * cultura da empresa, não da vaga (00:31:38).
+ *
+ * O contexto de vaga continua funcionando: com `?vaga=`, a aba "Nesta vaga"
+ * aparece com a leitura por candidatura e a aderência abre já na empresa
+ * daquela vaga.
  */
 export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const { state, dispatch, persona } = useIelDemo();
@@ -61,7 +74,7 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
 
   usePageHeader({
     breadcrumb: [
-      { label: 'Pessoas', href: iel.talents.index },
+      { label: 'Banco de talentos', href: iel.talents.index },
       { label: talent?.name ?? 'Pessoa' }
     ]
   });
@@ -103,6 +116,7 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
   const application = job
     ? (candidaturas.find((entry) => entry.jobId === job.id) ?? null)
     : null;
+  const journey = getTalentJourney(state, talent.id);
 
   const contexto =
     job && application
@@ -181,74 +195,119 @@ export function TalentProfileScreen({ talentId }: { talentId: string }) {
     </div>
   );
 
-  // Sem vaga não há pergunta a responder: combinar é sempre com alguém. O
-  // perfil abre pelo que descreve a pessoa, e a tela diz o que falta.
-  if (!job || !application) {
-    const journey = getTalentJourney(state, talent.id);
-    return (
-      <div className="flex flex-col gap-6">
-        {cabecalho}
-        <Alert variant="default">
-          Para ver se ela combina com uma empresa, abra este perfil a partir de
-          uma vaga: o percentual depende da oportunidade.
-        </Alert>
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader className="bg-muted">
-              <TableRow>
-                <TableHead>Candidatura</TableHead>
-                <TableHead className="w-[220px]">Resultado</TableHead>
-                <TableHead className="w-[140px]">Desde</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {journey.map((item) => (
-                <TableRow key={item.application.id}>
-                  <TableCell className="whitespace-normal">
-                    {item.job ? (
-                      <Link
-                        href={iel.talents
-                          .byId(talent.id)
-                          .inJob(item.application.jobId)}
-                        className="font-medium underline-offset-4 hover:underline"
-                      >
-                        {item.job.title}
-                      </Link>
-                    ) : (
-                      <span className="font-medium">Vaga fora da base</span>
-                    )}
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.company?.name ?? '—'}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="px-1.5 text-muted-foreground"
-                    >
-                      {JOURNEY_OUTCOME_LABEL[item.outcome]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatarData(item.application.appliedAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    );
-  }
+  const naVaga = Boolean(job && application);
 
   return (
     <div className="flex flex-col gap-6">
       {cabecalho}
-      <TalentFitView
-        job={job}
-        talent={talent}
-        application={application}
-      />
+
+      {/*
+       * A aderência abre primeiro mesmo quando o link traz uma vaga: a
+       * leitura da pessoa é a da tela, e a da vaga fica a um clique, na aba
+       * ao lado, já com a empresa daquela vaga aberta na leitura.
+       */}
+      <Tabs defaultValue="aderencia">
+        <TabsList className={ABAS_SEM_ROLAGEM}>
+          <TabsTrigger value="aderencia">Onde ela se encaixa</TabsTrigger>
+          {naVaga ? <TabsTrigger value="vaga">Nesta vaga</TabsTrigger> : null}
+          <TabsTrigger value="candidaturas">
+            Candidaturas{' '}
+            <Badge
+              variant="secondary"
+              className="h-5 min-w-5 rounded-full bg-muted-foreground/30 px-1"
+            >
+              {journey.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="aderencia">
+          <AderenciaDaPessoa
+            talentId={talent.id}
+            talentName={talent.name}
+            empresaInicial={job?.companyId ?? null}
+          />
+        </TabsContent>
+
+        {job && application ? (
+          <TabsContent value="vaga">
+            <TalentFitView
+              job={job}
+              talent={talent}
+              application={application}
+            />
+          </TabsContent>
+        ) : null}
+
+        <TabsContent value="candidaturas">
+          <div className="overflow-x-auto rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted">
+                <TableRow>
+                  <TableHead scope="col">Candidatura</TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[220px]"
+                  >
+                    Resultado
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className="w-[140px]"
+                  >
+                    Desde
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {journey.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      Nenhuma candidatura registrada para esta pessoa.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  journey.map((item) => (
+                    <TableRow key={item.application.id}>
+                      <TableCell className="whitespace-normal">
+                        {item.job ? (
+                          <Link
+                            href={iel.talents
+                              .byId(talent.id)
+                              .inJob(item.application.jobId)}
+                            className="font-medium underline-offset-4 hover:underline"
+                          >
+                            {item.job.title}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">Vaga fora da base</span>
+                        )}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {item.company?.name ?? '—'}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="px-1.5 text-muted-foreground"
+                        >
+                          {JOURNEY_OUTCOME_LABEL[item.outcome]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatarData(item.application.appliedAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

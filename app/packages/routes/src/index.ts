@@ -122,7 +122,22 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
       companies: {
         index: resolve('/iel/empresas'),
         byId: (companyId: string) =>
-          resolve(`/iel/empresas/${encodeSegment(companyId)}`)
+          resolve(`/iel/empresas/${encodeSegment(companyId)}`),
+        /**
+         * O mapa de cultura daquela empresa, que é uma aba do contexto dela.
+         *
+         * O mapa era tela própria, aberta na base inteira com um seletor de
+         * empresa dentro. Mas ele sempre mediu quem combina com *uma*
+         * cultura — "o fit cultural é sobre a cultura da empresa, não sobre a
+         * vaga" (00:31:38) —, e por isso passou a morar onde a cultura mora.
+         * A vaga é opcional e só delimita quem conta como inscrito.
+         */
+        cultureMapById: (companyId: string, jobId?: string) =>
+          resolve(
+            `/iel/empresas/${encodeSegment(companyId)}?aba=mapa${
+              jobId ? `&vaga=${encodeSegment(jobId)}` : ''
+            }`
+          )
       },
       /**
        * Superfície do candidato.
@@ -137,6 +152,12 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
         byId: (applicationId: string) => {
           const applicationBase = `/iel/candidatura/${encodeSegment(applicationId)}`;
           return {
+            /**
+             * "Minha candidatura": em que pé está o processo e o que acontece
+             * agora. É a casa da pessoa no produto — o questionário e a
+             * conversa são tarefas que saem daqui e voltam para cá.
+             */
+            index: resolve(applicationBase),
             fit: resolve(`${applicationBase}/fit`),
             /**
              * O mesmo questionário em forma de conversa guiada (C2): uma fala
@@ -188,16 +209,22 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
           resolve(`/iel/encaminhamentos/${encodeSegment(referralId)}`)
       },
       /**
-       * Análise de aderência: tela própria, com a vaga escolhida dentro dela.
-       * A medida é sempre de uma pessoa numa vaga, mas quem chega pelo menu
-       * ainda não escolheu qual — por isso a vaga é parâmetro, e não caminho.
+       * Legado, mantido de propósito: as duas telas de análise deixaram de
+       * ser avulsas em 19/09/2026.
+       *
+       * A aderência virou aba da pessoa (`talents.byId(...)`), porque a
+       * leitura por vaga repetia a mesa de seleção com outra roupa; o mapa
+       * virou aba da empresa (`companies.cultureMapById`). As rotas antigas
+       * continuam existindo e **redirecionam** para o destino novo: link
+       * velho na mão de alguém não pode dar 404. Nada no produto deve apontar
+       * para cá — use os destinos novos.
        */
       adherence: {
         index: resolve('/iel/analise-de-aderencia'),
         byJob: (jobId: string) =>
           resolve(`/iel/analise-de-aderencia?vaga=${encodeSegment(jobId)}`)
       },
-      /** Mapa de cultura: empresas e candidatos no mesmo plano. */
+      /** Legado: redireciona para o mapa dentro da empresa. */
       cultureMap: resolve('/iel/mapa-de-cultura'),
       /** Integrações: o que entra, o que sai e o que fica de fora. */
       dataSources: resolve('/iel/fontes-de-dados'),

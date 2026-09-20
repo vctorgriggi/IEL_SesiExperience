@@ -57,7 +57,13 @@ function prefixo(caminho: string): string {
 
 const ROTAS_ABERTAS = [
   routes.dashboard.iel.signIn,
-  prefixo(routes.dashboard.iel.applications.byId(SENTINELA).fit),
+  /*
+   * A candidatura inteira: "Minha candidatura", o questionário e a conversa.
+   * O prefixo para antes do identificador, então as três telas entram juntas
+   * — e é assim que precisa ser: a pessoa que respondeu por link tem de poder
+   * voltar pelo mesmo link para saber em que pé está.
+   */
+  prefixo(routes.dashboard.iel.applications.byId(SENTINELA).index),
   prefixo(routes.dashboard.iel.cultureInvite.byToken(SENTINELA)),
   prefixo(routes.dashboard.iel.report.byToken(SENTINELA))
 ];

@@ -145,7 +145,7 @@ export function DetalhePontoCultural({
 
               {/*
                 O número e o que o sustenta, lado a lado. O denominador é
-                exigência: "4 de 5 eixos" evita ler 80% como se os cinco
+                exigência: "4 de 10 temas" evita ler 80% como se os dez
                 tivessem sido respondidos.
               */}
               {leitura?.aderencia ? (
@@ -155,7 +155,7 @@ export function DetalhePontoCultural({
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     sobre {leitura.aderencia.coverage.answeredAxes} de{' '}
-                    {FIT_AXES.length} eixos
+                    {FIT_AXES.length} temas
                   </span>
                   {!leitura.aderencia.compatible ? (
                     <Badge
@@ -234,11 +234,11 @@ export function DetalhePontoCultural({
                 </div>
               ) : (
                 <p className="border-t border-primary/15 pt-2 text-[11px] text-muted-foreground">
-                  Nenhum eixo divergiu entre os{' '}
+                  Nenhum tema divergiu entre os{' '}
                   {plural(
                     resumo.eixosConvergentes.length,
-                    'eixo comparado',
-                    'eixos comparados'
+                    'tema comparado',
+                    'temas comparados'
                   )}
                   .
                 </p>
@@ -255,8 +255,8 @@ export function DetalhePontoCultural({
                 <span className="text-[11px] text-muted-foreground">
                   {plural(
                     ponto.position.eixosRespondidos.length,
-                    'eixo respondido',
-                    'eixos respondidos'
+                    'tema respondido',
+                    'temas respondidos'
                   )}
                 </span>
               </div>
@@ -270,8 +270,8 @@ export function DetalhePontoCultural({
                 <span className="font-semibold">Atenção da equipe: </span>
                 {plural(
                   ponto.divergentAxes,
-                  'eixo divergente',
-                  'eixos divergentes'
+                  'tema divergente',
+                  'temas divergentes'
                 )}{' '}
                 entre o que a empresa declara e o relato da equipe no dia a dia.
               </div>

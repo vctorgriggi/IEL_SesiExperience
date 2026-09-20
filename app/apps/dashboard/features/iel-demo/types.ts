@@ -1,5 +1,6 @@
 import type { CultureRespondent } from './analysis/culture';
 import type { CultureInviteRole } from './analysis/culture-invites';
+import type { ReferralOutcome } from './analysis/devolutiva';
 import type { FitAxisId } from './analysis/fit-axes';
 import type { ValorDaEscala } from './analysis/instrumento';
 
@@ -382,13 +383,25 @@ export type Application = {
 export type FitStatus = 'respondido' | 'pendente' | 'expirado';
 
 /**
- * Resposta do candidato ao questionário de fit, com o aceite (M3, M7, R4).
+ * O que uma pessoa respondeu ao questionário de fit numa candidatura, com o
+ * aceite (M3, M7, R4).
  *
- * **Vinculada à candidatura, não ao talento.** O cliente corrigiu isso na
- * reunião: o fit é aplicado quando a pessoa se candidata àquela vaga daquela
- * empresa (R4, 00:39:02). A mesma pessoa pode responder diferente para duas
- * vagas, e reaproveitar a resposta de um processo em outro seria tratamento
- * para finalidade diversa da informada.
+ * **A resposta é da pessoa; a candidatura é o contexto.** O fit continua
+ * sendo aplicado quando a pessoa se candidata (R4, 00:39:02) — é por ali que
+ * o link chega e é dali que sai qual empresa pergunta o quê. Mas o que se
+ * pergunta é como a pessoa prefere trabalhar, e isso é dela: "o que eu gosto
+ * ou não é o candidato" (00:19:47). Por isso o registro carrega `talentId`, e
+ * a pergunta "o que esta pessoa respondeu" é respondida pelo índice de
+ * `analysis/respostas-da-pessoa.ts`, que lê todos os registros dela — não por
+ * este registro sozinho. Resposta dentro da validade
+ * (`VALIDADE_DA_RESPOSTA_MESES`) vale nas outras candidaturas dela; fora, é
+ * como se não existisse.
+ *
+ * Guardar um registro por candidatura, em vez de uma segunda tabela por
+ * pessoa, é a modelagem menos invasiva que sustenta isso: cada frase já tem
+ * dono (`talentId`), instante (`answeredAt`) e o texto de aceite sob o qual
+ * foi dada (`consent.version`), e não há duas cópias do mesmo dado para
+ * divergirem.
  *
  * **Não carrega empresa.** Nem `companyId`, nem nome, nem nada que permita
  * reconstruí-los a partir daqui. R5 (00:22:21, 00:38:43): o nome da empresa
@@ -396,14 +409,23 @@ export type FitStatus = 'respondido' | 'pendente' | 'expirado';
  * de `getCandidateJobView`: atividade, localidade, segmento e turno.
  *
  * **O aceite mora junto da resposta.** Consentimento é base legal (LGPD, art.
- * 7º, I) e precisa ser demonstrável com a versão do texto aceito e o momento
- * — um registro por finalidade, e a finalidade aqui é esta candidatura.
+ * 7º, I) e precisa ser demonstrável com a versão do texto aceito e o momento.
+ * A versão importa mais do que antes: só a resposta dada sob um texto que
+ * previa o reaproveitamento pode ir para outra candidatura
+ * (`VERSOES_DE_ACEITE_QUE_PERMITEM_REUSO`).
  */
 export type CandidateFitResponse = {
   applicationId: string;
+  /** A pessoa que respondeu. Fonte de verdade do dono da resposta. */
+  talentId: string;
   /**
-   * Concordância por frase (`itemId → 1..5`), nas frases que a empresa da
-   * vaga escolheu (`perguntasDoCandidato`). A mesma escala da equipe.
+   * Concordância por frase (`itemId → 1..5`), nas frases respondidas **nesta**
+   * candidatura. A mesma escala da equipe.
+   *
+   * Pode ser vazio: quando tudo o que a empresa pergunta já está respondido
+   * dentro da validade, a pessoa confirma o reaproveitamento e o registro
+   * existe só para guardar esse ato e o aceite. O conjunto que vale para a
+   * candidatura sai de `respostasResolvidas`, nunca deste campo.
    */
   answers: Record<string, ValorDaEscala>;
   answeredAt: string;
@@ -492,6 +514,22 @@ export type ReferralItem = {
   managerDecision: 'pendente' | 'quero-entrevistar' | 'nao-avancar';
   managerNote: string | null;
   decidedAt: string | null;
+  /**
+   * O que aconteceu com esta pessoa depois (C3).
+   *
+   * Fica no item, e não numa tabela à parte, porque o desfecho é do par
+   * pessoa-vaga: a mesma pessoa pode ser contratada por uma empresa e não
+   * por outra, e é a remessa que a empresa abre para responder.
+   *
+   * Não se confunde com `managerDecision`: aquilo é intenção de entrevistar,
+   * isto é resultado. O ciclo do IEL fechava na intenção, e era justamente o
+   * resultado que faltava.
+   *
+   * Opcional porque encaminhamentos gravados antes desta funcionalidade — no
+   * `localStorage` de quem já abriu a demonstração — não têm o campo. Ler
+   * sempre por `lerDevolutiva`, que trata ausência como "pendente".
+   */
+  outcome?: ReferralOutcome;
 };
 
 export type Referral = {

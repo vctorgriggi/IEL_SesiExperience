@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -31,6 +32,7 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import { ScrollArea } from '@workspace/ui/shadcn/scroll-area';
 import { Skeleton } from '@workspace/ui/shadcn/skeleton';
 
+import { useRascunho } from '../shared/use-rascunho';
 import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
 
 /**
@@ -76,6 +78,21 @@ export type ConversaGuiadaProps = {
    * ir que não seja o topo da página.
    */
   focarAoAbrir?: boolean;
+  /**
+   * Chave do rascunho no navegador (uma por link). Sem ela, fechar a aba na
+   * frase 9 joga fora as oito anteriores — e quem responde no celular, no
+   * intervalo do turno, fecha a aba.
+   */
+  rascunhoChave?: string;
+};
+
+/** A conversa como ela cabe no navegador da pessoa. */
+type RascunhoDaConversa = {
+  /** Outro roteiro (já respondeu, venceu) não retoma este rascunho. */
+  roteiroId: string;
+  /** Muda a lista de frases, muda a contagem: o rascunho deixa de valer. */
+  passos: number;
+  estado: EstadoConversa;
 };
 
 function atrasoDe(texto: string): number {
@@ -97,7 +114,8 @@ export function ConversaGuiada({
   onPrimeiraResposta,
   onConcluir,
   renderAcoesFinais,
-  focarAoAbrir = false
+  focarAoAbrir = false,
+  rascunhoChave
 }: ConversaGuiadaProps) {
   const [estado, setEstado] = useState<EstadoConversa>(() =>
     iniciarConversa(roteiro, nowIso())
@@ -121,6 +139,71 @@ export function ConversaGuiada({
   const baseId = useId();
 
   const { historico } = estado;
+
+  /*
+   * Fechar e voltar.
+   *
+   * A conversa inteira é um objeto de dados (o motor é puro), então retomar é
+   * devolver o estado e pular a animação: o histórico já revelado entra de
+   * uma vez, e a pessoa cai no mesmo botão em que parou. Um rascunho de outro
+   * roteiro — porque ela respondeu nesse meio-tempo, ou porque o link venceu
+   * — é descartado em vez de reaproveitado.
+   */
+  const lerRascunho = useCallback(
+    (bruto: unknown): RascunhoDaConversa | null => {
+      if (!bruto || typeof bruto !== 'object') return null;
+      const dado = bruto as Partial<RascunhoDaConversa>;
+      if (dado.roteiroId !== roteiro.id) return null;
+      if (dado.passos !== roteiro.passos.length) return null;
+      const guardado = dado.estado;
+      if (!guardado || !Array.isArray(guardado.historico)) return null;
+      // Conversa acabada ou recusada não se retoma: ou o dado já foi
+      // gravado, ou a pessoa disse não.
+      if (guardado.encerrada || guardado.aceite !== 'aceito') return null;
+      if (Object.keys(guardado.respostas ?? {}).length === 0) return null;
+      return {
+        roteiroId: roteiro.id,
+        passos: roteiro.passos.length,
+        estado: guardado
+      };
+    },
+    [roteiro]
+  );
+
+  const aoRetomar = useCallback((rascunho: RascunhoDaConversa) => {
+    setEstado(rascunho.estado);
+    // Sem isto, as falas já lidas voltariam a entrar uma a uma, com
+    // "digitando…" entre elas — a pessoa esperaria de novo o que já leu.
+    setRevelados(rascunho.estado.historico.length);
+    respondeuRef.current = true;
+  }, []);
+
+  const { restaurado, gravar, apagar } = useRascunho<RascunhoDaConversa>({
+    chave: rascunhoChave ?? '',
+    ler: lerRascunho,
+    aoRestaurar: rascunhoChave ? aoRetomar : () => undefined
+  });
+
+  const roteiroId = roteiro.id;
+  const totalDePassos = roteiro.passos.length;
+  useEffect(() => {
+    if (!rascunhoChave || !restaurado) return;
+    if (estado.encerrada || estado.aceite !== 'aceito') {
+      // O fim apaga o rascunho: o que valia como "continue de onde parou" já
+      // virou resposta gravada.
+      if (estado.encerrada) apagar();
+      return;
+    }
+    gravar({ roteiroId, passos: totalDePassos, estado });
+  }, [
+    rascunhoChave,
+    restaurado,
+    gravar,
+    apagar,
+    estado,
+    roteiroId,
+    totalDePassos
+  ]);
 
   // Revela uma fala por vez. A da pessoa entra na hora; a do IEL, depois do
   // "digitando…". Um corte no histórico ("mudar minha resposta") traz o
@@ -293,7 +376,7 @@ export function ConversaGuiada({
 
   const rotuloProgresso =
     progresso.fase === 'perguntas'
-      ? `Pergunta ${progresso.atual} de ${progresso.total}`
+      ? `Frase ${progresso.atual} de ${progresso.total}`
       : progresso.fase === 'fim'
         ? progresso.atual === progresso.total
           ? 'Pronto'
@@ -348,10 +431,19 @@ export function ConversaGuiada({
             {/* O texto visível é a leitura; a barra repete o mesmo valor
                 para quem navega por elementos. */}
             <span
-              className="text-xs text-muted-foreground"
+              className="flex justify-between text-xs text-muted-foreground"
               aria-hidden="true"
             >
               {rotuloProgresso}
+              {/* Quantas ainda faltam: a pergunta que a pessoa faz no meio
+                  de uma fila de 16 frases. */}
+              {progresso.fase === 'perguntas' ? (
+                <span>
+                  {progresso.total - progresso.atual === 0
+                    ? 'Última'
+                    : `Faltam ${progresso.total - progresso.atual}`}
+                </span>
+              ) : null}
             </span>
             <Progress
               className="h-1 bg-muted"

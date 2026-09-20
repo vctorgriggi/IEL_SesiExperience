@@ -68,7 +68,8 @@ export type PassoFim = {
 export type AcaoFinal =
   | 'responder-de-novo'
   | 'responder-mesmo-assim'
-  | 'ver-registro';
+  /** Leva para "Minha candidatura", a casa do candidato no produto. */
+  | 'ver-candidatura';
 
 export type PassoRoteiro =
   | PassoMensagem

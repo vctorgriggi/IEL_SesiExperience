@@ -101,14 +101,22 @@ export function corDaVariacao(
 /** Um lado da leitura, pelo nome: o `tom` dos cartões e ícones de contexto. */
 export type TomDeCor = EstadoDeCor | 'empresa' | 'pessoa';
 
-/** Quadradinho tingido de ícone de contexto: fundo claro e ícone no tom. */
+/**
+ * Quadradinho de ícone do cartão: preenchimento cheio no tom, glifo claro.
+ *
+ * Era fundo claro com o ícone tingido, e uma tela inteira de cartões assim
+ * lia como branco sobre branco. Cheio, o quadradinho é o que dá cor à
+ * página — e continua sendo cor com significado, porque o tom é o mesmo da
+ * leitura do cartão. No laranja o glifo é azul-noite: branco sobre laranja
+ * não chega aos 3:1 que a 1.4.11 pede para elemento gráfico.
+ */
 export const ICONE_TINGIDO: Record<TomDeCor, string> = {
-  combina: BADGE_DE_ESTADO.combina,
-  atencao: BADGE_DE_ESTADO.atencao,
-  difere: BADGE_DE_ESTADO.difere,
-  neutro: BADGE_DE_ESTADO.neutro,
-  empresa: `${LADO.empresa.fundo} ${LADO.empresa.texto}`,
-  pessoa: `${LADO.pessoa.fundo} ${LADO.pessoa.texto}`
+  combina: 'bg-[hsl(var(--estado-combina))] text-white',
+  atencao: 'bg-[hsl(var(--estado-atencao))] text-[hsl(var(--foreground))]',
+  difere: 'bg-[hsl(var(--estado-difere))] text-white',
+  neutro: 'bg-[hsl(var(--estado-neutro-fg))] text-white',
+  empresa: 'bg-[hsl(var(--data-empresa))] text-white',
+  pessoa: 'bg-[hsl(var(--data-pessoa))] text-white'
 };
 
 /** Preenchimento puro no tom (barra, ponto, mini indicador). */
@@ -153,12 +161,20 @@ export const TONS_DA_EMPRESA = {
 } as const;
 
 /**
- * Item ativo da navegação: fundo azul bem claro e texto azul (o lado da
- * empresa é o lado de quem opera o painel). Para `SidebarMenuButton`, que só
- * marca o ativo com `data-active`.
+ * Item ativo da barra, que é azul-noite: o fundo sobe um tom, o texto vai a
+ * branco e o ícone recebe o laranja da marca, com uma lasca laranja na borda
+ * esquerda. Para `SidebarMenuButton`, que só marca o ativo com `data-active`.
  */
-export const ITEM_ATIVO =
-  'data-[active=true]:bg-[hsl(var(--data-empresa-bg))] data-[active=true]:text-[hsl(var(--data-empresa))] data-[active=true]:hover:bg-[hsl(var(--data-empresa-bg))] data-[active=true]:hover:text-[hsl(var(--data-empresa))]';
+export const ITEM_ATIVO = [
+  // Onde você está, em azul-noite: fundo um tom acima da barra, texto em
+  // branco e o ícone no laranja da marca — as duas cores da assinatura.
+  'relative data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
+  'data-[active=true]:hover:bg-sidebar-accent data-[active=true]:hover:text-sidebar-accent-foreground',
+  'data-[active=true]:[&>svg]:text-[hsl(var(--brand-accent))]',
+  // A lasca laranja na borda esquerda: a marca do item ativo continua
+  // legível para quem não distingue o fundo um tom acima.
+  'before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[3px] before:-translate-y-1/2 before:rounded-r-full before:bg-[hsl(var(--brand-accent))] before:opacity-0 data-[active=true]:before:opacity-100'
+].join(' ');
 
 /**
  * Acabamento do selo dos cartões (variação e etiquetas): 24px de altura,

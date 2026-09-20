@@ -59,6 +59,22 @@ export const CULTURE_RESPONDENT_LABEL: Record<CultureRespondent, string> = {
 export const MIN_TEAM_RESPONSES = 3;
 
 /**
+ * Piso de um grupo anônimo para aparecer sozinho.
+ *
+ * Quem responde a consulta por link leu, antes da primeira frase, que ninguém
+ * veria a resposta dela sozinha — nem a empresa, nem a chefia, nem o IEL.
+ * "Gestão da área: concordo (1 resposta)" é exatamente isso, com outro nome.
+ * Abaixo deste piso, a resposta de um grupo entra na média da empresa e na
+ * leitura de liderança (gestão e RH juntos), mas nunca aparece como a
+ * leitura daquele grupo. A equipe tem o próprio piso (`MIN_TEAM_RESPONSES`).
+ *
+ * A declaração da empresa não é anônima: quem confirma um tema pela tela da
+ * empresa fala em nome dela, e é isso que a tela mostra. A diferença está
+ * na origem da resposta — a anônima vem de convite (`inviteId`).
+ */
+export const MIN_RESPOSTAS_ANONIMAS = 2;
+
+/**
  * Diferença, em pontos da escala de 1 a 5, a partir da qual gestão/RH e
  * equipe "respondem diferente" num tema. Um ponto é a distância entre
  * "concordo" e "tanto faz": abaixo disso é nuance, não outra versão.
@@ -71,6 +87,11 @@ export type RespostaAgregada = {
   value: ValorDaEscala;
   respondent: CultureRespondent;
   count: number;
+  /**
+   * Presente quando a resposta veio de convite por link: é a marca de que a
+   * pessoa respondeu sob a promessa de anonimato (`MIN_RESPOSTAS_ANONIMAS`).
+   */
+  inviteId?: string;
 };
 
 export type PerfilDoItem = {
@@ -86,7 +107,14 @@ export type PerfilDoItem = {
   desvio: number;
   /** n da equipe ≥ `MIN_TEAM_RESPONSES`. */
   fecha: boolean;
-  porPapel: Partial<Record<CultureRespondent, { media: number; n: number }>>;
+  /**
+   * Por papel, sem piso: quem lê isto e junta papéis (`mediaDoGrupo`) aplica
+   * o piso ao grupo já somado. `anonimas` diz quantas das `n` vieram de
+   * convite, para o piso valer só sobre quem recebeu a promessa.
+   */
+  porPapel: Partial<
+    Record<CultureRespondent, { media: number; n: number; anonimas: number }>
+  >;
 };
 
 export type CultureDispersion = 'convergente' | 'divergente';
@@ -103,7 +131,11 @@ export type PerfilDoTema = {
   respondentes: number;
   /** Maior número de respostas por papel numa frase do tema. */
   respondentesPorPapel: Record<CultureRespondent, number>;
-  /** Média do tema por papel, no sentido do tema. */
+  /**
+   * Média do tema por papel, no sentido do tema. Um papel só aparece aqui
+   * quando pode aparecer sozinho: grupo anônimo abaixo do piso fica de fora
+   * (mas continua em `media`, em `lideranca` e em `respondentesPorPapel`).
+   */
   porPapel: Partial<Record<CultureRespondent, number>>;
   /** Gestão e RH juntos, e a equipe, para o diagnóstico de divergência. */
   lideranca: number | null;
@@ -137,7 +169,11 @@ export function calcularPerfilCultural(
     soma: number;
     somaQuadrados: number;
     n: number;
-    porPapel: Record<CultureRespondent, { soma: number; n: number }>;
+    anonimas: number;
+    porPapel: Record<
+      CultureRespondent,
+      { soma: number; n: number; anonimas: number }
+    >;
   };
   const porItem = new Map<string, Acumulado>();
 
@@ -147,17 +183,21 @@ export function calcularPerfilCultural(
       soma: 0,
       somaQuadrados: 0,
       n: 0,
+      anonimas: 0,
       porPapel: {
-        gestao: { soma: 0, n: 0 },
-        rh: { soma: 0, n: 0 },
-        equipe: { soma: 0, n: 0 }
+        gestao: { soma: 0, n: 0, anonimas: 0 },
+        rh: { soma: 0, n: 0, anonimas: 0 },
+        equipe: { soma: 0, n: 0, anonimas: 0 }
       }
     };
+    const anonimas = resposta.inviteId ? resposta.count : 0;
     atual.soma += resposta.value * resposta.count;
     atual.somaQuadrados += resposta.value * resposta.value * resposta.count;
     atual.n += resposta.count;
+    atual.anonimas += anonimas;
     atual.porPapel[resposta.respondent].soma += resposta.value * resposta.count;
     atual.porPapel[resposta.respondent].n += resposta.count;
+    atual.porPapel[resposta.respondent].anonimas += anonimas;
     porItem.set(resposta.itemId, atual);
   }
 
@@ -173,14 +213,23 @@ export function calcularPerfilCultural(
     for (const papel of PAPEIS) {
       const entrada = acumulado.porPapel[papel];
       if (entrada.n > 0) {
-        porPapel[papel] = { media: entrada.soma / entrada.n, n: entrada.n };
+        porPapel[papel] = {
+          media: entrada.soma / entrada.n,
+          n: entrada.n,
+          anonimas: entrada.anonimas
+        };
       }
     }
     const nEquipe = acumulado.porPapel.equipe.n;
+    // Uma frase respondida só por gente anônima, e por menos gente que o
+    // piso, não tem média: seria a resposta de uma pessoa com outro nome.
+    const soAnonimasAbaixoDoPiso =
+      acumulado.anonimas === acumulado.n &&
+      acumulado.n < MIN_RESPOSTAS_ANONIMAS;
     itens[itemId] = {
       itemId,
       tema: item.tema,
-      media: mediaDoItem,
+      media: soAnonimasAbaixoDoPiso ? null : mediaDoItem,
       n: acumulado.n,
       nEquipe,
       desvio: Math.sqrt(variancia),
@@ -214,21 +263,31 @@ export function calcularPerfilCultural(
     };
     for (const papel of PAPEIS) {
       const valores: number[] = [];
+      let algumaAnonima = false;
       for (const entrada of comResposta) {
         const doPapel = entrada.perfil.porPapel[papel];
         if (!doPapel) continue;
         valores.push(alinharAoPolo(entrada.item, doPapel.media));
+        algumaAnonima ||= doPapel.anonimas > 0;
         respondentesPorPapel[papel] = Math.max(
           respondentesPorPapel[papel],
           doPapel.n
         );
       }
       const valor = media(valores);
-      if (valor !== null) porPapel[papel] = valor;
+      // O piso vale para quem respondeu sob a promessa: a declaração da
+      // empresa (sem convite) aparece com uma resposta só, como sempre.
+      const piso =
+        papel === 'equipe' ? MIN_TEAM_RESPONSES : MIN_RESPOSTAS_ANONIMAS;
+      const podeAparecerSozinho =
+        !algumaAnonima || respondentesPorPapel[papel] >= piso;
+      if (valor !== null && podeAparecerSozinho) porPapel[papel] = valor;
     }
 
     // Divergência: só nas frases em que os dois lados responderam, para não
-    // comparar a gestão numa frase com a equipe em outra.
+    // comparar a gestão numa frase com a equipe em outra. Gestão e RH entram
+    // somados — é o que permite ler a liderança quando cada um é uma pessoa
+    // só e nenhum poderia aparecer sozinho.
     const liderancaValores: number[] = [];
     const equipeValores: number[] = [];
     for (const entrada of comResposta) {
@@ -237,6 +296,10 @@ export function calcularPerfilCultural(
       const equipe = entrada.perfil.porPapel.equipe;
       if (!equipe || (!gestao && !rh)) continue;
       const nLideranca = (gestao?.n ?? 0) + (rh?.n ?? 0);
+      const anonimasLideranca = (gestao?.anonimas ?? 0) + (rh?.anonimas ?? 0);
+      if (anonimasLideranca > 0 && nLideranca < MIN_RESPOSTAS_ANONIMAS)
+        continue;
+      if (equipe.anonimas > 0 && equipe.n < MIN_TEAM_RESPONSES) continue;
       const somaLideranca =
         (gestao ? gestao.media * gestao.n : 0) + (rh ? rh.media * rh.n : 0);
       liderancaValores.push(

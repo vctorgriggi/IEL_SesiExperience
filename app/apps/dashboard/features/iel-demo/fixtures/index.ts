@@ -19,7 +19,15 @@ import { DEMO_JOBS } from './jobs';
 import { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
 
-export const DEMO_SCHEMA_VERSION = 6;
+/*
+ * 7: a resposta do candidato passou a ser da pessoa (`CandidateFitResponse`
+ * ganhou `talentId`) e a valer 12 meses. O estado gravado na versão 6 é
+ * descartado na leitura, e isso é a escolha certa, não uma conveniência:
+ * aquelas respostas foram dadas sob um aceite que prometia o contrário do
+ * reaproveitamento ("ficam ligadas a esta candidatura"). Carregá-las para
+ * dentro da máquina de reuso seria exatamente o que decidimos não fazer.
+ */
+export const DEMO_SCHEMA_VERSION = 7;
 
 const GENERATED = getGeneratedBase();
 

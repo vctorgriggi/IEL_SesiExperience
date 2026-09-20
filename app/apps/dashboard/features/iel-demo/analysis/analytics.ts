@@ -10,6 +10,13 @@
  *   vagas encerradas: retorno das empresas, contratação, permanência e
  *   reaberturas. Não muda durante a demonstração.
  *
+ * Retorno e permanência deixaram de ser só histórico: a devolutiva de um
+ * clique (C3) que a empresa registra na página do relatório entra na mesma
+ * base, dentro da mesma janela, e **sobrepõe** o passado simulado.
+ * `getComposicaoDosIndicadores` devolve, por período, quanto do indicador vem
+ * de devolutiva capturada e quanto vem do histórico — é o contrato que
+ * permite ao painel dizer isso na tela em vez de esconder a mistura.
+ *
  * **Recorte de demonstração.** O IEL-MT opera cerca de 2.500 vagas por mês; a
  * base tem umas 40 vagas ativas e algumas centenas de vagas encerradas no
  * histórico. Os absolutos são os da base, sem multiplicador nenhum: o que
@@ -33,6 +40,7 @@ import {
   MIND_RH_START_DATE,
   MOTIVO_LABEL,
   RETORNO_LABEL,
+  setorDoHistorico,
   WHATSAPP_PILOT_START_DATE,
   type CanalComunicacao,
   type ContratacaoHistorica,
@@ -45,11 +53,19 @@ import {
   type RetornoEmpresa
 } from '../fixtures/outcomes';
 import {
+  getAdherence,
+  getApplicationsByJob,
+  getCompany,
+  getCompatibleCount,
   getCultureSampleProgress,
+  getFitStatus,
+  getJob,
+  getRegisteredReferrals,
   getVisibleCompanies
 } from '../state/selectors';
-import type { DemoState, Job } from '../types';
+import type { DemoState, Job, Referral } from '../types';
 import { ADHERENCE_THRESHOLD } from './adherence';
+import { lerDevolutiva, temDevolutiva } from './devolutiva';
 import { FIT_AXES, type FitAxisId } from './fit-axes';
 
 export {
@@ -288,17 +304,215 @@ function remessas12Meses(): RemessaHistorica[] {
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * Devolutiva capturada ao vivo (C3) sobrepondo o histórico
+ * ------------------------------------------------------------------ */
+
 /**
- * Contratações com o marco de 90 dias dentro da janela: é quando a
- * permanência vira fato. Contar por data de contratação misturaria gente que
- * ainda não completou 90 dias.
+ * Uma remessa com a procedência do dado colada nela.
+ *
+ * `'historico'` é o passado simulado de `fixtures/outcomes.ts`; `'vivo'` é um
+ * encaminhamento registrado na demonstração cuja empresa já respondeu a
+ * devolutiva de um clique. O rótulo existe para que a composição do indicador
+ * (`getComposicaoDosIndicadores`) possa ser dita na tela em vez de ficar
+ * implícita numa soma.
  */
-function contratacoesApuradas90(j: Janela): ContratacaoHistorica[] {
-  return getOutcomesBase()
+type RemessaDoPeriodo = RemessaHistorica & { fonte: FonteDoDado };
+
+type ContratacaoApurada = ContratacaoHistorica & { fonte: FonteDoDado };
+
+/**
+ * O encaminhamento vivo lido como remessa.
+ *
+ * O histórico e o estado vivo descrevem a mesma coisa — uma lista de até
+ * cinco currículos entregue a uma empresa — em formatos diferentes. Traduzir
+ * o vivo para o formato do histórico é o que permite ao indicador somar os
+ * dois sem duas contas paralelas.
+ *
+ * `etapasDias` sai zerado fora do retorno: a captura mede quanto a empresa
+ * demorou para responder, e não os dias de cada etapa interna do IEL. Nenhum
+ * seletor de tempo por etapa lê esta lista, justamente por isso.
+ */
+function remessaDoEncaminhamento(
+  state: DemoState,
+  referral: Referral
+): RemessaDoPeriodo | null {
+  if (referral.state !== 'registrado' || !referral.createdAt) return null;
+
+  const desfechos = referral.items.map((item) => lerDevolutiva(item.outcome));
+  // Sem nenhuma resposta, o encaminhamento vivo não é um dado de devolutiva:
+  // é justamente o silêncio que o indicador já contabiliza pelo histórico.
+  if (!desfechos.some(temDevolutiva)) return null;
+
+  const job = getJob(referral.jobId);
+  const company = getCompany(referral.companyId);
+  const candidaturas = getApplicationsByJob(state, referral.jobId);
+
+  const contratou = desfechos.some((d) => d.hiring === 'contratou');
+  const naoContratou = desfechos.some((d) => d.hiring === 'nao-contratou');
+  const retorno: RetornoEmpresa = contratou
+    ? 'contratou'
+    : naoContratou
+      ? 'nao-contratou'
+      : 'sem-resposta';
+
+  // O motivo da remessa é o mais citado entre os "não contratei" dela; empate
+  // fica com o primeiro da lista, que é a ordem em que a empresa os leu.
+  const motivos = desfechos
+    .map((d) => d.hiringReason)
+    .filter((motivo): motivo is MotivoNaoContratacao => motivo !== null);
+  const motivo =
+    retorno === 'nao-contratou' && motivos.length > 0
+      ? (motivos
+          .slice()
+          .sort(
+            (a, b) =>
+              motivos.filter((m) => m === b).length -
+              motivos.filter((m) => m === a).length
+          )[0] ?? null)
+      : null;
+
+  const primeiraResposta = desfechos
+    .map((d) => d.hiringAt)
+    .filter((at): at is string => at !== null)
+    .sort()[0];
+
+  const contratados: ContratacaoHistorica[] = [];
+  referral.items.forEach((item, indiceEnvio) => {
+    const desfecho = lerDevolutiva(item.outcome);
+    if (desfecho.hiring !== 'contratou' || !desfecho.hiringAt) return;
+    const ficou =
+      desfecho.retention === 'pendente'
+        ? null
+        : desfecho.retention === 'continua';
+    contratados.push({
+      indiceEnvio,
+      aderencia: Math.round(
+        getAdherence(state, item.applicationId)?.total ?? 0
+      ),
+      contratadoEm: desfecho.hiringAt,
+      // Quem saiu antes dos 90 dias pode ter passado dos 30: o IEL não
+      // perguntou, e responder por ele seria inventar desfecho.
+      ficou30: ficou === true ? true : null,
+      ficou90: ficou
+    });
+  });
+
+  return {
+    fonte: 'vivo',
+    id: referral.id,
+    vagaId: referral.jobId,
+    cargo: job?.title ?? referral.jobId,
+    companyId: referral.companyId,
+    setor: setorDoHistorico(company?.sector ?? '—'),
+    enviadaEm: referral.createdAt,
+    curriculosRecebidos: candidaturas.length,
+    questionariosRespondidos: candidaturas.filter(
+      (application) => getFitStatus(state, application) === 'respondido'
+    ).length,
+    acimaDoCorte: getCompatibleCount(state, referral.jobId),
+    curriculosEnviados: referral.items.length,
+    enviados: referral.items.map((item) => ({
+      aderencia: Math.round(
+        getAdherence(state, item.applicationId)?.total ?? 0
+      ),
+      porPonto: []
+    })),
+    retorno,
+    motivo,
+    diasAteRetorno: primeiraResposta
+      ? daysBetween(referral.createdAt, primeiraResposta)
+      : null,
+    contratados,
+    etapasDias: {
+      perfilEmpresa: null,
+      ligacao: 0,
+      questionarios: 0,
+      listaFinal: 0,
+      retornoEmpresa: primeiraResposta
+        ? daysBetween(referral.createdAt, primeiraResposta)
+        : 0
+    }
+  };
+}
+
+/** As devolutivas capturadas na demonstração, em formato de remessa. */
+function remessasVivas(state: DemoState): RemessaDoPeriodo[] {
+  return getRegisteredReferrals(state)
+    .map((referral) => remessaDoEncaminhamento(state, referral))
+    .filter((remessa): remessa is RemessaDoPeriodo => remessa !== null);
+}
+
+/**
+ * As remessas do período: o histórico simulado **mais** o que a empresa
+ * respondeu ao vivo.
+ *
+ * O vivo vem depois do histórico e nunca o duplica: as remessas históricas
+ * têm id `HIST-REM-…` e vaga `HIST-VAG-…`, que nenhuma vaga do catálogo usa.
+ */
+function remessasNaJanela(
+  state: DemoState | null,
+  j: Janela
+): RemessaDoPeriodo[] {
+  const historico: RemessaDoPeriodo[] = getOutcomesBase()
+    .remessas.filter((r) => naJanela(r.enviadaEm, j))
+    .map((r) => ({ ...r, fonte: 'historico' as const }));
+  if (!state) return historico;
+  return [
+    ...historico,
+    ...remessasVivas(state).filter((r) => naJanela(r.enviadaEm, j))
+  ];
+}
+
+/**
+ * Contratações cuja permanência já é fato dentro da janela.
+ *
+ * No histórico, o marco é o dia 90 da contratação: contar por data de
+ * contratação misturaria gente que ainda não completou o prazo.
+ *
+ * Na devolutiva capturada, o marco é o **dia da resposta**. Uma saída antes
+ * de 90 dias vira fato no dia em que a empresa avisa, não noventa dias depois
+ * de uma contratação que já acabou; e "continua" só pode ser respondido
+ * depois que o prazo fechou, porque é só então que a tela pergunta.
+ */
+function contratacoesApuradas90(
+  state: DemoState | null,
+  j: Janela
+): ContratacaoApurada[] {
+  const historico: ContratacaoApurada[] = getOutcomesBase()
     .remessas.flatMap((r) => r.contratados)
     .filter(
       (c) => c.ficou90 !== null && naJanela(addDays(c.contratadoEm, 90), j)
-    );
+    )
+    .map((c) => ({ ...c, fonte: 'historico' as const }));
+  if (!state) return historico;
+
+  const vivas: ContratacaoApurada[] = [];
+  for (const referral of getRegisteredReferrals(state)) {
+    for (const [indiceEnvio, item] of referral.items.entries()) {
+      const desfecho = lerDevolutiva(item.outcome);
+      if (
+        desfecho.hiring !== 'contratou' ||
+        desfecho.retention === 'pendente' ||
+        !desfecho.retentionAt ||
+        !desfecho.hiringAt ||
+        !naJanela(desfecho.retentionAt, j)
+      ) {
+        continue;
+      }
+      vivas.push({
+        fonte: 'vivo',
+        indiceEnvio,
+        aderencia: Math.round(
+          getAdherence(state, item.applicationId)?.total ?? 0
+        ),
+        contratadoEm: desfecho.hiringAt,
+        ficou30: desfecho.retention === 'continua' ? true : null,
+        ficou90: desfecho.retention === 'continua'
+      });
+    }
+  }
+  return [...historico, ...vivas];
 }
 
 function permanenciaPct(contratados: ContratacaoHistorica[]): number | null {
@@ -313,8 +527,95 @@ function retornoPct(lista: RemessaHistorica[]): number | null {
   );
 }
 
-function remessasNaJanela(j: Janela): RemessaHistorica[] {
-  return getOutcomesBase().remessas.filter((r) => naJanela(r.enviadaEm, j));
+/* ------------------------------------------------------------------ *
+ * Contrato: de onde vem cada parte do indicador
+ * ------------------------------------------------------------------ */
+
+/** Quanto de um indicador vem de cada procedência, no mesmo período. */
+export type FonteDoIndicador = {
+  /** Casos vindos da devolutiva que a empresa registrou na demonstração. */
+  capturado: number;
+  /** Casos vindos do histórico simulado de `fixtures/outcomes.ts`. */
+  historico: number;
+  /** `capturado + historico`: a base inteira do indicador na janela. */
+  total: number;
+  /** % da base que veio de devolutiva capturada. `null` quando não há base. */
+  pctCapturado: number | null;
+};
+
+export type ComposicaoDosIndicadores = {
+  periodo: Periodo;
+  /** Base do KPI "Retorno das empresas": remessas enviadas no período. */
+  retornoEmpresas: FonteDoIndicador;
+  /** Base do KPI "Permanência em 90 dias": desfechos apurados no período. */
+  permanencia90: FonteDoIndicador;
+  /** Verdadeiro se qualquer um dos dois já tem devolutiva capturada. */
+  temCaptura: boolean;
+};
+
+/**
+ * **Contrato entre as telas: de onde vem cada indicador de devolutiva.**
+ *
+ * Os números de retorno e de permanência nasceram de histórico simulado,
+ * porque o IEL não tinha como capturar o desfecho: "o RH não dá retorno pra
+ * gente, de contratado" (00:05:33). A devolutiva de um clique (C3) passou a
+ * capturar, e o que é capturado **sobrepõe** o histórico dentro da janela —
+ * do mesmo jeito que a leitura de questionário já sobrepõe o passado gerado.
+ *
+ * Isto deixa o painel numa situação em que um número pode ser metade medição
+ * e metade simulação. Esta função existe para que a tela possa **dizer isso
+ * em voz alta** em vez de esconder a mistura: para um período, ela devolve
+ * quantos casos da base vieram de devolutiva registrada ao vivo e quantos
+ * vieram do histórico.
+ *
+ * Como usar, do lado de quem desenha o painel:
+ *
+ * - `total === 0` → não há base; o KPI vem `null` e a tela mostra "—".
+ * - `capturado === 0` → o número é inteiramente histórico simulado; mantenha
+ *   o marcador de relógio do `KpiCard` e não o apresente como medição.
+ * - `capturado > 0` → parte do número é devolutiva real. Vale escrever a
+ *   proporção ("3 de 41 vêm de retorno registrado"), nunca apagar o resto.
+ * - `pctCapturado` já vem arredondado para inteiro, como todo percentual
+ *   deste arquivo.
+ *
+ * As contagens são **de casos na base do indicador**, não de percentuais: o
+ * indicador em si continua saindo de `getInicioKpis`, e esta função só
+ * descreve a procedência do que entrou nele. Os dois lêem exatamente as
+ * mesmas janelas e os mesmos filtros, para que as contagens fechem.
+ *
+ * Não aplica recorte mínimo: aqui não há grupo de pessoas sendo exposto, só o
+ * tamanho de duas bases. O `MIN_RECORTE` continua valendo nos seletores que
+ * quebram por setor, mês ou faixa.
+ */
+export function getComposicaoDosIndicadores(
+  state: DemoState,
+  periodo: Periodo
+): ComposicaoDosIndicadores {
+  const atual = janela(periodo);
+
+  const remessas = remessasNaJanela(state, atual);
+  const apurados = contratacoesApuradas90(state, atual);
+
+  const compor = (fontes: readonly FonteDoDado[]): FonteDoIndicador => {
+    const capturado = fontes.filter((fonte) => fonte === 'vivo').length;
+    const historico = fontes.length - capturado;
+    return {
+      capturado,
+      historico,
+      total: fontes.length,
+      pctCapturado: pct(capturado, fontes.length)
+    };
+  };
+
+  const retornoEmpresas = compor(remessas.map((r) => r.fonte));
+  const permanencia90 = compor(apurados.map((c) => c.fonte));
+
+  return {
+    periodo,
+    retornoEmpresas,
+    permanencia90,
+    temCaptura: retornoEmpresas.capturado > 0 || permanencia90.capturado > 0
+  };
 }
 
 /** Primeira inscrição de cada vaga ativa: é a data em que ela "entrou". */
@@ -340,14 +641,35 @@ export type InicioKpis = {
 };
 
 /**
+ * Candidaturas que **têm** resposta, e não candidaturas que **geraram
+ * registro**.
+ *
+ * Desde que a resposta passou a ser da pessoa e a valer 12 meses, alguém pode
+ * chegar a uma vaga nova já respondida: as frases daquela empresa foram
+ * respondidas em outra candidatura, dentro da validade. A mesa de seleção
+ * mostra essa pessoa com aderência calculada — se o funil a contasse como
+ * "não respondeu", o painel discordaria da tela ao lado sobre a mesma pessoa.
+ *
+ * `getFitStatus` já resolve isso: ele olha o que a vaga precisa e o que a
+ * pessoa tem dentro da validade.
+ */
+function respondidasResolvidas(state: DemoState): Set<string> {
+  const respondidas = new Set<string>();
+  for (const application of state.applications) {
+    if (getFitStatus(state, application) === 'respondido') {
+      respondidas.add(application.id);
+    }
+  }
+  return respondidas;
+}
+
+/**
  * Situação de resposta ao questionário das candidaturas das vagas ativas.
  * Fora do prazo ainda (até 2 dias) não conta: não respondeu *ainda*.
  */
 function respostaDasVagasAtivas(state: DemoState, j: Janela) {
   const ativas = new Set(vagasAtivas().map((job) => job.id));
-  const respondidas = new Set(
-    (state.fitResponses ?? []).map((r) => r.applicationId)
-  );
+  const respondidas = respondidasResolvidas(state);
   let base = 0;
   let responderam = 0;
   for (const application of state.applications) {
@@ -371,10 +693,16 @@ function respostaDasVagasAtivas(state: DemoState, j: Janela) {
  * - `respostaQuestionario` (**vivo**): % das candidaturas às vagas ativas,
  *   inscritas no período e já fora do prazo de 2 dias, que responderam o
  *   questionário. Variação contra a janela anterior.
- * - `retornoEmpresas` (**histórico**): % das remessas enviadas no período em
- *   que a empresa devolveu contratou/não contratou.
- * - `permanencia90` (**histórico**): % dos contratados cujo marco de 90 dias
- *   caiu no período e que continuavam na empresa.
+ * - `retornoEmpresas` (**histórico + devolutiva capturada**): % das remessas
+ *   enviadas no período em que a empresa devolveu contratou/não contratou.
+ * - `permanencia90` (**histórico + devolutiva capturada**): % dos contratados
+ *   cujo desfecho foi apurado no período e que continuavam na empresa.
+ *
+ * Os dois últimos deixam de ser só histórico assim que uma empresa responde a
+ * devolutiva de um clique (C3): a captura entra na mesma base e o `fonte`
+ * passa de `'historico'` para `'vivo'`, para o cartão parar de exibir o
+ * marcador de "passado simulado" num número que já tem medição dentro.
+ * `getComposicaoDosIndicadores` diz quanto veio de cada lado.
  *
  * Em `'ano'` a janela anterior fica fora do histórico e a variação dos
  * indicadores históricos vem `null`.
@@ -393,13 +721,21 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
   const respostaAtual = respostaDasVagasAtivas(state, atual);
   const respostaAnterior = respostaDasVagasAtivas(state, anterior);
 
-  const remessasAtuais = remessasNaJanela(atual);
-  const remessasAnteriores = remessasNaJanela(anterior);
+  const remessasAtuais = remessasNaJanela(state, atual);
+  const remessasAnteriores = remessasNaJanela(state, anterior);
   const retornoAtual = retornoPct(remessasAtuais);
   const retornoAnterior = retornoPct(remessasAnteriores);
 
-  const apuradosAtuais = contratacoesApuradas90(atual);
-  const apuradosAnteriores = contratacoesApuradas90(anterior);
+  const apuradosAtuais = contratacoesApuradas90(state, atual);
+  const apuradosAnteriores = contratacoesApuradas90(state, anterior);
+
+  // Quanto de cada indicador já é medição, e não passado simulado.
+  const retornoCapturado = remessasAtuais.filter(
+    (r) => r.fonte === 'vivo'
+  ).length;
+  const permanenciaCapturada = apuradosAtuais.filter(
+    (c) => c.fonte === 'vivo'
+  ).length;
 
   return {
     vagasAtivas: kpi({
@@ -432,10 +768,12 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
       valor: retornoAtual,
       variacao: diff(retornoAtual, retornoAnterior),
       unidade: 'p.p.',
-      fonte: 'historico',
+      fonte: retornoCapturado > 0 ? 'vivo' : 'historico',
       n: remessasAtuais.length,
       descricao:
-        'Remessas enviadas no período em que a empresa devolveu o resultado (contratou ou não contratou).'
+        retornoCapturado > 0
+          ? `Remessas enviadas no período em que a empresa devolveu o resultado. ${retornoCapturado} ${retornoCapturado === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico simulado.`
+          : 'Remessas enviadas no período em que a empresa devolveu o resultado (contratou ou não contratou).'
     }),
     permanencia90: kpi({
       id: 'permanencia-90',
@@ -446,10 +784,12 @@ export function getInicioKpis(state: DemoState, periodo: Periodo): InicioKpis {
         permanenciaPct(apuradosAnteriores)
       ),
       unidade: 'p.p.',
-      fonte: 'historico',
+      fonte: permanenciaCapturada > 0 ? 'vivo' : 'historico',
       n: apuradosAtuais.length,
       descricao:
-        'Contratados que completaram 90 dias no período e continuavam na empresa.'
+        permanenciaCapturada > 0
+          ? `Contratados com permanência apurada no período que continuavam na empresa. ${permanenciaCapturada} ${permanenciaCapturada === 1 ? 'vem' : 'vêm'} de devolutiva registrada agora; o resto, do histórico simulado.`
+          : 'Contratados que completaram 90 dias no período e continuavam na empresa.'
     })
   };
 }
@@ -488,10 +828,10 @@ function montarFunil(
  * `pctDaAnterior` dessa etapa é calculado só sobre quem já tem desfecho.
  */
 export function getFunilDoPeriodo(
-  _state: DemoState,
+  state: DemoState,
   periodo: Periodo
 ): EtapaDeFunil[] {
-  const lista = remessasNaJanela(janela(periodo));
+  const lista = remessasNaJanela(state, janela(periodo));
   const soma = (f: (r: RemessaHistorica) => number) =>
     lista.reduce((total, r) => total + f(r), 0);
   const contratados = lista.flatMap((r) => r.contratados);
@@ -742,7 +1082,7 @@ export function getEmpresasKpis(
   const geradosAtual = conta('geradoEm', atual);
   const usadosAtual = conta('usadoEm', atual);
 
-  const remessasAtuais = remessasNaJanela(atual);
+  const remessasAtuais = remessasNaJanela(state, atual);
   const retornoAtual = retornoSobreCurriculos(remessasAtuais);
 
   return {
@@ -805,7 +1145,7 @@ export function getEmpresasKpis(
       valor: retornoAtual,
       variacao: diff(
         retornoAtual,
-        retornoSobreCurriculos(remessasNaJanela(anterior))
+        retornoSobreCurriculos(remessasNaJanela(state, anterior))
       ),
       unidade: 'p.p.',
       fonte: 'historico',
@@ -907,9 +1247,16 @@ function limparDistribuicao<T extends DistribuicaoRetorno>(grupo: T): T {
  */
 export function getRetornoDasEmpresas(
   periodo: Periodo,
-  agruparPor?: 'setor' | 'mes'
+  agruparPor?: 'setor' | 'mes',
+  /**
+   * Opcional, e opcional de propósito: passar o estado faz a devolutiva
+   * capturada na demonstração entrar na distribuição; omitir mantém a
+   * leitura puramente histórica. Quem chamar sem estado não muda de
+   * comportamento (ver `getComposicaoDosIndicadores`).
+   */
+  state?: DemoState
 ): RetornoDasEmpresas {
-  const lista = remessasNaJanela(janela(periodo));
+  const lista = remessasNaJanela(state ?? null, janela(periodo));
   const total = distribuir(lista);
 
   let grupos: GrupoRetorno[] = [];
@@ -1079,9 +1426,7 @@ export type FiltrosCandidatos = {
  */
 function eventosVivos(state: DemoState): EventoComunicacao[] {
   const existentes = new Set(state.applications.map((a) => a.id));
-  const respondidas = new Set(
-    (state.fitResponses ?? []).map((r) => r.applicationId)
-  );
+  const respondidas = respondidasResolvidas(state);
   return getOutcomesBase()
     .comunicacao.filter((e) => existentes.has(e.applicationId))
     .map((e) => {
@@ -1511,7 +1856,7 @@ export function getLeituraDoCorte(
   periodo: Periodo,
   filtros?: FiltrosBi
 ): LeituraDoCorte {
-  const remessas = remessasNaJanela(janela(periodo)).filter(
+  const remessas = remessasNaJanela(null, janela(periodo)).filter(
     (r) => !filtros?.setor || r.setor === filtros.setor
   );
   const respondidos = remessas.reduce(

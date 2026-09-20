@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { AVISO_DEVOLUTIVA } from '@/features/iel-demo/analysis/devolutiva';
 import {
   REPORT_AXIS_MATCH_LABEL,
   REPORT_VALIDITY_DAYS,
@@ -13,6 +14,7 @@ import {
   getReferralReport,
   type ReferralReportPerson
 } from '@/features/iel-demo/state/selectors';
+import { nowIso } from '@/features/iel-demo/state/storage';
 import { Download } from 'lucide-react';
 
 import { cn } from '@workspace/ui/lib/utils';
@@ -33,6 +35,8 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@workspace/ui/shadcn/dialog';
+
+import { DevolutivaDaEmpresa } from './devolutiva-da-empresa';
 
 /**
  * O relatório que a empresa abre pelo link, sem login (S3).
@@ -220,7 +224,9 @@ const PRINT_CSS = `@media print {
 
 export function ReferralReportScreen({ token }: { token: string }) {
   const { state } = useIelDemo();
-  const report = getReferralReport(state, token);
+  // O "hoje" da demonstração vem do relógio único: é ele que decide se o
+  // prazo de 90 dias já fechou e a página volta a perguntar.
+  const report = getReferralReport(state, token, nowIso());
 
   if (!report) {
     return (
@@ -238,6 +244,7 @@ export function ReferralReportScreen({ token }: { token: string }) {
   }
 
   const {
+    referralId,
     company,
     job,
     people,
@@ -306,7 +313,14 @@ export function ReferralReportScreen({ token }: { token: string }) {
           <p className="max-w-[640px] text-sm leading-relaxed text-muted-foreground">
             Todas atendem aos requisitos da vaga e combinam com o jeito de
             trabalhar que a sua equipe descreveu. A ordem é por quanto combinam;
-            a escolha é sua.
+            a escolha é sua. Quando o processo terminar, diga aqui mesmo o que
+            aconteceu com cada uma — é um clique.
+          </p>
+          {/* Finalidade do clique, uma vez na página (PRODUTO.md §5.6): a
+              empresa precisa saber para que serve antes de responder, e
+              repetir a frase em cada pessoa afogaria a própria tela. */}
+          <p className="max-w-[640px] text-xs leading-relaxed text-muted-foreground">
+            {AVISO_DEVOLUTIVA}
           </p>
         </div>
 
@@ -375,6 +389,11 @@ export function ReferralReportScreen({ token }: { token: string }) {
                 <div className="col-start-2 lg:col-start-5 lg:text-right">
                   <ResumeDialog person={person} />
                 </div>
+
+                <DevolutivaDaEmpresa
+                  referralId={referralId}
+                  person={person}
+                />
               </CardContent>
             </Card>
           ))}
