@@ -26,8 +26,12 @@ que saem daqui e voltam para cá.
 - **"O que acontece agora"**, em passos numerados: de quem é a vez, o que essa pessoa faz e em
   quanto tempo. **Nenhum estado termina em silêncio** — este bloco nunca vem vazio.
 - **O caminho de seguir**, quando existe: a quem recorrer, pelo mesmo contato que mandou o link.
-- **A ação principal**, quando a vez é da pessoa: responder, responder mesmo assim (fora do prazo)
-  ou mudar as respostas. Quando a vez é do IEL ou da empresa, não há botão — e a tela diz por quê.
+- **A ação principal**, quando a vez é da pessoa: responder, responder mesmo assim (fora do prazo),
+  mudar as respostas ou, depois de contratada, **contar como está sendo**. Quando a vez é do IEL ou
+  da empresa, não há botão — e a tela diz por quê. Corrigir uma resposta já dada aparece em
+  contorno (`peso: 'discreta'`): é direito, não pendência.
+- **"O que você já contou"** (só para quem foi contratado): uma linha por resposta — "Aos 30 dias,
+  você disse que continua na empresa e que está sendo bom." — e a frase de que a empresa não vê.
 - **"O que você respondeu"**: os temas em que combinou com a empresa e aqueles em que ficou
   diferente, **em palavra, nunca em percentual**.
 - **"O que está registrado sobre você"** (`clarifications/talent-transparency.tsx`), com os
@@ -36,19 +40,42 @@ que saem daqui e voltam para cá.
   aparece na entrevista.
 - **Rodapé de demonstração**: nada é enviado de verdade e o link abre direto.
 
-## Os seis estados
+## Os sete estados
 
-| Estado           | Quando                                      | Título que a pessoa lê              |
-| ---------------- | ------------------------------------------- | ----------------------------------- |
-| `sem-resposta`   | sem resposta de fit, dentro dos 2 dias (R7) | Falta você responder                |
-| `prazo-vencido`  | sem resposta de fit, passados os 2 dias     | O prazo para responder terminou     |
-| `em-analise`     | respondeu, ainda não encaminhada            | Suas respostas chegaram             |
-| `enviado`        | em remessa registrada, decisão pendente     | Seu currículo foi enviado à empresa |
-| `quer-conversar` | `managerDecision: 'quero-entrevistar'`      | A empresa quer conversar com você   |
-| `nao-seguiu`     | `managerDecision: 'nao-avancar'`            | Esta vaga seguiu com outras pessoas |
+| Estado           | Quando                                          | Título que a pessoa lê                                          |
+| ---------------- | ----------------------------------------------- | --------------------------------------------------------------- |
+| `sem-resposta`   | sem resposta de fit, dentro dos 2 dias (R7)     | Falta você responder                                            |
+| `prazo-vencido`  | sem resposta de fit, passados os 2 dias         | O prazo para responder terminou                                 |
+| `em-analise`     | respondeu, ainda não encaminhada                | Suas respostas chegaram                                         |
+| `enviado`        | em remessa registrada, decisão pendente         | Seu currículo foi enviado à empresa                             |
+| `quer-conversar` | `managerDecision: 'quero-entrevistar'`          | A empresa quer conversar com você                               |
+| `nao-seguiu`     | `managerDecision: 'nao-avancar'`                | Esta vaga seguiu com outras pessoas                             |
+| `contratado`     | `getSituacaoDeContratacao` devolve uma situação | Você foi contratado (ver [abaixo](#quando-a-empresa-contratou)) |
 
-A decisão da empresa vence o resto: quem recebeu um "quero entrevistar" não precisa ler que o
-currículo foi enviado.
+A decisão da empresa vence o resto, e a contratação vence a decisão: quem tem "contratei"
+registrado não precisa ler que a empresa quer conversar — já conversou, e deu certo.
+
+## Quando a empresa contratou
+
+Até 19/09 a tela parava em "a empresa quer conversar": **o candidato nunca ficava sabendo, por
+aqui, que tinha sido contratado.** O estado `contratado` fecha o ciclo e abre a segunda metade
+dele — a pergunta ao próprio contratado, aos 30, 60 e 90 dias
+([Como está sendo?](24-como-esta-sendo.md)).
+
+Um id, três textos, porque o que muda não é o estado (a pessoa foi contratada) e sim o que se sabe
+da permanência e **de quem veio**:
+
+| Variante                                               | Tom       | Título                          | O que muda                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------ | --------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Continua (ou ninguém disse nada)                       | `combina` | Você foi contratado             | "Parabéns! A empresa desta vaga contratou você há N dias." Os três passos: aos 30/60/90 o IEL pergunta; não é avaliação e a empresa não vê; e o passo do calendário — a vez é dela ("Contar como está sendo"), a próxima pergunta em N dias, ou as perguntas terminaram. |
+| A pessoa contou que saiu (vale a última resposta dela) | `neutro`  | Você contou que saiu da empresa | "Obrigado por avisar. Sair antes dos 90 dias acontece, não é um erro seu e não vira nota no seu currículo." O currículo continua, a pessoa do IEL fala com ela, a empresa não vê. "Corrigir o que respondi" em contorno.                                                 |
+| A empresa informou saída e a pessoa não disse nada     | `neutro`  | Você foi contratado nesta vaga  | O mais delicado: a pessoa pode não saber que a empresa avisou. Diz o que o IEL sabe e de onde veio, **sem o motivo** que a empresa deu (§5.1), e deixa a porta aberta: "Contar como foi", em contorno, quando já há um marco alcançado.                                  |
+
+Quando as duas fontes discordam e a pessoa disse que continua, a tela dela mostra o que **ela**
+disse: a divergência é assunto da analista.
+
+O marco que o botão abre sai de `marcoParaContar`: o pendente; sem pendente, o da última resposta
+(corrigir é direito); sem resposta e com a empresa dizendo que saiu, o mais recente alcançado.
 
 ## Quando a empresa não segue
 
@@ -72,8 +99,10 @@ currículo foi enviado.
 
 ## De onde vêm os dados hoje
 
-- `getSituacaoDaCandidatura` e `getTemasDoCandidato`, em
+- `getSituacaoDaCandidatura`, `getTemasDoCandidato` e `marcoParaContar`, em
   `features/iel-demo/analysis/situacao-da-candidatura.ts`.
+- A contratação e o que a pessoa já contou vêm de `getSituacaoDeContratacao` (`state/selectors.ts`),
+  com os rótulos de `analysis/acompanhamento.ts`.
 - Compostos sobre seletores já existentes: `getApplication`, `getFitResponse`, `getTalentJourney`
   (que resolve encaminhada / quis entrevistar / não avançou), `getAdherence`,
   `getCandidateJobView` e `getTalent`.
@@ -86,6 +115,8 @@ currículo foi enviado.
 - **Responder / Responder mesmo assim / Mudar minhas respostas** — leva ao questionário
   (`/fit`), que grava com `answer-fit-questionnaire`. A tela em si não dispara nenhuma ação: é de
   leitura.
+- **Contar como está sendo / Mudar o que respondi / Corrigir o que respondi / Contar como foi** —
+  levam a [Como está sendo?](24-como-esta-sendo.md), que grava com `answer-check-in`.
 - **Ver meus dados** — abre o recolhido da transparência.
 
 ## Backend futuro
@@ -112,9 +143,15 @@ currículo foi enviado.
 
 ## Ligações
 
-Vem de: [Questionário do candidato](17-questionario-do-candidato.md), que termina aqui, e do link
-da candidatura. Alimenta: o próprio questionário, quando a pessoa ainda tem algo a responder.
+Vem de: [Questionário do candidato](17-questionario-do-candidato.md), que termina aqui, do link
+da candidatura e de [Como está sendo?](24-como-esta-sendo.md). Alimenta: o próprio questionário,
+quando a pessoa ainda tem algo a responder, e a pergunta dos 30, 60 e 90 dias, depois de
+contratada.
 
 ## Histórico
 
 - 2026-09-19 — criada, com os seis estados e o texto de quando a empresa não segue.
+- 2026-09-19 — estado `contratado`: a pessoa fica sabendo que foi contratada, lê o que acontece nos
+  90 dias, ganha o botão "Contar como está sendo" quando há pergunta aberta e o bloco "O que você já
+  contou". Três textos para o id: continua, contou que saiu, saída informada pela empresa (neutro,
+  sem motivo).

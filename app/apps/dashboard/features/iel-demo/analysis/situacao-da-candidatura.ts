@@ -45,20 +45,36 @@ import {
   getAdherence,
   getApplication,
   getFitResponse,
+  getSituacaoDeContratacao,
   getTalentJourney,
   reaproveitamentoDaCandidatura,
   type ReaproveitamentoDaCandidatura
 } from '../state/selectors';
 import type { DemoState } from '../types';
+import {
+  COMO_ESTA_SENDO_LABEL,
+  JANELA_DO_MARCO_DIAS,
+  MARCOS_DO_ACOMPANHAMENTO,
+  type CheckIn,
+  type MarcoDoAcompanhamento,
+  type SituacaoDeContratacao
+} from './acompanhamento';
 
-/** As seis situações possíveis, na ordem em que a jornada as encontra. */
+/**
+ * As sete situações possíveis, na ordem em que a jornada as encontra.
+ *
+ * `contratado` chegou por último e fecha o ciclo: até ele, a tela parava em
+ * "a empresa quer conversar" e a pessoa nunca ficava sabendo, por aqui, que
+ * tinha sido contratada.
+ */
 export type SituacaoId =
   | 'sem-resposta'
   | 'prazo-vencido'
   | 'em-analise'
   | 'enviado'
   | 'quer-conversar'
-  | 'nao-seguiu';
+  | 'nao-seguiu'
+  | 'contratado';
 
 /**
  * O tom de cor da situação, no vocabulário de `metricas/cores.ts`.
@@ -79,8 +95,17 @@ export type PassoDoAgora = {
 
 export type AcaoDaSituacao = {
   rotulo: string;
-  /** Único destino possível hoje: o questionário da própria candidatura. */
-  destino: 'questionario';
+  /**
+   * Para onde o botão leva: o questionário da própria candidatura ou a
+   * pergunta "como está sendo?" de quem foi contratado.
+   */
+  destino: 'questionario' | 'como-esta-sendo';
+  /**
+   * `discreta` quando a ação existe mas não deve empurrar: corrigir uma
+   * resposta já dada é um direito, não uma tarefa pendente. O padrão é
+   * `principal`.
+   */
+  peso?: 'principal' | 'discreta';
 };
 
 export type SituacaoDaCandidatura = {
@@ -96,6 +121,11 @@ export type SituacaoDaCandidatura = {
   caminho: string | null;
   /** Ação principal, quando a vez é da pessoa. */
   acao: AcaoDaSituacao | null;
+  /**
+   * O que a pessoa já contou ao IEL depois de contratada, uma linha por
+   * resposta ("Aos 30 dias, você disse que continua…"). Só em `contratado`.
+   */
+  contou?: string[];
 };
 
 /**
@@ -138,6 +168,15 @@ export function getSituacaoDaCandidatura(
 ): SituacaoDaCandidatura | null {
   const application = getApplication(state, applicationId);
   if (!application) return null;
+
+  /*
+   * A contratação vence tudo. Ela só existe depois de um "quero entrevistar"
+   * e do clique "contratei" da empresa (`company-outcome`), então quem tem
+   * uma situação de contratação não precisa ler que a empresa quer conversar
+   * — já conversou, e deu certo.
+   */
+  const contratacao = getSituacaoDeContratacao(state, applicationId);
+  if (contratacao) return contratado(contratacao);
 
   /*
    * Desde que a resposta passou a ser da pessoa e a valer 12 meses, "já
@@ -384,6 +423,270 @@ function naoSeguiu(): SituacaoDaCandidatura {
     caminho:
       'As respostas que você deu continuam valendo por 12 meses. Numa vaga nova o IEL usa o que você já respondeu e pergunta só o que faltar — cada empresa escolhe algumas frases, e nem sempre são as mesmas. Para falar com alguém agora, procure o Centro de Empregos do IEL pelo mesmo contato que mandou este link.',
     acao: null
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Contratado
+ * ------------------------------------------------------------------ */
+
+/** "1 dia", "45 dias". */
+function dias(n: number): string {
+  return n === 1 ? '1 dia' : `${n} dias`;
+}
+
+/**
+ * O que a pessoa já contou, uma linha por resposta, na ordem dos marcos.
+ *
+ * É a resposta dela devolvida a ela: quem respondeu aos 30 dias e abre o
+ * link aos 60 precisa ver que a resposta chegou e o que disse. "Como está
+ * sendo" volta em palavra, do mesmo jeito que foi escolhida na tela — nunca
+ * como o número de 1 a 5 que a base guarda.
+ */
+function linhasDoQueContou(checkIns: CheckIn[]): string[] {
+  return checkIns.map((resposta) => {
+    const como = COMO_ESTA_SENDO_LABEL[resposta.comoEstaSendo].toLowerCase();
+    return resposta.continua
+      ? `Aos ${resposta.marco} dias, você disse que continua na empresa e que está sendo ${como}.`
+      : `Aos ${resposta.marco} dias, você disse que saiu da empresa e que estava sendo ${como}.`;
+  });
+}
+
+/**
+ * Quando a empresa contratou.
+ *
+ * Três textos para um id só, porque o que muda não é o estado da candidatura
+ * — a pessoa foi contratada — e sim o que se sabe sobre a permanência e de
+ * quem veio:
+ *
+ * - **A pessoa continua** (ou ninguém disse nada): o texto explica os 90
+ *   dias e, se houver pergunta aberta, chama para ela.
+ * - **A pessoa contou que saiu**: vale a última resposta dela. Sem culpa, o
+ *   currículo continua, o IEL fala com ela.
+ * - **A empresa informou saída e a pessoa não disse nada**: o mais delicado.
+ *   A pessoa pode nem saber que a empresa avisou o IEL, e o motivo que a
+ *   empresa deu é devolutiva dela (PRODUTO.md §5.1) — não passa por aqui.
+ *   Neutro, sem motivo, com a porta aberta para ela contar a versão dela.
+ *
+ * Quando as duas fontes discordam e a pessoa disse que continua, a tela dela
+ * mostra o que **ela** disse: a divergência é assunto da analista, e revelar
+ * aqui que a empresa disse o contrário seria abrir análise interna para quem
+ * ela avalia.
+ */
+function contratado(c: SituacaoDeContratacao): SituacaoDaCandidatura {
+  // Vale a última resposta dela — e, na tela dela, a palavra dela vence a
+  // da empresa: quem disse que continua lê "você foi contratado", mesmo que
+  // a empresa tenha informado saída. A divergência é assunto da analista.
+  const ultima = c.checkIns[c.checkIns.length - 1];
+  if (ultima) return ultima.continua ? continuaNaEmpresa(c) : saiuPelaPessoa(c);
+  if (c.porFonte.empresa === 'saiu') return saidaInformadaPelaEmpresa(c);
+  return continuaNaEmpresa(c);
+}
+
+/**
+ * O marco que a pessoa pode responder — ou corrigir — agora. `null` quando
+ * não há o que contar (ainda não chegou aos 30 dias, ou as janelas fecharam
+ * sem resposta).
+ *
+ * Primeiro o pendente: alcançado, dentro da janela e sem resposta. Sem
+ * pendente, o da última resposta dela, porque vale a última e corrigir é
+ * direito. Sem resposta nenhuma e com a empresa dizendo que ela saiu, o marco
+ * mais recente que ela alcançou: o seletor fecha as pendências quando a
+ * empresa informa saída, mas a versão dela ainda não foi ouvida — e é a
+ * versão dela que faz a divergência aparecer para a analista.
+ *
+ * Usado pela Minha candidatura (para decidir o botão) e pela tela da
+ * pergunta (para saber o que abrir): uma regra só, lida nos dois lugares.
+ */
+export function marcoParaContar(
+  c: SituacaoDeContratacao
+): MarcoDoAcompanhamento | null {
+  const pendente = c.pendentes[0];
+  if (pendente !== undefined) return pendente;
+  const ultima = c.checkIns[c.checkIns.length - 1];
+  if (ultima) return ultima.marco;
+  if (c.porFonte.empresa === 'saiu') {
+    const alcancados = MARCOS_DO_ACOMPANHAMENTO.filter(
+      (marco) => c.diasNaEmpresa >= marco
+    );
+    return alcancados[alcancados.length - 1] ?? null;
+  }
+  return null;
+}
+
+/** O marco aberto e ainda sem resposta, se houver. Nunca há dois. */
+function marcoAResponder(c: SituacaoDeContratacao) {
+  return c.pendentes[0] ?? null;
+}
+
+/** Quantos dias a janela do marco aberto ainda fica aberta. */
+function diasRestantesDaJanela(c: SituacaoDeContratacao): number {
+  if (c.marcoAtual === null) return 0;
+  return Math.max(1, c.marcoAtual + JANELA_DO_MARCO_DIAS - c.diasNaEmpresa);
+}
+
+function continuaNaEmpresa(c: SituacaoDeContratacao): SituacaoDaCandidatura {
+  const aberto = marcoAResponder(c);
+  // Sem pergunta aberta e com resposta dada, o que sobra é corrigir.
+  const podeCorrigir = aberto === null && c.checkIns.length > 0;
+  const restam = diasRestantesDaJanela(c);
+  const faltamParaOProximo =
+    c.proximoMarco !== null ? c.proximoMarco - c.diasNaEmpresa : null;
+  // "A primeira pergunta" só antes de qualquer marco ter chegado.
+  const jaHouvePergunta = c.checkIns.length > 0 || c.perdidos.length > 0;
+  // A pessoa disse que continua e a empresa informou saída: o seletor fecha
+  // as pendências, mas ela precisa saber que ainda pode falar.
+  const encerradoPelaEmpresa = c.porFonte.empresa === 'saiu';
+
+  // O terceiro passo é o único que muda com o calendário: a vez é dela, a
+  // próxima pergunta vem em N dias, ou as perguntas terminaram.
+  const terceiroPasso: PassoDoAgora = aberto
+    ? {
+        quem: `Agora é a sua vez: conte como está sendo aos ${aberto} dias.`,
+        quando:
+          restam === 1
+            ? 'Hoje é o último dia para responder.'
+            : `Você tem ${dias(restam)} para responder. Leva 1 minuto.`
+      }
+    : encerradoPelaEmpresa
+      ? {
+          quem: 'Mudou alguma coisa? Você pode contar ao IEL por este mesmo link.',
+          quando: 'Vale sempre a sua última resposta, e a empresa não vê.'
+        }
+      : c.proximoMarco !== null && faltamParaOProximo !== null
+        ? {
+            quem: `${jaHouvePergunta ? 'A próxima' : 'A primeira'} pergunta é aos ${c.proximoMarco} dias.`,
+            quando: `${faltamParaOProximo === 1 ? 'Falta 1 dia' : `Faltam ${faltamParaOProximo} dias`}. Você responde por este mesmo link.`
+          }
+        : {
+            quem: 'Os 90 dias se completaram e as perguntas do IEL terminaram.',
+            quando:
+              c.checkIns.length > 0
+                ? 'Obrigado por contar como foi.'
+                : 'O IEL não vai perguntar mais nada por este link.'
+          };
+
+  return {
+    id: 'contratado',
+    tom: 'combina',
+    titulo: 'Você foi contratado',
+    resumo: `Parabéns! A empresa desta vaga contratou você${c.diasNaEmpresa > 0 ? ` há ${dias(c.diasNaEmpresa)}` : ' hoje'}. Nos primeiros 90 dias o IEL vai perguntar como está sendo — e o que você responder é só seu.`,
+    agora: [
+      {
+        quem: 'Aos 30, 60 e 90 dias, o IEL pergunta se você continua na empresa e como está sendo.',
+        quando: 'Por este mesmo link. Leva 1 minuto.'
+      },
+      {
+        quem: 'Não é uma avaliação sua, e a empresa não vê o que você responde.',
+        quando: 'Quem lê é só a equipe do IEL.'
+      },
+      terceiroPasso
+    ],
+    caminho:
+      'Se alguma coisa no trabalho não estiver como combinado, conte ao IEL pela pergunta ou procure o Centro de Empregos pelo mesmo contato que mandou este link.',
+    acao: aberto
+      ? { rotulo: 'Contar como está sendo', destino: 'como-esta-sendo' }
+      : podeCorrigir
+        ? {
+            rotulo: 'Mudar o que respondi',
+            destino: 'como-esta-sendo',
+            peso: 'discreta'
+          }
+        : null,
+    contou: linhasDoQueContou(c.checkIns)
+  };
+}
+
+/**
+ * A pessoa contou que saiu.
+ *
+ * O sujeito é o que ela contou, não um veredito sobre ela. Nada de "não deu
+ * certo": saída antes de 90 dias é o dado que o IEL mais precisa para
+ * calibrar a indicação, e a pessoa que o deu merece saber que ele serve
+ * para isso — e que não vira nota no currículo dela (`AVISO_DEVOLUTIVA`).
+ */
+function saiuPelaPessoa(c: SituacaoDeContratacao): SituacaoDaCandidatura {
+  return {
+    id: 'contratado',
+    tom: 'neutro',
+    titulo: 'Você contou que saiu da empresa',
+    resumo:
+      'Obrigado por avisar. Sair antes dos 90 dias acontece, não é um erro seu e não vira nota no seu currículo. O que você contou ajuda o IEL a acertar mais nas próximas indicações.',
+    agora: [
+      {
+        quem: 'Seu currículo continua no banco de talentos do IEL.',
+        quando:
+          'Ele não sai por causa disso, e você não precisa se cadastrar de novo.'
+      },
+      {
+        quem: 'A pessoa do IEL fala com você sobre outras vagas com o seu perfil.',
+        quando: 'Pelo mesmo telefone da sua candidatura.'
+      },
+      {
+        quem: 'A empresa não vê o que você respondeu.',
+        quando: 'Quem lê é só a equipe do IEL.'
+      }
+    ],
+    caminho:
+      'As suas respostas sobre o seu jeito de trabalhar continuam valendo por 12 meses: numa vaga nova o IEL pergunta só o que faltar. Para falar com alguém agora, procure o Centro de Empregos do IEL pelo mesmo contato que mandou este link.',
+    // Corrigir é um direito ("vale a última"), não uma cobrança: o botão
+    // existe, mas em segundo plano.
+    acao: {
+      rotulo: 'Corrigir o que respondi',
+      destino: 'como-esta-sendo',
+      peso: 'discreta'
+    },
+    contou: linhasDoQueContou(c.checkIns)
+  };
+}
+
+/**
+ * A empresa informou saída antes dos 90 dias e a pessoa não disse nada.
+ *
+ * O que esta tela não faz: não repete o motivo que a empresa deu (é
+ * devolutiva dela para o IEL, §5.1), não confirma nem contesta, e não trata
+ * a informação como fato consumado — a pessoa pode não saber que a empresa
+ * avisou, e pode ter outra versão. Diz o que o IEL sabe, de onde veio, e
+ * deixa a porta aberta para ela contar.
+ */
+function saidaInformadaPelaEmpresa(
+  c: SituacaoDeContratacao
+): SituacaoDaCandidatura {
+  // Só depois dos 30 dias há um marco em que ela possa contar a versão dela.
+  const podeContar = marcoParaContar(c) !== null;
+  return {
+    id: 'contratado',
+    tom: 'neutro',
+    titulo: 'Você foi contratado nesta vaga',
+    resumo: `A empresa desta vaga contratou você em ${dataCurta(c.contratadoEm)}. Pelo que ela informou ao IEL, você não continua lá. Se isso não estiver certo, ou se você quiser contar como foi, a resposta é sua — e a empresa não vê.`,
+    agora: [
+      {
+        quem: 'Seu currículo continua no banco de talentos do IEL.',
+        quando: 'Nada disso vira avaliação sua nem nota no seu currículo.'
+      },
+      {
+        quem: 'A pessoa do IEL fala com você sobre outras vagas com o seu perfil.',
+        quando: 'Pelo mesmo telefone da sua candidatura.'
+      },
+      ...(podeContar
+        ? [
+            {
+              quem: 'Se quiser, conte ao IEL como foi.',
+              quando: 'Leva 1 minuto, e a empresa não vê o que você responde.'
+            }
+          ]
+        : [])
+    ],
+    caminho:
+      'Para falar com alguém agora, procure o Centro de Empregos do IEL pelo mesmo contato que mandou este link.',
+    acao: podeContar
+      ? {
+          rotulo: 'Contar como foi',
+          destino: 'como-esta-sendo',
+          peso: 'discreta'
+        }
+      : null,
+    contou: linhasDoQueContou(c.checkIns)
   };
 }
 
