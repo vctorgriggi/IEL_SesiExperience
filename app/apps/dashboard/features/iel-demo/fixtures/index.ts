@@ -29,6 +29,7 @@ import {
 import { DEMO_CULTURE_ANSWERS } from './culture';
 import { DEMO_CULTURE_INVITES } from './culture-invites';
 import {
+  COMPETENCIAS_REAIS,
   CONVITES_REAIS,
   EMPRESAS_REAIS,
   EQUIPES_REAIS,
@@ -49,7 +50,13 @@ import { DEMO_ASSESSMENTS, DEMO_TALENTS } from './talents';
  * reaproveitamento ("ficam ligadas a esta candidatura"). Carregá-las para
  * dentro da máquina de reuso seria exatamente o que decidimos não fazer.
  */
-export const DEMO_SCHEMA_VERSION = 7;
+/**
+ * Sobe a 8 com as competências escolhidas pela empresa
+ * (`competenciasEscolhidas`, 20/09/2026): a chave nova muda o que a
+ * aderência mede, então estado gravado na versão 7 é descartado em vez de
+ * hidratar meio velho meio novo. Quem lê o campo ausente vê "as 11".
+ */
+export const DEMO_SCHEMA_VERSION = 8;
 
 const GENERATED = getGeneratedBase();
 
@@ -99,7 +106,7 @@ export const DEMO_PERSONAS: Persona[] = [
     kind: 'analista',
     label: 'Analista IEL',
     description:
-      'Vê as vagas e candidaturas das empresas atendidas na base demo, conduz a análise e prepara encaminhamentos.',
+      'Vê as vagas e candidaturas das empresas atendidas, conduz a análise e prepara encaminhamentos.',
     companyId: null,
     talentId: null
   },
@@ -155,10 +162,10 @@ const INITIAL_HISTORY: HistoryEvent[] = [
   {
     id: 'HIST-01',
     at: '2026-09-13T18:20:00.000Z',
-    actor: 'Empregare — demonstração',
+    actor: 'Empregare',
     action: 'Atualização recebida',
     description:
-      'Vagas e candidaturas das três empresas atendidas foram atualizadas na base demo.',
+      'Vagas e candidaturas das três empresas atendidas foram atualizadas.',
     entityRef: null
   },
   {
@@ -167,7 +174,7 @@ const INITIAL_HISTORY: HistoryEvent[] = [
     actor: 'Analista IEL',
     action: 'Esclarecimento solicitado',
     description:
-      'Pergunta sobre a disponibilidade de Diego Alves enviada (simulada) para a candidatura da vaga Assistente de Logística.',
+      'Pergunta sobre a disponibilidade de Diego Alves enviada para a candidatura da vaga Assistente de Logística.',
     entityRef: 'ESC-02'
   },
   {
@@ -221,6 +228,9 @@ export function buildInitialDemoState(): DemoState {
       ...clone(GENERATED.cultureAnswers)
     ],
     cultureInvites: [...clone(DEMO_CULTURE_INVITES), ...clone(CONVITES_REAIS)],
+    // A Colatte pede 8 das 11; as demais empresas não aparecem aqui, e
+    // ausência quer dizer "as 11" (`competenciasDaEmpresa`).
+    competenciasEscolhidas: clone(COMPETENCIAS_REAIS),
     importedTalents: [],
     spreadsheetImports: [],
     fitResponses: [
@@ -277,6 +287,7 @@ export {
 export { DEMO_TALENT_CULTURE_ANSWERS } from './preferencias-culturais';
 export { DEMO_CULTURE_INVITES } from './culture-invites';
 export {
+  COMPETENCIAS_REAIS,
   CONVITES_REAIS,
   EMPRESAS_REAIS,
   EQUIPES_REAIS,

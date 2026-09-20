@@ -18,8 +18,7 @@ fique aberta a qualquer pessoa que descubra a URL.
 - **Um cartão** com o título "Central de Seleção", a linha "Acesso da equipe do IEL · Centro de
   Empregos da Indústria", o campo **Senha da equipe** e o botão **Entrar**.
 - **O erro abaixo do campo**, em vermelho e com `role="alert"`, quando a senha não confere.
-- **Um rodapé** dizendo que candidatos e empresas entram pelo link que recebem, sem senha, e que a
-  base é fictícia.
+- **Um rodapé** dizendo que candidatos e empresas entram pelo link que recebem, sem senha.
 
 A casca do analista (barra lateral, cabeçalho, Mind) não desenha aqui: quem ainda não entrou não tem
 navegação. O VLibras continua, porque a acessibilidade começa na porta.

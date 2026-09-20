@@ -33,7 +33,9 @@ receber e registra o encaminhamento. É o ponto em que a informação interna do
 
 ## Backend futuro
 
-- O envio deixa de ser simulado: e-mail ou integração com o sistema da empresa, com comprovante.
+- O envio deixa de ser simulado: e-mail ou integração com o sistema da empresa, com comprovante. Hoje
+  a tela diz "Encaminhamento registrado. Perfis enviados à empresa." e o histórico grava só isso
+  (`docs/interno/o-que-e-simulado.md`).
 - O "retrato congelado" vira versão imutável armazenada, para que alteração posterior no perfil não
   reescreva o que a empresa recebeu.
 - Entram base legal e prazo de retenção por compartilhamento, com registro de consentimento do

@@ -41,10 +41,10 @@ import {
  * de chamados, teste seguindo checklist, planilha, curso técnico.
  *
  * O que ele declarou sobre como prefere trabalhar combina com a equipe da
- * Colatte em 8 dos 10 temas. Difere em **Ritmo do turno** — no pátio ele
+ * Colatte em 9 dos 11 temas. Difere em **Execução e ritmo de trabalho** — no pátio ele
  * aprendeu que quem alterna erra, e prefere fechar uma conferência antes de
  * abrir outra; na Colatte um chamado interrompe o teste em andamento — e,
- * mais de leve, em **Regras e decisões**: antes de mudar um procedimento ele
+ * mais de leve, em **Regras, métodos e decisão**: antes de mudar um procedimento ele
  * quer entender por que ele existe, enquanto a equipe tenta o jeito novo
  * primeiro. É a divergência que a analista comenta: a gestão da Colatte
  * também acha que se faz uma coisa de cada vez, e a equipe diz que não.
@@ -57,7 +57,7 @@ import {
  * Ele tem uma candidatura antiga: **Conferente de Carga na Norte Logística**
  * (`CAND-40`, março de 2026), em que respondeu as 10 frases daquela empresa
  * sob o aceite vigente. Três delas (I25, I39, I40) são as mesmas que a
- * Colatte pergunta, então a abertura do questionário diz "3 de 10 você já
+ * Colatte pergunta, então a abertura do questionário diz "3 de 11 você já
  * respondeu" — a cena do reaproveitamento parcial, com ele.
  *
  * **Kauã Pedroso Arruda (`TAL-KAUA`)** é o "gêmeo": mesma história, mesmo
@@ -68,7 +68,7 @@ import {
  * datas são fixas.
  */
 
-const SYSTEM = 'Empregare — demonstração';
+const SYSTEM = 'Empregare';
 const SEED_CANDIDATOS_REAIS = 20260927;
 
 type Jeito = Record<FitAxisId, number>;
@@ -88,7 +88,8 @@ const JONAS: Jeito = {
   'regras-decisao': 4,
   'interacao-convivencia': 4.5,
   'lideranca-autonomia': 4.5,
-  'adaptacao-carreira': 4
+  'adaptacao-carreira': 4,
+  'expectativas-futuras': 4
 };
 
 /** Kauã: o gêmeo — igual, com o ritmo um pouco menos marcado. */
@@ -105,7 +106,8 @@ const COMO_A_COLATTE: Jeito = {
   'regras-decisao': 2.5,
   'interacao-convivencia': 4.5,
   'lideranca-autonomia': 4.5,
-  'adaptacao-carreira': 3.5
+  'adaptacao-carreira': 3.5,
+  'expectativas-futuras': 3.5
 };
 
 /** O oposto da Colatte: procedimento, uma coisa de cada vez, acompanhamento. */
@@ -119,7 +121,8 @@ const OPOSTO_DA_COLATTE: Jeito = {
   'regras-decisao': 5,
   'interacao-convivencia': 2,
   'lideranca-autonomia': 1.5,
-  'adaptacao-carreira': 2.5
+  'adaptacao-carreira': 2.5,
+  'expectativas-futuras': 2.5
 };
 
 /** Procedimento e acompanhamento: combina com Log,Lab e Amaggi. */
@@ -133,7 +136,8 @@ const DE_PROCEDIMENTO: Jeito = {
   'regras-decisao': 4.5,
   'interacao-convivencia': 3.5,
   'lideranca-autonomia': 3,
-  'adaptacao-carreira': 4
+  'adaptacao-carreira': 4,
+  'expectativas-futuras': 4
 };
 
 /** Pátio: alterna demandas, decide rápido, combina direto. */
@@ -147,7 +151,8 @@ const DE_PATIO: Jeito = {
   'regras-decisao': 2.5,
   'interacao-convivencia': 4.5,
   'lideranca-autonomia': 4.5,
-  'adaptacao-carreira': 4.5
+  'adaptacao-carreira': 4.5,
+  'expectativas-futuras': 4.5
 };
 
 /** No meio da escala em tudo: não puxa para lado nenhum. */
@@ -241,14 +246,14 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Conferente de carga',
-        organization: 'Transportadora Rio Cuiabá (fictícia)',
+        organization: 'Transportadora Rio Cuiabá',
         period: 'ago/2023 — jun/2026',
         activities:
           'Conferia romaneios no recebimento, registrava divergências no sistema da transportadora, abria ocorrências e atendia motoristas na doca.'
       },
       {
         role: 'Atendente de assistência técnica',
-        organization: 'Assistência Techcell (fictícia)',
+        organization: 'Assistência Techcell',
         period: 'jan/2022 — jul/2023',
         activities:
           'Registrava chamados de reparo, testava os aparelhos depois do conserto seguindo checklist e explicava o resultado ao cliente.'
@@ -271,30 +276,30 @@ const CURADOS: TalentoSeed[] = [
         axisId: 'execucao-ritmo',
         value:
           'Prefere fechar uma conferência antes de abrir outra: "no pátio, quem alterna erra".',
-        updatedAt: '2026-09-11'
+        updatedAt: '2026-09-17'
       },
       {
         axisId: 'lideranca-autonomia',
         value:
           'Depois de entender o serviço, prefere tocar sozinho e mostrar o resultado.',
-        updatedAt: '2026-09-11'
+        updatedAt: '2026-09-17'
       },
       {
         axisId: 'interacao-convivencia',
         value: 'Prefere combinar as coisas direto com a pessoa, sem recado.',
-        updatedAt: '2026-09-11'
+        updatedAt: '2026-09-17'
       },
       {
         axisId: 'regras-decisao',
         value:
           'Antes de mudar um procedimento, quer entender por que ele existe.',
-        updatedAt: '2026-09-11'
+        updatedAt: '2026-09-17'
       },
       {
         axisId: 'aprendizado-desenvolvimento',
         value: 'Quer conhecer o processo inteiro, não só a parte dele.',
         origin: 'curriculo',
-        updatedAt: '2026-09-13'
+        updatedAt: '2026-09-19'
       }
     ],
     account: 'Colatte',
@@ -310,14 +315,14 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de expedição',
-        organization: 'Distribuidora Vale do Coxipó (fictícia)',
+        organization: 'Distribuidora Vale do Coxipó',
         period: 'fev/2024 — ago/2026',
         activities:
           'Conferia pedidos separados, lançava saídas no sistema, atendia transportadoras no balcão e registrava as ocorrências do dia.'
       },
       {
         role: 'Estagiário de suporte',
-        organization: 'Escola técnica (fictícia)',
+        organization: 'Escola técnica',
         period: 'mar/2026 — jul/2026',
         activities:
           'Atendia chamados do laboratório de informática e testava as máquinas seguindo roteiro.'
@@ -334,12 +339,12 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'lideranca-autonomia',
         value: 'Prefere se organizar sozinho depois de entender o objetivo.',
-        updatedAt: '2026-09-09'
+        updatedAt: '2026-09-15'
       },
       {
         axisId: 'execucao-ritmo',
         value: 'Prefere terminar uma tarefa antes de começar outra.',
-        updatedAt: '2026-09-09'
+        updatedAt: '2026-09-15'
       }
     ],
     account: 'Colatte',
@@ -354,7 +359,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Assistente de suporte',
-        organization: 'Softloja Sistemas (fictícia)',
+        organization: 'Softloja Sistemas',
         period: 'mai/2024 — ago/2026',
         activities:
           'Atendia clientes por chat e telefone, registrava chamados, testava as versões novas antes da liberação e escrevia o passo a passo para o cliente.'
@@ -371,7 +376,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'interacao-convivencia',
         value: 'Prefere resolver direto com quem desenvolve.',
-        updatedAt: '2026-09-08'
+        updatedAt: '2026-09-14'
       }
     ],
     account: 'Colatte',
@@ -386,7 +391,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Atendente',
-        organization: 'Infocenter Cuiabá (fictícia)',
+        organization: 'Infocenter Cuiabá',
         period: 'jun/2023 — ago/2026',
         activities:
           'Atendia clientes no balcão, configurava computadores e registrava as vendas e assistências no sistema da loja.'
@@ -406,7 +411,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Analista de testes júnior',
-        organization: 'Fábrica Sul Digital (fictícia)',
+        organization: 'Fábrica Sul Digital',
         period: 'jan/2024 — set/2026',
         activities:
           'Executava casos de teste escritos, registrava defeitos na ferramenta e aguardava aprovação do líder antes de passar à próxima tarefa.'
@@ -423,12 +428,12 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'regras-decisao',
         value: 'Prefere procedimento escrito e aprovação antes de mudar.',
-        updatedAt: '2026-09-07'
+        updatedAt: '2026-09-13'
       },
       {
         axisId: 'lideranca-autonomia',
         value: 'Prefere que alguém valide cada etapa antes de seguir.',
-        updatedAt: '2026-09-07'
+        updatedAt: '2026-09-13'
       }
     ],
     account: 'Colatte',
@@ -443,7 +448,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Recepcionista',
-        organization: 'Clínica Bela Vista (fictícia)',
+        organization: 'Clínica Bela Vista',
         period: 'ago/2024 — ago/2026',
         activities:
           'Atendia pacientes, agendava consultas no sistema e resolvia pendências direto com os médicos.'
@@ -455,7 +460,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'interacao-convivencia',
         value: 'Resolve as coisas direto com a pessoa.',
-        updatedAt: '2026-09-10'
+        updatedAt: '2026-09-16'
       }
     ],
     account: 'Colatte',
@@ -472,7 +477,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar financeira',
-        organization: 'Contábil Chapada (fictícia)',
+        organization: 'Contábil Chapada',
         period: 'mar/2023 — ago/2026',
         activities:
           'Emitia notas de serviço para os clientes do escritório, controlava recebimentos em planilha e organizava os contratos.'
@@ -492,7 +497,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar administrativo',
-        organization: 'Construtora Coxipó (fictícia)',
+        organization: 'Construtora Coxipó',
         period: 'out/2024 — set/2026',
         activities:
           'Organizava documentos de obra, lançava notas no sistema e apoiava o fechamento mensal.'
@@ -512,7 +517,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Operadora de caixa',
-        organization: 'Materiais Pantanal (fictícia)',
+        organization: 'Materiais Pantanal',
         period: 'jan/2024 — ago/2026',
         activities:
           'Fechamento diário do caixa, emissão de notas e atendimento ao cliente.'
@@ -534,7 +539,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Atendente de call center',
-        organization: 'Central Conecta (fictícia)',
+        organization: 'Central Conecta',
         period: 'jul/2024 — ago/2026',
         activities:
           'Atendia clientes seguindo script, registrava protocolos e escalonava para o segundo nível conforme o procedimento.'
@@ -550,7 +555,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'regras-decisao',
         value: 'Gosta de roteiro claro para cada tipo de chamado.',
-        updatedAt: '2026-09-06'
+        updatedAt: '2026-09-12'
       }
     ],
     account: 'Log,Lab Inteligência Digital',
@@ -565,7 +570,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Técnico de informática',
-        organization: 'Rede Escolar Aurora (fictícia)',
+        organization: 'Rede Escolar Aurora',
         period: 'fev/2023 — jul/2026',
         activities:
           'Atendia chamados de professores, mantinha os laboratórios e registrava os atendimentos em planilha.'
@@ -585,7 +590,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Recepcionista',
-        organization: 'Unidade básica de saúde (fictícia)',
+        organization: 'Unidade básica de saúde',
         period: 'mai/2023 — ago/2026',
         activities:
           'Atendia pacientes, agendava consultas no sistema e abria chamados quando o sistema falhava.'
@@ -605,7 +610,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Estagiário de help desk',
-        organization: 'Cooperativa Serra (fictícia)',
+        organization: 'Cooperativa Serra',
         period: 'fev/2026 — ago/2026',
         activities:
           'Atendia chamados internos e registrava tudo na ferramenta de tickets.'
@@ -628,7 +633,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de expedição',
-        organization: 'Cooperativa Grãos do Norte (fictícia)',
+        organization: 'Cooperativa Grãos do Norte',
         period: 'mar/2023 — ago/2026',
         activities:
           'Conferia CT-e e notas de saída, acompanhava o carregamento e registrava as cargas no sistema, com horas extras na safra.'
@@ -641,7 +646,7 @@ const CURADOS: TalentoSeed[] = [
         axisId: 'adaptacao-carreira',
         value: 'Não se importa de reorganizar o horário na safra.',
         origin: 'curriculo',
-        updatedAt: '2026-09-05'
+        updatedAt: '2026-09-11'
       }
     ],
     account: 'Amaggi',
@@ -656,7 +661,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Assistente administrativa',
-        organization: 'Transportes Chapada Real (fictícia)',
+        organization: 'Transportes Chapada Real',
         period: 'jan/2024 — ago/2026',
         activities:
           'Emitia CT-e, controlava fretes em planilha e atendia motoristas e clientes.'
@@ -677,7 +682,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de armazém',
-        organization: 'Armazéns Vale do Guaporé (fictícia)',
+        organization: 'Armazéns Vale do Guaporé',
         period: 'ago/2022 — jul/2026',
         activities:
           'Recebia e pesava cargas, registrava no sistema e organizava a fila de caminhões na safra.'
@@ -697,7 +702,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Faturista',
-        organization: 'Distribuidora Araés (fictícia)',
+        organization: 'Distribuidora Araés',
         period: 'abr/2024 — set/2026',
         activities:
           'Emitia notas, conferia pedidos antes do faturamento e atendia o comercial.'
@@ -719,7 +724,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de armazém',
-        organization: 'Fracionados MT (fictícia)',
+        organization: 'Fracionados MT',
         period: 'set/2023 — ago/2026',
         activities:
           'Separava volumes por rota, conferia no carregamento e registrava divergências no coletor.'
@@ -731,7 +736,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'execucao-ritmo',
         value: 'Está acostumado a alternar entre docas no início do turno.',
-        updatedAt: '2026-09-10'
+        updatedAt: '2026-09-16'
       }
     ],
     account: 'Grupo Norte Logística',
@@ -746,7 +751,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Repositora',
-        organization: 'Supermercado Bom Preço (fictício)',
+        organization: 'Supermercado Bom Preço',
         period: 'fev/2024 — ago/2026',
         activities:
           'Recebia mercadorias, conferia notas e repunha gôndolas conforme a lista do dia.'
@@ -758,7 +763,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'lideranca-autonomia',
         value: 'Prefere alguém acompanhando nas primeiras semanas.',
-        updatedAt: '2026-09-09'
+        updatedAt: '2026-09-15'
       }
     ],
     account: 'Grupo Norte Logística',
@@ -774,7 +779,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Ajudante de carga',
-        organization: 'Bebidas Cerrado (fictícia)',
+        organization: 'Bebidas Cerrado',
         period: 'nov/2023 — ago/2026',
         activities:
           'Carregava e descarregava caminhões, conferia volumes com o motorista e organizava o pátio.'
@@ -794,7 +799,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de almoxarifado',
-        organization: 'Clínica Santa Marta (fictícia)',
+        organization: 'Clínica Santa Marta',
         period: 'mai/2024 — ago/2026',
         activities:
           'Controlava entrada e saída de materiais em planilha e atendia os setores da clínica.'
@@ -816,7 +821,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Conferente de carga',
-        organization: 'Transportes Sucuri (fictícia)',
+        organization: 'Transportes Sucuri',
         period: 'mar/2022 — fev/2026',
         activities:
           'Conferia romaneios no recebimento noturno e registrava divergências.'
@@ -836,7 +841,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de expedição',
-        organization: 'Alimentos Pantanal (fictícia)',
+        organization: 'Alimentos Pantanal',
         period: 'jun/2023 — jan/2026',
         activities:
           'Conferia paletes antes do carregamento e registrava as saídas no sistema.'
@@ -858,7 +863,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar de almoxarifado',
-        organization: 'Máquinas Cerrado (fictícia)',
+        organization: 'Máquinas Cerrado',
         period: 'ago/2023 — ago/2026',
         activities:
           'Recebia peças, conferia notas, lançava no sistema e atendia a oficina.'
@@ -870,7 +875,7 @@ const CURADOS: TalentoSeed[] = [
       {
         axisId: 'regras-decisao',
         value: 'Prefere procedimento definido para cada movimentação.',
-        updatedAt: '2026-09-08'
+        updatedAt: '2026-09-14'
       }
     ],
     account: 'Bom Futuro',
@@ -885,7 +890,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Estoquista',
-        organization: 'Construmais (fictícia)',
+        organization: 'Construmais',
         period: 'jan/2024 — ago/2026',
         activities:
           'Organizava o depósito, conferia entregas e lançava entradas no sistema da loja.'
@@ -905,7 +910,7 @@ const CURADOS: TalentoSeed[] = [
     experiences: [
       {
         role: 'Auxiliar administrativa',
-        organization: 'Escritório Rondon (fictício)',
+        organization: 'Escritório Rondon',
         period: 'mar/2025 — ago/2026',
         activities: 'Organizava documentos e atendia o telefone.'
       }
@@ -952,13 +957,12 @@ const VOLUME: TalentoSeed[] = NOMES_DE_VOLUME.map(([first, last], index) => ({
   id: `TAL-R-${String(index + 1).padStart(2, '0')}`,
   name: `${first} ${last}`,
   headline: HEADLINES_DE_VOLUME[index % HEADLINES_DE_VOLUME.length]!,
-  summary:
-    'Perfil fictício da base de demonstração, com experiência declarada no sistema de origem.',
+  summary: 'Perfil com experiência declarada no sistema de origem.',
   city: index % 3 === 0 ? 'Várzea Grande, MT' : 'Cuiabá, MT',
   experiences: [
     {
       role: HEADLINES_DE_VOLUME[index % HEADLINES_DE_VOLUME.length]!,
-      organization: 'Empresa anterior (fictícia)',
+      organization: 'Empresa anterior',
       period: 'jan/2024 — ago/2026',
       activities: 'Rotina declarada no currículo recebido da origem.'
     }
@@ -1000,7 +1004,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-21',
     talentId: 'TAL-JONAS',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'analise-tecnica',
     technicalMatch: 91,
     jeito: null
@@ -1010,7 +1014,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-22',
     talentId: 'TAL-KAUA',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-10',
+    appliedAt: '2026-09-16',
     externalStage: 'analise-tecnica',
     technicalMatch: 84,
     jeito: KAUA,
@@ -1020,7 +1024,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-23',
     talentId: 'TAL-THAIS',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-08',
+    appliedAt: '2026-09-14',
     externalStage: 'analise-tecnica',
     technicalMatch: 88,
     jeito: COMO_A_COLATTE,
@@ -1030,7 +1034,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-24',
     talentId: 'TAL-WESLEY',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-08',
+    appliedAt: '2026-09-14',
     externalStage: 'triagem',
     technicalMatch: 67,
     jeito: DE_PROCEDIMENTO,
@@ -1041,7 +1045,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-25',
     talentId: 'TAL-ANABEATRIZ',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-07',
+    appliedAt: '2026-09-13',
     externalStage: 'analise-tecnica',
     technicalMatch: 93,
     jeito: OPOSTO_DA_COLATTE,
@@ -1052,7 +1056,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-26',
     talentId: 'TAL-RUAN',
     jobId: 'VAG-06',
-    appliedAt: '2026-09-10',
+    appliedAt: '2026-09-16',
     externalStage: 'inscrito',
     technicalMatch: 42,
     jeito: COMO_A_COLATTE,
@@ -1064,7 +1068,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-27',
     talentId: 'TAL-LARISSA',
     jobId: 'VAG-07',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'triagem',
     technicalMatch: 86,
     jeito: COMO_A_COLATTE,
@@ -1074,7 +1078,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-28',
     talentId: 'TAL-DIEGOP',
     jobId: 'VAG-07',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'inscrito',
     technicalMatch: 71,
     jeito: DE_PROCEDIMENTO,
@@ -1084,7 +1088,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-29',
     talentId: 'TAL-MADU',
     jobId: 'VAG-07',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     technicalMatch: 58,
     jeito: NEUTRO,
@@ -1096,7 +1100,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-30',
     talentId: 'TAL-VITORIA',
     jobId: 'VAG-08',
-    appliedAt: '2026-09-05',
+    appliedAt: '2026-09-11',
     externalStage: 'analise-tecnica',
     technicalMatch: 78,
     jeito: DE_PROCEDIMENTO,
@@ -1106,7 +1110,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-31',
     talentId: 'TAL-HENRIQUE',
     jobId: 'VAG-08',
-    appliedAt: '2026-09-06',
+    appliedAt: '2026-09-12',
     externalStage: 'analise-tecnica',
     technicalMatch: 83,
     jeito: DE_PATIO,
@@ -1116,7 +1120,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-32',
     talentId: 'TAL-PAMELA',
     jobId: 'VAG-08',
-    appliedAt: '2026-09-09',
+    appliedAt: '2026-09-15',
     externalStage: 'triagem',
     technicalMatch: 61,
     jeito: DE_PROCEDIMENTO,
@@ -1126,7 +1130,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-33',
     talentId: 'TAL-GUSTAVO',
     jobId: 'VAG-08',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     technicalMatch: 55,
     jeito: DE_PROCEDIMENTO,
@@ -1138,7 +1142,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-34',
     talentId: 'TAL-RAFAELS',
     jobId: 'VAG-09',
-    appliedAt: '2026-09-04',
+    appliedAt: '2026-09-10',
     externalStage: 'analise-tecnica',
     technicalMatch: 89,
     jeito: DE_PROCEDIMENTO,
@@ -1148,7 +1152,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-35',
     talentId: 'TAL-INGRID',
     jobId: 'VAG-09',
-    appliedAt: '2026-09-05',
+    appliedAt: '2026-09-11',
     externalStage: 'analise-tecnica',
     technicalMatch: 74,
     jeito: NEUTRO,
@@ -1158,7 +1162,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-36',
     talentId: 'TAL-ELIAS',
     jobId: 'VAG-09',
-    appliedAt: '2026-09-08',
+    appliedAt: '2026-09-14',
     externalStage: 'triagem',
     technicalMatch: 80,
     jeito: DE_PATIO,
@@ -1168,7 +1172,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-37',
     talentId: 'TAL-CAMILA',
     jobId: 'VAG-09',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     technicalMatch: 63,
     jeito: NEUTRO,
@@ -1180,7 +1184,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-38',
     talentId: 'TAL-ADRIANO',
     jobId: 'VAG-10',
-    appliedAt: '2026-09-11',
+    appliedAt: '2026-09-17',
     externalStage: 'triagem',
     technicalMatch: 85,
     jeito: DE_PATIO,
@@ -1190,7 +1194,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-39',
     talentId: 'TAL-TAINA',
     jobId: 'VAG-10',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'inscrito',
     technicalMatch: 66,
     jeito: OPOSTO_DA_COLATTE,
@@ -1203,7 +1207,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-40',
     talentId: 'TAL-JONAS',
     jobId: 'VAG-11',
-    appliedAt: '2026-03-09',
+    appliedAt: '2026-03-15',
     externalStage: 'entrevista-empresa',
     technicalMatch: 82,
     jeito: JONAS,
@@ -1214,7 +1218,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-41',
     talentId: 'TAL-MARCOSA',
     jobId: 'VAG-10',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'inscrito',
     technicalMatch: 59,
     jeito: DE_PATIO,
@@ -1224,7 +1228,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-42',
     talentId: 'TAL-BRUNA',
     jobId: 'VAG-10',
-    appliedAt: '2026-09-13',
+    appliedAt: '2026-09-19',
     externalStage: 'inscrito',
     technicalMatch: 52,
     jeito: DE_PROCEDIMENTO,
@@ -1236,7 +1240,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-43',
     talentId: 'TAL-PEDROIVO',
     jobId: 'VAG-11',
-    appliedAt: '2026-03-08',
+    appliedAt: '2026-03-14',
     externalStage: 'entrevista-empresa',
     technicalMatch: 90,
     jeito: DE_PATIO,
@@ -1247,7 +1251,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-44',
     talentId: 'TAL-SUELLEN',
     jobId: 'VAG-11',
-    appliedAt: '2026-03-10',
+    appliedAt: '2026-03-16',
     externalStage: 'triagem',
     technicalMatch: 73,
     jeito: DE_PROCEDIMENTO,
@@ -1260,7 +1264,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-45',
     talentId: 'TAL-LETICIA',
     jobId: 'VAG-12',
-    appliedAt: '2026-09-10',
+    appliedAt: '2026-09-16',
     externalStage: 'triagem',
     technicalMatch: 87,
     jeito: DE_PROCEDIMENTO,
@@ -1270,7 +1274,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-46',
     talentId: 'TAL-CAIO',
     jobId: 'VAG-12',
-    appliedAt: '2026-09-11',
+    appliedAt: '2026-09-17',
     externalStage: 'inscrito',
     technicalMatch: 69,
     jeito: NEUTRO,
@@ -1280,7 +1284,7 @@ const CANDIDATURAS: CandidaturaSeed[] = [
     id: 'CAND-47',
     talentId: 'TAL-DAIANE',
     jobId: 'VAG-12',
-    appliedAt: '2026-09-12',
+    appliedAt: '2026-09-18',
     externalStage: 'inscrito',
     technicalMatch: 44,
     jeito: NEUTRO,
@@ -1416,61 +1420,61 @@ const MAPA: {
       'aprendizado-desenvolvimento',
       'inovacao'
     ],
-    at: '2026-09-11'
+    at: '2026-09-17'
   },
   {
     talentId: 'TAL-KAUA',
     jeito: KAUA,
     temas: ['lideranca-autonomia', 'execucao-ritmo', 'interacao-convivencia'],
-    at: '2026-09-09'
+    at: '2026-09-15'
   },
   {
     talentId: 'TAL-THAIS',
     jeito: COMO_A_COLATTE,
     temas: ['interacao-convivencia', 'execucao-ritmo'],
-    at: '2026-09-08'
+    at: '2026-09-14'
   },
   {
     talentId: 'TAL-ANABEATRIZ',
     jeito: OPOSTO_DA_COLATTE,
     temas: ['regras-decisao', 'lideranca-autonomia', 'execucao-ritmo'],
-    at: '2026-09-07'
+    at: '2026-09-13'
   },
   {
     talentId: 'TAL-RUAN',
     jeito: COMO_A_COLATTE,
     temas: ['interacao-convivencia'],
-    at: '2026-09-10'
+    at: '2026-09-16'
   },
   {
     talentId: 'TAL-VITORIA',
     jeito: DE_PROCEDIMENTO,
     temas: ['regras-decisao'],
-    at: '2026-09-06'
+    at: '2026-09-12'
   },
   {
     talentId: 'TAL-RAFAELS',
     jeito: DE_PROCEDIMENTO,
     temas: ['adaptacao-carreira'],
-    at: '2026-09-05'
+    at: '2026-09-11'
   },
   {
     talentId: 'TAL-ADRIANO',
     jeito: DE_PATIO,
     temas: ['execucao-ritmo'],
-    at: '2026-09-10'
+    at: '2026-09-16'
   },
   {
     talentId: 'TAL-TAINA',
     jeito: OPOSTO_DA_COLATTE,
     temas: ['lideranca-autonomia'],
-    at: '2026-09-09'
+    at: '2026-09-15'
   },
   {
     talentId: 'TAL-LETICIA',
     jeito: DE_PROCEDIMENTO,
     temas: ['regras-decisao'],
-    at: '2026-09-08'
+    at: '2026-09-14'
   }
 ];
 
@@ -1536,7 +1540,7 @@ const IEL = {
 };
 const VAGA = {
   sourceId: 'FONTE-EMPREGARE' as const,
-  originLabel: 'Descrição da vaga (Empregare — demonstração)',
+  originLabel: 'Descrição da vaga (Empregare)',
   nature: 'descricao-da-vaga' as const
 };
 
@@ -1547,8 +1551,8 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'TAL-JONAS',
     null,
     'Registrava chamados de reparo e explicava o resultado ao cliente.',
-    CURRICULO('Assistência Techcell (fictícia)'),
-    '2026-09-13',
+    CURRICULO('Assistência Techcell'),
+    '2026-09-19',
     [{ jobId: 'VAG-06', criterionId: 'CRI-601' }],
     'Atendimento com registro de chamado, ainda que em assistência técnica e não em software: a rotina é a mesma.'
   ),
@@ -1557,8 +1561,8 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'TAL-JONAS',
     null,
     'Testava os aparelhos depois do conserto seguindo checklist.',
-    CURRICULO('Assistência Techcell (fictícia)'),
-    '2026-09-13',
+    CURRICULO('Assistência Techcell'),
+    '2026-09-19',
     [{ jobId: 'VAG-06', criterionId: 'CRI-602' }],
     'Teste com roteiro e registro do que saiu diferente: é o que a vaga pede, em outro objeto.'
   ),
@@ -1567,8 +1571,8 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'TAL-JONAS',
     null,
     'Registrava divergências de romaneio no sistema da transportadora e abria ocorrências.',
-    CURRICULO('Transportadora Rio Cuiabá (fictícia)'),
-    '2026-09-13',
+    CURRICULO('Transportadora Rio Cuiabá'),
+    '2026-09-19',
     [{ jobId: 'VAG-06', criterionId: 'CRI-603' }],
     'Lançamento de ocorrência em sistema, três anos seguidos.'
   ),
@@ -1578,7 +1582,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     null,
     'Curso técnico em informática concluído em julho de 2026 (noturno).',
     IEL,
-    '2026-09-11',
+    '2026-09-17',
     [{ jobId: 'VAG-06', criterionId: 'CRI-604' }],
     'Formação concluída durante o emprego no pátio: é a mudança de setor em andamento.'
   ),
@@ -1592,7 +1596,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
       originLabel: 'Candidatura EMPG-DEMO-CAND-6001 (Colatte)',
       nature: 'relato-do-candidato'
     },
-    '2026-09-13',
+    '2026-09-19',
     [{ jobId: 'VAG-06', criterionId: 'CRI-605' }],
     'Cobre o horário das 9h às 18h.'
   ),
@@ -1602,7 +1606,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     null,
     'Quer mudar para a área de tecnologia e aprender com quem programa.',
     IEL,
-    '2026-09-11',
+    '2026-09-17',
     [{ jobId: 'VAG-06', criterionId: 'CRI-606' }],
     'Interesse registrado antes desta vaga, no atendimento em que ele contou do curso.'
   ),
@@ -1612,7 +1616,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     null,
     'Prefere fechar uma conferência antes de abrir outra: "no pátio, quem alterna erra".',
     IEL,
-    '2026-09-11',
+    '2026-09-17',
     [{ jobId: 'VAG-06', criterionId: 'CRI-608' }],
     'Preferência de ritmo declarada. Na Colatte um chamado interrompe o teste em andamento — é o ponto a conversar, não um demérito.'
   ),
@@ -1623,8 +1627,8 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'TAL-KAUA',
     null,
     'Atendia transportadoras no balcão e registrava as ocorrências do dia.',
-    CURRICULO('Distribuidora Vale do Coxipó (fictícia)'),
-    '2026-09-10',
+    CURRICULO('Distribuidora Vale do Coxipó'),
+    '2026-09-16',
     [
       { jobId: 'VAG-06', criterionId: 'CRI-601' },
       { jobId: 'VAG-06', criterionId: 'CRI-603' }
@@ -1636,8 +1640,8 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'TAL-KAUA',
     null,
     'Atendia chamados do laboratório e testava as máquinas seguindo roteiro.',
-    CURRICULO('Escola técnica (fictícia)'),
-    '2026-09-10',
+    CURRICULO('Escola técnica'),
+    '2026-09-16',
     [
       { jobId: 'VAG-06', criterionId: 'CRI-602' },
       { jobId: 'VAG-06', criterionId: 'CRI-604' }
@@ -1654,7 +1658,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
       originLabel: 'Candidatura EMPG-DEMO-CAND-6002 (Colatte)',
       nature: 'relato-do-candidato'
     },
-    '2026-09-10',
+    '2026-09-16',
     [{ jobId: 'VAG-06', criterionId: 'CRI-605' }],
     'Cobre o horário da vaga.'
   ),
@@ -1670,7 +1674,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
       originLabel: 'Registro IEL — pedido de contexto à empresa',
       nature: 'registro-iel'
     },
-    '2026-09-12',
+    '2026-09-18',
     [{ jobId: 'VAG-06', criterionId: 'CRI-607' }],
     'Espaço não mapeado. Para quem vem de outra área, é a pergunta da ligação.'
   ),
@@ -1680,7 +1684,7 @@ const EVIDENCIAS_CURADAS: Evidence[] = [
     'EQ-04',
     'Os chamados chegam de vários clientes ao mesmo tempo e interrompem o teste em andamento.',
     VAGA,
-    '2026-09-12',
+    '2026-09-18',
     [{ jobId: 'VAG-06', criterionId: 'CRI-608' }],
     'Condição de ritmo da equipe, confirmada pela consulta: a equipe alterna; a gestão acha que não.'
   )
@@ -1824,9 +1828,7 @@ function construirAnaliseGenerica(): {
             application.talentId,
             null,
             experiencia?.activities ?? 'Rotina declarada no currículo.',
-            CURRICULO(
-              experiencia?.organization ?? 'empresa anterior (fictícia)'
-            ),
+            CURRICULO(experiencia?.organization ?? 'empresa anterior'),
             application.appliedAt,
             [{ jobId: job.id, criterionId: criterion.id }],
             'Registro recebido da origem, ainda sem verificação prática.'

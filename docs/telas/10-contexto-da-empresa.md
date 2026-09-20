@@ -44,7 +44,20 @@ que a equipe relata fica registrada em vez de ser resolvida no muque.
   do nome é exatamente a identificação que o PRODUTO.md §5.2 proíbe. O que aparece aqui é operação do
   convite, nunca resposta — desta tela não há como saber o que qualquer pessoa respondeu.
 
-- **Convidar colaboradores** — o formulário que gera um link por pessoa.
+- **Competências escolhidas** — logo abaixo da descrição institucional, a linha
+  "Competências escolhidas: 8 de 11", com as retiradas nomeadas ao lado. É o denominador de tudo o
+  que a página mostra depois.
+- **O que a empresa quer medir** (`companies/competencias-do-questionario.tsx`, primeira peça da aba
+  "Como a empresa trabalha") — as 11 competências com caixa de seleção, nome e descrição curta,
+  contador "8 de 11 competências · mínimo 3" e o botão **Salvar competências**. Abaixo de 3 o botão
+  trava e a tela escreve a razão (`role="alert"`), em vez de só apagar o botão. Quando a amostra já
+  respondeu, uma linha avisa: "As respostas dos temas retirados continuam guardadas e deixam de
+  contar. Se a empresa reincluir o tema, elas voltam a valer." É a porta da **empresa** para R11; a
+  outra é o formulário de convite.
+- **Convidar colaboradores** — o formulário que gera um link por pessoa. O primeiro passo dele,
+  antes da lista de e-mails, é a mesma escolha de competências ("O que a empresa quer medir"), todas
+  marcadas por padrão; o botão de enviar só destrava com 3 ou mais. A escolha é gravada junto com os
+  convites, porque é ela que define o bloco que cada pessoa vai receber.
 - **Mapa de cultura** (`mapa-cultural/mapa-da-empresa.tsx`, aba só da analista) — onde esta empresa
   está e **quem na base combina com esta cultura**: a empresa no centro do plano e cada pessoa a uma
   distância que é a aderência dela, com a lista ordenada ao lado. Era tela solta no menu, aberta na
@@ -118,6 +131,15 @@ dias daquela empresa, do histórico em `fixtures/outcomes.ts`, indexado uma vez 
   é qualidade: uma equipe que responde igual combina mais fácil com quem se parece com ela. A tela
   mostra a variação e não a julga.
 - Os eixos descrevem prática de trabalho, nunca traço de pessoa.
+- **A empresa escolhe de 3 a 11 competências (R11).** A faixa é recusada pelo reducer
+  (`set-company-competencies`), não só pelo formulário, e a recusa fica no histórico. Tema não
+  escolhido continua na tabela "Como a empresa trabalha", em cinza e sem número, com a frase
+  **"A empresa não pediu esta competência"**: sumir da tela esconderia o critério de quem lê o
+  percentual. O contador "Temas fechados" passa a usar o denominador certo — com 8 competências
+  pedidas, "8 de 8".
+- **Retirar um tema não apaga resposta nenhuma.** O que já foi respondido continua guardado e volta
+  a contar se a empresa reincluir o tema. Convite já respondido não muda de conteúdo: o bloco é
+  calculado na abertura do link.
 - **O custo é da vaga reaberta, nunca de quem saiu.** A unidade de conta é a posição que voltou ao
   Empregare. Em nenhum lugar uma demissão identificável vira linha de despesa.
 - **Nenhuma parcela é apresentada como fato.** Não há estatística de mercado nem "segundo estudos":
@@ -152,3 +174,7 @@ Alimenta: [Perfil do talento](08-perfil-do-talento.md), [Mesa de seleção](04-m
   seleção chegam aqui.
 - 2026-09-20 — a tabela "Como a empresa trabalha" ganha a coluna **Equipe** (uniforme / variada /
   dividida), a variação das respostas por tema, com o piso de respostas respeitado.
+- 2026-09-20 — a empresa passa a escolher **de 3 a 11 competências** (R11, pedido do IEL): o bloco
+  "O que a empresa quer medir" na aba de cultura, o mesmo passo no formulário de convite, a linha
+  "Competências escolhidas: 8 de 11" no cabeçalho e "A empresa não pediu esta competência" no lugar
+  do número dos temas de fora.

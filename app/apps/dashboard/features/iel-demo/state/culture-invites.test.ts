@@ -78,7 +78,7 @@ describe('resposta pelo link (M2)', () => {
       (answer) => answer.inviteId === convite.id
     );
     expect(doConvite).toHaveLength(16);
-    expect(getCompanyCultureProfile(depois, 'EMP-02')).toHaveLength(10);
+    expect(getCompanyCultureProfile(depois, 'EMP-02')).toHaveLength(11);
   });
 
   it('o mesmo link vale uma vez só', () => {
@@ -184,7 +184,7 @@ describe('progresso da amostra', () => {
 
     expect(progresso.answered).toBe(10);
     expect(progresso.total).toBe(10);
-    expect(progresso.deadline).toBe('2026-09-15');
+    expect(progresso.deadline).toBe('2026-09-21');
     expect(progresso.daysLeft).toBe(1);
     expect(progresso.overdue).toBe(false);
     expect(progresso.byRole.equipe).toEqual({ answered: 10, total: 10 });
@@ -232,10 +232,12 @@ describe('tela do colaborador (PRODUTO.md §5)', () => {
 
     expect(vista).toEqual({
       inviteId: convite.id,
+      companyId: 'EMP-04',
       companyName: 'Colatte',
       expiresAt: convite.expiresAt,
       daysLeft: 2,
-      status: 'aberto'
+      status: 'aberto',
+      bloco: expect.any(Array)
     });
     expect(JSON.stringify(vista)).not.toContain('@');
   });

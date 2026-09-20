@@ -52,7 +52,7 @@ export default async function EntrarPage() {
 
       <p className="max-w-sm text-center text-xs text-muted-foreground">
         Candidatos e empresas não entram por aqui: eles respondem pelo link que
-        recebem, sem senha. Protótipo de demonstração, com dados fictícios.
+        recebem, sem senha.
       </p>
     </div>
   );

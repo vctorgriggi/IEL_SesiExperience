@@ -13,7 +13,7 @@ import { Badge } from '@workspace/ui/shadcn/badge';
 import { barraDaAderencia, textoDaAderencia, TRILHO } from '../metricas/cores';
 
 /**
- * Os dez temas do dia a dia numa lista com trilho e percentual.
+ * Os onze temas do dia a dia numa lista com trilho e percentual.
  *
  * Cada ponto mostra o alinhamento da pessoa com a empresa naquele aspecto,
  * o peso declarado pela empresa e as respostas dadas por cada lado (LGPD art. 20, § 1º).

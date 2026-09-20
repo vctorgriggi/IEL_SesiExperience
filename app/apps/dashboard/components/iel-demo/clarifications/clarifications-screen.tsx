@@ -132,7 +132,7 @@ export function ClarificationsScreen() {
         </h1>
         <p className="text-sm text-muted-foreground">
           {analista
-            ? 'De quem o IEL está esperando resposta. O envio é simulado: a tela de quem recebe abre aqui mesmo.'
+            ? 'De quem o IEL está esperando resposta. A tela de quem recebe abre aqui mesmo.'
             : 'O que o IEL perguntou sobre a sua equipe.'}
         </p>
       </div>
@@ -318,9 +318,7 @@ export function ClarificationsScreen() {
                                         clarificationId: clarification.id,
                                         at: nowIso()
                                       });
-                                      toast.success(
-                                        'Pergunta enviada (envio simulado).'
-                                      );
+                                      toast.success('Pergunta enviada.');
                                     }}
                                   >
                                     Enviar pergunta

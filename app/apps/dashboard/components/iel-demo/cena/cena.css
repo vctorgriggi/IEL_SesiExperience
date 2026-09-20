@@ -1,0 +1,48 @@
+/*
+ * O palco da cena do candidato.
+ *
+ * O produto não tem gradiente nem grão (DESIGN.md §8) — mas isto aqui não é
+ * uma tela do produto, é o pano de fundo em que um celular é apresentado
+ * para o júri. O azul é o mesmo da barra (`--sidebar`); as duas luzes são o
+ * mesmo azul dois tons acima, para o celular não flutuar num chapado. O
+ * grão é um ruído SVG a 6%: tira a cara de "fundo de slide" sem virar
+ * textura.
+ */
+.cena-palco {
+  background:
+    radial-gradient(
+      110% 80% at 15% 5%,
+      hsl(226 32% 22%) 0%,
+      hsl(226 32% 22% / 0) 60%
+    ),
+    radial-gradient(
+      80% 60% at 90% 100%,
+      hsl(226 35% 17%) 0%,
+      hsl(226 35% 17% / 0) 65%
+    ),
+    hsl(var(--sidebar));
+}
+
+.cena-palco::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+/*
+ * O questionário real dentro do celular.
+ *
+ * `MolduraPorLink` (shared/fluxo-por-link.tsx) ocupa a altura da janela
+ * menos o cabeçalho, para o botão "Próxima" ficar no pé do celular de
+ * verdade. Dentro do celular desenhado a janela é o telão, e essa medida
+ * empurraria o botão para fora da tela. Aqui a moldura passa a medir a
+ * própria tela do celular. Se a classe mudar lá, nada quebra: o conteúdo
+ * só volta a rolar dentro do aparelho.
+ */
+[data-cena-questionario] .min-h-\[calc\(100dvh-6rem\)\] {
+  min-height: 100%;
+}

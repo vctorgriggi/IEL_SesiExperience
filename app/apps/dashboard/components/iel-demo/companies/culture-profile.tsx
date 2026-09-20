@@ -21,6 +21,7 @@ import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   AXIS_WEIGHT_LABEL,
+  competenciasDaEmpresa,
   CULTURE_DISPLAY_RESPONDENT_LABEL,
   getAxisWeights,
   getCompanyCultureProfile,
@@ -85,6 +86,7 @@ import {
   TONS_DA_EMPRESA,
   type EstadoDeCor
 } from '../metricas/cores';
+import { TEMA_NAO_PEDIDO } from './competencias-do-questionario';
 
 /**
  * Como a empresa trabalha, em cinco linhas de tabela.
@@ -456,7 +458,7 @@ function TrackLegend({ withheld }: { withheld: boolean }) {
 }
 
 /**
- * Os 10 temas da empresa, como tabela.
+ * Os 11 temas da empresa, como tabela.
  *
  * Reutilizada pela tela da vaga: `jobId` acrescenta o peso que aquela vaga
  * declarou para cada ponto — é o peso que explica por que dois candidatos com
@@ -474,6 +476,9 @@ export function CompanyCultureTable({
 
   const reading = getCultureReading(state, companyId);
   const profile = getCompanyCultureProfile(state, companyId);
+  // Tema que a empresa não pediu continua na tabela, em cinza e sem número:
+  // sumir da tela esconderia o critério de quem lê o resultado.
+  const pedidas = competenciasDaEmpresa(state, companyId);
   // Por tema, o desvio das frases que fecham: é o que a coluna "Equipe" lê.
   const perfil = perfilDaEmpresa(state, companyId);
   const progress = getCultureSampleProgress(state, companyId);
@@ -609,6 +614,27 @@ export function CompanyCultureTable({
           </TableHeader>
           <TableBody>
             {reading.map((entry) => {
+              const pedida = pedidas.includes(entry.axisId);
+              if (!pedida) {
+                return (
+                  <TableRow
+                    key={entry.axisId}
+                    className="text-muted-foreground"
+                  >
+                    <TableCell className="align-middle">
+                      <span className="font-medium">
+                        {COPY.axis(entry.axisId)}
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      colSpan={5}
+                      className="align-middle text-sm"
+                    >
+                      {TEMA_NAO_PEDIDO}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
               const axisProfile = profile.find(
                 (axis) => axis.axisId === entry.axisId
               );

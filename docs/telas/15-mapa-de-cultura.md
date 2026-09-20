@@ -92,7 +92,11 @@ O briefing original pedia para não produzir nota global de fit. O cliente revog
 `PRODUTO.md` §6. O percentual existe, com as condições que vieram junto:
 
 - O rótulo é sempre **aderência**, nunca "chance de sucesso".
-- O **denominador aparece**: "2 de 10 temas". 80% sobre dois temas não é 80% sobre dez.
+- O **denominador aparece**: "2 de 8 temas". 80% sobre dois temas não é 80% sobre oito.
+- O denominador é o que **aquela empresa pediu** (R11): a linha "Competências escolhidas: 8 de 11",
+  logo acima do mapa, diz sobre quantas competências os percentuais da tela foram medidos, com as
+  retiradas nomeadas. Competência que a empresa não pediu não entra na conta — e as respostas dela,
+  se existirem, continuam guardadas.
 - A conta é **explicável até o tema**, exigência de LGPD art. 20 §1º.
 - O corte de 35% **marca**, não elimina. Quem fica abaixo continua visível e clicável.
 
@@ -180,6 +184,9 @@ com o percentual visível, no mapa e clicável. Não ranquear não é descartar.
 - **A aba é da analista.** É leitura sobre a base de pessoas do IEL, então não aparece para o perfil
   de gestor (PRODUTO.md §5.1).
 - Quem não respondeu fica fora do mapa.
+- **A empresa escolhe de 3 a 11 competências (R11)**, e o mapa mede só o que ela escolheu. Mudar a
+  escolha muda os percentuais desta tela; é por isso que a linha do denominador fica antes do mapa,
+  e não num rodapé.
 
 ## Ligações
 
@@ -198,3 +205,5 @@ Entra em: [Perfil do talento](08-perfil-do-talento.md).
 - 2026-09-19 — deixa de ser tela do menu e vira **aba da empresa**, com escopo por inscritos ou base
   inteira. O modo "Panorama da Base" saiu (sem referência não há o que medir), as regiões passaram a
   abrir recolhidas e a rota antiga virou redirecionamento.
+- 2026-09-20 — o denominador passa a ser o número de competências que a empresa pediu (R11), com a
+  linha "Competências escolhidas: 8 de 11" acima do mapa.

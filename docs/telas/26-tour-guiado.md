@@ -73,8 +73,8 @@ o perfil da pessoa no servidor — não o `localStorage`, que é por navegador.
 - **O clique em "Próximo" é do motor, não do driver.js.** Ele precisa navegar, esperar o alvo e
   refazer a medida do recorte antes de avançar; deixar o driver avançar sozinho poria o destaque no
   vazio.
-- O tour **não promete o que o produto não faz**: é leitura da tela, não argumento de venda. Onde a
-  tela diz "dados simulados", o tour repete.
+- O tour **não promete o que o produto não faz**: é leitura da tela, não argumento de venda. No BI,
+  aponta a faixa que diz de onde vem cada número.
 - Só o analista tem tour. As telas por link (candidato, colaborador, relatório da empresa) não têm
   cabeçalho e não devem ganhar um: são uma tarefa só, no celular.
 - A biblioteca é **driver.js** (MIT, sem dependências). O `intro.js` foi descartado pela licença

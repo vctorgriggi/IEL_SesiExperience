@@ -219,9 +219,10 @@ export function JobSectionCards({
           </Badge>
         }
         rodape={`Abaixo de ${RESCUE_TECHNICAL_CEILING}% nos requisitos`}
-        apoio={
-          resgate === 0 ? 'ninguém para rever agora' : 'vale uma segunda olhada'
-        }
+        // O ⓘ explica o que é o resgate, porque o nome sozinho não diz: é a
+        // dor que o cliente descreveu (o filtro técnico do sistema de vagas,
+        // apertado demais, descarta quem daria certo).
+        apoio={`Quem ficou abaixo de ${RESCUE_TECHNICAL_CEILING}% nos requisitos do sistema de vagas, mas combina com o jeito de trabalhar da empresa (${ADHERENCE_THRESHOLD}% ou mais). O filtro técnico apertado demais descarta gente que daria certo; aqui a analista revê antes de decidir.`}
       />
     </div>
   );

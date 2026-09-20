@@ -383,8 +383,7 @@ export function ReferralsScreen() {
 
         <p className="text-xs text-muted-foreground">
           “Quero entrevistar” registra a intenção da empresa e atualiza o
-          histórico. Nenhuma reunião é agendada e nenhuma contratação é
-          automatizada nesta demonstração.
+          histórico. A analista combina a entrevista com a empresa.
         </p>
       </div>
     </div>
@@ -442,8 +441,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
   ) {
     return (
       <Alert variant="warning">
-        Este encaminhamento é de outra empresa e está fora do escopo desta
-        persona.{' '}
+        Este encaminhamento é de outra empresa.{' '}
         <Link
           className="underline"
           href={iel.referrals.index}
@@ -629,7 +627,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                               at: nowIso()
                             });
                             toast.success(
-                              'Interesse registrado. Nenhuma reunião foi agendada nesta demonstração.'
+                              'Interesse registrado — a analista combina a entrevista com a empresa.'
                             );
                           }}
                         >

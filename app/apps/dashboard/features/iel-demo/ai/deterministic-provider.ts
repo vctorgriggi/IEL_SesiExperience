@@ -52,10 +52,9 @@ const ANSWER_BY_KIND: Record<
 function emptyAnswer(title: string): AssistantAnswer {
   return {
     title,
-    paragraphs: ['Vaga não encontrada na base de demonstração.'],
+    paragraphs: ['Vaga não encontrada.'],
     usedRecords: [],
-    disclaimer:
-      'Texto montado a partir dos registros selecionados nesta base de demonstração. Nenhum modelo de linguagem foi consultado e nenhuma informação foi inventada.'
+    disclaimer: 'Texto montado só a partir dos registros selecionados.'
   };
 }
 

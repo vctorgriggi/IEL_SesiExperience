@@ -13,7 +13,7 @@ pergunta genérica que não muda análise nenhuma.
 
 ## O que aparece
 
-- **Cabeçalho**: "O envio é simulado: a experiência do destinatário abre aqui mesmo."
+- **Cabeçalho**: "De quem o IEL está esperando resposta. A tela de quem recebe abre aqui mesmo."
 - **Filtros por estado** da solicitação, com estado vazio próprio.
 - **Lista de solicitações** — destinatário, vaga, critério, texto da pergunta, data e situação.
 - **Diálogo de incorporação** (`incorporate-clarification-dialog.tsx`) — quando a resposta chega, é
@@ -26,7 +26,7 @@ pergunta genérica que não muda análise nenhuma.
 ## Ações do usuário
 
 - Criar solicitação (a partir de um critério, em outras telas).
-- Enviar — `send-clarification` (simulado).
+- Enviar — `send-clarification`. O que o envio faz de fato hoje está em `docs/interno/o-que-e-simulado.md`; a tela não anuncia isso.
 - Cancelar — `cancel-clarification`.
 - Incorporar a resposta na análise — `incorporate-clarification`.
 

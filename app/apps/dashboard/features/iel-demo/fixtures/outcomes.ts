@@ -97,7 +97,7 @@ function addDays(isoDate: string, days: number): string {
  * da empresa é fechado antes da ligação e a devolutiva de um toque (C3) chega
  * ao RH. É a linha vertical dos gráficos de tendência.
  */
-export const MIND_RH_START_DATE = '2026-03-01';
+export const MIND_RH_START_DATE = '2026-03-07';
 
 /** Início do piloto de WhatsApp: antes disso, todo convite ia por e-mail. */
 export const WHATSAPP_PILOT_START_DATE = dateBefore(28);
@@ -189,7 +189,7 @@ export const CANAL_LABEL: Record<CanalComunicacao, string> = {
  * de pessoa: só o que a medição precisa.
  */
 export type EnvioHistorico = {
-  /** Aderência total na entrada, 0..100 (média simples dos 10 temas). */
+  /** Aderência total na entrada, 0..100 (média simples dos 11 temas). */
   aderencia: number;
   /** Aderência por ponto do dia a dia, na ordem de `FIT_AXES`. */
   porPonto: number[];

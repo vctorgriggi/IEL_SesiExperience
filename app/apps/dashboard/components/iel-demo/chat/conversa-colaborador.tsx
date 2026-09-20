@@ -13,9 +13,11 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
+import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
 
-import { LeituraPessoal } from '../shared/leitura-pessoal';
+import { AtalhoDaEquipe } from '../shared/fluxo-por-link';
+import { SuasRespostas } from '../shared/suas-respostas';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
 import { useMontado } from './use-voz';
 
@@ -30,7 +32,14 @@ import { useMontado } from './use-voz';
  *
  * Nenhum nome de pessoa aparece; o convite se apresenta pela empresa.
  */
-export function ConversaColaborador({ token }: { token: string }) {
+export function ConversaColaborador({
+  token,
+  equipeLogada = false
+}: {
+  token: string;
+  /** Sessão da analista confirmada pela página: mostra o atalho de volta. */
+  equipeLogada?: boolean;
+}) {
   const montado = useMontado();
   const { state, dispatch } = useIelDemo();
   // Congela o convite no primeiro toque: a própria resposta muda o status
@@ -60,14 +69,22 @@ export function ConversaColaborador({ token }: { token: string }) {
           </Badge>
         ) : null
       }
+      rodape={
+        equipeLogada && convite ? (
+          <AtalhoDaEquipe
+            href={routes.dashboard.iel.companies.byId(convite.companyId)}
+          />
+        ) : null
+      }
       onPrimeiraResposta={() => setTravado(convite)}
-      // A devolutiva, sem nome: só o que a pessoa acabou de responder.
+      // O que a pessoa acabou de responder, frase a frase, sem nome e sem
+      // leitura sobre o lugar.
       renderFim={(respostas) => {
         if (!convite) return null;
         const answers = respostasDoColaborador(respostas, convite);
         if (!answers) return null;
         return (
-          <LeituraPessoal
+          <SuasRespostas
             papel="colaborador"
             respostas={answers}
           />

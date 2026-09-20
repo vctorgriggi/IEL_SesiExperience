@@ -16,7 +16,7 @@ export const COR_DA_EMPRESA = 'hsl(var(--chart-3))';
 export const COR_DA_PESSOA = 'hsl(var(--chart-1))';
 
 /**
- * Os dez temas do dia a dia em forma de polígono: a empresa e a pessoa
+ * Os onze temas do dia a dia em forma de polígono: a empresa e a pessoa
  * sobre a mesma escala de 1 a 3.
  *
  * O gráfico responde onde as duas formas se aproximam ou se afastam.

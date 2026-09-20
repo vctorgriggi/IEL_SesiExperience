@@ -2,9 +2,10 @@
  * Roteiro da conversa do colaborador: "Como é trabalhar aqui?" (M2 + M7).
  *
  * As mesmas frases do bloco daquele convite (`blocoDoConvite`, cerca de 15
- * das 52 do instrumento), como cena — com a frase original a um toque —,
- * mesmo aceite e mesma ação do reducer (`answer-culture-invite`) que a tela
- * em passos de `companies/culture-invite-screen`. A régua é a do colaborador:
+ * das 52 do instrumento), com a frase do cliente sem edição, mesmo aceite (`CULTURE_CONSENT_TEXT`,
+ * resumido em três falas e inteiro em "Quero saber mais") e mesma ação do
+ * reducer (`answer-culture-invite`) que a tela em passos de
+ * `companies/culture-invite-screen`. A régua é a do colaborador:
  * ele descreve o ambiente ("É bem assim aqui"), não a si. O link é de uso único e vale 3 dias
  * (PRODUTO.md §5.4): convite respondido ou vencido vira uma mensagem final,
  * sem nenhuma pergunta.
@@ -13,10 +14,13 @@
  * que é o que quem recebeu precisa para reconhecer o link.
  */
 
-import { CULTURE_CONSENT_VERSION } from '../analysis/culture-invites';
+import {
+  CULTURE_CONSENT_RESUMO,
+  CULTURE_CONSENT_TEXT
+} from '../analysis/culture-invites';
 import type { ValorDaEscala } from '../analysis/instrumento';
 import type { CultureInviteView } from '../state/selectors';
-import type { ConversaRoteiro } from './motor';
+import type { ConversaRoteiro, PassoRoteiro } from './motor';
 import { passosDasFrases, respostasDaEscala } from './roteiro-candidato';
 
 /** "15/09": o prazo como a mensagem o diz. */
@@ -41,17 +45,16 @@ export function montarRoteiroColaborador(
   if (convite.status === 'respondido') {
     return soFim('colaborador-respondido', [
       'Oi! Aqui é o Centro de Empregos do IEL.',
-      'A resposta deste link já foi registrada. Você não precisa fazer mais nada, obrigado.',
-      'Ela entra numa média com a de todo mundo que responder: ninguém vê o que você respondeu sozinho — nem a empresa, nem a sua chefia, nem o IEL.',
-      'Este link é de uso único e não abre de novo. Pode fechar a página.'
+      'A resposta deste link já foi registrada. Obrigado, você não precisa fazer mais nada.',
+      'Ela entra numa média com a da equipe: ninguém vê a sua sozinha.'
     ]);
   }
 
   if (convite.status === 'expirado') {
     return soFim('colaborador-expirado', [
       'Oi! Aqui é o Centro de Empregos do IEL.',
-      `Este link venceu: o prazo para responder era de 3 dias e terminou em ${diaMes(convite.expiresAt)}.`,
-      'Se ainda quiser responder, peça um link novo a quem mandou o convite — é a pessoa do IEL que fala com a sua empresa.'
+      `Este link venceu: o prazo para responder terminou em ${diaMes(convite.expiresAt)}.`,
+      'Se ainda quiser responder, peça um link novo a quem mandou o convite.'
     ]);
   }
 
@@ -66,46 +69,30 @@ export function montarRoteiroColaborador(
       {
         tipo: 'mensagem',
         id: 'convite',
-        texto: `A empresa ${convite.companyName} quer saber como é trabalhar aí, contado por quem vive o dia a dia. Por isso você recebeu este link.`,
+        texto: `A equipe do IEL que atende a ${convite.companyName} quer a opinião de quem vive o dia a dia daí. Não existe resposta certa.`,
         apoio: `São ${convite.bloco.length} frases, uns 5 minutos. O link vale até ${diaMes(convite.expiresAt)}.`
       },
-      {
-        tipo: 'mensagem',
-        id: 'sem-resposta-certa',
-        texto:
-          'Não existe resposta certa nem errada. Responda pelo que acontece de verdade no seu dia a dia, não pelo que deveria acontecer.'
-      },
-      {
-        tipo: 'mensagem',
-        id: 'aceite-para-que',
-        texto:
-          'Suas respostas entram na média que descreve como se trabalha na empresa. Essa média é comparada com o que cada candidato procura.'
-      },
-      {
-        /*
-         * A promessa de anonimato é o que decide se a resposta é honesta: a
-         * pessoa está falando da empresa dela, e a chefia pode estar do lado.
-         * Vem antes do aceite, dita com todas as letras.
-         */
-        tipo: 'mensagem',
-        id: 'aceite-quem-ve',
-        texto:
-          'Sua resposta não fica com o seu nome: ela entra numa média com a de todo mundo que responder.',
-        apoio:
-          'Nem a empresa, nem a sua chefia, nem o IEL veem a sua resposta sozinha.'
-      },
+      // O aceite em três falas; o texto inteiro em "Quero saber mais".
+      ...CULTURE_CONSENT_RESUMO.map(
+        (texto, index): PassoRoteiro => ({
+          tipo: 'mensagem',
+          id: `aceite-linha-${index}`,
+          texto
+        })
+      ),
       {
         tipo: 'aceite',
         id: 'aceite',
         texto: 'Posso contar com o seu aceite para começar?',
-        apoio: `Sem o aceite, as perguntas não abrem. Versão do aceite: ${CULTURE_CONSENT_VERSION}.`,
         detalhes: [
-          'O que é coletado: só o quanto você concorda com cada frase. Nada sobre a sua vida fora do trabalho.',
-          'Por quanto tempo: o link vale 3 dias e serve uma vez só. Depois de enviada, a resposta não fica ligada a você.'
+          CULTURE_CONSENT_TEXT.purpose,
+          CULTURE_CONSENT_TEXT.collected,
+          CULTURE_CONSENT_TEXT.whoSees,
+          CULTURE_CONSENT_TEXT.retention
         ],
         recusa: [
           'Tudo bem. Nada foi registrado.',
-          'Se mudar de ideia, é só abrir este link de novo enquanto ele valer.'
+          'Se mudar de ideia, é só abrir este link outra vez enquanto ele valer.'
         ]
       },
       {
@@ -115,21 +102,15 @@ export function montarRoteiroColaborador(
           'Combinado. Vou mandar situações do dia a dia. Para cada uma, toque no quanto ela é assim aí no seu setor.'
       },
       ...passosDasFrases(
-        convite.bloco.map((item) => ({
-          itemId: item.id,
-          cena: item.cena,
-          original: item.texto
-        })),
+        convite.bloco.map((item) => ({ itemId: item.id, texto: item.texto })),
         'colaborador'
       ),
       {
         tipo: 'fim',
         id: 'fim',
         textos: [
-          'Pronto, obrigado! Sua resposta foi registrada.',
-          'Ela entra numa média com a de todo mundo que responder. Ninguém vê o que você respondeu sozinho — nem a empresa, nem a sua chefia, nem o IEL.',
-          'Quando gente suficiente responder, essa média passa a descrever como é trabalhar aí, e o IEL usa isso para procurar candidatos que combinem com o jeito da casa.',
-          'Você não precisa fazer mais nada. Este link já foi usado e não abre de novo.'
+          'Obrigado! Sua resposta foi registrada.',
+          'Ela entra numa média com a da equipe. Você não precisa fazer mais nada.'
         ],
         acoes: []
       }

@@ -54,7 +54,15 @@ import {
   type EstadoDaPermanencia,
   type ReferralOutcome
 } from '../analysis/devolutiva';
-import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
+import {
+  FIT_AXES,
+  FIT_AXIS_IDS,
+  getFitAxis,
+  MAXIMO_DE_COMPETENCIAS,
+  ordenarCompetencias,
+  type FitAxis,
+  type FitAxisId
+} from '../analysis/fit-axes';
 import {
   blocoDoConvite,
   configuracaoDoInstrumento,
@@ -1815,6 +1823,55 @@ function respostasDaEmpresa(
 }
 
 /**
+ * As competências que a empresa escolheu medir no questionário.
+ *
+ * Porta única de leitura da escolha (`DemoState.competenciasEscolhidas`).
+ * Empresa que nunca escolheu mede **as 11**: é o que valia antes do pedido do
+ * IEL, e tratar a ausência como "nenhuma" apagaria o critério de toda a base
+ * ao subir o esquema. A ordem é sempre a de `FIT_AXES`.
+ */
+export function competenciasDaEmpresa(
+  state: DemoState,
+  companyId: string
+): FitAxisId[] {
+  const escolhidas = state.competenciasEscolhidas?.[companyId];
+  if (!escolhidas) return FIT_AXIS_IDS;
+  return ordenarCompetencias(escolhidas);
+}
+
+/** A empresa pediu esta competência no questionário? */
+export function competenciaPedida(
+  state: DemoState,
+  companyId: string,
+  axisId: FitAxisId
+): boolean {
+  return competenciasDaEmpresa(state, companyId).includes(axisId);
+}
+
+/** "8 de 11", com as retiradas nomeadas — o que a tela precisa numa linha. */
+export type ResumoDeCompetencias = {
+  escolhidas: FitAxisId[];
+  retiradas: FitAxisId[];
+  total: typeof MAXIMO_DE_COMPETENCIAS;
+  /** Todas as 11 foram pedidas? Então a linha não precisa aparecer. */
+  completo: boolean;
+};
+
+export function resumoDeCompetencias(
+  state: DemoState,
+  companyId: string
+): ResumoDeCompetencias {
+  const escolhidas = competenciasDaEmpresa(state, companyId);
+  const retiradas = FIT_AXIS_IDS.filter((id) => !escolhidas.includes(id));
+  return {
+    escolhidas,
+    retiradas,
+    total: MAXIMO_DE_COMPETENCIAS,
+    completo: retiradas.length === 0
+  };
+}
+
+/**
  * O perfil da empresa por frase e por tema (M1, R2).
  *
  * "O fit cultural é a média do que a empresa entende" (00:41:44). Por frase:
@@ -1862,9 +1919,12 @@ export function perfilDaEmpresa(
  */
 function escolherPerguntasComConfig(
   perfil: PerfilCultural,
-  config: ConfiguracaoDoInstrumento
+  config: ConfiguracaoDoInstrumento,
+  // Uma frase por competência **pedida**: de 3 a 11, nunca as 11 fixas.
+  temas: readonly FitAxisId[] = FIT_AXIS_IDS
 ): PerguntaDoCandidato[] {
-  return FIT_AXES.map((axis) => {
+  return temas.map((axisId) => {
+    const axis = getFitAxis(axisId);
     let melhor: { itemId: string; marca: number } | null = null;
     for (const item of itensAtivosDoTema(axis.id, config)) {
       if (!discrimina(item, config)) continue;
@@ -1926,7 +1986,11 @@ export function usoDoInstrumento(state: DemoState): UsoDoInstrumento {
     const perfil = perfilDaEmpresa(state, companyId);
     if (!perfil.temas.some((tema) => tema.fecha)) continue;
     empresasComPerfil += 1;
-    for (const pergunta of escolherPerguntasComConfig(perfil, config)) {
+    for (const pergunta of escolherPerguntasComConfig(
+      perfil,
+      config,
+      competenciasDaEmpresa(state, companyId)
+    )) {
       if (pergunta.semBaseDaEmpresa) continue;
       escolhidaEm[pergunta.itemId] = (escolhidaEm[pergunta.itemId] ?? 0) + 1;
     }
@@ -1992,7 +2056,8 @@ export function perguntasDoCandidato(
     : calcularPerfilCultural([]);
   return escolherPerguntasComConfig(
     perfil,
-    configuracaoDoInstrumento(state)
+    configuracaoDoInstrumento(state),
+    job ? competenciasDaEmpresa(state, job.companyId) : FIT_AXIS_IDS
   ).map((pergunta) => ({
     ...pergunta,
     item: getItem(pergunta.itemId)!
@@ -2382,7 +2447,8 @@ export function getTalentCompanyAdherence(
   return computeThemeAdherence(
     toAdherenceProfile(perfilDaEmpresa(state, companyId)),
     valores,
-    {}
+    {},
+    competenciasDaEmpresa(state, companyId)
   );
 }
 
@@ -2409,7 +2475,8 @@ export function getAdherence(
       ? resolvidas.valores
       : null,
     getAxisWeights(state, job),
-    configuracaoDoInstrumento(state)
+    configuracaoDoInstrumento(state),
+    competenciasDaEmpresa(state, job.companyId)
   );
 }
 
@@ -2688,6 +2755,8 @@ export function getCompanyListRows(state: DemoState): CompanyListRow[] {
  */
 export type CultureInviteView = {
   inviteId: string;
+  /** Para o atalho da equipe de volta à empresa; não identifica pessoa. */
+  companyId: string;
   companyName: string;
   expiresAt: string;
   daysLeft: number;
@@ -2710,11 +2779,16 @@ export function getInviteByToken(
 
   return {
     inviteId: invite.id,
+    companyId: invite.companyId,
     companyName: getCompany(invite.companyId)?.name ?? invite.companyId,
     expiresAt: invite.expiresAt,
     daysLeft: daysBetween(DEMO_REFERENCE_DATE, invite.expiresAt),
     status: readInviteStatus(invite, DEMO_REFERENCE_DATE),
-    bloco: blocoDoConvite(invite, configuracaoDoInstrumento(state))
+    bloco: blocoDoConvite(
+      invite,
+      configuracaoDoInstrumento(state),
+      competenciasDaEmpresa(state, invite.companyId)
+    )
   };
 }
 

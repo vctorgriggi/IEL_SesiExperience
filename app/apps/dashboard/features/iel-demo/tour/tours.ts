@@ -339,7 +339,7 @@ export const TOURS: TourDeTela[] = [
       {
         titulo: 'Reabertura de vaga em 90 dias',
         texto:
-          'É o indicador que o IEL escolheu: a mesma vaga, na mesma empresa, voltando a abrir. Os dados desta tela são simulados, e ela diz isso em faixa.'
+          'É o indicador que o IEL escolheu: a mesma vaga, na mesma empresa, voltando a abrir. A faixa acima dos números diz de onde cada um vem.'
       },
       {
         seletor: alvo('bi-recortes'),

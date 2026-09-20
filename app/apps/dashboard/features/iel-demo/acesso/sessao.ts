@@ -79,6 +79,18 @@ export async function cookieValido(
 /** A analista está autenticada, ou a porta está aberta por configuração. */
 export async function temSessaoDaAnalista(): Promise<boolean> {
   if (!acessoExigeSenha()) return true;
+  return analistaLogada();
+}
+
+/**
+ * Só o cookie: alguém da equipe entrou de fato neste navegador.
+ *
+ * Diferente de `temSessaoDaAnalista`, a porta aberta (sem senha configurada)
+ * não conta. É o que decide se as telas por link — as do candidato e do
+ * colaborador — mostram o atalho de volta ao Mind RH: para um candidato de
+ * verdade, sem cookie, não aparece nada.
+ */
+export async function analistaLogada(): Promise<boolean> {
   const cookie = (await cookies()).get(COOKIE_DA_SESSAO)?.value;
   return cookieValido(cookie);
 }

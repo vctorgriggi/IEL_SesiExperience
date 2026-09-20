@@ -40,7 +40,8 @@ devolve a informação para a análise.
 - A pessoa vê a procedência dos próprios dados. Avaliação interna do IEL não aparece.
 - A tela precisa funcionar em largura de celular e por teclado — há teste de ponta a ponta cobrindo
   exatamente isso.
-- Nada é enviado de verdade na demonstração.
+- A tela fala como produto: o cartão de resposta registrada não avisa que nada saiu do ambiente
+  (isso é registro interno, em `docs/interno/o-que-e-simulado.md`).
 
 ## Ligações
 

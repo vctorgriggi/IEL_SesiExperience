@@ -17,18 +17,18 @@ Ninguém escreve frase nova: o instrumento continua sendo o do cliente (PRODUTO.
 
 ## O que aparece
 
-- **Três números**: frases ligadas de 52; temas com a frase padrão ligada, de 10; empresas com
+- **Três números**: frases ligadas de 52; temas com a frase padrão ligada, de 11; empresas com
   perfil fechado em ao menos um tema.
 - **Uma explicação de duas linhas**, uma vez só: frase desligada não é perguntada nem pesa; frase
   que não separa pessoas é aquela em que quase todo mundo concorda; o que já foi respondido continua
   guardado, só sai da conta.
-- **Filtros**: busca por texto (cena, frase original, subtema, id), tema, "Só ligadas", e o botão
+- **Filtros**: busca por texto (frase, subtema, id — e a `cena`, que não aparece mais), tema, "Só ligadas", e o botão
   **Voltar ao instrumento do cliente** (desabilitado quando não há ajuste).
-- **Um cartão por tema**: nome comum e título original, quantas frases e quantas ligadas, e a
+- **Um cartão por tema**: o tópico da planilha do cliente como título, quantas frases e quantas ligadas, e a
   **frase padrão** em vigor — com aviso quando a de fábrica foi desligada e outra assumiu.
 - **Uma linha por frase**: id, "Padrão do tema" e "Desligada" (badge cinza, com a palavra), o
-  subtema, a **cena** em destaque (é o que a pessoa lê), **"Ver a frase original"** (a do cliente,
-  num toque), polo (seta + "Mesmo sentido do tema" / "Invertida"), par ("Par invertido com I09" /
+  subtema, a **frase do cliente** em destaque, sem edição (é o que a pessoa lê na tela de
+  resposta), polo (seta + "Mesmo sentido do tema" / "Invertida"), par ("Par invertido com I09" /
   "Equivale a I12"), em quantas empresas com perfil fechado ela é a escolhida do candidato, e dois
   interruptores com rótulo: **Ligada** e **Separa pessoas**. Quando uma regra impede o ajuste, o
   interruptor fica desabilitado e o motivo aparece ao lado, em laranja e por escrito.
@@ -87,7 +87,7 @@ fato separam pessoas.
   conta, e a tela diz isso (LGPD, art. 6º, I e VI — finalidade e transparência).
 - **Cor com significado, nunca sozinha**: "Desligada" é badge cinza com a palavra; o motivo do
   bloqueio é laranja e por escrito; os interruptores têm rótulo e `aria-describedby`.
-- **Jargão só no toque**: cena em destaque; "polo" e "par" em letra pequena, com a palavra.
+- **Jargão só no toque**: a frase do cliente em destaque; "polo" e "par" em letra pequena, com a palavra.
 - **Estado compartilhado.** No modo compartilhado o ajuste vale para a sala inteira — é decisão do
   IEL, não preferência de um aparelho.
 
@@ -109,3 +109,9 @@ e [Análise de aderência](21-analise-de-aderencia.md) perguntam e contam.
 ## Histórico
 
 - 2026-09-20 — criada.
+- 2026-09-20 — **a frase e o tópico do cliente, sem edição.** O dono do produto pediu para não
+  mudar pergunta, sentido nem categoria. A linha da frase mostra o `texto` da planilha e some o
+  "Ver a frase original" (a frase em destaque já é ela); o cartão do tema leva o nome do tópico
+  da planilha em caixa de frase. `cena` e `textoSimples` seguem em `instrumento.ts` sem uso de
+  tela — a busca ainda os indexa. Os temas voltam a ser 11: "Expectativas futuras" (I48–I52,
+  padrão I49) separado de "Adaptação a mudanças e carreira" (I44–I47, padrão I47).

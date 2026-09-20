@@ -46,13 +46,16 @@ import {
   CardHeader,
   CardTitle
 } from '@workspace/ui/shadcn/card';
-import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import { Label } from '@workspace/ui/shadcn/label';
 import { Progress } from '@workspace/ui/shadcn/progress';
 import { RadioGroup, RadioGroupItem } from '@workspace/ui/shadcn/radio-group';
 
 import { ICONE_TINGIDO } from '../metricas/cores';
-import { PassoDoFim, TamanhoDaTarefa } from '../shared/fluxo-por-link';
+import {
+  AceiteCurto,
+  MolduraPorLink,
+  TamanhoDaTarefa
+} from '../shared/fluxo-por-link';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
 import { useRascunho } from '../shared/use-rascunho';
 
@@ -64,38 +67,34 @@ import { useRascunho } from '../shared/use-rascunho';
  *
  * O cliente disse que o RH não responde (00:05:33, 00:35:28). Enquanto só a
  * empresa puder dizer se a pessoa ficou, o dado de permanência fica refém
- * dela. Esta tela é a segunda fonte: a própria pessoa. E é também o único
- * momento em que o produto cuida de quem hoje responde 10 frases e some
- * depois de contratado.
+ * dela. Esta tela é a segunda fonte: a própria pessoa.
  *
  * ## A condição para a verdade
  *
- * **A empresa nunca vê a resposta.** Está no aceite (`whoSees`), na abertura,
- * na tela de fim e na Minha candidatura. Quem sabe que o chefe vai ler não
- * diz que o turno mudou e o transporte não deu; a frase é o que torna a
- * resposta possível, não um aviso legal.
+ * **A empresa nunca vê a resposta.** Está no aceite, na abertura e no fim.
+ * Quem sabe que o chefe vai ler não diz que o turno mudou e o transporte não
+ * deu; a frase é o que torna a resposta possível, não um aviso legal.
  *
  * ## Base legal
  *
  * Finalidade nova, aceite próprio (LGPD, art. 7º, I): a pessoa consentiu em
- * responder ao questionário da vaga, não em ser acompanhada depois. Por isso
- * o aceite é o passo 0, nasce desmarcado, e a versão dele
- * (`CHECK_IN_CONSENT_VERSION`) vai gravada em cada resposta (art. 8º, § 4º).
- * O texto é o de `CHECK_IN_CONSENT_TEXT`, palavra por palavra, em corpo de
- * leitura.
+ * responder ao questionário da vaga, não em ser acompanhada depois. O aceite
+ * nasce desmarcado e a versão (`CHECK_IN_CONSENT_VERSION`) vai gravada em
+ * cada resposta, nunca na tela. O texto é o de `CHECK_IN_CONSENT_TEXT`: três
+ * linhas na frente, o inteiro a um toque.
  *
- * ## O que não se pergunta
+ * ## Uma resposta por marco
  *
- * Nada de chefe, equipe, saúde ou família (PRODUTO.md §5.2 e §10). São duas
- * perguntas fechadas e um recado opcional e curto, sobre o trabalho.
+ * Aos 30, aos 60 e aos 90 dias, uma resposta cada — sem "mudar minha
+ * resposta". Quem precisa corrigir fala com a pessoa do IEL que mandou o
+ * link.
  *
  * ## Forma
  *
  * O mesmo padrão dos fluxos por link: uma pergunta por tela, alvos de 60px,
  * corpo de 15px, `h1` por passo com o foco levado até ele, rascunho no
- * navegador (`useRascunho`) para fechar e voltar. Sem "check-in", "marco" ou
- * "acompanhamento" em nenhuma frase que a pessoa lê: é "contar como está
- * sendo", "aos 30 dias".
+ * navegador (`useRascunho`) para fechar e voltar em silêncio. Sem "check-in",
+ * "marco" ou "acompanhamento" em nenhuma frase que a pessoa lê.
  */
 
 type Passo =
@@ -125,60 +124,79 @@ function dias(n: number): string {
   return n === 1 ? '1 dia' : `${n} dias`;
 }
 
-/**
- * Tira do texto do aceite o rótulo que a tela já imprime ao lado
- * (`whoSees` começa com "Quem vê", e a pessoa leria a palavra duas vezes).
- * O texto é versionado e não se reescreve por causa de layout.
- */
-function semRotuloRepetido(rotulo: string, texto: string): string {
-  const prefixo = `${rotulo} é `;
-  if (!texto.startsWith(prefixo)) return texto;
-  const resto = texto.slice(prefixo.length);
-  return resto.charAt(0).toUpperCase() + resto.slice(1);
+/** As três linhas do aceite: para quê, quem vê, por quanto tempo. */
+const RESUMO_DO_ACEITE = [
+  CHECK_IN_CONSENT_TEXT.purpose,
+  CHECK_IN_CONSENT_TEXT.whoSees,
+  CHECK_IN_CONSENT_TEXT.retention
+];
+
+/** O texto inteiro, na ordem em que a pessoa o lê. */
+const TEXTO_COMPLETO_DO_ACEITE = [
+  CHECK_IN_CONSENT_TEXT.purpose,
+  CHECK_IN_CONSENT_TEXT.collected,
+  CHECK_IN_CONSENT_TEXT.whoSees,
+  CHECK_IN_CONSENT_TEXT.retention,
+  CHECK_IN_CONSENT_TEXT.rights
+];
+
+/** O atalho da equipe: o perfil da pessoa (onde a resposta chega) ou, sem talento, a vaga. */
+function atalhoDoCandidato(
+  application: { talentId: string | null; jobId: string } | null
+): { href: string } | undefined {
+  if (!application) return undefined;
+  return {
+    href: application.talentId
+      ? routes.dashboard.iel.talents.byId(application.talentId).index
+      : routes.dashboard.iel.jobs.byId(application.jobId).index
+  };
 }
 
-export function CheckInScreen({ applicationId }: { applicationId: string }) {
+export function CheckInScreen({
+  applicationId,
+  equipeLogada = false
+}: {
+  applicationId: string;
+  /** Sessão da analista confirmada pela página: mostra o atalho de volta. */
+  equipeLogada?: boolean;
+}) {
   const { state, dispatch } = useIelDemo();
   const application = getApplication(state, applicationId);
+  const atalho = equipeLogada ? atalhoDoCandidato(application) : undefined;
   const jobView = getCandidateJobView(state, applicationId);
   const contratacao = getSituacaoDeContratacao(state, applicationId);
 
   /*
-   * Qual pergunta abrir: a pendente, a última respondida (para corrigir) ou,
-   * quando a empresa informou saída e a pessoa ainda não disse nada, a mais
-   * recente que ela alcançou. `null` é "não há o que contar agora". A regra
-   * é a mesma que decide o botão da Minha candidatura.
+   * Qual pergunta abrir: a pendente ou, quando a empresa informou saída e a
+   * pessoa ainda não disse nada, a mais recente que ela alcançou. `null` é
+   * "não há o que contar agora". A regra é a mesma que decide o botão da
+   * Minha candidatura.
    */
   const marco: MarcoDoAcompanhamento | null = contratacao
     ? marcoParaContar(contratacao)
     : null;
-  const respostaDoMarco =
-    marco !== null
-      ? (contratacao?.checkIns.find((resposta) => resposta.marco === marco) ??
-        null)
-      : null;
-  const jaRespondeu = respostaDoMarco !== null;
+  // A última resposta dada: quem abre o link sem pergunta aberta vê o que
+  // já disse, em vez de "ainda não é hora".
+  const ultimaResposta =
+    contratacao?.checkIns[contratacao.checkIns.length - 1] ?? null;
 
   const [passo, setPasso] = useState<Passo>({ kind: 'consent' });
   const [aceitou, setAceitou] = useState(false);
   const [continua, setContinua] = useState<boolean | undefined>(undefined);
   const [como, setComo] = useState<ComoEstaSendo | undefined>(undefined);
   const [comentario, setComentario] = useState('');
-  const [retomado, setRetomado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  // "Mudar minha resposta": a pessoa quer corrigir o que já enviou.
-  const [corrigindo, setCorrigindo] = useState(false);
-  // Verdadeiro depois de a pessoa tocar em "Começar" ou "Mudar minha resposta".
+  // O marco que acabou de ser respondido: depois do envio não há mais marco
+  // aberto, e a tela de fim ainda precisa dizer "aos 30 dias".
+  const [marcoEnviado, setMarcoEnviado] =
+    useState<MarcoDoAcompanhamento | null>(null);
+  // Verdadeiro depois de a pessoa tocar em "Começar": a base que chega do
+  // navegador depois da primeira renderização não troca a tela por baixo.
   const mexeuRef = useRef(false);
 
   // Cada passo troca a tela inteira sem trocar a URL: o título do passo novo
   // recebe o foco, para o leitor de tela não voltar ao topo da página.
-  // Só o passo e o pedido de correção: a resposta que chega do `localStorage`
-  // na hidratação troca a tela, mas não é um toque da pessoa, e o foco não
-  // se move sozinho na primeira leitura.
-  const tituloRef = useFocoNoTitulo<HTMLHeadingElement>(
-    `${passo.kind}:${corrigindo}`
-  );
+  const tituloRef = useFocoNoTitulo<HTMLHeadingElement>(passo.kind);
 
   const lerRascunho = useCallback(
     (bruto: unknown): RascunhoDoCheckIn | null => {
@@ -213,21 +231,20 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     [marco]
   );
 
+  // O aceite já tinha sido dado nesta mesma conversa, com esta mesma versão
+  // de texto (`lerRascunho` barra outra). Retoma em silêncio.
   const aoRetomar = useCallback((rascunho: RascunhoDoCheckIn) => {
-    // O aceite já tinha sido dado nesta mesma conversa, com esta mesma
-    // versão de texto (`lerRascunho` barra outra versão).
     setAceitou(true);
     setContinua(rascunho.continua);
     setComo(rascunho.comoEstaSendo);
     setComentario(rascunho.comentario);
     setPasso({ kind: rascunho.passo });
-    setRetomado(true);
   }, []);
 
   const { restaurado, gravar, apagar } = useRascunho<RascunhoDoCheckIn>({
     chave: `iel-rascunho:como-esta-sendo:${applicationId}:${marco ?? 'nenhum'}`,
     ler: lerRascunho,
-    aoRestaurar: jaRespondeu ? () => undefined : aoRetomar
+    aoRestaurar: marco === null ? () => undefined : aoRetomar
   });
 
   // Grava a cada toque, e só depois de o navegador ter sido lido: gravar
@@ -257,23 +274,25 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
 
   if (!application || !jobView) {
     return (
-      <Moldura badge={null}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={null}
+      >
         <Card>
           <CardHeader>
             <CardTitle className="text-[22px] tracking-tight">
               <h1>Este link não abriu</h1>
             </CardTitle>
             <CardDescription className="text-[15px] leading-relaxed">
-              O endereço não corresponde a nenhuma candidatura. Confira a
-              mensagem que você recebeu do IEL e abra o link de novo, inteiro.
+              Confira a mensagem que você recebeu do IEL e abra o link inteiro.
             </CardDescription>
           </CardHeader>
         </Card>
-      </Moldura>
+      </MolduraPorLink>
     );
   }
 
-  const badge = (
+  const etiqueta = (
     <Badge
       variant="outline"
       className="font-medium text-muted-foreground"
@@ -299,38 +318,22 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
    */
   if (!contratacao) {
     return (
-      <Moldura badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <Aviso
           icone={IconClock}
           titulo="Esta pergunta ainda não é para você"
           tituloRef={tituloRef}
         >
           O IEL só pergunta como está sendo depois que a empresa registra uma
-          contratação, e nesta candidatura isso ainda não aconteceu. Você
-          acompanha em que pé está pelo link da sua candidatura.
+          contratação. Acompanhe pelo link da sua candidatura.
         </Aviso>
         {verCandidatura}
-      </Moldura>
+      </MolduraPorLink>
     );
   }
-
-  const comecar = () => {
-    mexeuRef.current = true;
-    setPasso({ kind: 'continua' });
-  };
-
-  const corrigir = () => {
-    mexeuRef.current = true;
-    apagar();
-    setAceitou(false);
-    setContinua(undefined);
-    setComo(undefined);
-    setComentario('');
-    setRetomado(false);
-    setErro(null);
-    setCorrigindo(true);
-    setPasso({ kind: 'consent' });
-  };
 
   const enviar = () => {
     if (marco === null) return;
@@ -367,6 +370,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     });
     apagar();
     setErro(null);
+    setMarcoEnviado(marco);
     setPasso({ kind: 'done' });
   };
 
@@ -377,7 +381,10 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
   if (passo.kind === 'done' && continua !== undefined && como !== undefined) {
     const comoRotulo = COMO_ESTA_SENDO_LABEL[como].toLowerCase();
     return (
-      <Moldura badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <div className="flex flex-col gap-3">
           <span
             aria-hidden="true"
@@ -390,67 +397,24 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             tabIndex={-1}
             className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
           >
-            Obrigado!
+            Obrigado.
           </h1>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             {continua
-              ? `Recebemos as suas respostas dos ${marco} dias. Você disse que continua na empresa e que está sendo ${comoRotulo}.`
-              : `Recebemos as suas respostas. Você contou que saiu da empresa e que estava sendo ${comoRotulo}. Obrigado por avisar: isso não é um erro seu e não vira nota no seu currículo.`}
+              ? `Aos ${marcoEnviado ?? marco} dias, você disse que continua na empresa e que está sendo ${comoRotulo}.`
+              : `Você contou que saiu da empresa e que estava sendo ${comoRotulo}. Isso não é um erro seu e não vira nota no seu currículo.`}
+          </p>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            {continua
+              ? contratacao.proximoMarco !== null
+                ? `Quem lê é só a equipe do IEL; a empresa não vê. A próxima pergunta é aos ${contratacao.proximoMarco} dias, por este mesmo link.`
+                : 'Quem lê é só a equipe do IEL; a empresa não vê. Essa era a última pergunta dos 90 dias.'
+              : 'Quem lê é só a equipe do IEL; a empresa não vê. A pessoa do IEL fala com você sobre outras vagas.'}
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>O que acontece agora</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="flex flex-col gap-4">
-              <PassoDoFim numero={1}>
-                A equipe do IEL lê o que você respondeu. A empresa não vê.
-              </PassoDoFim>
-              {continua ? (
-                <>
-                  <PassoDoFim numero={2}>
-                    {contratacao.proximoMarco !== null
-                      ? `A próxima pergunta é aos ${contratacao.proximoMarco} dias, por este mesmo link.`
-                      : 'Essa era a última pergunta dos 90 dias. O IEL não pergunta mais nada por este link.'}
-                  </PassoDoFim>
-                  <PassoDoFim numero={3}>
-                    Mudou alguma coisa? Responda de novo por este link: vale a
-                    última resposta.
-                  </PassoDoFim>
-                </>
-              ) : (
-                <>
-                  <PassoDoFim numero={2}>
-                    A pessoa do IEL fala com você sobre outras vagas, pelo mesmo
-                    telefone da sua candidatura.
-                  </PassoDoFim>
-                  <PassoDoFim numero={3}>
-                    Seu currículo continua no banco de talentos do IEL. Você não
-                    precisa se cadastrar de novo.
-                  </PassoDoFim>
-                </>
-              )}
-            </ol>
-          </CardContent>
-        </Card>
-
-        <div className="mt-auto flex flex-col gap-2.5 pt-2">
-          {verCandidatura}
-          <Button
-            variant="ghost"
-            size="lg"
-            className="h-12 w-full text-muted-foreground"
-            onClick={corrigir}
-          >
-            Responder de novo
-          </Button>
-          <Rodape />
-        </div>
-      </Moldura>
+        <div className="mt-auto pt-2">{verCandidatura}</div>
+      </MolduraPorLink>
     );
   }
 
@@ -458,47 +422,35 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
    * Já respondeu, ainda não chegou, já passou
    * ---------------------------------------------------------------- */
 
-  if (jaRespondeu && respostaDoMarco && !corrigindo && !mexeuRef.current) {
-    const comoRotulo =
-      COMO_ESTA_SENDO_LABEL[respostaDoMarco.comoEstaSendo].toLowerCase();
-    return (
-      <Moldura badge={badge}>
-        <Aviso
-          icone={IconHistory}
-          titulo="Você já respondeu"
-          tituloRef={tituloRef}
-          tom="combina"
-        >
-          {respostaDoMarco.continua
-            ? `Aos ${marco} dias, você disse que continua na empresa e que está sendo ${comoRotulo}.`
-            : `Aos ${marco} dias, você disse que saiu da empresa e que estava sendo ${comoRotulo}.`}
-          {respostaDoMarco.comentario
-            ? ` E deixou o recado: “${respostaDoMarco.comentario}”`
-            : null}
-        </Aviso>
-        <div className="flex flex-col gap-2.5">
-          {verCandidatura}
-          <Button
-            variant="outline"
-            size="lg"
-            className="h-12 w-full text-[15px]"
-            onClick={corrigir}
-          >
-            Mudar minha resposta
-          </Button>
-          <p className="text-center text-[13px] leading-relaxed text-muted-foreground">
-            Vale sempre a sua última resposta. A empresa não vê nenhuma delas.
-          </p>
-        </div>
-      </Moldura>
-    );
-  }
-
   if (marco === null) {
     const proximo = contratacao.proximoMarco;
     return (
-      <Moldura badge={badge}>
-        {contratacao.porFonte.empresa === 'saiu' ? (
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
+        {ultimaResposta && !mexeuRef.current ? (
+          /*
+           * A resposta deste marco é uma só: quem volta lê o que disse e o
+           * caminho para corrigir, que é o IEL — não um botão.
+           */
+          <Aviso
+            icone={IconHistory}
+            titulo="Você já respondeu"
+            tituloRef={tituloRef}
+            tom="combina"
+          >
+            {ultimaResposta.continua
+              ? `Aos ${ultimaResposta.marco} dias, você disse que continua na empresa e que está sendo ${COMO_ESTA_SENDO_LABEL[ultimaResposta.comoEstaSendo].toLowerCase()}.`
+              : `Aos ${ultimaResposta.marco} dias, você disse que saiu da empresa e que estava sendo ${COMO_ESTA_SENDO_LABEL[ultimaResposta.comoEstaSendo].toLowerCase()}.`}
+            {ultimaResposta.comentario
+              ? ` E deixou o recado: “${ultimaResposta.comentario}”`
+              : null}
+            {proximo !== null && ultimaResposta.continua
+              ? ` A próxima pergunta é aos ${proximo} dias, por este mesmo link.`
+              : null}
+          </Aviso>
+        ) : contratacao.porFonte.empresa === 'saiu' ? (
           /*
            * A empresa informou saída antes dos 30 dias e a pessoa não chegou
            * a nenhuma pergunta. Neutro, sem o motivo que a empresa deu, e
@@ -509,10 +461,9 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             titulo="Não há pergunta aberta agora"
             tituloRef={tituloRef}
           >
-            Pelo que a empresa informou ao IEL, você não continua nela, e por
-            isso o IEL não pergunta mais por este link. Se isso não estiver
-            certo, ou se quiser contar como foi, procure o Centro de Empregos do
-            IEL pelo mesmo contato que mandou este link.
+            Pela informação da empresa ao IEL, você não continua nela. Se isso
+            não estiver certo, ou se quiser contar como foi, fale com a pessoa
+            do IEL que mandou este link.
           </Aviso>
         ) : proximo !== null ? (
           <Aviso
@@ -522,9 +473,8 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
           >
             O IEL pergunta como está sendo aos {MARCOS_DO_ACOMPANHAMENTO[0]},{' '}
             {MARCOS_DO_ACOMPANHAMENTO[1]} e {MARCOS_DO_ACOMPANHAMENTO[2]} dias.
-            Você foi contratado há {dias(contratacao.diasNaEmpresa)}; a próxima
-            pergunta é em {dias(proximo - contratacao.diasNaEmpresa)}, por este
-            mesmo link.
+            A próxima pergunta é em {dias(proximo - contratacao.diasNaEmpresa)},
+            por este mesmo link.
           </Aviso>
         ) : (
           <Aviso
@@ -532,13 +482,14 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             titulo="As perguntas terminaram"
             tituloRef={tituloRef}
           >
-            O IEL perguntava como estava sendo aos 30, 60 e 90 dias, e esse
-            tempo passou. Se quiser contar alguma coisa, procure o Centro de
-            Empregos do IEL pelo mesmo contato que mandou este link.
+            O IEL perguntava aos 30, 60 e 90 dias, e esse tempo passou.
           </Aviso>
         )}
         {verCandidatura}
-      </Moldura>
+        <p className="text-center text-sm leading-relaxed text-muted-foreground">
+          Precisa corrigir algo? Fale com a pessoa do IEL que mandou este link.
+        </p>
+      </MolduraPorLink>
     );
   }
 
@@ -548,7 +499,10 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
 
   if (passo.kind === 'consent') {
     return (
-      <Moldura badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         <div className="flex flex-col gap-2.5">
           <h1
             ref={tituloRef}
@@ -557,111 +511,31 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
           >
             Como está sendo na empresa?
           </h1>
-          {/*
-           * A primeira tela decide a adesão. Antes do texto do aceite: quem
-           * pergunta, por quê, quanto tempo leva e — a frase que torna a
-           * resposta possível — que a empresa não vê.
-           */}
+          {/* Quem pergunta, por quê e a frase que torna a resposta possível. */}
           <p className="text-[15px] leading-relaxed text-muted-foreground">
-            Quem pergunta é o IEL, o Centro de Empregos da Indústria. Foi por
-            ele que você chegou à vaga de {jobView.activity}, e agora que você
-            foi contratado a gente quer saber se está dando certo.
-          </p>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
-            São duas perguntas. A empresa não vê o que você responde: quem lê é
-            só a equipe do IEL, e nada disso vira avaliação sua.
+            O IEL, Centro de Empregos da Indústria, quer saber se a vaga de{' '}
+            {jobView.activity} está dando certo. A empresa não vê o que você
+            responde.
           </p>
           <TamanhoDaTarefa
             itens={['2 perguntas', '1 minuto', `aos ${marco} dias`]}
           />
         </div>
 
-        {corrigindo ? (
-          <Card>
-            <CardContent className="flex gap-3">
-              <span
-                aria-hidden="true"
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
-              >
-                <IconHistory className="size-4" />
-              </span>
-              <div className="flex flex-col gap-1">
-                <p className="text-[15px] leading-snug font-medium">
-                  Você pediu para responder de novo
-                </p>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  Vale sempre a sua última resposta: o que você responder agora
-                  substitui o que tinha respondido aos {marco} dias.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <h2>{CHECK_IN_CONSENT_TEXT.title}</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <ItemDoAceite label="Para quê">
-              {CHECK_IN_CONSENT_TEXT.purpose}
-            </ItemDoAceite>
-            <ItemDoAceite label="O que guardamos">
-              {CHECK_IN_CONSENT_TEXT.collected}
-            </ItemDoAceite>
-            <ItemDoAceite label="Quem vê">
-              {semRotuloRepetido('Quem vê', CHECK_IN_CONSENT_TEXT.whoSees)}
-            </ItemDoAceite>
-            <ItemDoAceite label="Por quanto tempo">
-              {CHECK_IN_CONSENT_TEXT.retention}
-            </ItemDoAceite>
-            <ItemDoAceite label="Seus direitos">
-              {CHECK_IN_CONSENT_TEXT.rights}
-            </ItemDoAceite>
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col gap-3 pt-1">
-          <Label
-            htmlFor="check-in-aceite"
-            className="flex min-h-[60px] cursor-pointer items-start gap-3 rounded-xl border p-4 text-[15px] leading-snug font-medium"
-          >
-            <Checkbox
-              id="check-in-aceite"
-              className="mt-0.5 size-5"
-              aria-describedby="check-in-aceite-ajuda"
-              checked={aceitou}
-              onCheckedChange={(valor) => setAceitou(valor === true)}
-            />
-            Li e aceito responder ao IEL.
-          </Label>
-          <Button
-            size="lg"
-            className="h-12 w-full text-[15px]"
-            disabled={!aceitou}
-            onClick={comecar}
-          >
-            Começar
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            className="h-12 w-full text-muted-foreground"
-            asChild
-          >
-            <Link href={rotas.index}>Ver minha candidatura</Link>
-          </Button>
-          <p
-            id="check-in-aceite-ajuda"
-            className="text-center text-xs leading-relaxed text-muted-foreground"
-          >
-            Sem o aceite as perguntas não abrem. Versão do texto:{' '}
-            {CHECK_IN_CONSENT_VERSION}.
-          </p>
-        </div>
-      </Moldura>
+        <AceiteCurto
+          id="check-in-aceite"
+          titulo={CHECK_IN_CONSENT_TEXT.title}
+          linhas={RESUMO_DO_ACEITE}
+          textoCompleto={TEXTO_COMPLETO_DO_ACEITE}
+          aceito={aceitou}
+          onAceitar={setAceitou}
+          rotuloDoBotao="Começar"
+          onConfirmar={() => {
+            mexeuRef.current = true;
+            setPasso({ kind: 'continua' });
+          }}
+        />
+      </MolduraPorLink>
     );
   }
 
@@ -672,9 +546,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
   const numero = passo.kind === 'continua' ? 1 : passo.kind === 'como' ? 2 : 3;
   const total = 3;
   const rotuloProgresso =
-    passo.kind === 'comentario'
-      ? 'Recado, opcional'
-      : `Pergunta ${numero} de 2`;
+    passo.kind === 'comentario' ? 'Recado, opcional' : `${numero} de 2`;
   const valorProgresso = Math.round((numero / total) * 100);
 
   const alerta = erro ? (
@@ -692,15 +564,6 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
         </p>
       </CardContent>
     </Card>
-  ) : null;
-
-  const retomada = retomado ? (
-    <p
-      role="status"
-      className="rounded-lg border border-dashed px-3 py-2 text-[13px] leading-relaxed text-muted-foreground"
-    >
-      Você voltou de onde parou. O que já tinha respondido continua respondido.
-    </p>
   ) : null;
 
   const cabecalho = (
@@ -724,33 +587,34 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     </div>
   );
 
-  const voltar = (para: Passo, rotulo: string) => (
+  const voltar = (para: Passo) => (
     <Button
       variant="ghost"
       size="lg"
       className="h-12 w-full text-muted-foreground"
       onClick={() => {
         setErro(null);
-        setRetomado(false);
         setPasso(para);
       }}
     >
-      {rotulo}
+      Voltar
     </Button>
   );
 
+  // A frase que torna a resposta possível, em cada pergunta.
   const rodapeDasPerguntas = (
     <p className="text-center text-xs leading-relaxed text-muted-foreground">
-      Pode fechar e voltar: o que já respondeu fica guardado. A empresa não vê
-      nada disto.
+      A empresa não vê nada disto.
     </p>
   );
 
   if (passo.kind === 'continua') {
     return (
-      <Moldura badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         {cabecalho}
-        {retomada}
         <div className="flex flex-col gap-1.5">
           <h1
             id="check-in-pergunta"
@@ -758,14 +622,13 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             tabIndex={-1}
             className="text-[22px] font-semibold leading-[1.25] tracking-tight outline-none"
           >
-            <span className="sr-only">{rotuloProgresso}: </span>
             Você continua na empresa?
           </h1>
           <p
             id="check-in-pergunta-dica"
             className="text-sm leading-relaxed text-muted-foreground"
           >
-            A da vaga de {jobView.activity}, em que o IEL indicou você.
+            A da vaga de {jobView.activity}.
           </p>
         </div>
 
@@ -801,25 +664,24 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             size="lg"
             className="h-12 w-full text-[15px]"
             disabled={continua === undefined}
-            onClick={() => {
-              setRetomado(false);
-              setPasso({ kind: 'como' });
-            }}
+            onClick={() => setPasso({ kind: 'como' })}
           >
             Próxima
           </Button>
-          {voltar({ kind: 'consent' }, 'Voltar ao começo')}
+          {voltar({ kind: 'consent' })}
           {rodapeDasPerguntas}
         </div>
-      </Moldura>
+      </MolduraPorLink>
     );
   }
 
   if (passo.kind === 'como') {
     return (
-      <Moldura badge={badge}>
+      <MolduraPorLink
+        atalhoDaEquipe={atalho}
+        etiqueta={etiqueta}
+      >
         {cabecalho}
-        {retomada}
         <div className="flex flex-col gap-1.5">
           <h1
             id="check-in-pergunta"
@@ -827,7 +689,6 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             tabIndex={-1}
             className="text-[22px] font-semibold leading-[1.25] tracking-tight outline-none"
           >
-            <span className="sr-only">{rotuloProgresso}: </span>
             {/* Quem já saiu responde no passado: "como está sendo" não cabe. */}
             {continua === false ? 'Como estava sendo?' : 'Como está sendo?'}
           </h1>
@@ -835,8 +696,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             id="check-in-pergunta-dica"
             className="text-sm leading-relaxed text-muted-foreground"
           >
-            O trabalho, no geral. Não existe resposta certa: é só o seu jeito de
-            ver.
+            O trabalho, no geral. Não existe resposta certa.
           </p>
         </div>
 
@@ -870,17 +730,14 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             size="lg"
             className="h-12 w-full text-[15px]"
             disabled={como === undefined}
-            onClick={() => {
-              setRetomado(false);
-              setPasso({ kind: 'comentario' });
-            }}
+            onClick={() => setPasso({ kind: 'comentario' })}
           >
             Próxima
           </Button>
-          {voltar({ kind: 'continua' }, 'Voltar uma pergunta')}
+          {voltar({ kind: 'continua' })}
           {rodapeDasPerguntas}
         </div>
-      </Moldura>
+      </MolduraPorLink>
     );
   }
 
@@ -890,9 +747,11 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
   const passouDoLimite = tamanho > COMENTARIO_MAX;
 
   return (
-    <Moldura badge={badge}>
+    <MolduraPorLink
+      atalhoDaEquipe={atalho}
+      etiqueta={etiqueta}
+    >
       {cabecalho}
-      {retomada}
       <div className="flex flex-col gap-1.5">
         <h1
           ref={tituloRef}
@@ -948,10 +807,10 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
         >
           {tamanho === 0 ? 'Enviar sem recado' : 'Enviar'}
         </Button>
-        {voltar({ kind: 'como' }, 'Voltar uma pergunta')}
+        {voltar({ kind: 'como' })}
         {rodapeDasPerguntas}
       </div>
-    </Moldura>
+    </MolduraPorLink>
   );
 }
 
@@ -1022,55 +881,6 @@ function Aviso({
       <p className="text-[15px] leading-relaxed text-muted-foreground">
         {children}
       </p>
-    </div>
-  );
-}
-
-function ItemDoAceite({
-  label,
-  children
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="text-sm leading-relaxed text-foreground">{children}</p>
-    </div>
-  );
-}
-
-function Rodape() {
-  return (
-    <>
-      <p className="text-center text-[13px] leading-relaxed text-muted-foreground">
-        Guarde este link: é por ele que o IEL pergunta de novo aos 60 e aos 90
-        dias.
-      </p>
-      <p className="text-center text-xs leading-relaxed text-muted-foreground">
-        Demonstração: nada é enviado de verdade e este link abre direto, sem
-        senha e sem cadastro.
-      </p>
-    </>
-  );
-}
-
-/**
- * A mesma moldura das outras telas do candidato: o quadrado da marca já vem
- * da casca por link, então aqui fica só a etiqueta da vaga.
- */
-function Moldura({
-  badge,
-  children
-}: {
-  badge: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mx-auto flex min-h-[calc(100dvh-6rem)] w-full max-w-md flex-col gap-5 px-1 pt-2">
-      <div className="flex items-center justify-end gap-2">{badge}</div>
-      {children}
     </div>
   );
 }

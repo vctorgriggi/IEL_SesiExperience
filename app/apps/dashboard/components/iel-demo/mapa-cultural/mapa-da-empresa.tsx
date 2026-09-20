@@ -55,6 +55,7 @@ import {
 } from '@workspace/ui/shadcn/select';
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/shadcn/tabs';
 
+import { LinhaDeCompetencias } from '../companies/competencias-do-questionario';
 import { ABAS_SEM_ROLAGEM } from '../shared/abas';
 import { ListaEntidadesMapa } from './lista-entidades-mapa';
 import {
@@ -358,6 +359,11 @@ export function MapaDaEmpresa({
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4">
+          {/*
+           * O denominador da aderência do mapa fica escrito antes do mapa:
+           * "combina 83%" só se lê sabendo sobre quantas competências.
+           */}
+          <LinhaDeCompetencias companyId={companyId} />
           {/*
            * A vaga só delimita quem conta como inscrito, então só aparece
            * junto do escopo dos inscritos. Em "Toda a base" ela ficaria

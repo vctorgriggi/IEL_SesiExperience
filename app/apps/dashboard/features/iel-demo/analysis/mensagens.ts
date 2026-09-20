@@ -88,6 +88,19 @@ export type EntradaDaMensagem = {
   turno?: string;
   /** Último dia para responder, "dd/mm". */
   prazo?: string;
+  /**
+   * Quantas frases faltam a esta pessoa nesta candidatura.
+   *
+   * Deixou de ser 10 fixas quando a empresa passou a escolher de 3 a 11
+   * competências (uma frase por competência), e já era menos que isso quando
+   * a pessoa reaproveitava resposta de uma candidatura anterior. Vem pronto
+   * de quem chama (`perguntasQueFaltam(...).length`), porque o texto da
+   * mensagem não consulta estado.
+   *
+   * Ausente: a mensagem fala em "o questionário", sem número — é o que
+   * sobra de verdadeiro quando quem chama não sabe a conta.
+   */
+  frasesQueFaltam?: number;
   /** Qual check-in, quando a etapa é "como está sendo". */
   marco?: MarcoDaMensagem;
   /** Link absoluto (candidatura, questionário, check-in). */
@@ -162,6 +175,39 @@ function vaga(entrada: EntradaDaMensagem, comTurno = false): string {
   return partes.join(', ');
 }
 
+/**
+ * "10 frases", "1 frase" ou, sem a conta, "o questionário".
+ *
+ * Zero tem caminho próprio nas linhas que usam isto: quem já respondeu tudo
+ * numa candidatura anterior não recebe pedido de resposta, e sim de
+ * confirmação.
+ */
+function frasesAResponder(entrada: EntradaDaMensagem): string {
+  const quantas = entrada.frasesQueFaltam;
+  if (quantas === undefined) return 'o questionário';
+  return `${quantas} ${quantas === 1 ? 'frase' : 'frases'}`;
+}
+
+/** Já respondeu tudo antes: só falta confirmar que continua valendo. */
+function soConfirmar(entrada: EntradaDaMensagem): boolean {
+  return entrada.frasesQueFaltam === 0;
+}
+
+/** A primeira linha do lembrete, no singular, no plural ou sem número. */
+function lembrete(entrada: EntradaDaMensagem): string {
+  const daVaga = `da sua candidatura para a ${vaga(entrada)}`;
+  if (soConfirmar(entrada)) {
+    return `Vi que a sua candidatura para a ${vaga(entrada)} ainda espera você confirmar as respostas que já deu antes. Sem essa confirmação, a gente não consegue seguir com você nesta vaga.`;
+  }
+  if (entrada.frasesQueFaltam === undefined) {
+    return `Vi que o questionário ${daVaga} ainda está sem resposta. Sem ele, a gente não consegue seguir com você nesta vaga.`;
+  }
+  if (entrada.frasesQueFaltam === 1) {
+    return `Vi que 1 frase ${daVaga} ainda está sem resposta. Sem ela, a gente não consegue seguir com você nesta vaga.`;
+  }
+  return `Vi que as ${entrada.frasesQueFaltam} frases ${daVaga} ainda estão sem resposta. Sem elas, a gente não consegue seguir com você nesta vaga.`;
+}
+
 /** "Dá para responder até 15/09." ou, sem data, o prazo da regra (R7). */
 function prazoDoQuestionario(entrada: EntradaDaMensagem): string {
   return entrada.prazo?.trim()
@@ -189,7 +235,9 @@ function linhas(entrada: EntradaDaMensagem): Array<string | null> {
         abertura(entrada),
         `Recebemos sua candidatura para a ${vaga(entrada, true)}.`,
         comLink(
-          'O próximo passo é responder 10 frases sobre o seu jeito de trabalhar. Leva uns 5 minutos, é pelo celular e não precisa de senha:',
+          soConfirmar(entrada)
+            ? 'O próximo passo é rápido: você já respondeu o que esta vaga pergunta sobre o seu jeito de trabalhar, é só confirmar que continua valendo. É pelo celular e não precisa de senha:'
+            : `O próximo passo é responder ${frasesAResponder(entrada)} sobre o seu jeito de trabalhar. Leva uns 5 minutos, é pelo celular e não precisa de senha:`,
           link
         ),
         `${prazoDoQuestionario(entrada)} Qualquer dúvida, é só responder aqui.`
@@ -198,7 +246,7 @@ function linhas(entrada: EntradaDaMensagem): Array<string | null> {
     case 'lembrete-questionario':
       return [
         abertura(entrada),
-        `Vi que as 10 frases da sua candidatura para a ${vaga(entrada)} ainda estão sem resposta. Sem elas, a gente não consegue seguir com você nesta vaga.`,
+        lembrete(entrada),
         comLink('São uns 5 minutos, pelo celular:', link),
         `${prazoDoQuestionario(entrada)} Se precisar de ajuda para responder, me chama aqui que a gente faz junto.`
       ];

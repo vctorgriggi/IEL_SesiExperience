@@ -37,7 +37,7 @@ mudado desde então.
 - No detalhe, por pessoa, **"Avisar a pessoa"** (só a analista): abre a gaveta "Mensagem do Mind"
   (`mensagens/mensagem-do-mind-sheet.tsx`) com a etapa que o retorno da empresa define — sem retorno →
   currículo enviado; "quero entrevistar" → a empresa quer conversar; "não avançar" → não foi desta
-  vez; contratou → como está sendo. Copiar ou simular o envio; nada é enviado nem gravado.
+  vez; contratou → como está sendo. A ação é copiar para colar no WhatsApp do IEL; nada é gravado.
 
 ## Backend futuro
 

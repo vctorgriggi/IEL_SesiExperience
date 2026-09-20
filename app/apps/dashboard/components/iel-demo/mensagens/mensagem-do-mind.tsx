@@ -25,7 +25,8 @@ import {
   getRegisteredReferrals,
   getReportTokenForJob,
   getSituacaoDeContratacao,
-  getTalent
+  getTalent,
+  perguntasQueFaltam
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { DemoState } from '@/features/iel-demo/types';
@@ -225,6 +226,15 @@ export function MensagemDoMind({
   const vagaParaOSimulador = application
     ? getJob(application.jobId)?.title
     : undefined;
+  /*
+   * Quantas frases esta pessoa ainda tem para responder nesta candidatura.
+   * Deixou de ser 10 no dia em que a empresa passou a escolher de 3 a 11
+   * competências, e já variava com o reaproveitamento: a conta vem do
+   * estado e o texto só a recebe pronta.
+   */
+  const frasesQueFaltam = application
+    ? perguntasQueFaltam(state, applicationId).length
+    : null;
 
   // A entrada da regra fixa, montada só com o que o candidato pode ver —
   // salvo na cobrança ao RH, em que empresa e pessoa entram de propósito.
@@ -237,6 +247,7 @@ export function MensagemDoMind({
       ...(localidade ? { localidade } : {}),
       ...(turno ? { turno } : {}),
       ...(prazo ? { prazo } : {}),
+      ...(frasesQueFaltam !== null ? { frasesQueFaltam } : {}),
       ...(marco ? { marco } : {}),
       link,
       ...(analista ? { analista } : {}),
@@ -251,6 +262,7 @@ export function MensagemDoMind({
     localidade,
     turno,
     prazo,
+    frasesQueFaltam,
     marco,
     link,
     analista,
@@ -320,7 +332,7 @@ export function MensagemDoMind({
   if (!entrada || !regra || !mensagem) {
     return (
       <p className="text-sm text-muted-foreground">
-        Candidatura não encontrada nesta base.
+        Candidatura não encontrada.
       </p>
     );
   }
@@ -471,7 +483,11 @@ export function MensagemDoMind({
         contexto={
           destinatario === 'empresa'
             ? { empresa, vaga: vagaParaOSimulador }
-            : { atividade, cidade: localidade }
+            : {
+                atividade,
+                cidade: localidade,
+                ...(frasesQueFaltam !== null ? { frasesQueFaltam } : {})
+              }
         }
         textoPronto={texto}
         open={simulando}

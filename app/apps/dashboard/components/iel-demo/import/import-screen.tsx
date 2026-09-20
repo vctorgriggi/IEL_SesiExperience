@@ -136,9 +136,7 @@ export function ImportScreen({ jobId }: { jobId: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Vaga não encontrada</CardTitle>
-          <CardDescription>
-            Esta vaga não existe na base da demonstração.
-          </CardDescription>
+          <CardDescription>Não achamos esta vaga.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button

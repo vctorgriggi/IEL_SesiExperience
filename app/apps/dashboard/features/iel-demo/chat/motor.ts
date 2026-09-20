@@ -53,11 +53,6 @@ export type PassoPergunta = {
   opcoes: ChatOpcao[];
   /** Presente nas frases do instrumento: a régua substitui os botões. */
   regua?: ReguaDoPasso;
-  /**
-   * A frase original do cliente, quando `texto` é a cena. Fica a um toque
-   * atrás da bolha, para quem quiser conferir que é o mesmo instrumento.
-   */
-  original?: string;
 };
 
 /**
@@ -86,8 +81,11 @@ export type PassoFim = {
   acoes: AcaoFinal[];
 };
 
+/**
+ * O que sobra na tela depois do fim. Não há "responder de novo": a resposta
+ * é uma só e vale 12 meses (decisão do dono do produto, 20/09/2026).
+ */
 export type AcaoFinal =
-  | 'responder-de-novo'
   | 'responder-mesmo-assim'
   /** Leva para "Minha candidatura", a casa do candidato no produto. */
   | 'ver-candidatura';
@@ -114,8 +112,6 @@ export type MensagemConversa = {
   passoId: string;
   /** Carimbo ISO, do relógio único da demonstração. */
   em: string;
-  /** A frase original do cliente atrás da cena, quando houver. */
-  original?: string;
 };
 
 export type EstadoConversa = {
@@ -211,16 +207,15 @@ function avancar(
     }
 
     if (passo.tipo === 'pergunta') {
-      const pergunta = mensagemIel(
-        passo.id,
-        'q',
-        passo.texto,
-        em,
-        passo.apoio,
-        falaDaPergunta(passo)
-      );
       historico.push(
-        passo.original ? { ...pergunta, original: passo.original } : pergunta
+        mensagemIel(
+          passo.id,
+          'q',
+          passo.texto,
+          em,
+          passo.apoio,
+          falaDaPergunta(passo)
+        )
       );
       return { ...estado, historico, passoAtual: atual };
     }
@@ -379,10 +374,9 @@ export function responder(
 }
 
 /**
- * A última resposta a uma pergunta, se ainda dá para mudá-la.
+ * A última resposta a uma pergunta, se ainda dá para voltar nela.
  *
- * Só antes do fim: depois do fim a resposta já foi registrada, e o caminho é
- * responder de novo (candidato) ou nenhum (colaborador, link de uso único).
+ * Só antes do fim: depois do fim a resposta já foi registrada, e é uma só.
  */
 export function ultimaRespostaMutavel(
   roteiro: ConversaRoteiro,
@@ -399,11 +393,11 @@ export function ultimaRespostaMutavel(
 }
 
 /**
- * "Mudar minha resposta": desfaz a última pergunta respondida.
+ * "Voltar": desfaz a última pergunta respondida, antes do envio.
  *
- * Corta o histórico logo antes da resposta — a pergunta continua lá, os
- * botões voltam — e apaga a resposta gravada. Nada é reescrito: o que a pessoa
- * vê é a conversa como estava um toque atrás.
+ * Corta o histórico logo antes da resposta — a pergunta continua lá, a régua
+ * volta — e apaga a resposta gravada. Nada é reescrito: o que a pessoa vê é a
+ * conversa como estava um toque atrás.
  */
 export function voltar(
   roteiro: ConversaRoteiro,

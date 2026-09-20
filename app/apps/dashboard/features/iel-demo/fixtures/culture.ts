@@ -43,7 +43,8 @@ const CERRADO_EQUIPE: AlvoCultural = {
     'regras-decisao': 2,
     'interacao-convivencia': 4.5,
     'lideranca-autonomia': 5,
-    'adaptacao-carreira': 2.5
+    'adaptacao-carreira': 2.5,
+    'expectativas-futuras': 2.5
   }
 };
 
@@ -73,7 +74,8 @@ const HORIZONTE: AlvoCultural = {
     'regras-decisao': 4.5,
     'interacao-convivencia': 3,
     'lideranca-autonomia': 2,
-    'adaptacao-carreira': 3.5
+    'adaptacao-carreira': 3.5,
+    'expectativas-futuras': 3.5
   }
 };
 
@@ -89,7 +91,8 @@ const PANTANAL: AlvoCultural = {
     'regras-decisao': 3,
     'interacao-convivencia': 3.5,
     'lideranca-autonomia': 4,
-    'adaptacao-carreira': 3
+    'adaptacao-carreira': 3,
+    'expectativas-futuras': 3
   }
 };
 
@@ -138,11 +141,11 @@ function construir(): CultureAnswer[] {
     }
   }
   porEmpresa.set('EMP-01', cerrado);
-  datas.set('EMP-01:gestao', '2026-09-05');
+  datas.set('EMP-01:gestao', '2026-09-11');
 
   return [...porEmpresa.entries()].flatMap(([companyId, respostas]) =>
     agregarRespostas(companyId, `CUL-${companyId}`, respostas, (role) =>
-      (datas.get(`${companyId}:${role}`) ?? '2026-09-05').slice(0, 10)
+      (datas.get(`${companyId}:${role}`) ?? '2026-09-11').slice(0, 10)
     )
   );
 }

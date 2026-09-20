@@ -101,12 +101,13 @@ Telas de entrada e de saída.
 
 ## Contexto comum a todas as telas
 
-- **Base fictícia.** Nenhum dado é real, nada sai do navegador, nenhuma mensagem é enviada. A faixa
-  de demonstração fica visível em todas as telas.
+- **Base fictícia.** Nenhum dado é real e nenhuma mensagem é enviada — mas a interface fala como
+  produto e não anuncia isso. O que é simulado, e como cada tela fala disso, está em
+  `docs/interno/o-que-e-simulado.md`.
 - **Estado no cliente.** `features/iel-demo/state/demo-provider.tsx` guarda o estado, o reducer em
   `state/reducer.ts` aplica as ações e `state/storage.ts` persiste no `localStorage` apenas o que
   divergiu da base inicial.
 - **Telas leem seletores, nunca fixtures direto**, para que a fonte mock possa ser trocada por
   serviços reais sem reescrever a interface.
-- **Personas** vêm da barra "Visualizar como — demonstração": é recorte de dados para apresentação,
-  não autenticação.
+- **Personas** vêm do menu do usuário ("Ver como"): é recorte de dados para apresentação, não
+  autenticação. O rodapé da barra mostra só o papel; a ação "Reiniciar base" volta a base inicial.

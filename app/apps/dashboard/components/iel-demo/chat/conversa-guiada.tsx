@@ -34,7 +34,6 @@ import { Progress } from '@workspace/ui/shadcn/progress';
 import { ScrollArea } from '@workspace/ui/shadcn/scroll-area';
 import { Skeleton } from '@workspace/ui/shadcn/skeleton';
 
-import { FraseOriginal } from '../shared/fluxo-por-link';
 import {
   ReguaDeConcordancia,
   type OrigemDaResposta
@@ -62,11 +61,12 @@ import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
  * ## A cena e a régua
  *
  * Numa frase do instrumento, a bolha traz a cena ("Chega uma tarefa nova. Eu
- * começo e vou ajustando no caminho.") com a frase original do cliente a um
- * toque, e o rodapé mostra a régua de um toque no lugar dos cinco botões:
- * o degrau tocado se preenche e, um instante depois, vira a resposta. Pelo
- * teclado a régua só seleciona, e um botão "Confirmar" aparece para fechar
- * a resposta (Enter também serve).
+ * começo e vou ajustando no caminho.") e o rodapé mostra a régua de um toque
+ * no lugar dos cinco botões: o degrau tocado se preenche e, um instante
+ * depois, vira a resposta. Pelo teclado a régua só seleciona, e um botão
+ * "Confirmar" aparece para fechar a resposta (Enter também serve). "Voltar",
+ * na última resposta, desfaz um toque — só antes do envio: depois dele a
+ * resposta é uma só.
  *
  * ## Áudio
  *
@@ -91,14 +91,14 @@ export type ConversaGuiadaProps = {
   renderAcoesFinais?: (acoes: AcaoFinal[]) => ReactNode;
   /**
    * O que entra na conversa logo depois da primeira fala do fim ("Pronto,
-   * recebemos…") e antes das seguintes, que dizem o que acontece agora: é
-   * onde a devolutiva pessoal cabe. Só depois do aceite.
+   * recebemos…") e antes das seguintes: é onde "Suas respostas" cabe. Só
+   * depois do aceite.
    */
   renderFim?: (respostas: Record<string, string>) => ReactNode;
   /**
    * Verdadeiro quando a conversa recomeça por um toque da pessoa ("Responder
-   * de novo"): o botão que ela tocou some, e o foco precisa de um lugar para
-   * ir que não seja o topo da página.
+   * mesmo assim", fora do prazo): o botão que ela tocou some, e o foco
+   * precisa de um lugar para ir que não seja o topo da página.
    */
   focarAoAbrir?: boolean;
   /**
@@ -107,6 +107,8 @@ export type ConversaGuiadaProps = {
    * intervalo do turno, fecha a aba.
    */
   rascunhoChave?: string;
+  /** Uma linha abaixo das opções (o atalho da equipe); nada quando ausente. */
+  rodape?: ReactNode;
 };
 
 /** A conversa como ela cabe no navegador da pessoa. */
@@ -139,7 +141,8 @@ export function ConversaGuiada({
   renderAcoesFinais,
   renderFim,
   focarAoAbrir = false,
-  rascunhoChave
+  rascunhoChave,
+  rodape
 }: ConversaGuiadaProps) {
   const [estado, setEstado] = useState<EstadoConversa>(() =>
     iniciarConversa(roteiro, nowIso())
@@ -247,8 +250,7 @@ export function ConversaGuiada({
   ]);
 
   // Revela uma fala por vez. A da pessoa entra na hora; a do IEL, depois do
-  // "digitando…". Um corte no histórico ("mudar minha resposta") traz o
-  // contador de volta.
+  // "digitando…". Um corte no histórico ("Voltar") traz o contador de volta.
   useEffect(() => {
     if (revelados > historico.length) {
       setRevelados(historico.length);
@@ -419,12 +421,12 @@ export function ConversaGuiada({
 
   const rotuloProgresso =
     progresso.fase === 'perguntas'
-      ? `Frase ${progresso.atual} de ${progresso.total}`
+      ? `${progresso.atual} de ${progresso.total}`
       : progresso.fase === 'fim'
         ? progresso.atual === progresso.total
           ? 'Pronto'
           : 'Conversa encerrada'
-        : 'Antes de começar';
+        : 'Antes de responder';
 
   return (
     <div className="-mb-10 flex h-[calc(100dvh-3rem)] flex-col">
@@ -474,19 +476,10 @@ export function ConversaGuiada({
             {/* O texto visível é a leitura; a barra repete o mesmo valor
                 para quem navega por elementos. */}
             <span
-              className="flex justify-between text-xs text-muted-foreground"
+              className="text-xs text-muted-foreground"
               aria-hidden="true"
             >
               {rotuloProgresso}
-              {/* Quantas ainda faltam: a pergunta que a pessoa faz no meio
-                  de uma fila de 16 frases. */}
-              {progresso.fase === 'perguntas' ? (
-                <span>
-                  {progresso.total - progresso.atual === 0
-                    ? 'Última'
-                    : `Faltam ${progresso.total - progresso.atual}`}
-                </span>
-              ) : null}
             </span>
             <Progress
               className="h-1 bg-muted"
@@ -507,8 +500,8 @@ export function ConversaGuiada({
         ) : null}
         {/*
          * `role="log"` com `additions`: o leitor anuncia só a fala que entrou,
-         * não a conversa inteira de novo. "Mudar minha resposta" corta o
-         * histórico — remoção, que não é anunciada.
+         * não a conversa inteira outra vez. "Voltar" corta o histórico —
+         * remoção, que não é anunciada.
          */}
         <div
           role="log"
@@ -526,7 +519,7 @@ export function ConversaGuiada({
                 mutavel={mutavel?.id === mensagem.id && tudoVisivel}
                 onMudar={mudar}
               />
-              {/* A devolutiva entra depois da primeira fala do fim e antes
+              {/* "Suas respostas" entra depois da primeira fala do fim e antes
                   das que dizem o que acontece agora. */}
               {renderFim &&
               estado.encerrada &&
@@ -600,6 +593,7 @@ export function ConversaGuiada({
             {estado.encerrada ? 'Conversa encerrada' : 'Aguarde a mensagem…'}
           </p>
         )}
+        {rodape}
       </footer>
     </div>
   );
@@ -643,7 +637,6 @@ function Bolha({
             {mensagem.apoio}
           </p>
         ) : null}
-        {mensagem.original ? <FraseOriginal texto={mensagem.original} /> : null}
       </div>
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
         {/* A hora é só visual: lida a cada fala nova, ela atrasaria a
@@ -689,11 +682,11 @@ function Bolha({
             type="button"
             variant="link"
             size="sm"
-            aria-label={`Mudar minha resposta: ${mensagem.texto}`}
+            aria-label={`Voltar: desfazer a resposta ${mensagem.texto}`}
             className="relative h-7 px-2 text-[12px] text-muted-foreground after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-['']"
             onClick={onMudar}
           >
-            mudar minha resposta
+            voltar
           </Button>
         ) : null}
       </div>
