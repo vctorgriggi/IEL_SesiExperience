@@ -211,3 +211,107 @@ body:has([data-iel-theme]) {
     z-index: 40;
   }
 }
+
+/*
+ * O balão do tour guiado (driver.js), vestido com os tokens do tema.
+ *
+ * A folha do plugin traz caixa branca, sombra pesada e botões azuis de
+ * fábrica — nada disso combina com "estrutura por borda e espaço". Aqui o
+ * balão passa a ser um cartão como qualquer outro do produto: fundo de
+ * `--popover`, contorno de `--border`, raio da escala e os botões no mesmo
+ * desenho do `Button` do kit.
+ *
+ * O escopo é `.driver-popover.tour-mind-rh` — a classe que `use-tour.ts`
+ * passa em `popoverClass`. O plugin renderiza no fim do `body`, fora de
+ * `[data-iel-theme]`, e por isso as variáveis são lidas do `body:has(...)`,
+ * como já acontece com diálogos e toasts.
+ */
+.driver-popover.tour-mind-rh {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px -12px hsl(var(--foreground) / 0.25);
+  padding: 1rem;
+  max-width: 22rem;
+  font-family: inherit;
+}
+
+.driver-popover.tour-mind-rh .driver-popover-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-description {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-footer {
+  margin-top: 0.875rem;
+  gap: 0.5rem;
+}
+
+.driver-popover.tour-mind-rh .driver-popover-footer button {
+  all: unset;
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  text-shadow: none;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-footer button:hover {
+  background-color: hsl(var(--muted));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-footer button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/*
+ * O "Próximo"/"Fechar" é a ação principal: sólido, como o `Button` padrão.
+ *
+ * O seletor repete `.driver-popover-footer` de propósito. A regra genérica
+ * acima é `.driver-popover.tour-mind-rh .driver-popover-footer button`
+ * (três classes e um elemento); sem o rodapé aqui, esta teria três classes e
+ * perderia a disputa de especificidade — o botão principal saía cinza.
+ */
+.driver-popover.tour-mind-rh .driver-popover-footer .driver-popover-next-btn {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.driver-popover.tour-mind-rh
+  .driver-popover-footer
+  .driver-popover-next-btn:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}
+
+.driver-popover.tour-mind-rh .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground));
+}
+
+.driver-popover.tour-mind-rh .driver-popover-arrow {
+  border-color: hsl(var(--popover));
+}
