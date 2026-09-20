@@ -268,6 +268,14 @@ function buildDashboardRoutes(resolve: ResolveRoute) {
        * analista (menu Sistema).
        */
       instrument: { index: resolve('/instrumento') },
+      /**
+       * Temas: leitura corrida dos 11 temas e das perguntas de cada um.
+       *
+       * Existe ao lado do Instrumento, e não dentro dele, porque responde
+       * outra pergunta. O Instrumento é onde a analista liga e desliga
+       * frase; aqui ninguém mexe em nada, só lê o que o instrumento pergunta.
+       */
+      themes: { index: resolve('/temas') },
       /** Comunicação, questionário e consentimento dos candidatos. */
       candidates: resolve('/candidatos'),
       /** Análises com dado agregado. */

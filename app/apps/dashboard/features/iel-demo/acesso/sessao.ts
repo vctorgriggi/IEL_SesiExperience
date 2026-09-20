@@ -76,8 +76,22 @@ export async function cookieValido(
   return (await assinar(expiraEm)) === assinatura;
 }
 
+/**
+ * Porta aberta para a apresentação (20/09/2026). **Temporário.**
+ *
+ * Com isto ligado, quem escaneia o QR Code cai direto no produto, sem senha.
+ * A senha não foi removida nem deve ser removida da Vercel: ela continua
+ * valendo para o que só a equipe faz — ver `analistaLogada()`, que é quem
+ * libera "Reiniciar base" e "Sair da Central". A equipe entra por `/entrar`
+ * como sempre.
+ *
+ * Para fechar de novo, troque para `false` e publique. Nada mais muda.
+ */
+const PORTA_ABERTA_PARA_A_APRESENTACAO = true;
+
 /** A analista está autenticada, ou a porta está aberta por configuração. */
 export async function temSessaoDaAnalista(): Promise<boolean> {
+  if (PORTA_ABERTA_PARA_A_APRESENTACAO) return true;
   if (!acessoExigeSenha()) return true;
   return analistaLogada();
 }

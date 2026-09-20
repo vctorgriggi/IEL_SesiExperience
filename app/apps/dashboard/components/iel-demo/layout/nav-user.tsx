@@ -55,7 +55,7 @@ function iniciais(nome: string): string {
  * base são ações de quem apresenta, e cabem onde um produto de verdade
  * guarda as ações da conta.
  */
-export function NavUser({ podeSair }: { podeSair: boolean }) {
+export function NavUser({ ehEquipe }: { ehEquipe: boolean }) {
   const { state, dispatch, persona, resetDemo } = useIelDemo();
   const { isMobile } = useSidebar();
   const [confirmarReset, setConfirmarReset] = useState(false);
@@ -114,7 +114,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
             </DropdownMenuRadioGroup>
 
             <DropdownMenuSeparator />
-            {podeSair ? (
+            {ehEquipe ? (
               <DropdownMenuItem
                 onSelect={() => {
                   void sair();
@@ -124,10 +124,18 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
                 Sair da Central
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onSelect={() => setConfirmarReset(true)}>
-              <IconRotate2 />
-              Reiniciar base
-            </DropdownMenuItem>
+            {/*
+             * Reiniciar zera a base para todo mundo ao mesmo tempo. Com a
+             * porta aberta para a apresentação, qualquer pessoa que escaneia
+             * o QR Code chega até este menu — então o botão fica para quem
+             * entrou com a senha da equipe.
+             */}
+            {ehEquipe ? (
+              <DropdownMenuItem onSelect={() => setConfirmarReset(true)}>
+                <IconRotate2 />
+                Reiniciar base
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

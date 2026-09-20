@@ -29,6 +29,7 @@ import {
   IconHelpCircle,
   IconHome,
   IconListCheck,
+  IconListDetails,
   IconPlug,
   IconSearch,
   IconUsers
@@ -163,7 +164,7 @@ function ItemDaBarra({
  * Papéis (prancha 2): só o analista tem app. Empresa e candidato recebem
  * link, e essas telas ficam fora desta casca.
  */
-export function AppSidebar({ podeSair }: { podeSair: boolean }) {
+export function AppSidebar({ ehEquipe }: { ehEquipe: boolean }) {
   const { state, persona } = useIelDemo();
   const pathname = usePathname();
   const iel = routes.dashboard.iel;
@@ -430,6 +431,21 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
                   )}
                 />
               )}
+              {/*
+               * Temas vem logo depois do Instrumento: é a mesma matéria, lida
+               * em vez de ajustada. Quem só quer saber o que se pergunta não
+               * precisa entrar na tela que liga e desliga frase.
+               */}
+              {eGestor ? null : (
+                <ItemDaBarra
+                  item={item(
+                    iel.themes.index,
+                    'Temas',
+                    IconListDetails,
+                    pathname.startsWith(iel.themes.index)
+                  )}
+                />
+              )}
               {eGestor ? null : (
                 <ItemDaBarra
                   item={item(
@@ -456,7 +472,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser podeSair={podeSair} />
+        <NavUser ehEquipe={ehEquipe} />
       </SidebarFooter>
 
       <BuscaGlobal

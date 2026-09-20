@@ -103,11 +103,11 @@ const PREFIXOS_POR_LINK: {
  */
 export function IelShell({
   children,
-  podeSair
+  ehEquipe
 }: {
   children: ReactNode;
   /** A porta exige senha, então há de onde sair. */
-  podeSair: boolean;
+  ehEquipe: boolean;
 }) {
   const pathname = usePathname();
 
@@ -146,7 +146,7 @@ export function IelShell({
           Pular para o conteúdo
         </a>
         <SidebarProvider style={ESTILO_DA_CASCA}>
-          <AppSidebar podeSair={podeSair} />
+          <AppSidebar ehEquipe={ehEquipe} />
           <SidebarInset>
             <SiteHeader />
             <div
@@ -227,7 +227,10 @@ function LinkShell({
         </header>
       ) : null}
       <main
-        className={cn('mx-auto w-full flex-1 px-4 py-4 sm:py-6 pb-24 sm:pb-12', largura)}
+        className={cn(
+          'mx-auto w-full flex-1 px-4 py-4 sm:py-6 pb-24 sm:pb-12',
+          largura
+        )}
       >
         {children}
       </main>

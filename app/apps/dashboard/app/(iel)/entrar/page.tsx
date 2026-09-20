@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import {
   acessoExigeSenha,
-  temSessaoDaAnalista
+  analistaLogada
 } from '@/features/iel-demo/acesso/sessao';
 
 import { routes } from '@workspace/routes';
@@ -19,7 +19,12 @@ export const metadata: Metadata = { title: 'Entrar · Mind RH' };
  * essas rotas não passam por aqui.
  */
 export default async function EntrarPage() {
-  if (!acessoExigeSenha() || (await temSessaoDaAnalista())) {
+  /*
+   * Olha o cookie, e não `temSessaoDaAnalista()`: com a porta aberta para a
+   * apresentação aquela função responde "sim" para todo mundo, e a equipe
+   * ficaria sem como pegar a sessão que libera reiniciar a base.
+   */
+  if (!acessoExigeSenha() || (await analistaLogada())) {
     redirect(routes.dashboard.iel.index);
   }
 

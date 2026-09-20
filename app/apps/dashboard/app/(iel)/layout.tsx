@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { IelShell } from '@/components/iel-demo/layout/iel-shell';
 import { VLibras } from '@/components/iel-demo/layout/vlibras';
 import {
-  acessoExigeSenha,
+  analistaLogada,
   temSessaoDaAnalista
 } from '@/features/iel-demo/acesso/sessao';
 import {
@@ -156,7 +156,7 @@ export default async function IelDemoLayout({ children }: PropsWithChildren) {
         compartilhado={compartilhado && estadoInicial !== null}
         estadoInicial={estadoInicial}
       >
-        <IelShell podeSair={acessoExigeSenha()}>{children}</IelShell>
+        <IelShell ehEquipe={await analistaLogada()}>{children}</IelShell>
       </IelDemoProvider>
       <VLibras />
     </div>
