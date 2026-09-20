@@ -28,7 +28,7 @@ import {
 import { montarContextoLivre } from '@/features/iel-demo/chat/mind-livre';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getJob } from '@/features/iel-demo/state/selectors';
-import { ArrowUp, RotateCcw } from 'lucide-react';
+import { IconArrowUp, IconRotate2 } from '@tabler/icons-react';
 
 import { api, routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -376,7 +376,7 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
                   rolar();
                 }}
               >
-                <RotateCcw aria-hidden="true" />
+                <IconRotate2 aria-hidden="true" />
                 Fazer outra pergunta
               </Button>
             </div>
@@ -403,7 +403,7 @@ function ConversaMind({ contexto }: { contexto: MindContexto }) {
           disabled={!texto.trim() || pensando}
           aria-label="Enviar pergunta"
         >
-          <ArrowUp aria-hidden="true" />
+          <IconArrowUp aria-hidden="true" />
         </Button>
       </form>
     </>

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { MessageCircleIcon } from 'lucide-react';
+import { IconMessageCircle } from '@tabler/icons-react';
 
 import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
@@ -45,7 +45,7 @@ export function CaminhoDaConversa({ href }: { href: string }) {
           asChild
         >
           <Link href={href}>
-            <MessageCircleIcon aria-hidden="true" />
+            <IconMessageCircle aria-hidden="true" />
             Responder conversando
           </Link>
         </Button>

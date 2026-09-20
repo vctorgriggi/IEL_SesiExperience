@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { loadExampleSpreadsheet } from '@/features/iel-demo/fixtures';
-import { ChevronDownIcon, UploadIcon } from 'lucide-react';
+import { IconChevronDown, IconUpload } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -125,7 +125,7 @@ export function UploadStep({
               arrastando && 'border-foreground bg-muted/50'
             )}
           >
-            <UploadIcon
+            <IconUpload
               aria-hidden="true"
               className="size-5 text-muted-foreground"
             />
@@ -193,7 +193,7 @@ export function UploadStep({
                   className="group/colunas"
                 >
                   Ver as colunas
-                  <ChevronDownIcon
+                  <IconChevronDown
                     aria-hidden="true"
                     className="transition-transform group-data-[state=open]/colunas:rotate-180"
                   />

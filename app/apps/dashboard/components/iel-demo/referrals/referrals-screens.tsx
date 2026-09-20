@@ -25,12 +25,12 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { ReferralItem } from '@/features/iel-demo/types';
 import {
-  CircleAlertIcon,
-  CircleCheckIcon,
-  CircleDashedIcon,
-  CircleMinusIcon,
-  SearchIcon
-} from 'lucide-react';
+  IconAlertCircle,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCircleMinus,
+  IconSearch
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Alert, Textarea, toast } from '@workspace/ui';
@@ -87,29 +87,29 @@ function esperaEmAberto(resumo: {
 function DesfechoDaEmpresa({ linha }: { linha: ReferralOutcomeRow }) {
   const { outcome, retentionState, waitingDays } = linha;
 
-  const [texto, tom, Icone]: [string, EstadoDeCor, typeof CircleCheckIcon] =
+  const [texto, tom, Icone]: [string, EstadoDeCor, typeof IconCircleCheck] =
     retentionState === 'saiu-antes-de-90-dias'
-      ? [`Saiu antes de ${PERMANENCIA_DIAS} dias`, 'atencao', CircleMinusIcon]
+      ? [`Saiu antes de ${PERMANENCIA_DIAS} dias`, 'atencao', IconCircleMinus]
       : retentionState === 'continua'
-        ? [`Ficou ${PERMANENCIA_DIAS} dias`, 'combina', CircleCheckIcon]
+        ? [`Ficou ${PERMANENCIA_DIAS} dias`, 'combina', IconCircleCheck]
         : retentionState === 'a-perguntar'
           ? [
               waitingDays && waitingDays > 0
                 ? `Contratou · permanência em aberto há ${waitingDays} ${waitingDays === 1 ? 'dia' : 'dias'}`
                 : 'Contratou · permanência a confirmar',
               'atencao',
-              CircleAlertIcon
+              IconAlertCircle
             ]
           : outcome.hiring === 'contratou'
-            ? ['Contratou', 'combina', CircleCheckIcon]
+            ? ['Contratou', 'combina', IconCircleCheck]
             : outcome.hiring === 'nao-contratou'
-              ? ['Não contratou', 'neutro', CircleDashedIcon]
+              ? ['Não contratou', 'neutro', IconCircleDashed]
               : [
                   waitingDays === null || waitingDays <= 0
                     ? 'Sem devolutiva'
                     : `Sem devolutiva há ${waitingDays} ${waitingDays === 1 ? 'dia' : 'dias'}`,
                   'atencao',
-                  CircleAlertIcon
+                  IconAlertCircle
                 ];
 
   const motivo =
@@ -155,7 +155,7 @@ function DecisaoDaEmpresa({ item }: { item: ReferralItem }) {
         variant="outline"
         className="text-muted-foreground"
       >
-        <CircleCheckIcon className="text-success" />
+        <IconCircleCheck className="text-success" />
         Empresa quer entrevistar
       </Badge>
     );
@@ -166,7 +166,7 @@ function DecisaoDaEmpresa({ item }: { item: ReferralItem }) {
         variant="outline"
         className="text-muted-foreground"
       >
-        <CircleDashedIcon />
+        <IconCircleDashed />
         Empresa não vai avançar
       </Badge>
     );
@@ -176,7 +176,7 @@ function DecisaoDaEmpresa({ item }: { item: ReferralItem }) {
       variant="outline"
       className="text-muted-foreground"
     >
-      <CircleAlertIcon className="text-[hsl(var(--brand-accent))]" />
+      <IconAlertCircle className="text-[hsl(var(--brand-accent))]" />
       Aguardando retorno da empresa
     </Badge>
   );
@@ -229,7 +229,7 @@ export function ReferralsScreen() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <div className="relative w-full max-w-xs">
-            <SearchIcon
+            <IconSearch
               aria-hidden="true"
               className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             />
@@ -320,9 +320,9 @@ export function ReferralsScreen() {
                           className="text-muted-foreground"
                         >
                           {pending > 0 ? (
-                            <CircleAlertIcon className="text-[hsl(var(--brand-accent))]" />
+                            <IconAlertCircle className="text-[hsl(var(--brand-accent))]" />
                           ) : (
-                            <CircleCheckIcon className="text-success" />
+                            <IconCircleCheck className="text-success" />
                           )}
                           {pending > 0
                             ? `${pending} aguardando`

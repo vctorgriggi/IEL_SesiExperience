@@ -31,11 +31,11 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
-  CircleCheckIcon,
-  ClockIcon,
-  HistoryIcon,
-  TriangleAlertIcon
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconCircleCheck,
+  IconClock,
+  IconHistory
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -417,7 +417,7 @@ export function FitQuestionnaireScreen({
       <CandidateFrame badge={badge}>
         <Card>
           <CardHeader>
-            <ClockIcon
+            <IconClock
               aria-hidden="true"
               className="size-6 text-muted-foreground"
             />
@@ -478,7 +478,7 @@ export function FitQuestionnaireScreen({
             aria-hidden="true"
             className={`flex size-9 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
           >
-            <CircleCheckIcon className="size-5" />
+            <IconCircleCheck className="size-5" />
           </span>
           <h1
             ref={tituloRef}
@@ -625,7 +625,7 @@ export function FitQuestionnaireScreen({
             aria-hidden="true"
             className={`flex size-9 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
           >
-            <HistoryIcon className="size-5" />
+            <IconHistory className="size-5" />
           </span>
           <h1
             ref={tituloRef}
@@ -765,7 +765,7 @@ export function FitQuestionnaireScreen({
                 aria-hidden="true"
                 className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
               >
-                <HistoryIcon className="size-4" />
+                <IconHistory className="size-4" />
               </span>
               <div className="flex flex-col gap-1">
                 <p className="text-[15px] leading-snug font-medium">
@@ -980,7 +980,7 @@ export function FitQuestionnaireScreen({
           >
             <CardContent className="flex flex-col gap-2.5">
               <p className="flex items-start gap-2 text-[15px] leading-snug font-medium">
-                <TriangleAlertIcon
+                <IconAlertTriangle
                   aria-hidden="true"
                   className="mt-0.5 size-4 shrink-0"
                 />

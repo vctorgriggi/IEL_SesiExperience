@@ -15,7 +15,7 @@ import {
   type ReferralReportPerson
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { Download } from 'lucide-react';
+import { IconDownload } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@workspace/ui/shadcn/avatar';
@@ -286,7 +286,7 @@ export function ReferralReportScreen({ token }: { token: string }) {
             size="sm"
             onClick={() => window.print()}
           >
-            <Download />
+            <IconDownload />
             Baixar PDF
           </Button>
           <Button

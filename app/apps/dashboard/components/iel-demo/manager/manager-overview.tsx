@@ -10,7 +10,11 @@ import {
   getTalent,
   getTeamsByCompany
 } from '@/features/iel-demo/state/selectors';
-import { CircleAlert, CircleCheck, CircleDashed } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconCircleDashed
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Alert } from '@workspace/ui';
@@ -43,7 +47,7 @@ function DecisaoBadge({
         variant="outline"
         className="text-muted-foreground"
       >
-        <CircleCheck className="text-success" />
+        <IconCircleCheck className="text-success" />
         Quero entrevistar
       </Badge>
     );
@@ -54,7 +58,7 @@ function DecisaoBadge({
         variant="outline"
         className="text-muted-foreground"
       >
-        <CircleDashed className="text-muted-foreground" />
+        <IconCircleDashed className="text-muted-foreground" />
         Não avançar
       </Badge>
     );
@@ -64,7 +68,7 @@ function DecisaoBadge({
       variant="outline"
       className="text-muted-foreground"
     >
-      <CircleAlert className="text-[hsl(var(--brand-accent))]" />
+      <IconAlertCircle className="text-[hsl(var(--brand-accent))]" />
       Retorno pendente
     </Badge>
   );

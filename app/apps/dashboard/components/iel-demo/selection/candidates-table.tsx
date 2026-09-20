@@ -5,15 +5,15 @@ import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import { COPY } from '@/features/iel-demo/copy';
 import type { JobRankingEntry } from '@/features/iel-demo/state/selectors';
 import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Columns3,
-  MoreVertical,
-  Search
-} from 'lucide-react';
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconColumns3,
+  IconDotsVertical,
+  IconSearch
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -238,6 +238,7 @@ export function CandidatesTable({
         <Tabs
           value={aba}
           onValueChange={trocarAba}
+          data-tour="mesa-filtros"
           className="max-w-full overflow-x-auto"
         >
           <TabsList className="**:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
@@ -257,7 +258,7 @@ export function CandidatesTable({
 
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search
+            <IconSearch
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
             />
@@ -286,9 +287,9 @@ export function CandidatesTable({
                 variant="outline"
                 size="sm"
               >
-                <Columns3 aria-hidden="true" />
+                <IconColumns3 aria-hidden="true" />
                 Colunas
-                <ChevronDown aria-hidden="true" />
+                <IconChevronDown aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -311,7 +312,10 @@ export function CandidatesTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div
+        data-tour="mesa-tabela"
+        className="overflow-x-auto rounded-lg border"
+      >
         <Table>
           <TableCaption className="sr-only">
             Candidatos da vaga, aba {ABA_LEGENDA[aba]}:{' '}
@@ -365,7 +369,7 @@ export function CandidatesTable({
                             {proximaOrdem(ordem, 'combina')}
                           </span>
                           {ordem?.coluna === 'combina' ? (
-                            <ChevronDown
+                            <IconChevronDown
                               aria-hidden="true"
                               className={
                                 ordem.direcao === 'asc'
@@ -400,7 +404,7 @@ export function CandidatesTable({
                       da vaga. Ordenar {proximaOrdem(ordem, 'requisitos')}
                     </span>
                     {ordem?.coluna === 'requisitos' ? (
-                      <ChevronDown
+                      <IconChevronDown
                         aria-hidden="true"
                         className={
                           ordem.direcao === 'asc'
@@ -576,7 +580,7 @@ export function CandidatesTable({
                             aria-label={`Ações para ${nome}`}
                             className="flex size-10 text-muted-foreground data-[state=open]:bg-muted"
                           >
-                            <MoreVertical aria-hidden="true" />
+                            <IconDotsVertical aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -671,7 +675,7 @@ export function CandidatesTable({
               disabled={paginaAtual === 0}
             >
               <span className="sr-only">Primeira página</span>
-              <ChevronsLeft aria-hidden="true" />
+              <IconChevronsLeft aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -681,7 +685,7 @@ export function CandidatesTable({
               disabled={paginaAtual === 0}
             >
               <span className="sr-only">Página anterior</span>
-              <ChevronLeft aria-hidden="true" />
+              <IconChevronLeft aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -693,7 +697,7 @@ export function CandidatesTable({
               disabled={paginaAtual >= totalPaginas - 1}
             >
               <span className="sr-only">Próxima página</span>
-              <ChevronRight aria-hidden="true" />
+              <IconChevronRight aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
@@ -703,7 +707,7 @@ export function CandidatesTable({
               disabled={paginaAtual >= totalPaginas - 1}
             >
               <span className="sr-only">Última página</span>
-              <ChevronsRight aria-hidden="true" />
+              <IconChevronsRight aria-hidden="true" />
             </Button>
           </div>
         </div>

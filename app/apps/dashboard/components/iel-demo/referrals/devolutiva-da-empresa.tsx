@@ -14,7 +14,12 @@ import {
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import type { ReferralReportPerson } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { CircleCheck, CircleDashed, CircleMinus, Undo2 } from 'lucide-react';
+import {
+  IconArrowBackUp,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCircleMinus
+} from '@tabler/icons-react';
 
 import { toast } from '@workspace/ui';
 import { cn } from '@workspace/ui/lib/utils';
@@ -87,10 +92,10 @@ function Registrado({
 }) {
   const Icone =
     tom === 'combina'
-      ? CircleCheck
+      ? IconCircleCheck
       : tom === 'atencao'
-        ? CircleMinus
-        : CircleDashed;
+        ? IconCircleMinus
+        : IconCircleDashed;
   return (
     <span
       className={cn(
@@ -171,7 +176,7 @@ export function DevolutivaDaEmpresa({
       className="h-7 px-2 text-xs text-muted-foreground"
       onClick={desfazer}
     >
-      <Undo2 aria-hidden="true" />
+      <IconArrowBackUp aria-hidden="true" />
       Corrigir
     </Button>
   );

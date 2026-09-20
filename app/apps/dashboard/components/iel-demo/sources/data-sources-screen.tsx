@@ -9,18 +9,18 @@ import {
   type IntegracaoId
 } from '@/features/iel-demo/analysis/analytics';
 import {
-  ArrowDown,
-  ArrowRight,
-  Check,
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  CircleDashed,
-  Clock,
-  Lock,
-  X,
-  type LucideIcon
-} from 'lucide-react';
+  IconAlertCircle,
+  IconArrowDown,
+  IconArrowRight,
+  IconCheck,
+  IconChevronRight,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconClock,
+  IconLock,
+  IconX
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -74,7 +74,10 @@ export function DataSourcesScreen() {
         </p>
       </div>
 
-      <Card className="shadow-xs">
+      <Card
+        data-tour="integracoes-fluxo"
+        className="shadow-xs"
+      >
         <CardHeader>
           <CardTitle className="text-base font-semibold">
             Como os dados circulam
@@ -89,8 +92,8 @@ export function DataSourcesScreen() {
                     aria-hidden
                     className="flex justify-center text-muted-foreground"
                   >
-                    <ArrowRight className="hidden size-4 lg:block" />
-                    <ArrowDown className="size-4 lg:hidden" />
+                    <IconArrowRight className="hidden size-4 lg:block" />
+                    <IconArrowDown className="size-4 lg:hidden" />
                   </li>
                 ) : null}
                 <li
@@ -159,7 +162,7 @@ export function DataSourcesScreen() {
                     {integracao.detalhe}
                   </span>
                 </span>
-                <ChevronRight
+                <IconChevronRight
                   aria-hidden
                   className="size-4 shrink-0 text-muted-foreground"
                 />
@@ -209,11 +212,11 @@ const CONEXAO: Record<IntegracaoId, { nome: string }> = {
 
 const ESTADO: Record<
   IntegracaoEstado,
-  { rotulo: string; icone: LucideIcon; tom: EstadoDeCor }
+  { rotulo: string; icone: TablerIcon; tom: EstadoDeCor }
 > = {
-  ok: { rotulo: 'Conectado', icone: CircleCheck, tom: 'combina' },
-  atencao: { rotulo: 'Atenção', icone: CircleAlert, tom: 'atencao' },
-  configurando: { rotulo: 'Em configuração', icone: Clock, tom: 'neutro' }
+  ok: { rotulo: 'Conectado', icone: IconCircleCheck, tom: 'combina' },
+  atencao: { rotulo: 'Atenção', icone: IconAlertCircle, tom: 'atencao' },
+  configurando: { rotulo: 'Em configuração', icone: IconClock, tom: 'neutro' }
 };
 
 function EstadoBadge({ estado }: { estado: IntegracaoEstado }) {
@@ -283,7 +286,10 @@ function DetalheEmpregare() {
 
   return (
     <>
-      <Card className="shadow-xs">
+      <Card
+        data-tour="integracoes-campos"
+        className="shadow-xs"
+      >
         <CardHeader>
           <CardTitle className="text-base font-semibold">Empregare</CardTitle>
           <CardDescription>
@@ -303,7 +309,7 @@ function DetalheEmpregare() {
                   className="flex items-start gap-2 text-sm"
                 >
                   {item.entra ? (
-                    <Check
+                    <IconCheck
                       className={cn(
                         'mt-0.5 size-4 shrink-0',
                         TEXTO_DE_ESTADO.combina
@@ -311,7 +317,7 @@ function DetalheEmpregare() {
                       aria-label="Entra"
                     />
                   ) : (
-                    <X
+                    <IconX
                       className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                       aria-label="Fica de fora"
                     />
@@ -585,35 +591,35 @@ const PASSOS_WHATSAPP: {
   }
 ];
 
-const ICONE_DO_PASSO: Record<EstadoPasso, { icone: LucideIcon; cor: string }> =
+const ICONE_DO_PASSO: Record<EstadoPasso, { icone: TablerIcon; cor: string }> =
   {
-    feito: { icone: CircleCheck, cor: TEXTO_DE_ESTADO.combina },
-    andamento: { icone: Clock, cor: TEXTO_DE_ESTADO.atencao },
-    pendente: { icone: CircleDashed, cor: TEXTO_DE_ESTADO.neutro }
+    feito: { icone: IconCircleCheck, cor: TEXTO_DE_ESTADO.combina },
+    andamento: { icone: IconClock, cor: TEXTO_DE_ESTADO.atencao },
+    pendente: { icone: IconCircleDashed, cor: TEXTO_DE_ESTADO.neutro }
   };
 
 const REGRAS_WHATSAPP: {
   regra: string;
   estado: string;
-  icone: LucideIcon;
+  icone: TablerIcon;
   tom: EstadoDeCor;
 }[] = [
   {
     regra: 'Enviar só para quem autorizou',
     estado: 'Sempre ligado',
-    icone: Lock,
+    icone: IconLock,
     tom: 'combina'
   },
   {
     regra: 'Se não entregar, tentar por e-mail',
     estado: 'Ligado',
-    icone: Check,
+    icone: IconCheck,
     tom: 'combina'
   },
   {
     regra: 'Aceitar resposta em áudio',
     estado: 'Próxima fase',
-    icone: Clock,
+    icone: IconClock,
     tom: 'neutro'
   }
 ];

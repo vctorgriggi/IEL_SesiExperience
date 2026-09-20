@@ -28,7 +28,13 @@ import {
   type FitReadingEntry
 } from '@/features/iel-demo/state/selectors';
 import type { Application, Job, Talent } from '@/features/iel-demo/types';
-import { Check, CircleAlert, CircleDashed, Lightbulb, X } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconBulb,
+  IconCheck,
+  IconCircleDashed,
+  IconX
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -193,12 +199,12 @@ const TOM_DO_PONTO: Record<EstadoDeLeitura, EstadoDeCor> = {
 function EstadoDoPonto({ estado }: { estado: EstadoDeLeitura }) {
   const Icone =
     estado === 'combina'
-      ? Check
+      ? IconCheck
       : estado === 'difere'
-        ? X
+        ? IconX
         : estado === 'faltando'
-          ? CircleAlert
-          : CircleDashed;
+          ? IconAlertCircle
+          : IconCircleDashed;
 
   return (
     <Badge
@@ -290,9 +296,9 @@ export function FitCards({
                 className={BADGE_DE_ESTADO[corDaAderencia(percentual)]}
               >
                 {percentual >= ADHERENCE_THRESHOLD ? (
-                  <Check aria-hidden="true" />
+                  <IconCheck aria-hidden="true" />
                 ) : (
-                  <X aria-hidden="true" />
+                  <IconX aria-hidden="true" />
                 )}
                 {percentual >= ADHERENCE_THRESHOLD ? 'acima' : 'abaixo'} de{' '}
                 {ADHERENCE_THRESHOLD}%
@@ -690,7 +696,7 @@ export function TalentFitView({
 
       <Card className="bg-muted/40 shadow-none">
         <CardContent className="flex items-start gap-3">
-          <Lightbulb className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <IconBulb className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium">{COPY.reading.label}</span>
             <p className="text-[13px] leading-relaxed text-muted-foreground">

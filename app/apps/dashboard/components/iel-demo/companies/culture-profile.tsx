@@ -34,12 +34,12 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
-  AlertCircle,
-  ChevronDown,
-  CircleCheck,
-  CircleDashed,
-  X
-} from 'lucide-react';
+  IconAlertCircle,
+  IconChevronDown,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconX
+} from '@tabler/icons-react';
 
 import { toast } from '@workspace/ui';
 import { cn } from '@workspace/ui/lib/utils';
@@ -124,11 +124,11 @@ function readRowState(
   return 'faltando';
 }
 
-const ESTADO_ICON: Record<EstadoDeLeitura, typeof CircleCheck> = {
-  combina: CircleCheck,
-  difere: X,
-  faltando: AlertCircle,
-  'sem-resposta': CircleDashed
+const ESTADO_ICON: Record<EstadoDeLeitura, typeof IconCircleCheck> = {
+  combina: IconCircleCheck,
+  difere: IconX,
+  faltando: IconAlertCircle,
+  'sem-resposta': IconCircleDashed
 };
 
 /** Estado → tom: fundo tingido, texto e ícone no mesmo tom, sempre com a palavra. */
@@ -466,7 +466,7 @@ export function CompanyCultureTable({
                 'sugestões para confirmar'
               )}
             </span>
-            <ChevronDown
+            <IconChevronDown
               className={cn(
                 'size-4 shrink-0 text-muted-foreground transition-transform',
                 sugestoesAbertas && 'rotate-180'

@@ -4,12 +4,12 @@ import {
 } from '@/features/iel-demo/analysis/criterion-states';
 import type { CriterionState } from '@/features/iel-demo/types';
 import {
-  CircleAlert,
-  CircleCheck,
-  CircleHelp,
-  Info,
-  Minus
-} from 'lucide-react';
+  IconAlertCircle,
+  IconCircleCheck,
+  IconHelpCircle,
+  IconInfoCircle,
+  IconMinus
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui';
 
@@ -52,12 +52,12 @@ const toneDotClass: Record<Tone, string> = {
   desativado: 'border border-dashed border-muted-foreground/40 bg-transparent'
 };
 
-const toneIcon: Record<Tone, typeof CircleHelp> = {
-  positivo: CircleCheck,
-  atencao: CircleHelp,
-  conflito: CircleAlert,
-  neutro: Minus,
-  desativado: Info
+const toneIcon: Record<Tone, typeof IconHelpCircle> = {
+  positivo: IconCircleCheck,
+  atencao: IconHelpCircle,
+  conflito: IconAlertCircle,
+  neutro: IconMinus,
+  desativado: IconInfoCircle
 };
 
 /** Estado como selo: fundo tingido, ícone e rótulo no mesmo tom. */

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ALL_TALENTS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
-import { Search } from 'lucide-react';
+import { IconSearch } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Alert } from '@workspace/ui';
@@ -104,7 +104,7 @@ export function TalentsScreen() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative">
-          <Search
+          <IconSearch
             aria-hidden="true"
             className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
           />
@@ -128,7 +128,10 @@ export function TalentsScreen() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div
+        data-tour="talentos-lista"
+        className="overflow-x-auto rounded-lg border"
+      >
         <Table>
           <TableCaption className="sr-only">
             Pessoas da base:{' '}

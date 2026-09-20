@@ -6,7 +6,7 @@ import {
   getJob,
   getReportTokenForJob
 } from '@/features/iel-demo/state/selectors';
-import { Copy } from 'lucide-react';
+import { IconCopy } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -55,7 +55,7 @@ export function ReferralReportLink({ jobId }: { jobId: string }) {
           variant="outline"
           onClick={() => void copiar()}
         >
-          <Copy />
+          <IconCopy />
           Copiar link
         </Button>
         <Button

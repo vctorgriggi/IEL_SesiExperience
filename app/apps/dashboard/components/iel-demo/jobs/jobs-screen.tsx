@@ -17,7 +17,7 @@ import {
   REFERRAL_LIMIT,
   type JobListState
 } from '@/features/iel-demo/state/selectors';
-import { Search } from 'lucide-react';
+import { IconSearch } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -192,7 +192,7 @@ export function JobsScreen() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search
+            <IconSearch
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
             />
@@ -249,7 +249,10 @@ export function JobsScreen() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div
+        data-tour="vagas-lista"
+        className="overflow-x-auto rounded-lg border"
+      >
         <Table>
           <TableCaption className="sr-only">
             Vagas, aba {JOB_LIST_STATE_LABEL[estado]}:{' '}

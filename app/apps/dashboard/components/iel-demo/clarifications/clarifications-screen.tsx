@@ -14,11 +14,11 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Clarification } from '@/features/iel-demo/types';
 import {
-  CircleAlertIcon,
-  CircleCheckIcon,
-  MoreHorizontalIcon,
-  SearchIcon
-} from 'lucide-react';
+  IconAlertCircle,
+  IconCircleCheck,
+  IconDots,
+  IconSearch
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -62,9 +62,9 @@ function EstadoDaPergunta({ clarification }: { clarification: Clarification }) {
   const icone =
     clarification.state === 'respondida' ||
     clarification.state === 'incorporada' ? (
-      <CircleCheckIcon className="text-success" />
+      <IconCircleCheck className="text-success" />
     ) : clarification.state === 'solicitada' ? (
-      <CircleAlertIcon className="text-warning" />
+      <IconAlertCircle className="text-warning" />
     ) : null;
 
   return (
@@ -140,7 +140,7 @@ export function ClarificationsScreen() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <div className="relative w-full max-w-xs">
-            <SearchIcon
+            <IconSearch
               aria-hidden="true"
               className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             />
@@ -306,7 +306,7 @@ export function ClarificationsScreen() {
                                   size="icon-sm"
                                   aria-label="Mais ações"
                                 >
-                                  <MoreHorizontalIcon />
+                                  <IconDots />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">

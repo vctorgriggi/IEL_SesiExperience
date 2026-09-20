@@ -10,7 +10,11 @@ import {
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getInviteByToken } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { CircleCheckIcon, LockIcon, TriangleAlertIcon } from 'lucide-react';
+import {
+  IconAlertTriangle,
+  IconCircleCheck,
+  IconLock
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -273,7 +277,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   ICONE_TINGIDO.combina
                 )}
               >
-                <CircleCheckIcon className="size-5" />
+                <IconCircleCheck className="size-5" />
               </span>
             }
           >
@@ -374,7 +378,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   ICONE_TINGIDO.combina
                 )}
               >
-                <LockIcon className="size-4" />
+                <IconLock className="size-4" />
               </span>
               <div className="flex flex-col gap-1">
                 <p className="text-[15px] leading-snug font-medium">
@@ -580,7 +584,7 @@ export function CultureInviteScreen({ token }: { token: string }) {
                   >
                     <CardContent className="flex flex-col gap-2.5">
                       <p className="flex items-start gap-2 text-[15px] leading-snug font-medium">
-                        <TriangleAlertIcon
+                        <IconAlertTriangle
                           aria-hidden="true"
                           className="mt-0.5 size-4 shrink-0"
                         />

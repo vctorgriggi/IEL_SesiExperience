@@ -2,11 +2,11 @@
 
 import { useId, useState } from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react';
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight
+} from '@tabler/icons-react';
 
 import { Button } from '@workspace/ui/shadcn/button';
 import { Label } from '@workspace/ui/shadcn/label';
@@ -127,7 +127,7 @@ export function RodapeDaTabela<T>({
             disabled={primeira}
           >
             <span className="sr-only">Primeira página</span>
-            <ChevronsLeft aria-hidden="true" />
+            <IconChevronsLeft aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -137,7 +137,7 @@ export function RodapeDaTabela<T>({
             disabled={primeira}
           >
             <span className="sr-only">Página anterior</span>
-            <ChevronLeft aria-hidden="true" />
+            <IconChevronLeft aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -147,7 +147,7 @@ export function RodapeDaTabela<T>({
             disabled={ultima}
           >
             <span className="sr-only">Próxima página</span>
-            <ChevronRight aria-hidden="true" />
+            <IconChevronRight aria-hidden="true" />
           </Button>
           <Button
             variant="outline"
@@ -157,7 +157,7 @@ export function RodapeDaTabela<T>({
             disabled={ultima}
           >
             <span className="sr-only">Última página</span>
-            <ChevronsRight aria-hidden="true" />
+            <IconChevronsRight aria-hidden="true" />
           </Button>
         </div>
       </div>

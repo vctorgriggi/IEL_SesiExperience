@@ -12,7 +12,12 @@ import {
   type Parcelas
 } from '@/features/iel-demo/analysis/custo-da-rotatividade';
 import { plural } from '@/features/iel-demo/format';
-import { ChevronDown, Copy, Info, RotateCcw } from 'lucide-react';
+import {
+  IconChevronDown,
+  IconCopy,
+  IconInfoCircle,
+  IconRotate2
+} from '@tabler/icons-react';
 
 import { toast } from '@workspace/ui';
 import { cn } from '@workspace/ui/lib/utils';
@@ -135,7 +140,7 @@ function Ajuda({ rotulo, texto }: { rotulo: string; texto: string }) {
             aria-label={`Sobre ${rotulo}`}
             className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring"
           >
-            <Info
+            <IconInfoCircle
               aria-hidden="true"
               className="size-3.5"
             />
@@ -302,7 +307,7 @@ export function CustoDaRotatividadeCard({
                 ICONE_TINGIDO.atencao
               )}
             >
-              <RotateCcw className="size-4" />
+              <IconRotate2 className="size-4" />
             </span>
             <div className="flex min-w-0 flex-col gap-1">
               <p className="text-sm text-muted-foreground">
@@ -424,7 +429,7 @@ export function CustoDaRotatividadeCard({
                   variant="outline"
                   size="sm"
                 >
-                  <ChevronDown
+                  <IconChevronDown
                     aria-hidden="true"
                     className={cn(
                       'transition-transform',
@@ -442,7 +447,7 @@ export function CustoDaRotatividadeCard({
                   size="sm"
                   onClick={restaurar}
                 >
-                  <RotateCcw aria-hidden="true" />
+                  <IconRotate2 aria-hidden="true" />
                   Voltar ao padrão
                 </Button>
               ) : null}
@@ -608,7 +613,7 @@ export function CustoDaRotatividadeCard({
               size="sm"
               onClick={copiar}
             >
-              <Copy aria-hidden="true" />
+              <IconCopy aria-hidden="true" />
               Copiar frase
             </Button>
           </div>
