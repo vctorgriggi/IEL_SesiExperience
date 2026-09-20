@@ -5,11 +5,17 @@
  * cima". Isto aqui é só a paleta: os tokens que o shadcn espera, preenchidos
  * com as cores do manual da Madvic (docs/marca/Madvic_Manual_de_Marca.pdf):
  *
- *   azul-noite #12182B  → foreground, primary, sidebar-primary
- *   marfim     #F4F1EA  → sidebar, muted, secondary, accent
- *   areia      #E9E5DB  → border, input, sidebar-accent
+ *   azul-noite #12182B  → foreground, primary e a barra inteira
+ *   marfim     #F4F1EA  → fundo da área de trabalho e texto sobre a barra
+ *   areia      #E9E5DB  → border, blocos discretos (muted, secondary, accent)
  *   ardósia    #5B6072  → muted-foreground (textos de apoio e legendas)
- *   laranja    #FF5A36  → `--brand-accent`, só como ponto de atenção
+ *   laranja    #FF5A36  → `--brand-accent`, ponto de atenção e o item em que
+ *                         você está, na barra
+ *
+ * A área de trabalho é marfim e o cartão é branco: o conteúdo sobe do fundo
+ * sem sombra nem gradiente, e a tela deixa de ser branco sobre branco. A
+ * barra é o azul da logo, com o laranja marcando onde você está — as duas
+ * cores da assinatura, na mesma proporção dela.
  *
  * Acessibilidade (WCAG 2.1 AA, medido em sRGB):
  *   ardósia sobre branco 6,3:1 · sobre marfim 5,6:1 · sobre areia 5,0:1 —
@@ -31,7 +37,7 @@
 
 body:has([data-iel-theme]),
 [data-iel-theme] {
-  --background: 0 0% 100%;
+  --background: 42 30% 93%;
   --foreground: 226 41% 12%;
   --card: 0 0% 100%;
   --card-foreground: 226 41% 12%;
@@ -39,11 +45,11 @@ body:has([data-iel-theme]),
   --popover-foreground: 226 41% 12%;
   --primary: 226 41% 12%;
   --primary-foreground: 42 31% 94%;
-  --secondary: 42 31% 94%;
+  --secondary: 43 24% 90%;
   --secondary-foreground: 226 41% 12%;
-  --muted: 42 31% 94%;
+  --muted: 43 24% 90%;
   --muted-foreground: 227 11% 40%;
-  --accent: 42 31% 94%;
+  --accent: 43 24% 90%;
   --accent-foreground: 226 41% 12%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
@@ -61,14 +67,14 @@ body:has([data-iel-theme]),
   --chart-4: 43 24% 89%;
   --chart-5: 42 31% 94%;
 
-  --sidebar: 42 31% 94%;
-  --sidebar-foreground: 226 41% 12%;
-  --sidebar-primary: 226 41% 12%;
-  --sidebar-primary-foreground: 42 31% 94%;
-  --sidebar-accent: 43 24% 89%;
-  --sidebar-accent-foreground: 226 41% 12%;
-  --sidebar-border: 43 24% 89%;
-  --sidebar-ring: 11 100% 45%;
+  --sidebar: 226 41% 12%;
+  --sidebar-foreground: 42 31% 94%;
+  --sidebar-primary: 11 100% 61%;
+  --sidebar-primary-foreground: 226 41% 12%;
+  --sidebar-accent: 226 30% 19%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 226 26% 23%;
+  --sidebar-ring: 11 100% 61%;
 
   /*
    * Estado. O kit do Arki aponta `--success`/`--warning`/`--info` para a
@@ -126,6 +132,39 @@ body:has([data-iel-theme]),
 }
 
 /*
+ * Dentro da barra, o tema é o negativo da marca.
+ *
+ * A barra é azul-noite e tudo o que mora nela — texto de apoio, contorno de
+ * botão, borda, campo de busca — continua pedindo os mesmos tokens do kit.
+ * Em vez de caçar classe por classe em cada componente, os tokens são
+ * relidos aqui dentro: um componente de fábrica colocado na barra acerta a
+ * cor sozinho, que é a diretriz de "componente sem estilo próprio por cima".
+ *
+ * Contraste sobre o azul-noite #12182B: marfim 14,8:1 e o azul-claro de
+ * apoio 7,4:1 (texto passa folgado em AA); a borda e o contorno de campo
+ * ficam acima de 3:1, que é o que a 1.4.11 pede para controle.
+ */
+body:has([data-iel-theme]) [data-sidebar='sidebar'],
+[data-iel-theme] [data-sidebar='sidebar'] {
+  --background: 226 41% 12%;
+  --foreground: 42 31% 94%;
+  --card: 226 30% 19%;
+  --card-foreground: 42 31% 94%;
+  --popover: 226 41% 12%;
+  --popover-foreground: 42 31% 94%;
+  --muted: 226 30% 19%;
+  --muted-foreground: 225 22% 76%;
+  --accent: 226 30% 19%;
+  --accent-foreground: 0 0% 100%;
+  --secondary: 226 30% 19%;
+  --secondary-foreground: 42 31% 94%;
+  --border: 226 26% 23%;
+  --border-strong: 226 24% 32%;
+  --input: 225 20% 48%;
+  --ring: 11 100% 61%;
+}
+
+/*
  * Corpo em 14px e a família do manual (Red Hat Display). O manual pede
  * interface em Medium (500) e títulos em Bold (700); o peso do corpo entra
  * aqui e os títulos continuam com as classes `font-semibold`/`font-bold`
@@ -138,4 +177,37 @@ body:has([data-iel-theme]) {
   font-weight: 500;
   background-color: hsl(var(--background));
   background-image: none;
+}
+
+/*
+ * VLibras no celular.
+ *
+ * O plugin desenha o próprio botão num shadow DOM, com `position: fixed` no
+ * meio da lateral direita (`top: calc(50vh - 20px)`). Em 390px isso cai em
+ * cima do texto — na promessa de anonimato do colaborador, nas alternativas
+ * da escala, nos passos do "o que acontece agora". O CSS de dentro do shadow
+ * não se alcança daqui; o que se alcança é o elemento que o hospeda.
+ *
+ * O truque é de containing block: um ancestral com `transform` passa a ser a
+ * referência de qualquer descendente `fixed`, inclusive através do shadow.
+ * O hospedeiro vira uma caixa de altura zero, fixa a `50vh - 32px` do topo;
+ * o botão, a `50vh - 20px` do topo dela, aterrissa a 52px do pé da tela — o
+ * canto de baixo, como um botão flutuante. Altura zero para a caixa não
+ * roubar toque de nada; o botão continua clicável pela própria área. As
+ * telas por link reservam o rodapé (`pb-24`) para ele não cobrir o último
+ * botão. No desktop nada muda: lá o meio da lateral não cobre conteúdo.
+ */
+@media (max-width: 640px) {
+  body:has([data-iel-theme]) #vlibras-access-wrapper {
+    position: fixed;
+    top: calc(50vh - 32px);
+    right: 2px;
+    bottom: auto;
+    left: auto;
+    width: 40px;
+    height: 0;
+    overflow: visible;
+    transform: translateZ(0);
+    z-index: 40;
+  }
 }

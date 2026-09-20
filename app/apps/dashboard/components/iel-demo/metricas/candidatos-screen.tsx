@@ -21,6 +21,7 @@ import {
   FileLock2,
   MailOpen,
   ShieldCheck,
+  Smartphone,
   Timer,
   UserCheck
 } from 'lucide-react';
@@ -77,7 +78,33 @@ export function CandidatosScreen() {
   const [canal, setCanal] = useState<string>(TODOS);
   const [aba, setAba] = useState<AbaDoFunil>('total');
 
-  usePageHeader({ breadcrumb: [{ label: 'Questionários' }] });
+  /*
+   * A tela fala da experiência de quem responde, e quem opera nunca a viu.
+   * O atalho abre a página de uma candidatura de verdade, exatamente como
+   * ela chega no celular do candidato — é a checagem que a analista faz
+   * antes de mandar o link, e é a cena mais convincente da demonstração.
+   */
+  const candidaturaDeExemplo = state.applications[0]?.id ?? null;
+
+  usePageHeader({
+    breadcrumb: [{ label: 'Questionários' }],
+    actions: candidaturaDeExemplo ? (
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+      >
+        <Link
+          href={
+            routes.dashboard.iel.applications.byId(candidaturaDeExemplo).index
+          }
+        >
+          <Smartphone aria-hidden="true" />
+          Ver como o candidato vê
+        </Link>
+      </Button>
+    ) : undefined
+  });
 
   const vagas = useMemo(
     () => getVisibleJobs(state).filter((job) => job.stage !== 'encerrada'),

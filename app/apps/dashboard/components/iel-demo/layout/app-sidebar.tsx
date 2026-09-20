@@ -23,14 +23,10 @@ import {
   Briefcase,
   Building2,
   ChartColumn,
-  ChartNoAxesColumnIncreasing,
-  ChevronsUpDown,
   ClipboardList,
   HelpCircle,
   Home,
-  ListOrdered,
   Plug,
-  ScatterChart,
   Search,
   Users,
   type LucideIcon
@@ -69,13 +65,9 @@ import {
 } from '@workspace/ui/shadcn/sidebar';
 
 import { normalizarBusca } from '../jobs/busca';
-import {
-  BADGE_DE_ESTADO,
-  ITEM_ATIVO,
-  PREENCHIMENTO_DE_ESTADO
-} from '../metricas/cores';
+import { ITEM_ATIVO, PREENCHIMENTO_DE_ESTADO } from '../metricas/cores';
 import { montarPendencias } from '../overview/pendencias';
-import { ComoFuncionaDialog, RoteiroDialog } from './demo-dialogs';
+import { ComoFuncionaDialog } from './demo-dialogs';
 import { NavUser } from './nav-user';
 import { RECENTES_NA_BARRA, useRecentJobs } from './use-recent-jobs';
 
@@ -96,6 +88,18 @@ type Secao = { titulo: string; itens: ItemPrincipal[] };
 const ROTULO_DA_SECAO =
   'text-xs font-medium text-muted-foreground [@media(max-height:860px)]:h-6';
 const SECAO = '[@media(max-height:860px)]:py-1';
+
+/**
+ * O contador de pendências do Início, sobre o azul-noite da barra: pastilha
+ * laranja cheia com o texto em azul, e não o inverso — laranja com texto
+ * branco não passa contraste em texto pequeno.
+ *
+ * O `!` é necessário porque o kit repinta o selo de branco quando o item
+ * está ativo (`peer-data-[active=true]`), e justamente no Início, que é onde
+ * a analista mais fica, o número sumiria.
+ */
+const SELO_DE_HOJE =
+  'bg-[hsl(var(--brand-accent))] text-[hsl(var(--sidebar))]!';
 
 /** Linha fina entre as seções, só com a barra recolhida (sem os títulos). */
 function SeparadorRecolhido({ className }: { className?: string }) {
@@ -136,7 +140,7 @@ function ItemDaBarra({
           <SidebarMenuBadge
             className={cn(
               'tabular-nums',
-              item.label === 'Início' && BADGE_DE_ESTADO.atencao
+              item.label === 'Início' && SELO_DE_HOJE
             )}
           >
             {item.badge}
@@ -165,7 +169,6 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
 
   const [busca, setBusca] = useState(false);
   const [comoFunciona, setComoFunciona] = useState(false);
-  const [roteiro, setRoteiro] = useState(false);
 
   // ⌘K / Ctrl+K em qualquer tela da casca.
   useEffect(() => {
@@ -251,24 +254,27 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               pathname.startsWith(iel.jobs.index),
               emSelecao > 0 ? emSelecao : null
             ),
+            /*
+             * "Análise de aderência" saiu daqui em 19/09: a leitura por vaga
+             * repetia a mesa de seleção, e a mesma conta virou aba da pessoa,
+             * no perfil dela. O menu não guarda mais um destino para ela.
+             */
             item(
               iel.companies.index,
               'Empresas',
               Building2,
               pathname.startsWith(iel.companies.index)
-            ),
-            item(
-              iel.adherence.index,
-              'Análise de aderência',
-              ChartNoAxesColumnIncreasing,
-              pathname.startsWith(iel.adherence.index)
             )
           ]
         },
         /*
-         * O banco de talentos, os questionários e o mapa reúnem a base de
-         * pessoas do IEL, então ficam fora do menu do gestor: seriam porta
-         * para o recorte de outras empresas (PRODUTO.md §5).
+         * O banco de talentos e os questionários reúnem a base de pessoas do
+         * IEL, então ficam fora do menu do gestor: seriam porta para o
+         * recorte de outras empresas (PRODUTO.md §5).
+         *
+         * "Mapa de cultura" saiu daqui na mesma data: ele é a leitura de
+         * encaixe de *uma* cultura contra a base, e passou a ser aba da
+         * empresa, que é de onde a cultura vem.
          */
         {
           titulo: 'Talentos',
@@ -284,12 +290,6 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               'Questionários',
               ClipboardList,
               pathname.startsWith(iel.candidates)
-            ),
-            item(
-              iel.cultureMap,
-              'Mapa de cultura',
-              ScatterChart,
-              pathname.startsWith(iel.cultureMap)
             )
           ]
         },
@@ -305,39 +305,30 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
       collapsible="icon"
     >
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            {/*
-             * Recolhida, a barra encolhe o botão para 32px de largura mas
-             * mantém a altura de `size="lg"`; sem tirar o respiro e sem
-             * travar a proporção, o símbolo esticava e a ligadura virava um
-             * oval. A imagem carrega a própria medida — 32 por 32, quadrada —
-             * e não herda nada do botão.
-             */}
-            <SidebarMenuButton
-              size="lg"
-              asChild
-              className="group-data-[collapsible=icon]:[padding:0]!"
-            >
-              <Link href={iel.index}>
-                <Image
-                  src="/marca/simbolo.png"
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="aspect-square size-8 min-w-8 shrink-0 rounded-lg object-cover"
-                />
-                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-medium">Mind RH</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    IEL · Centro de Empregos
-                  </span>
-                </div>
-                <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {/*
+         * A marca, e só. Era um botão com a seta de dois sentidos do block,
+         * que no shadcn abre o seletor de conta — aqui não abria nada, e o
+         * hover prometia um menu inexistente. Início já está no primeiro
+         * item da barra, logo abaixo.
+         *
+         * Recolhida, a barra tem 32px de largura: o símbolo carrega a
+         * própria medida, quadrada, para a ligadura não virar um oval.
+         */}
+        <div className="flex h-12 items-center gap-2 px-1 group-data-[collapsible=icon]:px-0">
+          <Image
+            src="/marca/simbolo.png"
+            alt=""
+            width={32}
+            height={32}
+            className="aspect-square size-8 min-w-8 shrink-0 rounded-lg object-cover"
+          />
+          <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="truncate font-medium">Mind RH</span>
+            <span className="truncate text-xs text-muted-foreground">
+              IEL · Centro de Empregos
+            </span>
+          </div>
+        </div>
         {/*
          * A busca é o atalho principal: com milhares de vagas, empresas e
          * pessoas, chegar pelo nome é mais rápido que navegar. A importação
@@ -424,15 +415,6 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
                   <span>Como funciona</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setRoteiro(true)}
-                  tooltip="Roteiro da demo"
-                >
-                  <ListOrdered />
-                  <span>Roteiro da demo</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         </div>
@@ -449,10 +431,6 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
       <ComoFuncionaDialog
         open={comoFunciona}
         onOpenChange={setComoFunciona}
-      />
-      <RoteiroDialog
-        open={roteiro}
-        onOpenChange={setRoteiro}
       />
     </Sidebar>
   );

@@ -63,8 +63,9 @@ logado.
 
 - **Uma senha de equipe não é autenticação.** Não identifica quem entrou e não serve para produção;
   é a trava mínima de uma demonstração publicada.
-- **R9 e R10 continuam valendo.** Nenhum papel de fora ganhou login: empresa, colaborador e
-  candidato seguem entrando por link, sem cadastro.
+- **Nenhum papel de fora ganhou login.** Empresa, colaborador e candidato seguem entrando por
+  link, sem cadastro — o "login e área logada para a empresa" é Won't do MoSCoW, por risco de não
+  adesão, e o candidato operacional trava em plataforma (00:08:01, 00:23:28).
 - **Comparação simples de senha.** Em produção isso é `timingSafeEqual` mais limite de tentativas.
 
 ## Ligações

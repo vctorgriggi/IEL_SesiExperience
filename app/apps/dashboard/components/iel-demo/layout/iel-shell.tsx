@@ -54,8 +54,14 @@ const PREFIXOS_POR_LINK: {
   /** Falso quando a própria página já se apresenta. */
   cabecalho: boolean;
 }[] = [
+  /*
+   * A candidatura inteira numa coluna estreita: "Minha candidatura", o
+   * questionário e a conversa. O prefixo para antes do identificador, então
+   * as três telas herdam a mesma medida — são a mesma pessoa, no mesmo
+   * celular, no mesmo link.
+   */
   {
-    base: prefixo(routes.dashboard.iel.applications.byId(SENTINELA).fit),
+    base: prefixo(routes.dashboard.iel.applications.byId(SENTINELA).index),
     largura: 'max-w-md',
     cabecalho: true
   },
@@ -180,7 +186,9 @@ function LinkShell({
           </span>
         </header>
       ) : null}
-      <main className={cn('mx-auto w-full flex-1 px-4 pb-10', largura)}>
+      <main
+        className={cn('mx-auto w-full flex-1 px-4 pb-24 sm:pb-10', largura)}
+      >
         {children}
       </main>
     </div>
