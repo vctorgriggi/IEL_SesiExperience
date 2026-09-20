@@ -22,10 +22,12 @@ import {
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
+  getApplicationsByJob,
   getCompany,
   getCompanyCultureAnswers,
   getCultureFit,
   getCultureMapPoints,
+  getJobsByCompany,
   type CultureMapPoint
 } from '@/features/iel-demo/state/selectors';
 import {
@@ -47,6 +49,7 @@ import {
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
+import { Checkbox } from '@workspace/ui/shadcn/checkbox';
 import {
   Command,
   CommandEmpty,
@@ -65,6 +68,10 @@ import {
 } from '@workspace/ui/shadcn/sheet';
 
 import { normalizarBusca } from '../jobs/busca';
+import {
+  EncaminharPessoa,
+  EncaminharSelecionados
+} from '../mapa-cultural/encaminhar-pessoa';
 import { FaixaBadge } from '../mapa-cultural/faixa-badge';
 import {
   COR_DA_EMPRESA,
@@ -349,6 +356,7 @@ export function AcoesRapidas() {
           type="button"
           size="icon-lg"
           className="relative size-12 rounded-full shadow-lg"
+          data-tour="acoes-rapidas"
           onClick={() => {
             if (eGestor) {
               setPainel('mind');
@@ -585,19 +593,24 @@ function RankingDeEncaixes({
   encaixes,
   vazio,
   antes,
-  rodape
+  rodape,
+  selecionados,
+  aoAlternar
 }: {
   encaixes: Encaixe[];
   vazio: string | null;
   /** O que vem antes da lista, dentro da rolagem — o mapa, quando há um. */
   antes?: ReactNode;
   rodape: ReactNode;
+  /** Quem está marcado para envio em lote; ausente, a lista não seleciona. */
+  selecionados?: Set<string>;
+  aoAlternar?: (id: string) => void;
 }) {
   // Quem é o alvo já está escrito no seletor, logo acima da rolagem: repetir
   // o nome aqui seria o mesmo dado duas vezes na mesma dobra.
   return (
     <>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         {/* O mapa vem antes da lista e fica mesmo quando a lista não tem o
             que mostrar: ele é a leitura, a lista é o recorte dela. */}
         {antes}
@@ -609,13 +622,24 @@ function RankingDeEncaixes({
           <ul className="flex flex-col divide-y">
             {encaixes.map(({ id, nome, detalhe, aderencia, temBase }) => {
               const total = aderencia.total;
+              const marcado = selecionados?.has(id) ?? false;
               return (
                 <li
                   key={id}
                   className="flex flex-col gap-2 p-4"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 flex-col gap-0.5">
+                    {/* A caixa vem antes do nome: é o que se toca para
+                        montar a remessa sem abrir pessoa por pessoa. */}
+                    {aoAlternar ? (
+                      <Checkbox
+                        checked={marcado}
+                        onCheckedChange={() => aoAlternar(id)}
+                        aria-label={`Selecionar ${nome} para envio`}
+                        className="mt-0.5"
+                      />
+                    ) : null}
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-sm font-medium">
                         {nome}
                       </span>
@@ -882,7 +906,7 @@ function AnaliseDoPar({
 
   return (
     <>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         {/* `falta` já cobre os três casos sem leitura; o `!leitura` aqui é
             para o compilador estreitar o tipo dentro do outro ramo. */}
         {falta || !leitura || !pontoDaPessoa || !pontoDaEmpresa ? (
@@ -1027,7 +1051,17 @@ function AnaliseDoPar({
         )}
       </ScrollArea>
 
-      <div className="border-t p-3">
+      {/*
+       * O rodapé fecha a leitura com o que se faz com ela: marcar a pessoa
+       * para a vaga da empresa comparada, e só então abrir o perfil. É a
+       * ordem do trabalho — a analista decide aqui e confere depois.
+       */}
+      <div className="flex flex-col gap-2 border-t p-3">
+        <EncaminharPessoa
+          talentId={pessoa.id}
+          companyId={empresa.id}
+          aoSair={aoSair}
+        />
         <Button
           asChild
           variant="outline"
@@ -1100,8 +1134,8 @@ function MapaSheet({
         <SheetHeader className="border-b">
           <SheetTitle className="text-base">Mapa de cultura</SheetTitle>
           <SheetDescription className="text-xs">
-            Quem da base se encaixa na cultura da empresa. Clique no nome para
-            trocar.
+            Quem se candidatou às vagas abertas da empresa, pela aderência à
+            cultura dela. Marque quem vai e envie em lote.
           </SheetDescription>
         </SheetHeader>
 
@@ -1143,9 +1177,14 @@ function EncaixesDaEmpresa({
 }) {
   const { state } = useIelDemo();
   const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [paraEnviar, setParaEnviar] = useState<Set<string>>(new Set());
 
-  // Trocar de empresa não carrega a pessoa espetada na anterior.
-  useEffect(() => setSelecionado(null), [alvo.id]);
+  // Trocar de empresa não carrega a pessoa espetada na anterior, nem a
+  // seleção montada para as vagas da outra.
+  useEffect(() => {
+    setSelecionado(null);
+    setParaEnviar(new Set());
+  }, [alvo.id]);
 
   /*
    * A empresa é montada aqui, como em `MapaDaEmpresa`, e não lida de
@@ -1175,10 +1214,27 @@ function EncaixesDaEmpresa({
     };
   }, [state, alvo.id]);
 
-  const pessoas = useMemo(
-    () => getCultureMapPoints(state, 'talentos'),
-    [state]
-  );
+  /**
+   * Só quem se candidatou a uma vaga aberta desta empresa.
+   *
+   * O painel abria a base inteira — 268 pontos numa nuvem em que ninguém
+   * achava ninguém, e sobre a qual não havia ação possível: encaminhar é
+   * sempre para uma vaga. Com o recorte, cada ponto é um currículo que pode
+   * ir hoje. Quem combina mas não se candidatou continua no mapa da empresa,
+   * que é onde se procura gente para convidar.
+   */
+  const pessoas = useMemo(() => {
+    const inscritos = new Set<string>();
+    for (const vaga of getJobsByCompany(alvo.id)) {
+      if (vaga.stage === 'encerrada') continue;
+      for (const candidatura of getApplicationsByJob(state, vaga.id)) {
+        inscritos.add(candidatura.talentId);
+      }
+    }
+    return getCultureMapPoints(state, 'talentos').filter((pessoa) =>
+      inscritos.has(pessoa.id)
+    );
+  }, [state, alvo.id]);
 
   /** A aderência de cada pessoa a esta empresa — a mesma conta do mapa. */
   const aderenciaPorPessoa = useMemo(() => {
@@ -1271,27 +1327,56 @@ function EncaixesDaEmpresa({
           </div>
         ) : null
       }
+      selecionados={paraEnviar}
+      aoAlternar={(id) =>
+        setParaEnviar((atual) => {
+          const proxima = new Set(atual);
+          if (proxima.has(id)) proxima.delete(id);
+          else proxima.add(id);
+          return proxima;
+        })
+      }
       vazio={
         !pontoDaEmpresa
           ? `A ${alvo.nome} ainda não fechou o perfil de cultura. Sem ele não há contra o que medir as pessoas.`
           : encaixes.length === 0
-            ? 'Ninguém da base respondeu o questionário de cultura ainda.'
+            ? 'Ninguém candidato às vagas abertas da empresa respondeu o questionário de cultura ainda.'
             : null
       }
       rodape={
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="w-full"
-        >
-          <Link
-            href={routes.dashboard.iel.companies.cultureMapById(alvo.id)}
-            onClick={aoSair}
+        <div className="flex flex-col gap-2">
+          {/* Marcadas na lista, vão juntas: é a remessa se montando sem sair
+              da leitura que a decidiu. */}
+          {paraEnviar.size > 0 ? (
+            <EncaminharSelecionados
+              talentIds={[...paraEnviar]}
+              companyId={alvo.id}
+              aoConcluir={() => setParaEnviar(new Set())}
+            />
+          ) : null}
+          {/* Clicar num ponto do plano espeta a pessoa; é dela que o rodapé
+              passa a falar, sem tirar a analista do mapa. */}
+          {selecionado ? (
+            <EncaminharPessoa
+              talentId={selecionado}
+              companyId={alvo.id}
+              aoSair={aoSair}
+            />
+          ) : null}
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="w-full"
           >
-            Abrir o mapa da {alvo.nome}
-          </Link>
-        </Button>
+            <Link
+              href={routes.dashboard.iel.companies.cultureMapById(alvo.id)}
+              onClick={aoSair}
+            >
+              Abrir o mapa da {alvo.nome}
+            </Link>
+          </Button>
+        </div>
       }
     />
   );
@@ -1387,7 +1472,7 @@ function FilaSheet({
           </div>
         ) : null}
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           {visiveis.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">
               {pendencias.length === 0

@@ -30,6 +30,7 @@ import { routes } from '@workspace/routes';
 import { Button } from '@workspace/ui';
 import { Badge } from '@workspace/ui/shadcn/badge';
 
+import { EncaminharPessoa } from './encaminhar-pessoa';
 import { FaixaBadge } from './faixa-badge';
 import { COR_DA_EMPRESA, COR_DO_TALENTO } from './plano-cultural';
 
@@ -277,6 +278,17 @@ export function DetalhePontoCultural({
               </div>
             ) : null}
           </div>
+
+          {/* O mapa responde quem combina; o rodapé deixa agir sobre isso
+              sem procurar a pessoa na tabela da vaga. */}
+          {isTalento && empresaReferencia ? (
+            <div className="mt-3">
+              <EncaminharPessoa
+                talentId={ponto.id}
+                companyId={empresaReferencia.id}
+              />
+            </div>
+          ) : null}
 
           <div className="mt-3 flex items-center justify-between pt-1">
             <Link
