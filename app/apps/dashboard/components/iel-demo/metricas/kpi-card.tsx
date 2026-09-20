@@ -134,6 +134,20 @@ const ICONE_GRADIENTE: Record<TomDeCor, string> = {
     'bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-sm shadow-slate-500/25 ring-1 ring-white/20'
 };
 
+/**
+ * A barra do tom: some, e no hover cresce da esquerda para a direita no topo
+ * do cartão. É a mesma família de cor do quadradinho do ícone, então o cartão
+ * inteiro fica falando uma cor só.
+ */
+const BARRA_DO_TOM: Record<TomDeCor, string> = {
+  empresa: 'bg-gradient-to-r from-blue-600 to-indigo-700',
+  pessoa: 'bg-gradient-to-r from-teal-600 to-emerald-700',
+  combina: 'bg-gradient-to-r from-emerald-600 to-green-700',
+  atencao: 'bg-gradient-to-r from-amber-500 to-orange-600',
+  difere: 'bg-gradient-to-r from-rose-600 to-red-700',
+  neutro: 'bg-gradient-to-r from-slate-500 to-slate-700'
+};
+
 const BADGE_VARIAÇÃO: Record<EstadoDeCor, string> = {
   combina:
     'bg-emerald-500/10 text-emerald-700 ring-emerald-600/25 dark:bg-emerald-500/20 dark:text-emerald-300 dark:ring-emerald-500/30',
@@ -169,11 +183,20 @@ export function CartaoDeIndicador({
   return (
     <Card
       className={cn(
-        '@container/card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/75 bg-card/95 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/25',
+        '@container/card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/75 bg-card/95 p-3 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/25',
         className
       )}
       {...props}
     >
+      {/* A barra do tom, no topo: cresce da esquerda no hover e no foco */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-within:scale-x-100 motion-reduce:transition-none',
+          BARRA_DO_TOM[tom]
+        )}
+      />
+
       {/* Ambient background glow suave no canto superior direito */}
       <div
         aria-hidden="true"
@@ -185,17 +208,17 @@ export function CartaoDeIndicador({
 
       {leitura ? <p className="sr-only">{leitura}</p> : null}
 
-      <div className="relative flex flex-1 flex-col gap-3">
-        <div className="flex items-center gap-3">
+      <div className="relative flex flex-1 flex-col gap-1.5">
+        <div className="flex items-center gap-2">
           {Icone ? (
             <span
               aria-hidden="true"
               className={cn(
-                'flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105',
+                'flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105',
                 ICONE_GRADIENTE[tom]
               )}
             >
-              <Icone className="size-5" />
+              <Icone className="size-3.5" />
             </span>
           ) : null}
           <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5">
@@ -214,8 +237,8 @@ export function CartaoDeIndicador({
           </div>
         </div>
 
-        <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-          <div className="min-w-0 text-3xl font-extrabold tracking-tight tabular-nums text-foreground sm:text-4xl">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <div className="min-w-0 text-2xl font-extrabold leading-none tracking-tight tabular-nums text-foreground">
             {valor}
           </div>
           {selo ? <div className="shrink-0">{selo}</div> : null}
@@ -227,7 +250,7 @@ export function CartaoDeIndicador({
       {rodape ? (
         <div
           aria-hidden={oculto}
-          className="relative mt-4 border-t border-border/40 pt-3 text-xs text-muted-foreground"
+          className="relative mt-2 text-[11px] leading-tight text-muted-foreground"
         >
           {rodape}
         </div>
@@ -372,7 +395,7 @@ export function KpiCard({
       }
       rodape={
         rodape ?? (
-          <div className="flex w-full items-center justify-between gap-2 text-xs">
+          <div className="flex w-full items-center justify-between gap-2">
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 font-medium',
@@ -387,14 +410,14 @@ export function KpiCard({
             >
               <Icone
                 aria-hidden="true"
-                className="size-3.5 shrink-0 stroke-[2]"
+                className="size-3 shrink-0 stroke-[2]"
               />
               <span className="truncate">
                 {curto && kpi.variacao === null ? curto : texto}
               </span>
             </span>
             {kpi.variacao !== null ? (
-              <span className="shrink-0 text-[11px] font-normal text-muted-foreground/60">
+              <span className="shrink-0 font-normal text-muted-foreground/60">
                 vs. anterior
               </span>
             ) : null}
