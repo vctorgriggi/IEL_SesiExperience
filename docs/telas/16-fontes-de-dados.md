@@ -1,6 +1,6 @@
 # Fontes de dados
 
-**Rota:** `/iel/fontes-de-dados`
+**Rota:** `/fontes-de-dados`
 **Componente:** `apps/dashboard/components/iel-demo/sources/data-sources-screen.tsx`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-19

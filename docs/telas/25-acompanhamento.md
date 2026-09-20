@@ -1,6 +1,6 @@
 # Acompanhamento
 
-**Rota:** `/iel/acompanhamento`
+**Rota:** `/acompanhamento`
 **Componente:** `AcompanhamentoScreen`, em
 `apps/dashboard/components/iel-demo/acompanhamento/acompanhamento-screen.tsx` (gaveta em
 `detalhe-da-pessoa.tsx`, leitura em `leitura.ts`)

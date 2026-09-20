@@ -2,7 +2,7 @@
 
 > Fit cultural na triagem do Centro de Empregos da Indústria, sem custo por candidato: a empresa vira um perfil respondido pela própria equipe, o candidato responde ao se candidatar, e a analista do IEL vê requisitos e fit lado a lado para escolher os 5 currículos.
 
-Protótipo navegável construído no hackathon do **Desafio IEL** (19–20/09/2026) pela equipe **Madvic**. Vive dentro do starter kit Arki, em `app/apps/dashboard`, sob a rota `/iel`. É uma implementação funcional de interface, com base fictícia determinística — não um deck, não um recorte de telas.
+Protótipo navegável construído no hackathon do **Desafio IEL** (19–20/09/2026) pela equipe **Madvic**. Vive dentro do starter kit Arki, em `app/apps/dashboard`, na raiz do app (`/`; os links antigos em `/iel/**` redirecionam). É uma implementação funcional de interface, com base fictícia determinística — não um deck, não um recorte de telas.
 
 ## Sumário
 
@@ -52,24 +52,24 @@ Só a analista tem app. Empresa e candidato recebem links: uma tarefa por link, 
 
 ## As telas
 
-Analista (`/iel`, com sidebar):
+Analista (`/`, com sidebar):
 
 | Rota | Tela | Pergunta que responde |
 | --- | --- | --- |
-| `/iel` | Hoje | O que precisa de mim hoje? |
-| `/iel/vagas/[jobId]` | Vaga | Quem eu envio para esta vaga? — section cards, tabela de candidatos (Sugeridos · Todos · Resgate · Sem resposta), abas Como a empresa trabalha · Perguntas · Enviados · Requisitos · Histórico |
-| (Drawer sobre a vaga) e `/iel/talentos/[talentId]?vaga=` | Pessoa | Esta pessoa combina com esta empresa? — % com marca do 35%, os 5 pontos com empresa ■ e pessoa ● |
-| `/iel/empresas/[companyId]` | Empresa | Como se trabalha nesta empresa? — respostas N de M, os 5 pontos com gestão/equipe/média, colaboradores convidados, cobrar quem falta |
-| `/iel/vagas/[jobId]/importar` | Importar planilha | Entrou tudo certo? — três passos: enviar, conferir, pronto |
-| `/iel/vagas/[jobId]/comparar`, `/iel/talentos`, `/iel/empresas`, `/iel/pendencias`, `/iel/encaminhamentos`, `/iel/fontes-de-dados` | listas e apoio | |
+| `/` | Hoje | O que precisa de mim hoje? |
+| `/vagas/[jobId]` | Vaga | Quem eu envio para esta vaga? — section cards, tabela de candidatos (Sugeridos · Todos · Resgate · Sem resposta), abas Como a empresa trabalha · Perguntas · Enviados · Requisitos · Histórico |
+| (Drawer sobre a vaga) e `/talentos/[talentId]?vaga=` | Pessoa | Esta pessoa combina com esta empresa? — % com marca do 35%, os 5 pontos com empresa ■ e pessoa ● |
+| `/empresas/[companyId]` | Empresa | Como se trabalha nesta empresa? — respostas N de M, os 5 pontos com gestão/equipe/média, colaboradores convidados, cobrar quem falta |
+| `/vagas/[jobId]/importar` | Importar planilha | Entrou tudo certo? — três passos: enviar, conferir, pronto |
+| `/vagas/[jobId]/comparar`, `/talentos`, `/empresas`, `/pendencias`, `/encaminhamentos`, `/fontes-de-dados` | listas e apoio | |
 
 Por link (casca mínima, sem sidebar):
 
 | Rota | Quem | O quê |
 | --- | --- | --- |
-| `/iel/candidatura/[applicationId]/fit` | candidato | aceite → 5 perguntas → pronto → o que está registrado sobre você |
-| `/iel/consulta/[token]` | colaborador da empresa | aceite → 5 perguntas → resposta registrada (token opaco, 3 dias, uso único) |
-| `/iel/relatorio/[token]` | RH da empresa | os 5 currículos enviados, com % e os 5 pontos por pessoa |
+| `/candidatura/[applicationId]/fit` | candidato | aceite → 5 perguntas → pronto → o que está registrado sobre você |
+| `/consulta/[token]` | colaborador da empresa | aceite → 5 perguntas → resposta registrada (token opaco, 3 dias, uso único) |
+| `/relatorio/[token]` | RH da empresa | os 5 currículos enviados, com % e os 5 pontos por pessoa |
 
 ## O motor de aderência
 
@@ -142,14 +142,14 @@ A marca é a do produto **Mind RH**, da Madvic (manual em [`docs/marca/`](docs/m
 ## Arquitetura técnica
 
 - **Monorepo** Bun + Turborepo (starter kit Arki). O protótipo inteiro vive em `apps/dashboard`; os componentes shadcn entraram em `packages/ui/src/components/shadcn/*` (`@workspace/ui/shadcn/<nome>`), sem tocar o kit próprio nem o tema âmbar do resto do produto.
-- **Next.js 15** (App Router), rota isolada em `app/(iel)/iel`, tema escopado em `[data-iel-theme]`, sem autenticação.
+- **Next.js 15** (App Router), rota isolada em `app/(iel)`, tema escopado em `[data-iel-theme]`, sem autenticação.
 - **Estado client-side**: reducer + `localStorage` com persistência por delta e throttle; um relógio único da demonstração (`nowIso()` ancorado em `DEMO_REFERENCE_DATE`) para prazos da base fictícia não vencerem sozinhos.
 - **Seletores puros** (`state/selectors.ts`) são a única forma como as telas leem dados.
 - **Domínio** em `features/iel-demo/`: `types.ts`, `fixtures/` (núcleo curado + gerador determinístico), `analysis/` (aderência, cultura, convites, importação, relatório, assistente), `ai/`, `copy.ts` (glossário em código).
 
 ```
 app/apps/dashboard/
-├── app/(iel)/iel/              # rotas, layout, tema escopado (Mind RH)
+├── app/(iel)/                  # rotas, layout, tema escopado (Mind RH)
 ├── components/iel-demo/        # layout (sidebar, header, diálogos), overview,
 │                                #   selection, talents, companies, candidate,
 │                                #   import, referrals, clarifications, sources
@@ -168,7 +168,7 @@ bun run quickstart
 bun --filter @workspace/dashboard dev
 ```
 
-Abrir [http://localhost:3000/iel](http://localhost:3000/iel). Comandos: `bun run typecheck`, `bun run lint`, `bun run format`, `bun --filter @workspace/dashboard test`. O repo usa `bun --filter <workspace> <script>` (o Bun 1.4 removeu `--cwd`).
+Abrir [http://localhost:3000](http://localhost:3000/). Comandos: `bun run typecheck`, `bun run lint`, `bun run format`, `bun --filter @workspace/dashboard test`. O repo usa `bun --filter <workspace> <script>` (o Bun 1.4 removeu `--cwd`).
 
 ## Testes
 
@@ -180,12 +180,12 @@ E2E (Playwright, `e2e/iel-demo/`): existem oito cenários de jornada; no hackath
 
 Embutido na interface (sidebar → "Roteiro da demo"), em duas versões: **completo, 8 passos** e **curto, 4 paradas**. O caminho curto:
 
-1. **Importar** a planilha de exemplo na vaga Assistente de Logística (`/iel/vagas/VAG-01/importar`) — entram 8 pessoas, uma tem o match atualizado, uma é ignorada.
+1. **Importar** a planilha de exemplo na vaga Assistente de Logística (`/vagas/VAG-01/importar`) — entram 8 pessoas, uma tem o match atualizado, uma é ignorada.
 2. **Vaga**: os section cards, a tabela com Sugeridos e Resgate, abrir Helena no Drawer, marcar 5 e enviar.
-3. **Responder como colaborador** pelo link (`/iel/consulta/418c781c386bb301`): o contador da empresa passa de 7 para 8 de 10.
-4. **Ver o relatório que a empresa recebe** (`/iel/relatorio/<token da vaga>`), depois de registrar o envio.
+3. **Responder como colaborador** pelo link (`/consulta/418c781c386bb301`): o contador da empresa passa de 7 para 8 de 10.
+4. **Ver o relatório que a empresa recebe** (`/relatorio/<token da vaga>`), depois de registrar o envio.
 
-O roteiro completo passa ainda pela pessoa na página cheia, pela empresa (cobrar quem falta, confirmar sugestões), pelo candidato no celular (`/iel/candidatura/CAND-05/fit`) e pela persona do gestor.
+O roteiro completo passa ainda pela pessoa na página cheia, pela empresa (cobrar quem falta, confirmar sugestões), pelo candidato no celular (`/candidatura/CAND-05/fit`) e pela persona do gestor.
 
 ## Base de dados fictícia
 

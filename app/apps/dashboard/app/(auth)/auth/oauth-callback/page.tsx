@@ -6,7 +6,7 @@ import { AuthErrorCode } from '@workspace/auth/errors';
 import { toSameOriginRedirect } from '@workspace/auth/redirect-url';
 import { routes } from '@workspace/routes';
 
-const DEFAULT_REDIRECT = routes.dashboard.index;
+const DEFAULT_REDIRECT = routes.dashboard.painel;
 const OAUTH_ACCOUNT_NOT_FOUND = 'oauth_account_not_found';
 const OAUTH_ACCOUNT_EXISTS = 'oauth_account_exists';
 

@@ -32,7 +32,7 @@ export default async function OnboardingOrganizationPage() {
     <div className="container max-w-xl py-12">
       <div className="mb-6">
         <Link
-          href={routes.dashboard.index}
+          href={routes.dashboard.painel}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Voltar às organizações

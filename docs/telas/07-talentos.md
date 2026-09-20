@@ -1,6 +1,6 @@
 # Talentos
 
-**Rota:** `/iel/talentos`
+**Rota:** `/talentos`
 **Componente:** `apps/dashboard/components/iel-demo/talents/talents-screen.tsx`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-19

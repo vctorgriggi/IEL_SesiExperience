@@ -1,6 +1,6 @@
 # Vagas
 
-**Rota:** `/iel/vagas`
+**Rota:** `/vagas`
 **Componente:** `apps/dashboard/components/iel-demo/jobs/jobs-screen.tsx`
 **Persona:** Analista IEL (o gestor vê apenas as vagas da própria empresa)
 **Última atualização:** 2026-09-19

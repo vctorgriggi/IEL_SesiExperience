@@ -1,6 +1,6 @@
 # Minha candidatura
 
-**Rota:** `/iel/candidatura/[applicationId]`
+**Rota:** `/candidatura/[applicationId]`
 **Componente:** `apps/dashboard/components/iel-demo/candidate/minha-candidatura-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/situacao-da-candidatura.ts`
 **Persona:** o próprio candidato, sem login

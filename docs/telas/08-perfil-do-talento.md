@@ -1,6 +1,6 @@
 # Perfil do talento
 
-**Rota:** `/iel/talentos/[talentId]` — com `?vaga=<jobId>` para ler o perfil no contexto de uma vaga
+**Rota:** `/talentos/[talentId]` — com `?vaga=<jobId>` para ler o perfil no contexto de uma vaga
 **Componentes:** `apps/dashboard/components/iel-demo/talents/talent-profile-screen.tsx`,
 `talents/aderencia-da-pessoa.tsx`, `talents/talent-fit-view.tsx`
 **Persona:** Analista IEL

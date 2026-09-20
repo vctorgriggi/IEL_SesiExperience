@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { sair } from '@/app/(iel)/iel/entrar/actions';
+import { sair } from '@/app/(iel)/entrar/actions';
 import { DEMO_PERSONAS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { LogOut, MoreVertical, RotateCcw, UserCog } from 'lucide-react';

@@ -67,13 +67,17 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  /**
+   * A raiz é do Mind RH desde 19/09/2026 — o kit redirecionava `/` para o
+   * login, e esse salto saiu daqui. Os links antigos em `/iel/**`, que estão
+   * no telão e na mão da equipe, continuam chegando na tela nova. Temporário
+   * (307) de propósito: o navegador não grava o salto para sempre enquanto a
+   * raiz ainda se acomoda. A API segue em `/api/iel/**` e não passa por aqui.
+   */
   async redirects() {
     return [
-      {
-        source: '/',
-        destination: '/auth',
-        permanent: false
-      },
+      { source: '/iel', destination: '/', permanent: false },
+      { source: '/iel/:path*', destination: '/:path*', permanent: false },
       {
         source: '/auth',
         destination: '/auth/sign-in',

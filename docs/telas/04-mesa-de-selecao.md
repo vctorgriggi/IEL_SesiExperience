@@ -1,6 +1,6 @@
 # Mesa de seleção
 
-**Rota:** `/iel/vagas/[jobId]`
+**Rota:** `/vagas/[jobId]`
 **Componentes:** `apps/dashboard/components/iel-demo/selection/job-screen.tsx`,
 `selection/candidates-table.tsx`, `selection/job-section-cards.tsx`,
 `selection/candidate-state-badge.tsx`, `selection/axis-weights.tsx`

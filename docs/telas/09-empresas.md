@@ -1,6 +1,6 @@
 # Empresas
 
-**Rota:** `/iel/empresas`
+**Rota:** `/empresas`
 **Componente:** `CompaniesScreen`, em
 `apps/dashboard/components/iel-demo/companies/companies-screens.tsx`
 **Persona:** Analista IEL

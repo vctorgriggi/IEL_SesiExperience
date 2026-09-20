@@ -24,8 +24,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_DASHBOARD_URL),
   title: APP_NAME,
   description: APP_DESCRIPTION,
+  // O símbolo do Mind RH: a raiz é o produto, e é este ícone que fica na aba
+  // quando um grupo de rotas não define o seu.
   icons: {
-    icon: '/favicon.png'
+    icon: '/marca/simbolo.png'
   },
   openGraph: {
     type: 'website',

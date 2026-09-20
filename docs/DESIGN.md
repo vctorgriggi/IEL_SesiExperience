@@ -101,7 +101,7 @@ Aprovada em 19/09/2026 depois de três rodadas. As seções 1–7 dizem **o que*
 
 **Componentes de fábrica, sem estilo próprio por cima.** A interface usa os componentes do shadcn (estilo _new-york_) exatamente como vêm: `Card`, `Table`, `Badge`, `Tabs`, `Sidebar`, `Drawer`, `Breadcrumb`, `Tooltip`, `Progress`, `Avatar`, `DropdownMenu`, `Command`. Estrutura vem de borda e espaço, nunca de cor; **dado** pode ter cor, com as regras de "Cor nos dados" abaixo. Corpo em 14px. Sem gradiente decorativo, sem sombra além do `shadow-xs` dos cards, sem faixa colorida, sem borda-esquerda, sem parágrafo de método na tela.
 
-Os componentes vivem em `app/packages/ui/src/components/shadcn/*` e são importados de `@workspace/ui/shadcn/<nome>`. O kit próprio do boilerplate e o tema âmbar continuam intactos para o resto do produto; o `/iel` escopa seu tema em `[data-iel-theme]`.
+Os componentes vivem em `app/packages/ui/src/components/shadcn/*` e são importados de `@workspace/ui/shadcn/<nome>`. O kit próprio do boilerplate e o tema âmbar continuam intactos para o resto do produto; o Mind RH escopa seu tema em `[data-iel-theme]`.
 
 ### Referências de origem
 
@@ -151,7 +151,7 @@ A regra antiga era "cor só em ícone e ponto, badge sempre de contorno". Ela de
 
 - **Cor nunca sozinha; sempre com a palavra.** Todo badge de estado mantém o texto ("Combina", "Faltam respostas"); toda barra tem o número ao lado; todo selo de variação tem a frase no rodapé. Quem não distingue cor lê a mesma coisa.
 - **Com critério.** Cor em: badge de estado, selo de variação, número e barra de "combina", os dois lados do trilho e o ícone de contexto dos cartões. Sem cor em: títulos, textos de apoio, bordas e fundo de card, cabeçalhos de tabela e o número principal dos KPIs (fica em `foreground`). O quadradinho de ícone do cartão é **preenchido** no tom da leitura daquele cartão — era tingido claro, e uma página inteira deles lia como branco sobre branco.
-- **Sempre pelas constantes.** As classes moram em `apps/dashboard/components/iel-demo/metricas/cores.ts` (`BADGE_DE_ESTADO`, `TEXTO_DE_ESTADO`, `PREENCHIMENTO_DE_ESTADO`, `LADO`, `TRILHO`, `TONS_DA_EMPRESA`, `ICONE_TINGIDO`, `SELO`, `ITEM_ATIVO`, `barraDaAderencia`, `textoDaAderencia`, `corDaVariacao`); os tokens, em `app/(iel)/iel/iel-theme.css`. Nunca `hsl(var(--…))` solto na tela.
+- **Sempre pelas constantes.** As classes moram em `apps/dashboard/components/iel-demo/metricas/cores.ts` (`BADGE_DE_ESTADO`, `TEXTO_DE_ESTADO`, `PREENCHIMENTO_DE_ESTADO`, `LADO`, `TRILHO`, `TONS_DA_EMPRESA`, `ICONE_TINGIDO`, `SELO`, `ITEM_ATIVO`, `barraDaAderencia`, `textoDaAderencia`, `corDaVariacao`); os tokens, em `app/(iel)/iel-theme.css`. Nunca `hsl(var(--…))` solto na tela.
 - **Contraste.** Texto no fundo tingido passa 4,5:1 (combina 5,8 · atenção 5,7 · difere 6,6 · neutro 5,3 · azul 6,9). O selo de variação segue quem decide o que é melhorar: com `quedaEBoa`, cair é verde.
 
 ### Três papéis, três organizações

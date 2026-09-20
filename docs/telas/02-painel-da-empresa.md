@@ -1,6 +1,6 @@
 # Painel da empresa
 
-**Rota:** `/iel` (mesma rota da visão geral, com a persona de gestor)
+**Rota:** `/` (mesma rota da visão geral, com a persona de gestor)
 **Componente:** `apps/dashboard/components/iel-demo/manager/manager-overview.tsx`
 **Persona:** Gestor da empresa
 **Última atualização:** 2026-09-19

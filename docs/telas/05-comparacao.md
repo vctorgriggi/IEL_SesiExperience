@@ -1,6 +1,6 @@
 # Comparação entre candidatos
 
-**Rota:** `/iel/vagas/[jobId]/comparar`
+**Rota:** `/vagas/[jobId]/comparar`
 **Componente:** `apps/dashboard/components/iel-demo/selection/comparison-screen.tsx`
 **Persona:** Analista IEL
 **Última atualização:** 2026-09-19

@@ -1,6 +1,6 @@
 # Consulta ao colaborador
 
-**Rota:** `/iel/consulta/[token]`
+**Rota:** `/consulta/[token]`
 **Componente:** `apps/dashboard/components/iel-demo/companies/culture-invite-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/culture-invites.ts`
 **Persona:** quem trabalha na empresa e recebeu o link, sem login

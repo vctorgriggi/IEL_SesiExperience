@@ -1,6 +1,6 @@
 # Questionário do candidato
 
-**Rota:** `/iel/candidatura/[applicationId]/fit`
+**Rota:** `/candidatura/[applicationId]/fit`
 **Componente:** `apps/dashboard/components/iel-demo/candidate/fit-questionnaire-screen.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/candidate-questionnaire.ts`
 **Persona:** o próprio candidato, sem login

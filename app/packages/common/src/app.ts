@@ -1,3 +1,3 @@
-export const APP_NAME = 'Arki';
+export const APP_NAME = 'Mind RH';
 export const APP_DESCRIPTION =
-  'Arki starter kit SaaS with Next.js, Drizzle, Better Auth and more.';
+  'Central de Seleção IEL: reúne dados de talentos, vagas e empresas para conduzir uma seleção fundamentada.';
