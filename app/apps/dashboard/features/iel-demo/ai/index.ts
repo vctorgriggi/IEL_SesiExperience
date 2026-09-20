@@ -9,6 +9,10 @@ import type { AssistantProvider } from './provider';
 
 export type { AssistantProvider } from './provider';
 export * from './types';
+// A devolutiva pessoal do fim dos questionários, polida pelo Mind quando há chave.
+export { leituraPessoalComMind } from './leitura-pessoal';
+// A mensagem de WhatsApp ao candidato, por etapa, polida pelo Mind quando há chave.
+export { mensagemComMind } from './mensagens';
 
 /**
  * Escolhe o provider de análise assistida pelo ambiente.
