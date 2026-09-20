@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { EtapaDaMensagem } from '@/features/iel-demo/analysis/mensagens';
 import { COPY } from '@/features/iel-demo/copy';
 import { COMPARISON_LIMIT } from '@/features/iel-demo/fixtures';
 import { plural } from '@/features/iel-demo/format';
@@ -64,6 +65,10 @@ import { CompanyCultureTable } from '../companies/culture-profile';
 import { usePageHeader } from '../layout/page-header-context';
 import { registrarVagaRecente } from '../layout/use-recent-jobs';
 import {
+  etapaPelaCandidatura,
+  MensagemDoMindSheet
+} from '../mensagens/mensagem-do-mind-sheet';
+import {
   formatarData,
   formatarDataCurta,
   formatarDataHora
@@ -119,6 +124,13 @@ export function JobScreen({ jobId }: { jobId: string }) {
     applicationId: string | null;
     criterion: JobCriterion;
   } | null>(null);
+  // "Mensagem do Mind": a pessoa e a etapa deduzida quando o menu abriu. A
+  // gaveta fica montada depois de aberta, como a da pessoa, para animar.
+  const [mensagem, setMensagem] = useState<{
+    applicationId: string;
+    etapa: EtapaDaMensagem;
+  } | null>(null);
+  const [mensagemAberta, setMensagemAberta] = useState(false);
 
   const iel = routes.dashboard.iel;
   const job = getJob(jobId);
@@ -428,6 +440,13 @@ export function JobScreen({ jobId }: { jobId: string }) {
               setGavetaAberta(true);
             }}
             onAskPerson={perguntarA}
+            onMessagePerson={(entry) => {
+              setMensagem({
+                applicationId: entry.application.id,
+                etapa: etapaPelaCandidatura(entry.application, entry.fitStatus)
+              });
+              setMensagemAberta(true);
+            }}
           />
         </div>
       </TabsContent>
@@ -740,6 +759,15 @@ export function JobScreen({ jobId }: { jobId: string }) {
           open={gavetaAberta}
           onOpenChange={setGavetaAberta}
           retornarFocoPara={`abrir-pessoa-${aberta.application.id}`}
+        />
+      ) : null}
+
+      {mensagem ? (
+        <MensagemDoMindSheet
+          applicationId={mensagem.applicationId}
+          etapa={mensagem.etapa}
+          open={mensagemAberta}
+          onOpenChange={setMensagemAberta}
         />
       ) : null}
 

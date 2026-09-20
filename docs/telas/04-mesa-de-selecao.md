@@ -6,7 +6,7 @@
 `selection/candidate-state-badge.tsx`, `selection/axis-weights.tsx`
 **Regra:** `apps/dashboard/features/iel-demo/analysis/adherence.ts`
 **Persona:** Analista IEL
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -37,6 +37,13 @@ Atende **M5**.
 - **Prioridade por eixo** (`axis-weights.tsx`) — o peso que a empresa declarou para cada eixo nesta
   vaga, com a proposta da análise pendente de confirmação humana.
 - **Detalhe da pessoa**, aberto na própria tela.
+- **Mensagem do Mind** (`mensagens/mensagem-do-mind.tsx`, gaveta em `mensagens/mensagem-do-mind-sheet.tsx`)
+  — no menu ⋮ da linha. O rascunho de WhatsApp para aquela pessoa, na etapa que o estado da
+  candidatura deduz (sem resposta → convite no prazo, lembrete depois; enviada → currículo enviado;
+  "quero entrevistar" → a empresa quer conversar; "não avançar" → não foi desta vez), com um seletor
+  para trocar. A regra fixa (`analysis/mensagens.ts`) aparece na hora num balão de WhatsApp; o Mind
+  reescreve por cima quando há chave (`/api/iel/mensagens`) e o texto ganha o selo "rascunho do Mind".
+  Campo editável, "Copiar" e "Simular envio". Nunca o nome da empresa (R5).
 
 ## De onde vêm os dados hoje
 
@@ -56,6 +63,8 @@ Atende **M5**.
 - Remover da lista — `remove-from-referral-list`.
 - Confirmar prioridade de eixo — `set-axis-weight`.
 - Abrir pedido de esclarecimento — diálogo em `clarifications/create-clarification-dialog.tsx`.
+- Mensagem do Mind — copiar o rascunho de WhatsApp ou simular o envio. Sem ação de reducer: nada é
+  enviado e nada é gravado; a analista aprova lendo, ajustando e colando no WhatsApp do IEL.
 
 ## Backend futuro
 
@@ -89,3 +98,5 @@ Entra em: [Comparação](05-comparacao.md), [Perfil do talento](08-perfil-do-tal
   com tabela de quatro leituras, cartões de pendência e aba de resgate. A matriz por critério, o
   painel de evidência e a leitura assistida em painel saíram da tela.
 - 2026-09-19 — o cabeçalho ganhou "Ver aderência", que leva à análise de aderência já nesta vaga.
+- 2026-09-20 — ganha "Mensagem do Mind" no menu ⋮ da linha: o rascunho de WhatsApp por etapa, da
+  regra fixa com polimento do Mind, que a analista aprova com um toque.
