@@ -11,27 +11,14 @@ import {
 import type { TablerIcon } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/shadcn/badge';
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@workspace/ui/shadcn/card';
+import { Card } from '@workspace/ui/shadcn/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@workspace/ui/shadcn/tooltip';
 
-import {
-  BADGE_DE_ESTADO,
-  corDaVariacao,
-  ICONE_TINGIDO,
-  SELO,
-  type TomDeCor
-} from './cores';
+import { corDaVariacao, type TomDeCor } from './cores';
 import { formatarValorKpi, lerValorKpi, lerVariacao } from './formato';
 import { MarcadorHistorico } from './marcador-historico';
 

@@ -37,7 +37,6 @@ import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/shadcn/badge';
 import { Button } from '@workspace/ui/shadcn/button';
 import {
   Card,
@@ -79,7 +78,6 @@ import {
   TIPO_DE_PENDENCIA_LABEL,
   type NivelDePrioridade,
   type Pendencia,
-  type StatusPrazo,
   type TipoDePendencia
 } from './pendencias';
 
@@ -141,41 +139,6 @@ function getPrioridadeInfo(prioridade: NivelDePrioridade): {
           'bg-muted/80 text-muted-foreground ring-1 ring-inset ring-border/50 dark:bg-muted/40 dark:text-muted-foreground',
         dotClass: 'bg-muted-foreground/60'
       };
-  }
-}
-
-function getStatusPrazoBadge(status: StatusPrazo, label: string) {
-  switch (status) {
-    case 'atrasado':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-500/30 dark:text-rose-300">
-          <IconAlertCircle
-            aria-hidden="true"
-            className="size-3.5 shrink-0 text-rose-600 animate-pulse"
-          />
-          {label}
-        </span>
-      );
-    case 'urgente':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-500/30 dark:text-amber-300">
-          <IconClock
-            aria-hidden="true"
-            className="size-3.5 shrink-0 text-amber-600"
-          />
-          {label}
-        </span>
-      );
-    case 'no-prazo':
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-0.5 text-xs font-normal text-muted-foreground">
-          <IconCheck
-            aria-hidden="true"
-            className="size-3.5 shrink-0 text-muted-foreground/80"
-          />
-          {label}
-        </span>
-      );
   }
 }
 
