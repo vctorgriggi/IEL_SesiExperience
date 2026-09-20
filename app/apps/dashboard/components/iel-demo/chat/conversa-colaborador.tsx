@@ -19,7 +19,7 @@ import { Badge } from '@workspace/ui/shadcn/badge';
 import { AtalhoDaEquipe } from '../shared/fluxo-por-link';
 import { SuasRespostas } from '../shared/suas-respostas';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
-import { useMontado } from './use-voz';
+import { useMontado } from '../shared/use-voz';
 
 /**
  * "Como é trabalhar aqui?" em forma de conversa, para quem trabalha na

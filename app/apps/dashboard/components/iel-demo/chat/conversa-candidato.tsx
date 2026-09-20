@@ -27,7 +27,7 @@ import { Button } from '@workspace/ui/shadcn/button';
 import { AtalhoDaEquipe } from '../shared/fluxo-por-link';
 import { SuasRespostas } from '../shared/suas-respostas';
 import { ConversaCarregando, ConversaGuiada } from './conversa-guiada';
-import { useMontado } from './use-voz';
+import { useMontado } from '../shared/use-voz';
 
 /**
  * A conversa do candidato, montada sobre o motor (C2).

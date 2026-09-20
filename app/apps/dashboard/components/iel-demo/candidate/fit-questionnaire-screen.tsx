@@ -27,9 +27,12 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
   IconAlertTriangle,
+  IconArrowLeft,
+  IconArrowRight,
   IconCircleCheck,
   IconClock,
-  IconHistory
+  IconHistory,
+  IconLock
 } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
@@ -52,6 +55,7 @@ import {
   MolduraPorLink,
   TamanhoDaTarefa
 } from '../shared/fluxo-por-link';
+import { falaDaFrase, OuvirAFrase } from '../shared/ouvir-a-frase';
 import { ReguaDeConcordancia } from '../shared/regua-de-concordancia';
 import { SuasRespostas } from '../shared/suas-respostas';
 import { useFocoNoTitulo } from '../shared/use-foco-no-titulo';
@@ -87,9 +91,45 @@ import { useRascunho } from '../shared/use-rascunho';
  *
  * ## O que a tela não mostra
  *
- * O nome da empresa (R5): o cabeçalho sai de `getCandidateJobView`. Nem
- * percentual, ranking, comparação ou leitura sobre a pessoa: o fim é o que
- * ela respondeu, no vocabulário da escala (PRODUTO.md §11).
+ * O nome da empresa não aparece em lugar nenhum (R5): o cabeçalho sai de
+ * `getCandidateJobView`, um tipo fechado de quatro campos — atividade,
+ * localidade, segmento e turno —, e o rodapé diz isso em voz alta para a
+ * pessoa não ficar procurando. Também não aparecem percentual de aderência,
+ * ranking, comparação nem leitura sobre quem a pessoa é: o candidato
+ * responde, não se avalia (PRODUTO.md §11).
+ *
+ * ## Forma
+ *
+ * Uma frase por tela, alvos de 48px, corpo de 15px. No alto, o número do
+ * passo num círculo e o quanto falta ("Faltam 4", "Última frase"); no
+ * rodapé, "Próxima" e o "Voltar uma frase".
+ *
+ * A frase na tela é a do instrumento do cliente (`item.texto`), palavra por
+ * palavra e sem edição — é o mesmo enunciado que a analista lê no relatório
+ * e que volta em "Suas respostas". A pergunta de apoio é "O quanto isso é
+ * você? Não existe resposta certa.", e a escala é a **régua de um toque**
+ * (`shared/regua-de-concordancia`): cinco degraus com o número escrito na
+ * pastilha e a palavra embaixo, de "Nada a ver comigo" a "Sou eu".
+ *
+ * Entre a frase e a régua fica o **"Ouvir a pergunta"**
+ * (`shared/ouvir-a-frase`): o aparelho lê a frase e depois os cinco degraus
+ * numerados, para quem não lê ou lê com esforço. O número é a ponte entre o
+ * que se ouve e o que se toca, por isso ele está escrito no degrau.
+ *
+ * O toque **seleciona e para aí**: a tela mudava debaixo do dedo antes de a
+ * pessoa ler o que tinha escolhido. Quem decide passar é "Próxima" — um
+ * gesto, uma frase — e na última frase o mesmo botão envia.
+ *
+ * As frases são as que a empresa da vaga escolheu (`perguntasQueFaltam`):
+ * uma por tema, onde a equipe dela é mais marcante.
+ *
+ * ## O fim
+ *
+ * "Pronto, Nome." e **"Suas respostas"** (`shared/suas-respostas`): cada
+ * frase que a pessoa respondeu — as reaproveitadas de outra vaga e as novas
+ * — com o grau no vocabulário da escala. É o dado do jeito que foi dado, sem
+ * adjetivo, sem percentual e sem o nome da empresa (R5). Dali sai um botão
+ * só: ver a candidatura.
  *
  * ## Fechar e voltar
  *
@@ -147,6 +187,21 @@ const TEXTO_COMPLETO_DO_ACEITE = [
   CANDIDATE_CONSENT_TEXT.retention,
   CANDIDATE_CONSENT_TEXT.rights
 ];
+
+/**
+ * Volta a página ao topo antes de trocar de passo.
+ *
+ * A tela da frase é mais alta que o celular — frase, "Ouvir a pergunta", os
+ * cinco degraus empilhados —, então quem envia a última resposta está com a
+ * página rolada. Sem isto, o passo seguinte nasce no meio.
+ */
+function aoTopo(): void {
+  if (typeof document === 'undefined') return;
+  // Ora rola o `html`, ora o `body` — o plugin de acessibilidade muda quem é
+  // o container. Zerar os dois é o que funciona nos dois casos.
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
 
 /** O atalho da equipe: o perfil da pessoa (onde a resposta chega) ou, sem talento, a vaga. */
 function atalhoDoCandidato(
@@ -309,9 +364,10 @@ export function FitQuestionnaireScreen({
 
   const etiqueta = (
     <Badge
-      variant="outline"
-      className="font-medium text-muted-foreground"
+      variant="secondary"
+      className="gap-1.5 px-3 py-1 font-medium bg-secondary/80 text-foreground border border-border/70 shadow-2xs text-xs sm:text-[13px]"
     >
+      <span className="size-1.5 rounded-full bg-primary" />
       Vaga de {jobView.activity}
     </Badge>
   );
@@ -333,6 +389,7 @@ export function FitQuestionnaireScreen({
       at: nowIso()
     });
     apagar();
+    aoTopo();
     setStep({ kind: 'done' });
   };
 
@@ -355,6 +412,9 @@ export function FitQuestionnaireScreen({
     });
     apagar();
     setFaltando(null);
+    // A última frase costuma ser respondida com a página rolada; sem isto, o
+    // "Pronto, Nome." nasce escondido atrás do cabeçalho fixo da casca.
+    aoTopo();
     setStep({ kind: 'done' });
   };
 
@@ -426,7 +486,7 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
           >
             {primeiroNome ? `Pronto, ${primeiroNome}.` : 'Pronto.'}
           </h1>
@@ -478,7 +538,7 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
           >
             Você já respondeu isto
           </h1>
@@ -518,7 +578,7 @@ export function FitQuestionnaireScreen({
           <h1
             ref={tituloRef}
             tabIndex={-1}
-            className="text-[22px] font-semibold leading-tight tracking-tight outline-none"
+            className="scroll-mt-20 text-[22px] font-semibold leading-tight tracking-tight outline-none"
           >
             Como você prefere trabalhar?
           </h1>
@@ -577,73 +637,110 @@ export function FitQuestionnaireScreen({
 
   const chosen = answers[question.itemId];
   const isLast = step.index === totalQuestions - 1;
-  const rotuloProgresso = `${step.index + 1} de ${totalQuestions}`;
+  const restantes = totalQuestions - (step.index + 1);
+  const rotuloProgresso = `Frase ${step.index + 1} de ${totalQuestions}`;
   const valorProgresso = Math.round(((step.index + 1) / totalQuestions) * 100);
+  const metade = step.index + 1 === Math.ceil(totalQuestions / 2);
 
   return (
     <MolduraPorLink
       atalhoDaEquipe={atalho}
       etiqueta={etiqueta}
     >
-      <div className="flex flex-col gap-2">
-        <p
-          className="text-[13px] text-muted-foreground"
+      <div className="flex flex-col gap-2.5 pb-2">
+        <div
+          className="flex items-center justify-between text-xs sm:text-[13px] font-medium text-muted-foreground"
           aria-hidden="true"
         >
-          {rotuloProgresso}
-        </p>
+          <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+              {step.index + 1}
+            </span>
+            {rotuloProgresso}
+          </span>
+          <span className="rounded-full bg-muted/90 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+            {restantes === 0 ? 'Última frase 🎉' : `Faltam ${restantes}`}
+          </span>
+        </div>
         <Progress
-          className="h-1.5 bg-muted"
+          className="h-2 bg-muted/80 rounded-full"
           value={valorProgresso}
-          // O `Progress` do kit não repassa `value` ao Radix; sem isto a
-          // barra é lida sem número.
           aria-valuenow={valorProgresso}
           aria-label={rotuloProgresso}
           aria-valuetext={rotuloProgresso}
         />
+        {metade && totalQuestions > 4 ? (
+          <p className="text-xs font-medium text-muted-foreground">
+            Metade do caminho concluída ✨
+          </p>
+        ) : null}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h1
-          id="fit-pergunta"
-          ref={tituloRef}
-          tabIndex={-1}
-          className={cn(
-            'font-semibold leading-[1.25] tracking-tight outline-none [text-wrap:balance]',
-            // A frase é a da planilha do cliente, sem edição, e algumas
-            // passam de 120 caracteres: um degrau menor para caber a 390 px.
-            question.item.texto.length > 120 ? 'text-[20px]' : 'text-[24px]'
-          )}
-        >
-          {question.item.texto}
-        </h1>
-        <p
-          id="fit-pergunta-dica"
-          className="text-[15px] leading-relaxed text-muted-foreground"
-        >
-          O quanto isso é você?
-        </p>
+      <div className="my-auto flex flex-col gap-4 py-4 sm:py-6">
+        <div className="flex flex-col gap-2.5">
+          <h1
+            id="fit-pergunta"
+            ref={tituloRef}
+            tabIndex={-1}
+            className={cn(
+              // `scroll-mt-20`: a frase recebe o foco a cada passo e a página
+              // rola até ela; sem a margem, o cabeçalho fixo da casca (56px)
+              // come as duas primeiras linhas.
+              'scroll-mt-20 font-bold leading-snug tracking-tight text-foreground outline-none [text-wrap:balance]',
+              // A frase é a do instrumento do cliente, sem edição, e algumas
+              // passam de 120 caracteres: um degrau menor para caber a 390px.
+              question.item.texto.length > 120
+                ? 'text-[20px] sm:text-[22px]'
+                : 'text-[22px] sm:text-[26px]'
+            )}
+          >
+            {question.item.texto}
+          </h1>
+          <p
+            id="fit-pergunta-dica"
+            className="text-[14px] sm:text-[15px] leading-relaxed text-muted-foreground"
+          >
+            O quanto isso é você? Não existe resposta certa.
+          </p>
+        </div>
+
+        {/*
+          O botão de ouvir vem antes da régua, e não depois.
+
+          Quem depende dele não vai varrer a tela atrás de um controle: ele
+          precisa estar no caminho de leitura, entre a frase e a resposta, no
+          instante em que a pessoa trava. A largura inteira é de propósito —
+          é o mesmo alvo dos degraus, não um ícone de canto.
+        */}
+        <OuvirAFrase
+          id={question.itemId}
+          texto={falaDaFrase({
+            frase: question.item.texto,
+            rotulos: ROTULOS_DA_REGUA.candidato
+          })}
+          className="h-12 w-full justify-center text-[15px]"
+        />
+
+        <div className="pt-2">
+          <ReguaDeConcordancia
+            nome={question.itemId}
+            valor={chosen ?? null}
+            rotulos={ROTULOS_DA_REGUA.candidato}
+            tom="pessoa"
+            aria-labelledby="fit-pergunta"
+            aria-describedby="fit-pergunta-dica"
+            onChange={(valor) => {
+              setFaltando(null);
+              setAnswers((current) => ({
+                ...current,
+                [question.itemId]: valor
+              }));
+            }}
+          />
+        </div>
       </div>
 
-      <ReguaDeConcordancia
-        nome={question.itemId}
-        valor={chosen ?? null}
-        rotulos={ROTULOS_DA_REGUA.candidato}
-        tom="pessoa"
-        aria-labelledby="fit-pergunta"
-        aria-describedby="fit-pergunta-dica"
-        onChange={(valor) => {
-          setFaltando(null);
-          setAnswers((current) => ({ ...current, [question.itemId]: valor }));
-        }}
-        onConfirmar={() => {
-          // O toque avança; na última frase, enviar é um gesto à parte.
-          if (isLast) return;
-          setStep({ kind: 'question', index: step.index + 1 });
-        }}
-      />
-
-      <div className="mt-auto flex flex-col gap-2.5 pt-4">
+      <div className="mt-auto flex flex-col gap-2.5 pt-4 border-t border-border/40">
         {faltando !== null && faltando >= 0 ? (
           <Card
             role="alert"
@@ -672,7 +769,7 @@ export function FitQuestionnaireScreen({
         ) : null}
         <Button
           size="lg"
-          className="h-12 w-full text-[15px]"
+          className="h-12 sm:h-13 w-full text-[15px] sm:text-base font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg transition-all"
           disabled={chosen === undefined}
           onClick={() => {
             if (isLast) {
@@ -683,11 +780,12 @@ export function FitQuestionnaireScreen({
           }}
         >
           {isLast ? 'Enviar respostas' : 'Próxima'}
+          <IconArrowRight className="ml-2 size-4" />
         </Button>
         <Button
           variant="ghost"
           size="lg"
-          className="h-12 w-full text-muted-foreground"
+          className="h-11 w-full text-muted-foreground hover:text-foreground text-sm font-medium"
           onClick={() => {
             setFaltando(null);
             setStep(
@@ -697,8 +795,16 @@ export function FitQuestionnaireScreen({
             );
           }}
         >
-          Voltar
+          <IconArrowLeft className="mr-2 size-4" />
+          {step.index === 0 ? 'Voltar ao começo' : 'Voltar uma frase'}
         </Button>
+        <div className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground pt-1">
+          <IconLock className="size-3.5 shrink-0 opacity-70" />
+          <span>
+            Pode fechar e voltar: o que já respondeu fica guardado. O nome da
+            empresa você conhece na entrevista.
+          </span>
+        </div>
       </div>
     </MolduraPorLink>
   );

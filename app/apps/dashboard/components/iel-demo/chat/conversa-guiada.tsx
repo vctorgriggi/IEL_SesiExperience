@@ -39,7 +39,7 @@ import {
   type OrigemDaResposta
 } from '../shared/regua-de-concordancia';
 import { useRascunho } from '../shared/use-rascunho';
-import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
+import { useMovimentoReduzido, useVoz, type Voz } from '../shared/use-voz';
 
 /**
  * A conversa guiada no celular (C2): o IEL fala, a pessoa toca.
@@ -58,10 +58,10 @@ import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
  * ler a anterior e marca quem está falando. Com `prefers-reduced-motion`, não
  * há animação nem espera — tudo entra de uma vez.
  *
- * ## A cena e a régua
+ * ## A frase e a régua
  *
- * Numa frase do instrumento, a bolha traz a cena ("Chega uma tarefa nova. Eu
- * começo e vou ajustando no caminho.") e o rodapé mostra a régua de um toque
+ * Numa frase do instrumento, a bolha traz a frase como ela está escrita no
+ * instrumento do cliente, sem edição, e o rodapé mostra a régua de um toque
  * no lugar dos cinco botões: o degrau tocado se preenche e, um instante
  * depois, vira a resposta. Pelo teclado a régua só seleciona, e um botão
  * "Confirmar" aparece para fechar a resposta (Enter também serve). "Voltar",
@@ -70,8 +70,8 @@ import { useMovimentoReduzido, useVoz, type Voz } from './use-voz';
  *
  * ## Áudio
  *
- * Cada bolha do IEL tem "Ouvir"; numa pergunta, a leitura inclui a cena e
- * os degraus da régua.
+ * Cada bolha do IEL tem "Ouvir"; numa pergunta, a leitura inclui a frase e
+ * os degraus numerados da régua.
  * "Ouvir tudo", no topo, começa desligado e, ligado, lê o bloco atual e cada
  * fala nova. Só leitura: nada é gravado.
  *
