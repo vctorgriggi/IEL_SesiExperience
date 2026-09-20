@@ -26,6 +26,7 @@ import {
   Inbox,
   MessageCircleQuestion,
   MessageSquareText,
+  Phone,
   RefreshCw,
   Reply,
   Send,
@@ -80,7 +81,7 @@ const ROTA_DO_BI = routes.dashboard.iel.bi;
  * Ícone tingido de cada grupo da fila: o tom diz o tipo de coisa antes do
  * texto. Laranja pede atenção, cinza está parado à espera de alguém, azul é
  * do lado da empresa, verde é pronto para seguir e verde-azulado é resposta
- * de pessoa.
+ * de pessoa — inclusive a que falta: ligar para quem foi contratado.
  */
 const ICONE_DO_GRUPO: Record<
   TipoDePendencia,
@@ -88,6 +89,7 @@ const ICONE_DO_GRUPO: Record<
 > = {
   respostas: { Icone: Inbox, tom: ICONE_TINGIDO.pessoa },
   perguntas: { Icone: MessageCircleQuestion, tom: ICONE_TINGIDO.atencao },
+  ligacao: { Icone: Phone, tom: ICONE_TINGIDO.pessoa },
   envio: { Icone: Send, tom: ICONE_TINGIDO.combina },
   questionario: { Icone: Hourglass, tom: ICONE_TINGIDO.neutro },
   cultura: { Icone: Building2, tom: ICONE_TINGIDO.empresa }

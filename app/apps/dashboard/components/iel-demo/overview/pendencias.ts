@@ -1,10 +1,15 @@
+import { rotuloDoMarco } from '@/features/iel-demo/analysis/acompanhamento';
 import { COPY } from '@/features/iel-demo/copy';
 import { plural } from '@/features/iel-demo/format';
 import {
+  getAcompanhamento,
+  getApplication,
   getCompaniesWithCultureAnswers,
+  getCompany,
   getCultureAttentionPoints,
   getJobRanking,
   getRegisteredReferrals,
+  getTalent,
   getVisibleJobs,
   type JobRankingEntry
 } from '@/features/iel-demo/state/selectors';
@@ -39,6 +44,7 @@ export const PENDENCIAS_VISIVEIS = 10;
 export type TipoDePendencia =
   | 'respostas'
   | 'perguntas'
+  | 'ligacao'
   | 'envio'
   | 'questionario'
   | 'cultura';
@@ -47,6 +53,7 @@ export type TipoDePendencia =
 export const TIPO_DE_PENDENCIA_LABEL: Record<TipoDePendencia, string> = {
   respostas: 'Respostas para usar',
   perguntas: 'Perguntas sem resposta',
+  ligacao: 'Ligar para quem foi contratado',
   envio: 'Currículos para enviar',
   questionario: 'Candidatos sem responder',
   cultura: 'Empresas com perfil aberto'
@@ -123,7 +130,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
         resumo: `${plural(compativeis, 'pessoa compatível', 'pessoas compatíveis')}, nenhum currículo enviado`,
         href: iel.jobs.byId(job.id).referral,
         verbo: COPY.referral.action,
-        urgencia: 3
+        urgencia: 4
       });
       continue;
     }
@@ -136,9 +143,35 @@ export function montarPendencias(state: DemoState): Pendencia[] {
         resumo: `${plural(semQuestionario, 'pessoa ainda não respondeu', 'pessoas ainda não responderam')} as 10 frases`,
         href: iel.jobs.byId(job.id).index,
         verbo: 'Abrir a vaga',
-        urgencia: 4
+        urgencia: 5
       });
     }
+  }
+
+  /*
+   * Quem foi contratado, chegou aos 30, 60 ou 90 dias e não respondeu se
+   * continua. Vem logo depois das perguntas sem resposta: a janela fecha em
+   * 30 dias e, passada, a pessoa não é mais perguntada — é a ligação de hoje
+   * ou nunca. A fila já chega na ordem de quem espera há mais tempo.
+   */
+  for (const situacao of getAcompanhamento(state)) {
+    const marco = situacao.pendentes[0];
+    if (marco === undefined) continue;
+    const application = getApplication(state, situacao.applicationId);
+    const talent = application ? getTalent(application.talentId, state) : null;
+    if (!talent) continue;
+    const aberto = situacao.diasNaEmpresa - marco;
+    pendencias.push({
+      id: `${situacao.applicationId}-ligacao`,
+      tipo: 'ligacao',
+      titulo: talent.name,
+      resumo: `aos ${rotuloDoMarco(marco)} sem resposta${
+        aberto > 0 ? ` há ${plural(aberto, 'dia', 'dias')}` : ''
+      } · ${getCompany(situacao.companyId)?.name ?? situacao.companyId}`,
+      href: iel.followUp.index,
+      verbo: 'Abrir acompanhamento',
+      urgencia: 3
+    });
   }
 
   // Só as empresas com alguma resposta de cultura: sem resposta não há ponto
@@ -154,7 +187,7 @@ export function montarPendencias(state: DemoState): Pendencia[] {
       resumo: `${plural(emAberto, 'tema', 'temas')} sem resposta suficiente da equipe`,
       href: routes.dashboard.iel.companies.byId(company.id),
       verbo: 'Abrir a empresa',
-      urgencia: 5
+      urgencia: 6
     });
   }
 
