@@ -12,7 +12,12 @@ import {
   RESCUE_TECHNICAL_CEILING
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
-import { Clock, LifeBuoy, Send, UserCheck } from 'lucide-react';
+import {
+  IconClock,
+  IconLifebuoy,
+  IconSend,
+  IconUserCheck
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -81,13 +86,16 @@ export function JobSectionCards({
   const selo = cn(SELO, BADGE_DE_ESTADO.neutro);
 
   return (
-    <div className="grid grid-cols-1 gap-4 @xl/vaga:grid-cols-2 @4xl/vaga:grid-cols-4">
+    <div
+      data-tour="mesa-indicadores"
+      className="grid grid-cols-1 gap-4 @xl/vaga:grid-cols-2 @4xl/vaga:grid-cols-4"
+    >
       {/* Cada cartão é número, selo e rodapé soltos; lido em sequência vira
           "Compatíveis 49 com 35%… Acima do…". O leitor ouve uma frase só
           (`leitura`), e o desenho fica para os olhos. */}
       <CartaoDeIndicador
         leitura={`Compatíveis: ${plural(combinam, 'pessoa', 'pessoas')} com ${ADHERENCE_THRESHOLD}% ou mais de combinação com a empresa, acima do mínimo do IEL, de ${responderam} que responderam.`}
-        icone={UserCheck}
+        icone={IconUserCheck}
         tom="combina"
         rotulo="Compatíveis"
         valor={combinam}
@@ -123,7 +131,7 @@ export function JobSectionCards({
 
       <CartaoDeIndicador
         leitura={`Sem resposta: ${plural(semResposta, 'pessoa', 'pessoas')}. O prazo de resposta, de ${plural(CANDIDATE_FIT_DEADLINE_DAYS, 'dia', 'dias')}, termina em ${prazoEm(job.updatedAt, CANDIDATE_FIT_DEADLINE_DAYS)}; quem não responde sai do processo.`}
-        icone={Clock}
+        icone={IconClock}
         tom="atencao"
         rotulo="Sem resposta"
         valor={semResposta}
@@ -145,7 +153,7 @@ export function JobSectionCards({
             ? 'Remessa fechada.'
             : `Faltam ${faltamParaFechar} para fechar a remessa.`
         }`}
-        icone={Send}
+        icone={IconSend}
         tom="empresa"
         rotulo="Marcados"
         valor={
@@ -191,7 +199,7 @@ export function JobSectionCards({
             onOpenRescue();
           }
         }}
-        icone={LifeBuoy}
+        icone={IconLifebuoy}
         tom="pessoa"
         rotulo="Resgate"
         valor={

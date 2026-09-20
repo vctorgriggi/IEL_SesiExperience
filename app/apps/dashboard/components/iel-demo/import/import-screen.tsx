@@ -15,7 +15,7 @@ import {
   getJob
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { CircleCheckIcon } from 'lucide-react';
+import { IconCircleCheck } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -215,7 +215,7 @@ export function ImportScreen({ jobId }: { jobId: string }) {
         <>
           <Card>
             <CardHeader>
-              <CircleCheckIcon
+              <IconCircleCheck
                 aria-hidden="true"
                 className={cn('size-6', TEXTO_DE_ESTADO.combina)}
               />

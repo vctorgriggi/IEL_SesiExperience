@@ -3,7 +3,13 @@
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import type { JobRankingEntry } from '@/features/iel-demo/state/selectors';
 import { RESCUE_TECHNICAL_CEILING } from '@/features/iel-demo/state/selectors';
-import { Activity, CircleCheck, CircleDashed, Loader, X } from 'lucide-react';
+import {
+  IconActivity,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconLoader,
+  IconX
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -65,12 +71,12 @@ const TOM_DO_ESTADO: Record<CandidateState, EstadoDeCor> = {
   combina: 'combina'
 };
 
-const ICONE_DO_ESTADO: Record<CandidateState, typeof CircleCheck> = {
-  'sem-resposta': CircleDashed,
-  resgate: Activity,
-  parcial: Loader,
-  abaixo: X,
-  combina: CircleCheck
+const ICONE_DO_ESTADO: Record<CandidateState, typeof IconCircleCheck> = {
+  'sem-resposta': IconCircleDashed,
+  resgate: IconActivity,
+  parcial: IconLoader,
+  abaixo: IconX,
+  combina: IconCircleCheck
 };
 
 export function CandidateStateBadge({ entry }: { entry: JobRankingEntry }) {

@@ -2,12 +2,12 @@
 
 import type { ReactNode } from 'react';
 import {
-  ArrowRightLeftIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  MinusIcon,
-  TriangleAlertIcon
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconArrowsLeftRight,
+  IconCheck,
+  IconChevronDown,
+  IconMinus
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -42,10 +42,10 @@ const PALAVRA: Record<EstadoDaImportacao, string> = {
 };
 
 const ICONE: Record<EstadoDaImportacao, ReactNode> = {
-  entram: <CheckIcon aria-hidden="true" />,
-  atualizam: <ArrowRightLeftIcon aria-hidden="true" />,
-  'sem-mudanca': <MinusIcon aria-hidden="true" />,
-  'com-erro': <TriangleAlertIcon aria-hidden="true" />
+  entram: <IconCheck aria-hidden="true" />,
+  atualizam: <IconArrowsLeftRight aria-hidden="true" />,
+  'sem-mudanca': <IconMinus aria-hidden="true" />,
+  'com-erro': <IconAlertTriangle aria-hidden="true" />
 };
 
 /** Fundo tingido no tom do estado; a palavra continua ao lado do ícone. */
@@ -96,7 +96,7 @@ export function GrupoDeDecisao({
           ) : null}
         </span>
         {children ? (
-          <ChevronDownIcon
+          <IconChevronDown
             aria-hidden="true"
             className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
           />

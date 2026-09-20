@@ -89,6 +89,7 @@
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.5",
     "@number-flow/react": "^0.6.0",
+    "@tabler/icons-react": "^3.47.0",
     "@workspace/auth": "workspace:*",
     "@workspace/common": "workspace:*",
     "class-variance-authority": "^0.7.0",

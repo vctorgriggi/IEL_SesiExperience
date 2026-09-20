@@ -14,12 +14,12 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import type { Talent } from '@/features/iel-demo/types';
 import {
-  HeartHandshake,
-  LockIcon,
-  Phone,
-  UserCheck,
-  UserX
-} from 'lucide-react';
+  IconHeartHandshake,
+  IconLock,
+  IconPhone,
+  IconUserCheck,
+  IconUserX
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -186,11 +186,14 @@ export function AcompanhamentoScreen() {
        * conta quem já teve tempo de ficar (passou dos 90 dias); "Saíram" diz
        * quantas saídas a empresa nunca avisou — o que a segunda fonte trouxe.
        */}
-      <div className="grid items-stretch gap-4 sm:grid-cols-3">
+      <div
+        data-tour="acompanhamento-indicadores"
+        className="grid items-stretch gap-4 sm:grid-cols-3"
+      >
         <CartaoDeIndicador
           rotulo="Contratados"
           valor={totais.contratados}
-          icone={HeartHandshake}
+          icone={IconHeartHandshake}
           tom="pessoa"
           rodape="que o IEL acompanha até os 90 dias"
           apoio="Pessoas que a empresa disse ter contratado. O IEL pergunta a cada uma, aos 30, 60 e 90 dias, se continua e como está sendo."
@@ -202,7 +205,7 @@ export function AcompanhamentoScreen() {
               ? '—'
               : `${totais.ficaram} de ${totais.passaramDos90}`
           }
-          icone={UserCheck}
+          icone={IconUserCheck}
           tom="combina"
           rodape={
             totais.passaramDos90 === 0
@@ -214,7 +217,7 @@ export function AcompanhamentoScreen() {
         <CartaoDeIndicador
           rotulo="Saíram antes dos 90"
           valor={totais.sairam}
-          icone={UserX}
+          icone={IconUserX}
           tom={totais.sairam > 0 ? 'difere' : 'neutro'}
           rodape={
             totais.sairam === 0
@@ -239,8 +242,11 @@ export function AcompanhamentoScreen() {
           >
             Ligar hoje
           </h2>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <LockIcon
+          <span
+            data-tour="acompanhamento-privacidade"
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+          >
+            <IconLock
               aria-hidden="true"
               className="size-3"
             />
@@ -285,7 +291,7 @@ export function AcompanhamentoScreen() {
                     })}
                     onClick={() => abrir(situacao.applicationId, 'ligar')}
                   >
-                    <Phone aria-hidden="true" />
+                    <IconPhone aria-hidden="true" />
                     Ligar
                     <span className="sr-only"> para {talent.name}</span>
                   </Button>
@@ -298,6 +304,7 @@ export function AcompanhamentoScreen() {
 
       {/* Segunda pergunta: como estão os que a gente colocou? */}
       <section
+        data-tour="acompanhamento-fila"
         aria-labelledby="como-estao"
         className="flex flex-col gap-3"
       >
@@ -400,9 +407,6 @@ export function AcompanhamentoScreen() {
             </div>
           </>
         )}
-        <p className="text-xs text-muted-foreground">
-          A ordem é a de quem ligar primeiro. Ninguém aqui está em ranking.
-        </p>
       </section>
 
       {linhaAberta && abertura ? (

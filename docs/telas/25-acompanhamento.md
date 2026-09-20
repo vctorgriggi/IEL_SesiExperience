@@ -126,3 +126,4 @@ para quem foi contratado** da fila de [Visão geral](01-visao-geral.md). Sai par
   informou" (virou o fim da frase da linha). O motivo de ligação passou a ser uma função só, usada
   aqui e no Início.
 - 2026-09-19 — criada.
+- 2026-09-20 — removida a linha de rodapé da fila ("a ordem é a de quem ligar primeiro… ninguém aqui está em ranking").

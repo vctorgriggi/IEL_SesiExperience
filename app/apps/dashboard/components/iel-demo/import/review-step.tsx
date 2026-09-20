@@ -8,7 +8,7 @@ import type {
 import { plural } from '@/features/iel-demo/format';
 import { getTalent } from '@/features/iel-demo/state/selectors';
 import type { DemoState } from '@/features/iel-demo/types';
-import { CircleAlert } from 'lucide-react';
+import { IconAlertCircle } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -204,7 +204,7 @@ function TabelaDoGrupo({ grupo }: { grupo: Grupo }) {
                     variant="outline"
                     className={cn('ml-2 gap-1', BADGE_DE_ESTADO.atencao)}
                   >
-                    <CircleAlert
+                    <IconAlertCircle
                       aria-hidden="true"
                       className="size-3"
                     />

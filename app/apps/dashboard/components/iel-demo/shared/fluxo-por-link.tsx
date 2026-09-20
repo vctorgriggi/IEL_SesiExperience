@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ChevronDownIcon, MessageCircleIcon } from 'lucide-react';
+import { IconChevronDown, IconMessageCircle } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -51,7 +51,7 @@ export function CaminhoDaConversa({ href }: { href: string }) {
           asChild
         >
           <Link href={href}>
-            <MessageCircleIcon aria-hidden="true" />
+            <IconMessageCircle aria-hidden="true" />
             Responder conversando
           </Link>
         </Button>
@@ -108,7 +108,7 @@ export function FraseOriginal({ texto }: { texto: string }) {
           // clicável sem empurrar o resto da tela.
           className="relative -ml-2 h-8 gap-1 px-2 text-[13px] font-normal text-muted-foreground after:absolute after:-inset-y-2 after:inset-x-0 after:content-['']"
         >
-          <ChevronDownIcon
+          <IconChevronDown
             aria-hidden="true"
             className={cn(
               'size-3.5 transition-transform',

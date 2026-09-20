@@ -35,23 +35,23 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
-  Building2,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  CircleAlert,
-  ClipboardCheck,
-  Clock,
-  Lightbulb,
-  Phone,
-  Reply,
-  Search,
-  Timer,
-  Users,
-  type LucideIcon
-} from 'lucide-react';
+  IconAlertCircle,
+  IconArrowBackUp,
+  IconBuildingSkyscraper,
+  IconBulb,
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconClipboardCheck,
+  IconClock,
+  IconClockHour4,
+  IconPhone,
+  IconSearch,
+  IconUsers
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Textarea, toast } from '@workspace/ui';
@@ -145,7 +145,7 @@ function SectionCard({
   badge?: React.ReactNode;
   footer: string;
   hint?: string;
-  icone: LucideIcon;
+  icone: TablerIcon;
   tom: TomDeCor;
 }) {
   return (
@@ -271,29 +271,32 @@ export function CompaniesScreen() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div
+        data-tour="empresas-lista"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
+      >
         <KpiCard
           kpi={kpis.empresasComVagaAtiva}
-          icone={Building2}
+          icone={IconBuildingSkyscraper}
           tom="empresa"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={kpis.perfilCompleto}
-          icone={ClipboardCheck}
+          icone={IconClipboardCheck}
           tom="empresa"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={kpis.tempoParaCompletarPerfil}
           quedaEBoa
-          icone={Timer}
+          icone={IconClockHour4}
           tom="neutro"
           className="lg:col-span-2"
         />
         <KpiCard
           kpi={{ ...kpis.roteirosUsados, rotulo: 'Roteiros usados' }}
-          icone={Phone}
+          icone={IconPhone}
           tom="empresa"
           className="lg:col-span-3"
           valor={`${kpis.roteirosUsados.valor ?? 0} de ${kpis.roteirosGerados.valor ?? 0}`}
@@ -301,7 +304,7 @@ export function CompaniesScreen() {
         />
         <KpiCard
           kpi={kpis.retornoSobreCurriculos}
-          icone={Reply}
+          icone={IconArrowBackUp}
           tom="empresa"
           className="sm:col-span-2 lg:col-span-3"
         />
@@ -348,7 +351,7 @@ export function CompaniesScreen() {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search
+              <IconSearch
                 aria-hidden="true"
                 className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
               />
@@ -481,7 +484,7 @@ export function CompaniesScreen() {
                             </span>
                             {aberto ? (
                               <>
-                                <CircleAlert
+                                <IconAlertCircle
                                   aria-hidden="true"
                                   className="size-3.5 text-[hsl(var(--brand-accent))]"
                                 />
@@ -574,7 +577,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual === 0}
               >
                 <span className="sr-only">Primeira página</span>
-                <ChevronsLeft aria-hidden="true" />
+                <IconChevronsLeft aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -584,7 +587,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual === 0}
               >
                 <span className="sr-only">Página anterior</span>
-                <ChevronLeft aria-hidden="true" />
+                <IconChevronLeft aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -596,7 +599,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual >= totalPaginas - 1}
               >
                 <span className="sr-only">Próxima página</span>
-                <ChevronRight aria-hidden="true" />
+                <IconChevronRight aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -606,7 +609,7 @@ export function CompaniesScreen() {
                 disabled={paginaAtual >= totalPaginas - 1}
               >
                 <span className="sr-only">Última página</span>
-                <ChevronsRight aria-hidden="true" />
+                <IconChevronsRight aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -776,7 +779,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SectionCard
           description="Responderam"
-          icone={Users}
+          icone={IconUsers}
           tom="empresa"
           value={`${progress.answered} de ${progress.total}`}
           badge={
@@ -791,7 +794,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                     : BADGE_DE_ESTADO.neutro
               )}
             >
-              <Clock className="size-3" />
+              <IconClock className="size-3" />
               {deadlineLabel(progress)}
             </Badge>
           }
@@ -804,7 +807,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         />
         <SectionCard
           description="Temas fechados"
-          icone={ClipboardCheck}
+          icone={IconClipboardCheck}
           tom="empresa"
           value={`${suficientes} de ${profile.length}`}
           badge={
@@ -813,7 +816,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
                 variant="outline"
                 className={cn(SELO, BADGE_DE_ESTADO.atencao)}
               >
-                <CircleAlert className="size-3" />
+                <IconAlertCircle className="size-3" />
                 faltam {profile.length - suficientes}
               </Badge>
             ) : undefined
@@ -827,7 +830,7 @@ export function CompanyDetailScreen({ companyId }: { companyId: string }) {
         />
         <SectionCard
           description="Sugestões para confirmar"
-          icone={Lightbulb}
+          icone={IconBulb}
           tom="neutro"
           value={plural(sugestoes, 'ponto', 'pontos')}
           footer={
@@ -1623,12 +1626,12 @@ function RoteiroDaLigacao({ companyId }: { companyId: string }) {
                 className="gap-1 font-normal text-muted-foreground"
               >
                 {data ? (
-                  <Check
+                  <IconCheck
                     aria-hidden="true"
                     className="size-3 text-foreground"
                   />
                 ) : (
-                  <Clock
+                  <IconClock
                     aria-hidden="true"
                     className="size-3"
                   />

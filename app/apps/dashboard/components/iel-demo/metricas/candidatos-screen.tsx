@@ -15,16 +15,16 @@ import {
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getVisibleJobs } from '@/features/iel-demo/state/selectors';
 import {
-  ArrowRight,
-  ClipboardCheck,
-  EyeOff,
-  FileLock2,
-  MailOpen,
-  ShieldCheck,
-  Smartphone,
-  Timer,
-  UserCheck
-} from 'lucide-react';
+  IconArrowRight,
+  IconClipboardCheck,
+  IconClockHour4,
+  IconDeviceMobile,
+  IconEyeOff,
+  IconMailOpened,
+  IconShieldCheck,
+  IconShieldLock,
+  IconUserCheck
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -99,7 +99,7 @@ export function CandidatosScreen() {
             routes.dashboard.iel.applications.byId(candidaturaDeExemplo).index
           }
         >
-          <Smartphone aria-hidden="true" />
+          <IconDeviceMobile aria-hidden="true" />
           Ver como o candidato vê
         </Link>
       </Button>
@@ -202,21 +202,24 @@ export function CandidatosScreen() {
         </div>
       </div>
 
-      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        data-tour="questionarios-indicadores"
+        className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
         <KpiCard
           kpi={kpis.taxaAbertura}
-          icone={MailOpen}
+          icone={IconMailOpened}
           tom="pessoa"
         />
         <KpiCard
           kpi={kpis.conclusao}
-          icone={ClipboardCheck}
+          icone={IconClipboardCheck}
           tom="pessoa"
         />
         <KpiCard
           kpi={{ ...kpis.tempoMedioResposta, rotulo: 'Tempo médio' }}
           quedaEBoa
-          icone={Timer}
+          icone={IconClockHour4}
           tom="neutro"
           rodape={
             celular === null
@@ -226,7 +229,7 @@ export function CandidatosScreen() {
         />
         <KpiCard
           kpi={kpis.consentimentos}
-          icone={ShieldCheck}
+          icone={IconShieldCheck}
           tom="combina"
           apoio="Aceite com versão e horário, antes da primeira pergunta."
         />
@@ -235,7 +238,10 @@ export function CandidatosScreen() {
       {/* Os dois cartões com a mesma altura: o funil e a lista de abandono
           ocupam a altura toda, com as linhas distribuídas, e o rodapé de cada
           um fica colado embaixo. */}
-      <div className="grid items-stretch gap-4 lg:grid-cols-2">
+      <div
+        data-tour="questionarios-funil"
+        className="grid items-stretch gap-4 lg:grid-cols-2"
+      >
         <Card className="h-full shadow-xs">
           <CardHeader>
             <CardTitle className="text-base font-semibold">
@@ -308,7 +314,7 @@ export function CandidatosScreen() {
             >
               <Link href={routes.dashboard.iel.talents.index}>
                 Ver pessoas
-                <ArrowRight aria-hidden="true" />
+                <IconArrowRight aria-hidden="true" />
               </Link>
             </Button>
           </CardAction>
@@ -345,19 +351,19 @@ export function CandidatosScreen() {
 
 const PRIVACIDADE = [
   {
-    icone: EyeOff,
+    icone: IconEyeOff,
     titulo: 'Mascarado até precisar',
     texto:
       'Nome abreviado e contato oculto. Revelar é uma ação sua e fica registrada.'
   },
   {
-    icone: FileLock2,
+    icone: IconShieldLock,
     titulo: 'Você vê a leitura, não as respostas uma a uma',
     texto:
       'O quanto combina com a empresa e os 10 temas ficam visíveis. Cada resposta, não.'
   },
   {
-    icone: UserCheck,
+    icone: IconUserCheck,
     titulo: 'Do candidato, sempre',
     texto:
       'Aceite na primeira tela. Ele pode ver o que está registrado, pedir revisão e exclusão.'

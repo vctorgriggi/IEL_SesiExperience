@@ -25,7 +25,7 @@ import {
   getJobsByCompany,
   type CultureMapPoint
 } from '@/features/iel-demo/state/selectors';
-import { ChevronDown } from 'lucide-react';
+import { IconChevronDown } from '@tabler/icons-react';
 
 import { Alert } from '@workspace/ui';
 import { cn } from '@workspace/ui/lib/utils';
@@ -500,7 +500,7 @@ export function MapaDaEmpresa({
             size="sm"
             className="group/regioes"
           >
-            <ChevronDown
+            <IconChevronDown
               aria-hidden="true"
               className="transition-transform group-data-[state=open]/regioes:rotate-180"
             />

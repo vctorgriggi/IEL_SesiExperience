@@ -50,6 +50,7 @@ data de **Última atualização** no cabeçalho.
 | 23  | [Minha candidatura](23-minha-candidatura.md)                       | `/candidatura/[id]`                 | Candidato, sem login            |
 | 24  | [Como está sendo](24-como-esta-sendo.md)                           | `/candidatura/[id]/como-esta-sendo` | Candidato contratado, sem login |
 | 25  | [Acompanhamento](25-acompanhamento.md)                             | `/acompanhamento`                   | Analista IEL                    |
+| 26  | [Tour guiado](26-tour-guiado.md)                                   | diálogo do cabeçalho                | Analista IEL                    |
 
 ## Modelo para uma tela nova
 

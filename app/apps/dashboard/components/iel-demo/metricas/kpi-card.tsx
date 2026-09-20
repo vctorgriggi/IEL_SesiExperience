@@ -3,35 +3,22 @@
 import type { ComponentProps, ReactNode } from 'react';
 import type { Kpi } from '@/features/iel-demo/analysis/analytics';
 import {
-  Info,
-  Minus,
-  TrendingDown,
-  TrendingUp,
-  type LucideIcon
-} from 'lucide-react';
+  IconInfoCircle,
+  IconMinus,
+  IconTrendingDown,
+  IconTrendingUp
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/shadcn/badge';
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@workspace/ui/shadcn/card';
+import { Card } from '@workspace/ui/shadcn/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@workspace/ui/shadcn/tooltip';
 
-import {
-  BADGE_DE_ESTADO,
-  corDaVariacao,
-  ICONE_TINGIDO,
-  SELO,
-  type TomDeCor
-} from './cores';
+import { corDaVariacao, type EstadoDeCor, type TomDeCor } from './cores';
 import { formatarValorKpi, lerValorKpi, lerVariacao } from './formato';
 import { MarcadorHistorico } from './marcador-historico';
 
@@ -51,7 +38,7 @@ export type CartaoDeIndicadorProps = Omit<
   /** Selo à direita do número (variação ou etiqueta). */
   selo?: ReactNode;
   /** Ícone de contexto, num quadradinho tingido no canto esquerdo do topo. */
-  icone?: LucideIcon;
+  icone?: TablerIcon;
   /** Tom do quadradinho do ícone. Padrão: `neutro`. */
   tom?: TomDeCor;
   /** Mini indicador visual logo abaixo do número (pontos, barra fina). */
@@ -96,7 +83,7 @@ function AjudaDoIndicador({
             aria-label={rotulo ? `Sobre ${rotulo}` : 'Sobre este indicador'}
             className="mt-[3px] inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring"
           >
-            <Info
+            <IconInfoCircle
               aria-hidden="true"
               className="size-3.5"
             />
@@ -123,6 +110,60 @@ function AjudaDoIndicador({
  * fileira terminam na mesma altura; sem rodapé, nada é reservado. O cartão
  * ocupa a altura toda da célula (`h-full`).
  */
+const AMBIENTE_GLOW: Record<TomDeCor, string> = {
+  empresa: 'bg-blue-500/10 dark:bg-blue-400/10',
+  pessoa: 'bg-teal-500/10 dark:bg-teal-400/10',
+  combina: 'bg-emerald-500/10 dark:bg-emerald-400/10',
+  atencao: 'bg-amber-500/10 dark:bg-amber-400/10',
+  difere: 'bg-rose-500/10 dark:bg-rose-400/10',
+  neutro: 'bg-slate-500/10 dark:bg-slate-400/10'
+};
+
+const ICONE_GRADIENTE: Record<TomDeCor, string> = {
+  empresa:
+    'bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-sm shadow-blue-500/25 ring-1 ring-white/20',
+  pessoa:
+    'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-sm shadow-teal-500/25 ring-1 ring-white/20',
+  combina:
+    'bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-sm shadow-emerald-500/25 ring-1 ring-white/20',
+  atencao:
+    'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/25 ring-1 ring-white/20',
+  difere:
+    'bg-gradient-to-br from-rose-600 to-red-700 text-white shadow-sm shadow-rose-500/25 ring-1 ring-white/20',
+  neutro:
+    'bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-sm shadow-slate-500/25 ring-1 ring-white/20'
+};
+
+/**
+ * A barra do tom: some, e no hover cresce da esquerda para a direita no topo
+ * do cartão. É a mesma família de cor do quadradinho do ícone, então o cartão
+ * inteiro fica falando uma cor só.
+ */
+const BARRA_DO_TOM: Record<TomDeCor, string> = {
+  empresa: 'bg-gradient-to-r from-blue-600 to-indigo-700',
+  pessoa: 'bg-gradient-to-r from-teal-600 to-emerald-700',
+  combina: 'bg-gradient-to-r from-emerald-600 to-green-700',
+  atencao: 'bg-gradient-to-r from-amber-500 to-orange-600',
+  difere: 'bg-gradient-to-r from-rose-600 to-red-700',
+  neutro: 'bg-gradient-to-r from-slate-500 to-slate-700'
+};
+
+const BADGE_VARIAÇÃO: Record<EstadoDeCor, string> = {
+  combina:
+    'bg-emerald-500/10 text-emerald-700 ring-emerald-600/25 dark:bg-emerald-500/20 dark:text-emerald-300 dark:ring-emerald-500/30',
+  atencao:
+    'bg-amber-500/10 text-amber-700 ring-amber-600/25 dark:bg-amber-500/20 dark:text-amber-300 dark:ring-amber-500/30',
+  difere:
+    'bg-rose-500/10 text-rose-700 ring-rose-600/25 dark:bg-rose-500/20 dark:text-rose-300 dark:ring-rose-500/30',
+  neutro:
+    'bg-muted/80 text-muted-foreground ring-border/50 dark:bg-muted/40 dark:text-muted-foreground'
+};
+
+/**
+ * O esqueleto de todo cartão de número do /iel: ícone tingido, rótulo e ⓘ no
+ * topo, número grande com o selo à direita, mini indicador opcional e uma
+ * linha de rodapé.
+ */
 export function CartaoDeIndicador({
   rotulo,
   rotuloTexto,
@@ -141,32 +182,49 @@ export function CartaoDeIndicador({
 
   return (
     <Card
-      className={cn('@container/card h-full gap-3 py-4 shadow-xs', className)}
+      className={cn(
+        '@container/card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/75 bg-card/95 p-3 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/25',
+        className
+      )}
       {...props}
     >
+      {/* A barra do tom, no topo: cresce da esquerda no hover e no foco */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-within:scale-x-100 motion-reduce:transition-none',
+          BARRA_DO_TOM[tom]
+        )}
+      />
+
+      {/* Ambient background glow suave no canto superior direito */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute -right-6 -top-6 size-28 rounded-full blur-2xl opacity-25 transition-opacity duration-300 group-hover:opacity-45',
+          AMBIENTE_GLOW[tom]
+        )}
+      />
+
       {leitura ? <p className="sr-only">{leitura}</p> : null}
-      <CardHeader
-        aria-hidden={oculto}
-        className="flex flex-col gap-2"
-      >
-        <div className="flex min-h-10 w-full items-center gap-3">
+
+      <div className="relative flex flex-1 flex-col gap-1.5">
+        <div className="flex items-center gap-2">
           {Icone ? (
             <span
               aria-hidden="true"
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                ICONE_TINGIDO[tom]
+                'flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105',
+                ICONE_GRADIENTE[tom]
               )}
             >
-              <Icone className="size-4" />
+              <Icone className="size-3.5" />
             </span>
           ) : null}
-          {/*
-           * O ⓘ fica fora do `line-clamp`: dentro dele o `overflow: hidden`
-           * cortaria o anel de foco do botão.
-           */}
-          <CardDescription className="flex min-w-0 flex-1 items-start gap-1.5 leading-5">
-            <span className="line-clamp-2 min-w-0">{rotulo}</span>
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5">
+            <span className="line-clamp-2 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+              {rotulo}
+            </span>
             {apoio ? (
               <AjudaDoIndicador
                 rotulo={
@@ -176,33 +234,26 @@ export function CartaoDeIndicador({
                 texto={apoio}
               />
             ) : null}
-          </CardDescription>
+          </div>
         </div>
-        {/*
-         * O selo mora na linha do número, logo depois dele: no topo ele
-         * disputava espaço com o rótulo, que a 1280px virava "Retorno das…".
-         */}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <CardTitle className="min-w-0 text-3xl font-semibold tabular-nums">
+
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <div className="min-w-0 text-2xl font-extrabold leading-none tracking-tight tabular-nums text-foreground">
             {valor}
-          </CardTitle>
+          </div>
           {selo ? <div className="shrink-0">{selo}</div> : null}
         </div>
+
         {indicador}
-      </CardHeader>
+      </div>
+
       {rodape ? (
-        <CardFooter
+        <div
           aria-hidden={oculto}
-          className="mt-auto pt-1 text-sm"
+          className="relative mt-2 text-[11px] leading-tight text-muted-foreground"
         >
-          {/*
-           * Uma linha só, colada embaixo: os cartões de uma fileira terminam
-           * na mesma altura sem reservar espaço em quem não tem rodapé.
-           */}
-          <span className="flex max-w-full min-w-0 items-center gap-2 font-medium">
-            {rodape}
-          </span>
-        </CardFooter>
+          {rodape}
+        </div>
       ) : null}
     </Card>
   );
@@ -228,7 +279,7 @@ export type KpiCardProps = {
    */
   quedaEBoa?: boolean;
   /** Ícone de contexto, no canto, num quadradinho tingido. */
-  icone?: LucideIcon;
+  icone?: TablerIcon;
   /** Tom do quadradinho do ícone. Padrão: `neutro`. */
   tom?: TomDeCor;
   /** Mini indicador visual abaixo do número. */
@@ -240,22 +291,22 @@ export type KpiCardProps = {
 function direcao(kpi: Kpi): {
   texto: string;
   curto?: string;
-  Icone: LucideIcon;
+  Icone: TablerIcon;
 } {
   if (kpi.variacao === null) {
     return {
       texto: 'Sem comparação no período',
       curto: 'Sem comparação',
-      Icone: Minus
+      Icone: IconMinus
     };
   }
   if (kpi.variacao > 0) {
-    return { texto: 'Subiu no período', Icone: TrendingUp };
+    return { texto: 'Subiu no período', Icone: IconTrendingUp };
   }
   if (kpi.variacao < 0) {
-    return { texto: 'Caiu no período', Icone: TrendingDown };
+    return { texto: 'Caiu no período', Icone: IconTrendingDown };
   }
-  return { texto: 'Estável no período', Icone: Minus };
+  return { texto: 'Estável no período', Icone: IconMinus };
 }
 
 /**
@@ -327,47 +378,50 @@ export function KpiCard({
       }
       selo={
         kpi.variacaoTexto ? (
-          <Badge
-            variant="outline"
-            className={cn(SELO, BADGE_DE_ESTADO[estado])}
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset shadow-xs',
+              BADGE_VARIAÇÃO[estado]
+            )}
           >
-            {/*
-             * "↗ +10 p.p." não se lê: o selo fica para os olhos e o leitor
-             * de tela ouve a frase inteira.
-             */}
-            <Icone aria-hidden="true" />
+            <Icone
+              aria-hidden="true"
+              className="size-3 stroke-[2.5]"
+            />
             <span aria-hidden="true">{kpi.variacaoTexto}</span>
             <span className="sr-only">{variacaoFalada}</span>
-          </Badge>
+          </span>
         ) : null
       }
       rodape={
         rodape ?? (
-          <>
-            {/*
-             * Com o selo, a frase já foi lida por extenso logo acima. Em
-             * cartão estreito (4 por linha a 1280px), "Sem comparação no
-             * período" quebrava em duas linhas e desalinhava o rodapé dos
-             * vizinhos: fica só "Sem comparação".
-             */}
+          <div className="flex w-full items-center justify-between gap-2">
             <span
-              aria-hidden={variacaoFalada ? 'true' : undefined}
-              className="truncate"
-            >
-              {curto ? (
-                <>
-                  <span className="@max-3xs/card:hidden">{texto}</span>
-                  <span className="hidden @max-3xs/card:inline">{curto}</span>
-                </>
-              ) : (
-                texto
+              className={cn(
+                'inline-flex items-center gap-1.5 font-medium',
+                estado === 'combina'
+                  ? 'text-emerald-700 dark:text-emerald-400'
+                  : estado === 'difere'
+                    ? 'text-rose-700 dark:text-rose-400'
+                    : estado === 'atencao'
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-muted-foreground'
               )}
-            </span>{' '}
-            <Icone
-              aria-hidden="true"
-              className="size-4 shrink-0"
-            />
-          </>
+            >
+              <Icone
+                aria-hidden="true"
+                className="size-3 shrink-0 stroke-[2]"
+              />
+              <span className="truncate">
+                {curto && kpi.variacao === null ? curto : texto}
+              </span>
+            </span>
+            {kpi.variacao !== null ? (
+              <span className="shrink-0 font-normal text-muted-foreground/60">
+                vs. anterior
+              </span>
+            ) : null}
+          </div>
         )
       }
       apoio={apoio ?? kpi.descricao}

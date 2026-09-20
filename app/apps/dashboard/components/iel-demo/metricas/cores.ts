@@ -119,6 +119,20 @@ export const ICONE_TINGIDO: Record<TomDeCor, string> = {
   pessoa: 'bg-[hsl(var(--data-pessoa))] text-white'
 };
 
+/**
+ * O tom só no traço do ícone, sem chip atrás.
+ *
+ * Um ícone de 12px dentro de um quadrado colorido de 20px vira selo, e selo
+ * compete com o texto ao lado — a diretriz é estrutura por borda e espaço,
+ * não por cor cheia. Aqui o tom identifica sem encher: o traço colorido, o
+ * fundo da tela.
+ */
+export const ICONE_NO_TOM: Record<TomDeCor, string> = {
+  ...TEXTO_DE_ESTADO,
+  empresa: LADO.empresa.texto,
+  pessoa: LADO.pessoa.texto
+};
+
 /** Preenchimento puro no tom (barra, ponto, mini indicador). */
 export const PREENCHIMENTO_DO_TOM: Record<TomDeCor, string> = {
   ...PREENCHIMENTO_DE_ESTADO,

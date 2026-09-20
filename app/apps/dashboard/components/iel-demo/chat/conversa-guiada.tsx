@@ -26,7 +26,7 @@ import {
   type ReguaDoPasso
 } from '@/features/iel-demo/chat/motor';
 import { nowIso } from '@/features/iel-demo/state/storage';
-import { Square, Volume2 } from 'lucide-react';
+import { IconSquare, IconVolume } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
@@ -462,7 +462,7 @@ export function ConversaGuiada({
               className="relative h-9 after:absolute after:-inset-1.5 after:content-['']"
               onClick={alternarOuvirTudo}
             >
-              <Volume2 aria-hidden="true" />
+              <IconVolume aria-hidden="true" />
               {/* Nome fixo: o estado ligado/desligado é o `aria-pressed` (e a
                   cor), para o leitor não ouvir um botão que muda de nome. */}
               Ouvir tudo
@@ -671,12 +671,12 @@ function Bolha({
             }
           >
             {tocando ? (
-              <Square
+              <IconSquare
                 aria-hidden="true"
                 className="size-3"
               />
             ) : (
-              <Volume2
+              <IconVolume
                 aria-hidden="true"
                 className="size-3.5"
               />
