@@ -443,14 +443,14 @@ export function DetalheDaPessoa({
             href={iel.applications.byId(situacao.applicationId).index}
             className="text-muted-foreground underline-offset-4 hover:underline"
           >
-            Abrir como ela vê <span aria-hidden="true">→</span>
+            Abrir como a pessoa vê <span aria-hidden="true">→</span>
           </Link>
           {/* O link que a analista manda: a pergunta que a pessoa recebe. */}
           <Link
             href={iel.applications.byId(situacao.applicationId).checkIn}
             className="text-muted-foreground underline-offset-4 hover:underline"
           >
-            A pergunta que ela recebe <span aria-hidden="true">→</span>
+            A pergunta que a pessoa recebe <span aria-hidden="true">→</span>
           </Link>
         </div>
       </DrawerContent>
