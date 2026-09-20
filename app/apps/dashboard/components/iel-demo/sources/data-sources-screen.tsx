@@ -541,7 +541,7 @@ function DetalheEmail() {
                 <dt className="text-sm text-muted-foreground">
                   {numero.rotulo}
                 </dt>
-                <dd className="text-2xl font-semibold tabular-nums">
+                <dd className="t-num-card">
                   {numero.pct === null ? '—' : `${numero.pct}%`}
                 </dd>
                 <dd className="text-xs text-muted-foreground tabular-nums">

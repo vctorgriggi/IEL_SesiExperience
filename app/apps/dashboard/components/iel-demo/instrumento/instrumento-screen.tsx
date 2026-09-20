@@ -271,9 +271,7 @@ function NumeroDoCabecalho({
     <Card className="shadow-xs">
       <CardHeader>
         <CardDescription>{rotulo}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums">
-          {valor}
-        </CardTitle>
+        <CardTitle className="t-num-card">{valor}</CardTitle>
         <p className="text-xs text-muted-foreground">{detalhe}</p>
       </CardHeader>
     </Card>

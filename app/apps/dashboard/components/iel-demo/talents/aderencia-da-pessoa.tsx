@@ -390,7 +390,8 @@ function LeituraNaEmpresa({
           <div className="flex flex-wrap items-baseline gap-2.5">
             <span
               className={cn(
-                'text-4xl font-semibold tracking-tight tabular-nums',
+                /* O número de destaque da tela: 40px, `t-num`. */
+                't-num',
                 textoDaAderencia(total)
               )}
             >

@@ -134,7 +134,48 @@ Agora a barra é o azul-noite da logo, a área de trabalho é marfim e o cartão
 
 O jeito de fazer isso continua sendo "componente de fábrica": em vez de caçar classe por classe, os tokens do kit são **relidos dentro de `[data-sidebar='sidebar']`** (ver `iel-theme.css`). Um `Button`, um `Input` ou um `Badge` colocado na barra acerta a cor sozinho. Quem escrever componente novo para a barra não precisa saber disso.
 
-Fonte **Red Hat Display** (Google Fonts): interface em 500, títulos em 600/700, assinaturas em caixa alta espaçada. Logo: o símbolo (ligadura d+v) no header da sidebar e no favicon; o wordmark "mind RH" nas telas por link e no relatório. Área de proteção e tamanho mínimo conforme o manual (120 px em tela; abaixo disso, o símbolo).
+### Tipografia
+
+**Mudou em 20/09/2026.** Era Red Hat Display em tudo, do título ao corpo de 13 px. Uma família só num painel denso obriga a mesma letra a fazer dois trabalhos opostos: título quer personalidade, corpo de interface quer ser invisível. Agora são três papéis.
+
+| Papel                                                 | Família                   | Pesos         | Por quê                                                                                                                                                                                       |
+| ----------------------------------------------------- | ------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Títulos, números de destaque, rótulo em caixa alta    | **Archivo**, largura 112% | 600, 700      | Grotesca de origem editorial, desenhada para título e para tabela. O eixo de largura variável dá o título levemente expandido sem trocar de família. Algarismo tabular nativo.                  |
+| Interface, corpo, tabela, formulário                  | **Inter**                 | 400, 500, 600 | Desenhada para tela: altura de x alta e formas abertas entre 12 e 14 px, o tamanho em que a analista passa o dia. Some do caminho.                                                              |
+| Questionário e telas do candidato                     | **Atkinson Hyperlegible** | 400, 700      | Desenhada pelo Braille Institute para baixa visão, com os caracteres deliberadamente diferentes entre si (`1`/`l`/`I`, `0`/`O`). É decisão de acessibilidade com autor e propósito, não gosto.  |
+| Marca: logo, assinatura, capa do deck                 | **Red Hat Display**       | 700           | Continua no manual e na logo, que são imagem e não texto. Não muda.                                                                                                                            |
+
+Carregadas pelo `next/font` no layout de `(iel)`, não pelo `<link>` do Google: a fonte é servida do próprio domínio, sem requisição a terceiro e sem salto de layout. A pilha de reserva é `Segoe UI` antes de `system-ui` nas três — em máquina do IEL sem cache e sem rede, é nela que o produto cai, e ela é legível em 13 px.
+
+**A escala** está em `iel-theme.css`, como classe e não como token do Tailwind: o `@theme` da v4 é global, e um token novo em `packages/ui` vazaria para o resto do produto. Base 16 px, nada abaixo de 12 px em tela da analista.
+
+| Uso                     | Tamanho / entrelinha | Classe            |
+| ----------------------- | -------------------- | ----------------- |
+| Display                 | 40 / 1.05            | `t-display`       |
+| Título de tela          | 28 / 1.15            | `t-titulo-tela`   |
+| Título de seção         | 20 / 1.25            | `t-titulo-secao`  |
+| Título de card          | 16 / 1.3             | `t-titulo-card`   |
+| Número de destaque      | 40 / 1               | `t-num`           |
+| Número em card          | 28 / 1               | `t-num-card`      |
+| Corpo                   | 14 / 1.5             | `t-corpo`         |
+| Apoio e legenda         | 12.5 / 1.45          | `t-apoio`         |
+| Rótulo em caixa alta    | 11 / 1, +0.16em      | `rotulo`          |
+
+Regras que a escala já resolve: três pesos por tela no máximo; espaçamento negativo só acima de 24 px; caixa alta só em rótulo curto e sempre com espaçamento positivo; número sempre tabular em tabela, KPI e comparação; **itálico não entra em lugar nenhum**; linha entre 45 e 75 caracteres — em parágrafo largo limite a largura do bloco (`t-medida`), nunca o tamanho da fonte.
+
+**As telas do candidato têm escala própria**, com piso de 16 px: pergunta 22, opção e botão 18, apoio 16. Nada é pequeno ali, nem o rodapé — quem responde está no celular, muitas vezes no sol, e pode ter baixa visão. A troca de família é feita nos **tokens** (`--font-sans`, `--font-display`) dentro de `[data-iel-acessivel]`, o mesmo "componente de fábrica" da barra: Atkinson desce para tudo que está dentro, componente do kit incluído, sem nenhuma regra disputando especificidade.
+
+Uma exceção ao piso, documentada no CSS: a **régua de concordância** fica em 12 px. São cinco colunas em 390 px, e "Nada a ver comigo" em 70 px de largura quebraria em quatro linhas — a escala deixaria de ser legível de um relance, que é justamente o que o piso protege. A família muda; o tamanho não.
+
+**Logo:** o símbolo (ligadura d+v) no header da sidebar e no favicon; o wordmark "mind RH" nas telas por link e no relatório. Área de proteção e tamanho mínimo conforme o manual (120 px em tela; abaixo disso, o símbolo).
+
+### Mindzinho
+
+O assistente tem rosto, e o rosto é derivado do estado — nunca escolhido na marcação. `poseDe(estado)` (`features/iel-demo/mindzinho/poses.ts`) é a única porta: `ola` na abertura e na tela vazia, `pensando` enquanto a resposta é montada, `explicando` ao lado da resposta, `atencao` quando falta resposta, o prazo vence ou deu erro. Se a tela pudesse pedir `pose="atencao"` porque achou bonito, a cara do boneco deixaria de ser informação e a analista aprenderia a ignorar o canto da tela.
+
+Aparece no botão flutuante (avatar em tema escuro, com a pose de atenção quando há fila), no item "Pergunte ao Mind" do leque, no cabeçalho do painel e na bolha de espera. Sempre com rótulo de texto por perto — boneco sozinho não comunica — e sempre `decorativo` quando o texto ao lado já diz a mesma coisa, para o leitor de tela não anunciar duas vezes. Abaixo de 28 px só o avatar: nesse tamanho o corpo inteiro vira mancha, e mancha não tem pose.
+
+**Movimento:** só `transform` e `opacity`. Troca de pose em 120 ms de fusão cruzada; a antena da pose de atenção pulsa **duas vezes e para**, porque alerta que pisca sem parar deixa de ser alerta; o painel entra em 180 ms com `cubic-bezier(.16, 1, .32, 1)`, no lugar dos 500 ms do kit. Com `prefers-reduced-motion: reduce` nada anima, sem exceção — e a regra é de CSS, não de JavaScript, para valer antes da primeira pintura e valer no painel que renderiza em portal.
 
 ### Cor nos dados
 

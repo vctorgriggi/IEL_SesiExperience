@@ -260,7 +260,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
       <Moldura badge={null}>
         <Card>
           <CardHeader>
-            <CardTitle className="text-[22px] tracking-tight">
+            <CardTitle className="t-pergunta">
               <h1>Este link não abriu</h1>
             </CardTitle>
             <CardDescription className="text-[15px] leading-relaxed">

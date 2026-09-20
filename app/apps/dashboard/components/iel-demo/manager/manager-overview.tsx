@@ -114,15 +114,13 @@ export function ManagerOverview() {
         <Card>
           <CardHeader>
             <CardDescription>Vagas da empresa</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
-              {jobs.length}
-            </CardTitle>
+            <CardTitle className="t-num-card">{jobs.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <CardDescription>Perfis compartilhados</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
+            <CardTitle className="t-num-card">
               {sharedProfiles.length}
             </CardTitle>
           </CardHeader>
@@ -130,9 +128,7 @@ export function ManagerOverview() {
         <Card>
           <CardHeader>
             <CardDescription>Retornos pendentes</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">
-              {pendingDecisions}
-            </CardTitle>
+            <CardTitle className="t-num-card">{pendingDecisions}</CardTitle>
           </CardHeader>
         </Card>
       </div>
