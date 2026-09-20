@@ -10,7 +10,7 @@ export const DEMO_JOBS: Job[] = [
     title: 'Assistente de Logística',
     companyId: 'EMP-01',
     teamId: 'EQ-01',
-    location: 'Goiânia, GO',
+    location: 'Cuiabá, MT',
     workShift: 'Turno da tarde (13h às 22h)',
     stage: 'em-selecao',
     summary:
@@ -144,7 +144,7 @@ export const DEMO_JOBS: Job[] = [
     title: 'Assistente de Estoque',
     companyId: 'EMP-02',
     teamId: 'EQ-02',
-    location: 'Anápolis, GO',
+    location: 'Várzea Grande, MT',
     workShift: 'Horário comercial (8h às 17h)',
     stage: 'em-selecao',
     summary:
@@ -252,7 +252,7 @@ export const DEMO_JOBS: Job[] = [
     title: 'Assistente Administrativo',
     companyId: 'EMP-03',
     teamId: 'EQ-03',
-    location: 'Campo Grande, MS',
+    location: 'Cáceres, MT',
     workShift: 'Horário comercial (8h às 18h)',
     stage: 'aberta',
     summary:

@@ -111,6 +111,12 @@ import {
   DEMO_DATA_SOURCES,
   DEMO_PERSONAS
 } from '../fixtures';
+import { getOutcomesBase } from '../fixtures/outcomes';
+import {
+  getRegiao,
+  regiaoDaLocalizacao,
+  type RegiaoAtendimento
+} from '../fixtures/regioes';
 import { plural } from '../format';
 import type {
   Application,
@@ -448,10 +454,33 @@ export function getJobSummary(state: DemoState, job: Job): JobSummary {
   };
 }
 
+/**
+ * Regional da persona, quando ela responde por uma.
+ *
+ * A gerência devolve `null` e continua vendo o estado inteiro; é o que
+ * mantém o roteiro da demonstração igual ao que sempre foi.
+ */
+export function getRegiaoDaPersona(state: DemoState): RegiaoAtendimento | null {
+  const persona = getPersona(state);
+  if (persona.kind !== 'analista') return null;
+  return getRegiao(persona.regionId ?? null);
+}
+
+/** A empresa pertence à regional? Decide pela cidade da localização. */
+function daRegional(company: Company | null, regiaoId: string): boolean {
+  return !!company && regiaoDaLocalizacao(company.location) === regiaoId;
+}
+
 export function getVisibleJobs(state: DemoState): Job[] {
   const persona = getPersona(state);
   if (persona.kind === 'gestor' && persona.companyId) {
     return getJobsByCompany(persona.companyId);
+  }
+  const regiao = getRegiaoDaPersona(state);
+  if (regiao) {
+    return ALL_JOBS.filter((job) =>
+      daRegional(getCompany(job.companyId), regiao.id)
+    );
   }
   return ALL_JOBS;
 }
@@ -462,7 +491,52 @@ export function getVisibleCompanies(state: DemoState): Company[] {
     const company = getCompany(persona.companyId);
     return company ? [company] : [];
   }
+  const regiao = getRegiaoDaPersona(state);
+  if (regiao) {
+    return ALL_COMPANIES.filter((company) => daRegional(company, regiao.id));
+  }
   return ALL_COMPANIES;
+}
+
+/** Janela da meta: os 30 dias que antecedem a data de referência da base. */
+const DIAS_DA_META = 30;
+
+/**
+ * Encaminhamentos da regional nos últimos 30 dias.
+ *
+ * É o numerador do quadro de meta da analista, e soma as duas fontes pela
+ * mesma regra que o BI já usa: as remessas do histórico simulado, que têm id
+ * próprio (`HIST-VAG-…`) e nunca colidem com vaga do catálogo, mais os
+ * encaminhamentos registrados ao vivo durante a demonstração. Registrar um
+ * encaminhamento na tela move este número na hora.
+ */
+export function getEncaminhamentosDaRegional(
+  state: DemoState,
+  regiaoId: string
+): number {
+  const fim = new Date(DEMO_REFERENCE_DATE);
+  const inicio = new Date(fim);
+  inicio.setDate(inicio.getDate() - DIAS_DA_META);
+
+  const naJanela = (iso: string | null): boolean => {
+    if (!iso) return false;
+    const dia = new Date(iso);
+    return dia >= inicio && dia <= fim;
+  };
+
+  const historico = getOutcomesBase().remessas.filter(
+    (remessa) =>
+      naJanela(remessa.enviadaEm) &&
+      daRegional(getCompany(remessa.companyId), regiaoId)
+  ).length;
+
+  const vivos = getRegisteredReferrals(state).filter(
+    (referral) =>
+      naJanela(referral.createdAt) &&
+      daRegional(getCompany(referral.companyId), regiaoId)
+  ).length;
+
+  return historico + vivos;
 }
 
 /** Talentos visíveis para a persona: gestor só vê quem foi compartilhado. */

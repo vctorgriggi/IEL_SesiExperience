@@ -101,7 +101,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     headline: 'Conferência de mercadorias e organização de almoxarifado',
     summary:
       'Trabalhou em almoxarifado de distribuidora conferindo entradas e organizando prateleiras. Gosta de rotina definida e de saber o que fazer a cada dia.',
-    city: 'Anápolis, GO',
+    city: 'Várzea Grande, MT',
     email: 'julia.ferreira@example.com',
     experiences: [
       {
@@ -139,7 +139,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     headline: 'Recebimento e expedição em supermercado',
     summary:
       'Trabalhou no recebimento de um supermercado, com lançamento de entradas em sistema. Aprende rápido e prefere que alguém acompanhe nas primeiras semanas.',
-    city: 'Anápolis, GO',
+    city: 'Várzea Grande, MT',
     email: 'marcos.rocha@example.com',
     experiences: [
       {
@@ -173,7 +173,7 @@ export const DEMO_ACOMPANHAMENTO_TALENTS: Talent[] = [
     headline: 'Controle de materiais em obra e depósito',
     summary:
       'Controlou entrada e saída de materiais no depósito de uma construtora. Depende de transporte público e procura horário comercial.',
-    city: 'Anápolis, GO',
+    city: 'Várzea Grande, MT',
     email: 'renata.guimaraes@example.com',
     experiences: [
       {

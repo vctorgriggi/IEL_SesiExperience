@@ -20,7 +20,7 @@ describe('parser da planilha da Empregare', () => {
     expect(parsed.rows[0]?.name).toBe('Ana Ribeiro');
     expect(parsed.rows[0]?.technicalMatch).toBe(82);
     expect(parsed.rows[1]?.technicalMatch).toBe(80);
-    expect(parsed.rows[10]?.city).toBe('Senador Canedo, GO');
+    expect(parsed.rows[10]?.city).toBe('Nossa Senhora do Livramento, MT');
   });
 
   it('o arquivo .csv e a constante TS não divergem', () => {

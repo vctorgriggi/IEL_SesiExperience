@@ -11,7 +11,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Apoio a comércio e conferência de pedidos',
     summary:
       'Trabalhou em comércio com conferência de pedidos e atendimento. Quer aprender rotina de estoque e espera orientação nas primeiras semanas.',
-    city: 'Goiânia, GO',
+    city: 'Cuiabá, MT',
     email: 'ana.ribeiro@example.com',
     experiences: [
       {
@@ -86,7 +86,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Expedição e separação de cargas',
     summary:
       'Experiência declarada em logística de expedição, com preferência por autonomia na execução da rotina.',
-    city: 'Aparecida de Goiânia, GO',
+    city: 'Várzea Grande, MT',
     email: 'bruno.costa@example.com',
     experiences: [
       {
@@ -139,7 +139,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Rotina administrativa e documentos',
     summary:
       'Experiência administrativa com documentos, notas e atendimento. Participa de dois processos distintos.',
-    city: 'Goiânia, GO',
+    city: 'Cuiabá, MT',
     email: 'carla.mendes@example.com',
     experiences: [
       {
@@ -189,7 +189,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Apoio à expedição e carregamento',
     summary:
       'Experiência relacionada à expedição. Há duas informações de disponibilidade em conflito.',
-    city: 'Trindade, GO',
+    city: 'Santo Antônio de Leverger, MT',
     email: 'diego.alves@example.com',
     experiences: [
       {
@@ -227,7 +227,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Controle de materiais em indústria',
     summary:
       'Relata controle de materiais e interesse em estoque. Possui avaliação externa já realizada, com escala própria preservada.',
-    city: 'Anápolis, GO',
+    city: 'Várzea Grande, MT',
     email: 'elisa.martins@example.com',
     experiences: [
       {
@@ -277,7 +277,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Atendimento e apoio comercial',
     summary:
       'Experiência de atendimento. A base não tem informação suficiente sobre conferência de pedidos ou controle de materiais.',
-    city: 'Anápolis, GO',
+    city: 'Várzea Grande, MT',
     email: 'fabio.lima@example.com',
     experiences: [
       {
@@ -315,7 +315,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Organização de documentos e arquivo',
     summary:
       'Experiência em organização de documentos, com expectativas profissionais registradas em atendimento no IEL.',
-    city: 'Campo Grande, MS',
+    city: 'Cáceres, MT',
     email: 'gabriela.souza@example.com',
     experiences: [
       {
@@ -376,7 +376,7 @@ export const DEMO_TALENTS: Talent[] = [
     headline: 'Apoio administrativo geral',
     summary:
       'Experiência em apoio administrativo. O contexto organizacional da vaga 3 ainda é insuficiente para comparação nessa dimensão.',
-    city: 'Campo Grande, MS',
+    city: 'Cáceres, MT',
     email: 'hugo.santos@example.com',
     experiences: [
       {

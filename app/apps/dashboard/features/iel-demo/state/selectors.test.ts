@@ -301,7 +301,7 @@ describe('acessos auxiliares do catálogo', () => {
 
     expect(getCompany('EMP-01')?.name).toBe('Cerrado Distribuição');
     expect(getJob('VAG-02')?.title).toBe('Assistente de Estoque');
-    expect(getTalent('HUGO')?.city).toBe('Campo Grande, MS');
+    expect(getTalent('HUGO')?.city).toBe('Cáceres, MT');
     expect(getTeam(state, 'EQ-02')?.managerName).toBe('Rafael Nogueira');
     expect(getTeamsByCompany(state, 'EMP-01').map((team) => team.id)).toEqual([
       'EQ-01'
@@ -422,10 +422,11 @@ describe('persistência local versionada', () => {
     // Sobe a cada campo novo no estado persistido — os convites da amostra de
     // colaboradores, os talentos vindos de planilha, o histórico de
     // importações, na 7 o dono da resposta de fit (`talentId`) com a validade
-    // de 12 meses e, na 8, as competências que cada empresa escolheu medir
-    // (`competenciasEscolhidas`, R11). Estado gravado na versão anterior é
+    // de 12 meses, na 8 as competências que cada empresa escolheu medir
+    // (`competenciasEscolhidas`, R11) e, na 9, as cidades de Mato Grosso com
+    // a regional de cada persona. Estado gravado na versão anterior é
     // descartado em vez de remendado.
-    expect(DEMO_SCHEMA_VERSION).toBe(8);
+    expect(DEMO_SCHEMA_VERSION).toBe(9);
   });
 
   it('ignora conteúdo corrompido sem quebrar a demonstração', () => {
