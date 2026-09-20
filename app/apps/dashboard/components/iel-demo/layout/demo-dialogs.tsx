@@ -1,14 +1,14 @@
 'use client';
 
 import {
-  BuildingIcon,
-  EyeOffIcon,
-  PercentIcon,
-  RulerIcon,
-  ScaleIcon,
-  UsersIcon,
-  type LucideIcon
-} from 'lucide-react';
+  IconBuilding,
+  IconEyeOff,
+  IconPercentage,
+  IconRuler,
+  IconScale,
+  IconUsers
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import {
   Dialog,
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@workspace/ui/shadcn/dialog';
+
 
 type DialogProps = {
   open: boolean;
@@ -31,39 +32,39 @@ type DialogProps = {
  * As três primeiras explicam de onde vem o número; as três últimas são as
  * ressalvas que impedem alguém de lê-lo como nota de pessoa.
  */
-const COMO_FUNCIONA: { icone: LucideIcon; titulo: string; frase: string }[] = [
+const COMO_FUNCIONA: { icone: TablerIcon; titulo: string; frase: string }[] = [
   {
-    icone: PercentIcon,
+    icone: IconPercentage,
     titulo: 'O percentual é sobre a empresa, não sobre a vaga.',
     frase:
       'Ele compara o que a empresa pratica no dia a dia com o que a pessoa procura; os requisitos técnicos são a outra coluna e vêm prontos do sistema de vagas.'
   },
   {
-    icone: UsersIcon,
+    icone: IconUsers,
     titulo: 'Como a empresa trabalha é a média de quem trabalha nela.',
     frase:
       'São respostas de colaboradores de áreas e níveis diferentes — não a opinião de uma pessoa do RH.'
   },
   {
-    icone: RulerIcon,
+    icone: IconRuler,
     titulo: 'Ponto com pouca resposta fica em aberto e não entra na conta.',
     frase:
       'E quando gestão e equipe respondem diferente, a divergência aparece ao lado da média em vez de sumir dentro dela.'
   },
   {
-    icone: ScaleIcon,
+    icone: IconScale,
     titulo: 'O mínimo é 35%, e quem decide é uma pessoa.',
     frase:
       'Abaixo disso a pessoa fica marcada e continua visível: o corte organiza a leitura do analista e não descarta ninguém sozinho.'
   },
   {
-    icone: EyeOffIcon,
+    icone: IconEyeOff,
     titulo: 'Não é teste psicológico e não produz nota.',
     frase:
       'São frases sobre preferências de trabalho — nada de personalidade, saúde, família, religião ou opinião.'
   },
   {
-    icone: BuildingIcon,
+    icone: IconBuilding,
     titulo: 'O candidato não vê o nome da empresa.',
     frase:
       'Antes da entrevista ele vê atividade, localidade, segmento e turno; o nome só aparece quando a empresa o chama.'

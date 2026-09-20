@@ -1,6 +1,6 @@
 'use client';
 
-import { History } from 'lucide-react';
+import { IconHistory } from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import {
@@ -43,7 +43,7 @@ export function MarcadorHistorico({ className }: { className?: string }) {
             className
           )}
         >
-          <History
+          <IconHistory
             aria-hidden="true"
             className="size-3"
           />

@@ -29,12 +29,12 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import {
-  CircleCheckIcon,
-  ClockIcon,
-  HistoryIcon,
-  TriangleAlertIcon,
-  type LucideIcon
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconCircleCheck,
+  IconClock,
+  IconHistory
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Badge } from '@workspace/ui/shadcn/badge';
@@ -301,7 +301,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     return (
       <Moldura badge={badge}>
         <Aviso
-          icone={ClockIcon}
+          icone={IconClock}
           titulo="Esta pergunta ainda não é para você"
           tituloRef={tituloRef}
         >
@@ -383,7 +383,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
             aria-hidden="true"
             className={`flex size-9 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
           >
-            <CircleCheckIcon className="size-5" />
+            <IconCircleCheck className="size-5" />
           </span>
           <h1
             ref={tituloRef}
@@ -464,7 +464,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     return (
       <Moldura badge={badge}>
         <Aviso
-          icone={HistoryIcon}
+          icone={IconHistory}
           titulo="Você já respondeu"
           tituloRef={tituloRef}
           tom="combina"
@@ -505,7 +505,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
            * com o caminho para ela contar a versão dela.
            */
           <Aviso
-            icone={ClockIcon}
+            icone={IconClock}
             titulo="Não há pergunta aberta agora"
             tituloRef={tituloRef}
           >
@@ -516,7 +516,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
           </Aviso>
         ) : proximo !== null ? (
           <Aviso
-            icone={ClockIcon}
+            icone={IconClock}
             titulo="Ainda não é hora"
             tituloRef={tituloRef}
           >
@@ -528,7 +528,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
           </Aviso>
         ) : (
           <Aviso
-            icone={ClockIcon}
+            icone={IconClock}
             titulo="As perguntas terminaram"
             tituloRef={tituloRef}
           >
@@ -583,7 +583,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
                 aria-hidden="true"
                 className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${ICONE_TINGIDO.combina}`}
               >
-                <HistoryIcon className="size-4" />
+                <IconHistory className="size-4" />
               </span>
               <div className="flex flex-col gap-1">
                 <p className="text-[15px] leading-snug font-medium">
@@ -684,7 +684,7 @@ export function CheckInScreen({ applicationId }: { applicationId: string }) {
     >
       <CardContent>
         <p className="flex items-start gap-2 text-[15px] leading-snug font-medium">
-          <TriangleAlertIcon
+          <IconAlertTriangle
             aria-hidden="true"
             className="mt-0.5 size-4 shrink-0"
           />
@@ -998,7 +998,7 @@ function Aviso({
   tom = 'neutro',
   children
 }: {
-  icone: LucideIcon;
+  icone: TablerIcon;
   titulo: string;
   tituloRef: RefObject<HTMLHeadingElement | null>;
   tom?: 'neutro' | 'combina';

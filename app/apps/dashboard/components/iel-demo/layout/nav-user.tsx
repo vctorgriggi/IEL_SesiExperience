@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { sair } from '@/app/(iel)/entrar/actions';
 import { DEMO_PERSONAS } from '@/features/iel-demo/fixtures';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
-import { LogOut, MoreVertical, RotateCcw, UserCog } from 'lucide-react';
+import {
+  IconDotsVertical,
+  IconLogout,
+  IconRotate2,
+  IconUserCog
+} from '@tabler/icons-react';
 
 import { toast } from '@workspace/ui';
 import { Avatar, AvatarFallback } from '@workspace/ui/shadcn/avatar';
@@ -77,7 +82,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
                   {persona.kind} · demonstração
                 </span>
               </div>
-              <MoreVertical className="ml-auto size-4" />
+              <IconDotsVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
@@ -88,7 +93,7 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
             sideOffset={4}
           >
             <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-              <UserCog className="size-3.5" />
+              <IconUserCog className="size-3.5" />
               Ver como
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
@@ -117,12 +122,12 @@ export function NavUser({ podeSair }: { podeSair: boolean }) {
                   void sair();
                 }}
               >
-                <LogOut />
+                <IconLogout />
                 Sair da Central
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem onSelect={() => setConfirmarReset(true)}>
-              <RotateCcw />
+              <IconRotate2 />
               Reiniciar demonstração
             </DropdownMenuItem>
           </DropdownMenuContent>

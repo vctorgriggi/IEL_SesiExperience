@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Copy, ExternalLink, Send } from 'lucide-react';
+import { IconCopy, IconExternalLink, IconSend } from '@tabler/icons-react';
 
 import { toast } from '@workspace/ui';
 import { Button } from '@workspace/ui/shadcn/button';
@@ -287,7 +287,7 @@ export function SimularEnvioDialog({
             variant="outline"
             onClick={copiar}
           >
-            <Copy aria-hidden="true" />
+            <IconCopy aria-hidden="true" />
             Copiar mensagem
           </Button>
           <Button asChild>
@@ -296,7 +296,7 @@ export function SimularEnvioDialog({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <ExternalLink aria-hidden="true" />
+              <IconExternalLink aria-hidden="true" />
               Abrir como quem recebe
             </a>
           </Button>
@@ -340,7 +340,7 @@ export function SimularEnvioButton(
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <Send aria-hidden="true" />
+        <IconSend aria-hidden="true" />
         Simular envio
       </Button>
       <SimularEnvioDialog

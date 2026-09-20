@@ -25,7 +25,7 @@ import {
   JOB_STAGE_LABEL,
   type CultureMapPoint
 } from '@/features/iel-demo/state/selectors';
-import { ArrowRight, Map as MapIcon } from 'lucide-react';
+import { IconArrowRight, IconMap } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Alert } from '@workspace/ui';
@@ -509,7 +509,7 @@ function LeituraNaEmpresa({
           >
             <Link href={iel.companies.byId(encaixe.empresa.id)}>
               Abrir a empresa
-              <ArrowRight
+              <IconArrowRight
                 aria-hidden="true"
                 className="size-3.5"
               />
@@ -521,7 +521,7 @@ function LeituraNaEmpresa({
             asChild
           >
             <Link href={iel.companies.cultureMapById(encaixe.empresa.id)}>
-              <MapIcon aria-hidden="true" />
+              <IconMap aria-hidden="true" />
               Ver o mapa desta empresa
             </Link>
           </Button>

@@ -11,13 +11,13 @@ import { plural } from '@/features/iel-demo/format';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Talent } from '@/features/iel-demo/types';
 import {
-  CircleCheckIcon,
-  CircleDashedIcon,
-  CircleMinusIcon,
-  LockIcon,
-  PhoneIcon,
-  X
-} from 'lucide-react';
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCircleMinus,
+  IconLock,
+  IconPhone,
+  IconX
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Textarea, toast } from '@workspace/ui';
@@ -104,20 +104,20 @@ function gravarAnotacao(
 
 const MARCO_VISUAL: Record<
   EstadoDoMarco,
-  { rotulo: string; tom: EstadoDeCor; Icone: typeof CircleCheckIcon }
+  { rotulo: string; tom: EstadoDeCor; Icone: typeof IconCircleCheck }
 > = {
-  respondido: { rotulo: 'Respondeu', tom: 'combina', Icone: CircleCheckIcon },
-  aberto: { rotulo: 'Ligar hoje', tom: 'atencao', Icone: PhoneIcon },
-  perdido: { rotulo: 'Sem resposta', tom: 'neutro', Icone: CircleMinusIcon },
+  respondido: { rotulo: 'Respondeu', tom: 'combina', Icone: IconCircleCheck },
+  aberto: { rotulo: 'Ligar hoje', tom: 'atencao', Icone: IconPhone },
+  perdido: { rotulo: 'Sem resposta', tom: 'neutro', Icone: IconCircleMinus },
   futuro: {
     rotulo: 'Ainda não chegou',
     tom: 'neutro',
-    Icone: CircleDashedIcon
+    Icone: IconCircleDashed
   },
   encerrado: {
     rotulo: 'Não se pergunta mais',
     tom: 'neutro',
-    Icone: CircleDashedIcon
+    Icone: IconCircleDashed
   }
 };
 
@@ -299,7 +299,7 @@ export function DetalheDaPessoa({
               size="icon"
               className="ml-auto size-11 shrink-0 self-start text-muted-foreground"
             >
-              <X aria-hidden="true" />
+              <IconX aria-hidden="true" />
               <span className="sr-only">Fechar</span>
             </Button>
           </DrawerClose>
@@ -315,7 +315,7 @@ export function DetalheDaPessoa({
             </Badge>
             {/* A frase mais importante da gaveta, escrita, não só implícita. */}
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <LockIcon
+              <IconLock
                 aria-hidden="true"
                 className="size-3"
               />
@@ -370,7 +370,7 @@ export function DetalheDaPessoa({
                   size="sm"
                   onClick={abrirRoteiro}
                 >
-                  <PhoneIcon aria-hidden="true" />
+                  <IconPhone aria-hidden="true" />
                   Registrar ligação
                 </Button>
               )}

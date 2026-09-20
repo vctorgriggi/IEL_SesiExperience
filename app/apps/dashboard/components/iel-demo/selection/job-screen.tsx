@@ -25,7 +25,12 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { JobCriterion } from '@/features/iel-demo/types';
-import { CircleAlert, FileSpreadsheet, Info, MoreVertical } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconDotsVertical,
+  IconFileSpreadsheet,
+  IconInfoCircle
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { Alert, toast } from '@workspace/ui';
@@ -84,7 +89,7 @@ function Metodo({ label }: { label: string }) {
             aria-label={label}
             className="-m-1.5 inline-flex p-1.5 text-muted-foreground hover:text-foreground"
           >
-            <Info
+            <IconInfoCircle
               aria-hidden="true"
               className="size-3.5"
             />
@@ -171,6 +176,7 @@ export function JobScreen({ jobId }: { jobId: string }) {
         </Button>
         <Button
           size="sm"
+          data-tour="mesa-enviar"
           asChild={referralList.length > 0}
           disabled={referralList.length === 0}
         >
@@ -195,13 +201,13 @@ export function JobScreen({ jobId }: { jobId: string }) {
               className="size-8"
               aria-label="Mais ações"
             >
-              <MoreVertical aria-hidden="true" />
+              <IconDotsVertical aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link href={iel.jobs.byId(job.id).import}>
-                <FileSpreadsheet aria-hidden="true" />
+                <IconFileSpreadsheet aria-hidden="true" />
                 Importar planilha
               </Link>
             </DropdownMenuItem>
@@ -350,9 +356,12 @@ export function JobScreen({ jobId }: { jobId: string }) {
            * vagas, e cobrar quem falta é ação da tela da empresa. Aqui só se
            * lê e se vai para lá.
            */}
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <p
+            data-tour="mesa-perfil-da-empresa"
+            className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground"
+          >
             {perfilAberto ? (
-              <CircleAlert
+              <IconAlertCircle
                 aria-hidden="true"
                 className="size-3.5 text-[hsl(var(--brand-accent))]"
               />

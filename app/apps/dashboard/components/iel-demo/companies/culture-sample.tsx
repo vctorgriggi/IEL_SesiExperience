@@ -18,15 +18,15 @@ import {
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { CultureRespondentInvite } from '@/features/iel-demo/types';
 import {
-  CircleAlert,
-  CircleCheck,
-  Clock,
-  Eye,
-  EyeOff,
-  MoreVertical,
-  Plus,
-  Trash2
-} from 'lucide-react';
+  IconAlertCircle,
+  IconCircleCheck,
+  IconClock,
+  IconDotsVertical,
+  IconEye,
+  IconEyeOff,
+  IconPlus,
+  IconTrash
+} from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -103,10 +103,10 @@ const STATUS_TOM: Record<CultureInviteStatus, EstadoDeCor> = {
   expirado: 'atencao'
 };
 
-const STATUS_ICONE: Record<CultureInviteStatus, typeof CircleCheck> = {
-  respondido: CircleCheck,
-  aberto: Clock,
-  expirado: CircleAlert
+const STATUS_ICONE: Record<CultureInviteStatus, typeof IconCircleCheck> = {
+  respondido: IconCircleCheck,
+  aberto: IconClock,
+  expirado: IconAlertCircle
 };
 
 function StatusBadge({ status }: { status: CultureInviteStatus }) {
@@ -185,7 +185,7 @@ function InviteActions({
             aria-label={`Ações para o convite de ${label}`}
             className="size-10"
           >
-            <MoreVertical />
+            <IconDotsVertical />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -255,7 +255,7 @@ export function CultureSampleTable({ companyId }: { companyId: string }) {
           size="sm"
           onClick={() => setMostrarEmails((atual) => !atual)}
         >
-          {mostrarEmails ? <EyeOff /> : <Eye />}
+          {mostrarEmails ? <IconEyeOff /> : <IconEye />}
           {mostrarEmails ? 'Ocultar e-mails' : 'Mostrar e-mails'}
         </Button>
       </div>
@@ -419,7 +419,7 @@ export function CultureInviteForm({
                     setLinhas((atual) => atual.filter((_, i) => i !== index))
                   }
                 >
-                  <Trash2 />
+                  <IconTrash />
                 </Button>
               ) : null}
             </div>
@@ -475,7 +475,7 @@ export function CultureInviteForm({
           className="self-start"
           onClick={() => setLinhas((atual) => [...atual, emptyRow()])}
         >
-          <Plus />
+          <IconPlus />
           Acrescentar pessoa
         </Button>
       </div>

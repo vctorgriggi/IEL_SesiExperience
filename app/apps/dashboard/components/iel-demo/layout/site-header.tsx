@@ -16,6 +16,7 @@ import {
 import { Separator } from '@workspace/ui/shadcn/separator';
 import { SidebarTrigger, useSidebar } from '@workspace/ui/shadcn/sidebar';
 
+import { TourMenu } from '../tour/tour-menu';
 import {
   usePageHeaderContent,
   type PageHeaderCrumb
@@ -110,11 +111,15 @@ export function SiteHeader() {
             })}
           </BreadcrumbList>
         </Breadcrumb>
-        {actions ? (
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {actions}
-          </div>
-        ) : null}
+        {/*
+         * O tour fica sempre à direita, antes das ações da tela: é a mesma
+         * porta em todas as telas, e quem procura ajuda procura no mesmo
+         * canto. As ações da página vêm depois porque mudam a cada tela.
+         */}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <TourMenu />
+          {actions}
+        </div>
       </div>
     </header>
   );

@@ -5,7 +5,7 @@
 `apps/dashboard/components/iel-demo/acompanhamento/acompanhamento-screen.tsx` (gaveta em
 `detalhe-da-pessoa.tsx`, leitura em `leitura.ts`)
 **Persona:** Analista IEL
-**Última atualização:** 2026-09-19
+**Última atualização:** 2026-09-20
 
 ## O que a tela faz
 
@@ -31,7 +31,7 @@ ciclo, e a que não depende do RH.
   sendo" · o marco · o comentário); **o que a empresa disse** (Continua/Saiu/Não informou); e o
   **estado**: _Ligar hoje_ (atenção), _Saiu — só a pessoa avisou_ (difere), _Empresa e pessoa dizem
   coisas diferentes_ (difere), _Saiu_, _Sem resposta_ (janela fechou), _Antes dos 30 dias_ (neutros),
-  _Em dia_ (combina). A linha de rodapé diz que a ordem é de ligação, não de ranking.
+  _Em dia_ (combina).
 - **Gaveta da pessoa** (`Drawer` à direita; de baixo no celular): estado e a frase de privacidade; **os
   90 dias** — os três marcos com Respondeu (data, Continua/Saiu · como está sendo, comentário), Ligar
   hoje (aberto há N dias), Sem resposta, Ainda não chegou (em N dias) ou Não se pergunta mais (depois
@@ -92,3 +92,4 @@ para quem foi contratado** da fila de [Visão geral](01-visao-geral.md). Sai par
 ## Histórico
 
 - 2026-09-19 — criada.
+- 2026-09-20 — removida a linha de rodapé da fila ("a ordem é a de quem ligar primeiro… ninguém aqui está em ranking").

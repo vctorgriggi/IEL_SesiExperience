@@ -11,7 +11,7 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { Application, Job, Talent } from '@/features/iel-demo/types';
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { toast } from '@workspace/ui';
@@ -148,7 +148,7 @@ export function TalentDrawer({
               size="icon"
               className="ml-auto size-11 shrink-0 self-start text-muted-foreground"
             >
-              <X aria-hidden="true" />
+              <IconX aria-hidden="true" />
               <span className="sr-only">Fechar</span>
             </Button>
           </DrawerClose>

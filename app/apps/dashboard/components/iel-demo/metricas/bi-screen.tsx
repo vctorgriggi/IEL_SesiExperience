@@ -26,12 +26,12 @@ import {
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
-  Download,
-  History,
-  Repeat,
-  TrendingDown,
-  TrendingUp
-} from 'lucide-react';
+  IconDownload,
+  IconHistory,
+  IconRepeat,
+  IconTrendingDown,
+  IconTrendingUp
+} from '@tabler/icons-react';
 
 import { cn } from '@workspace/ui/lib/utils';
 import { Button } from '@workspace/ui/shadcn/button';
@@ -159,7 +159,7 @@ export function BiScreen() {
         variant="outline"
         onClick={exportar}
       >
-        <Download />
+        <IconDownload />
         Exportar sem dados pessoais
       </Button>
     )
@@ -209,7 +209,7 @@ export function BiScreen() {
           role="note"
           className="flex items-start gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm"
         >
-          <History className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <IconHistory className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-col gap-1">
             {composicao.temCaptura ? (
               <p>
@@ -252,7 +252,10 @@ export function BiScreen() {
       </div>
 
       <Tabs defaultValue="reabertura">
-        <TabsList className={ABAS_SEM_ROLAGEM}>
+        <TabsList
+          data-tour="bi-recortes"
+          className={ABAS_SEM_ROLAGEM}
+        >
           <TabsTrigger value="reabertura">Reabertura</TabsTrigger>
           <TabsTrigger value="match">Qualidade do match</TabsTrigger>
           <TabsTrigger value="operacao">Operação</TabsTrigger>
@@ -279,7 +282,10 @@ export function BiScreen() {
           />
           {/* Mesma altura nos dois: o gráfico de barras cresce com o cartão
               em vez de deixar um vão no alto. */}
-          <div className="grid items-stretch gap-4 lg:grid-cols-2">
+          <div
+            data-tour="bi-grafico"
+            className="grid items-stretch gap-4 lg:grid-cols-2"
+          >
             <AderenciaVsPermanencia
               faixas={faixas}
               periodo={periodo}
@@ -433,7 +439,7 @@ function Reabertura({
           )}
           valor={taxa(dados.taxaAntes)}
           rodape="reaberturas a cada 100 vagas"
-          icone={Repeat}
+          icone={IconRepeat}
           tom="neutro"
         />
         <KpiCard
@@ -445,7 +451,7 @@ function Reabertura({
           )}
           valor={taxa(dados.taxaDepois)}
           rodape="reaberturas a cada 100 vagas"
-          icone={Repeat}
+          icone={IconRepeat}
           tom="pessoa"
         />
         <KpiCard
@@ -457,7 +463,11 @@ function Reabertura({
           )}
           // Aqui cair é bom: menos reabertura é o resultado que o IEL quer.
           quedaEBoa
-          icone={variacao !== null && variacao > 0 ? TrendingUp : TrendingDown}
+          icone={
+            variacao !== null && variacao > 0
+              ? IconTrendingUp
+              : IconTrendingDown
+          }
           tom={estadoDaVariacao}
           valor={
             variacao === null ? (

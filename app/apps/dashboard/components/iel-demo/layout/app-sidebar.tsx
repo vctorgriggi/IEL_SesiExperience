@@ -21,18 +21,18 @@ import {
 } from '@/features/iel-demo/state/selectors';
 import type { Job } from '@/features/iel-demo/types';
 import {
-  Briefcase,
-  Building2,
-  ChartColumn,
-  ClipboardList,
-  HeartHandshake,
-  HelpCircle,
-  Home,
-  Plug,
-  Search,
-  Users,
-  type LucideIcon
-} from 'lucide-react';
+  IconBriefcase,
+  IconBuildingSkyscraper,
+  IconChartBar,
+  IconClipboardList,
+  IconHeartHandshake,
+  IconHelpCircle,
+  IconHome,
+  IconPlug,
+  IconSearch,
+  IconUsers
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -76,7 +76,7 @@ import { RECENTES_NA_BARRA, useRecentJobs } from './use-recent-jobs';
 type ItemPrincipal = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: TablerIcon;
   badge: number | null;
   ativo: boolean;
 };
@@ -224,7 +224,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
   const item = (
     href: string,
     label: string,
-    icon: LucideIcon,
+    icon: TablerIcon,
     ativo: boolean,
     badge: number | null = null
   ): ItemPrincipal => ({ href, label, icon, badge, ativo });
@@ -244,7 +244,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
                 ? iel.companies.byId(empresaDoGestor)
                 : iel.companies.index,
               'Minha empresa',
-              Building2,
+              IconBuildingSkyscraper,
               pathname.startsWith(iel.companies.index)
             )
           ]
@@ -257,14 +257,14 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
             item(
               iel.index,
               'Início',
-              Home,
+              IconHome,
               pathname === iel.index,
               pendencias > 0 ? pendencias : null
             ),
             item(
               iel.jobs.index,
               'Vagas',
-              Briefcase,
+              IconBriefcase,
               pathname.startsWith(iel.jobs.index),
               emSelecao > 0 ? emSelecao : null
             ),
@@ -276,7 +276,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
             item(
               iel.companies.index,
               'Empresas',
-              Building2,
+              IconBuildingSkyscraper,
               pathname.startsWith(iel.companies.index)
             ),
             /*
@@ -286,7 +286,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
             item(
               iel.followUp.index,
               'Acompanhamento',
-              HeartHandshake,
+              IconHeartHandshake,
               pathname.startsWith(iel.followUp.index),
               paraLigarHoje > 0 ? paraLigarHoje : null
             )
@@ -307,20 +307,20 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
             item(
               iel.talents.index,
               'Banco de talentos',
-              Users,
+              IconUsers,
               pathname.startsWith(iel.talents.index)
             ),
             item(
               iel.candidates,
               'Questionários',
-              ClipboardList,
+              IconClipboardList,
               pathname.startsWith(iel.candidates)
             )
           ]
         },
         {
           titulo: 'Análise',
-          itens: [item(iel.bi, 'BI', ChartColumn, pathname.startsWith(iel.bi))]
+          itens: [item(iel.bi, 'BI', IconChartBar, pathname.startsWith(iel.bi))]
         }
       ];
 
@@ -372,7 +372,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
               tooltip="Buscar (⌘K)"
               className="text-muted-foreground"
             >
-              <Search />
+              <IconSearch />
               <span className="flex-1 truncate text-xs">
                 Vaga, empresa, pessoa…
               </span>
@@ -425,7 +425,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
                   item={item(
                     iel.dataSources,
                     'Integrações',
-                    Plug,
+                    IconPlug,
                     pathname === iel.dataSources
                   )}
                   selo={<SeloDaSincronizacao />}
@@ -436,7 +436,7 @@ export function AppSidebar({ podeSair }: { podeSair: boolean }) {
                   onClick={() => setComoFunciona(true)}
                   tooltip="Como funciona"
                 >
-                  <HelpCircle />
+                  <IconHelpCircle />
                   <span>Como funciona</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

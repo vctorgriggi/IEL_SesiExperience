@@ -15,15 +15,15 @@ import {
   validadeDasRespostas
 } from '@/features/iel-demo/state/selectors';
 import {
-  BriefcaseIcon,
-  CircleCheckIcon,
-  ClockIcon,
-  PencilLineIcon,
-  PhoneIcon,
-  SendHorizonalIcon,
-  UsersIcon,
-  type LucideIcon
-} from 'lucide-react';
+  IconBriefcase,
+  IconCircleCheck,
+  IconClock,
+  IconPencil,
+  IconPhone,
+  IconSend,
+  IconUsers
+} from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
 
 import { routes } from '@workspace/routes';
 import { cn } from '@workspace/ui/lib/utils';
@@ -73,14 +73,14 @@ function dataPorExtenso(iso: string): string {
 }
 
 /** Um ícone por situação. Nunca sozinho: o título ao lado diz o mesmo. */
-const ICONE_DA_SITUACAO: Record<SituacaoId, LucideIcon> = {
-  'sem-resposta': PencilLineIcon,
-  'prazo-vencido': ClockIcon,
-  'em-analise': CircleCheckIcon,
-  enviado: SendHorizonalIcon,
-  'quer-conversar': PhoneIcon,
-  'nao-seguiu': UsersIcon,
-  contratado: BriefcaseIcon
+const ICONE_DA_SITUACAO: Record<SituacaoId, TablerIcon> = {
+  'sem-resposta': IconPencil,
+  'prazo-vencido': IconClock,
+  'em-analise': IconCircleCheck,
+  enviado: IconSend,
+  'quer-conversar': IconPhone,
+  'nao-seguiu': IconUsers,
+  contratado: IconBriefcase
 };
 
 export function MinhaCandidaturaScreen({
@@ -230,7 +230,7 @@ export function MinhaCandidaturaScreen({
                   key={linha}
                   className="flex gap-3"
                 >
-                  <CircleCheckIcon
+                  <IconCircleCheck
                     aria-hidden="true"
                     className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                   />
