@@ -161,7 +161,22 @@ body:has([data-iel-theme]) [data-sidebar='sidebar'],
   --border: 226 26% 23%;
   --border-strong: 226 24% 32%;
   --input: 225 20% 48%;
-  --ring: 11 100% 61%;
+  --ring: 18 92% 70%;
+
+  /*
+   * O laranja da barra é mais claro que o da marca.
+   *
+   * #FF5A36 é um coral cheio: sobre o azul-noite ele pesa, e num selo de
+   * 20px com o número em azul dentro vira um ponto que grita mais alto que
+   * o nome do item. Aqui ele sobe para #F9966C — mesma família, dois tons
+   * acima —, que sobre a barra dá 6,9:1 (era 4,9:1): o ícone e a lasca do
+   * item ativo ficam mais leves e o número do selo, mais legível.
+   *
+   * Só dentro da barra. Fora dela o `--brand-accent` é cor de texto sobre
+   * fundo claro (o selo da faixa cultural, o alerta do gestor), e ali ele já
+   * anda no limite — clarear derrubaria esses usos abaixo do contraste.
+   */
+  --brand-accent: 18 92% 70%;
 }
 
 /*
