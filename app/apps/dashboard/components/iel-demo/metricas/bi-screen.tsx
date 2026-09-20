@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ADHERENCE_THRESHOLD } from '@/features/iel-demo/analysis/adherence';
 import {
   getAderenciaVsPermanencia,
+  getComposicaoDosIndicadores,
   getEmpresasComMaisReabertura,
   getLeituraDoCorte,
   getPontoQueMaisSeparaPorSetor,
@@ -22,6 +23,7 @@ import {
   type ReaberturasPorMes,
   type TempoPorEtapa
 } from '@/features/iel-demo/analysis/analytics';
+import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
   Download,
   History,
@@ -111,6 +113,7 @@ const PERIODO_DO_BI: Periodo = 'ano';
  * pessoas sai como "—".
  */
 export function BiScreen() {
+  const { state } = useIelDemo();
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_DO_BI);
   const [setor, setSetor] = useState<string>(TODOS);
 
@@ -125,6 +128,12 @@ export function BiScreen() {
   const empresas = getEmpresasComMaisReabertura(Number.MAX_SAFE_INTEGER)
     .filter((e) => !filtros || e.setor === filtros.setor)
     .slice(0, 5);
+
+  // De onde vem o que está na tela: enquanto nenhuma empresa tiver respondido
+  // o retorno de um toque, tudo aqui é histórico simulado — e a tela diz isso.
+  // Assim que a primeira devolutiva entra, a mistura passa a ser declarada em
+  // número, em vez de sumir dentro de uma média.
+  const composicao = getComposicaoDosIndicadores(state, periodo);
 
   const exportar = () =>
     baixarCsv(
@@ -199,10 +208,23 @@ export function BiScreen() {
           className="flex items-start gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm"
         >
           <History className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <p>
-            Dados simulados: mostram o que o Mind RH passa a medir com o retorno
-            de um toque das empresas.
-          </p>
+          {composicao.temCaptura ? (
+            <p>
+              <strong className="font-medium">
+                {composicao.retornoEmpresas.capturado} de{' '}
+                {composicao.retornoEmpresas.total} remessas
+              </strong>{' '}
+              deste período já têm o retorno respondido pela empresa aqui
+              dentro. O resto ainda é histórico simulado, que mostra o que o
+              Mind RH passa a medir quando todas responderem.
+            </p>
+          ) : (
+            <p>
+              Dados simulados: mostram o que o Mind RH passa a medir com o
+              retorno de um toque das empresas. Nenhuma empresa respondeu ainda
+              neste período.
+            </p>
+          )}
         </div>
       </div>
 

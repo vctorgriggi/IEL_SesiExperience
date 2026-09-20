@@ -1,3 +1,4 @@
+import { VALIDADE_DA_RESPOSTA_MESES } from '../analysis/candidate-questionnaire';
 import {
   addDays,
   buildInviteToken,
@@ -5,6 +6,13 @@ import {
   CULTURE_INVITE_TOKEN_SEED,
   type CultureInviteRole
 } from '../analysis/culture-invites';
+import {
+  DEVOLUTIVA_PENDENTE,
+  lerDevolutiva,
+  type MotivoNaoContratacao,
+  type MotivoSaida,
+  type ReferralOutcome
+} from '../analysis/devolutiva';
 import type { FitAxisId } from '../analysis/fit-axes';
 import { getFitAxis } from '../analysis/fit-axes';
 import {
@@ -37,7 +45,7 @@ import type {
   SpreadsheetImportRecord,
   Talent
 } from '../types';
-import { REFERRAL_LIMIT } from './selectors';
+import { REFERRAL_LIMIT, respostasResolvidas } from './selectors';
 
 export type IncorporationDecision = {
   applicationId: string;
@@ -113,8 +121,30 @@ export type DemoAction =
        */
       type: 'answer-fit-questionnaire';
       applicationId: string;
-      /** Concordância por frase: `itemId → 1..5`. */
+      /**
+       * Concordância por frase: `itemId → 1..5`.
+       *
+       * Só as frases que **faltavam** (`perguntasQueFaltam`). O que a pessoa
+       * já respondeu dentro da validade não é perguntado de novo, e mandar
+       * de volta seria gravar duas vezes o mesmo dado.
+       */
       answers: Record<string, ValorDaEscala>;
+      consentVersion: string;
+      at: string;
+    }
+  | {
+      /**
+       * A pessoa confirma que as respostas que já deu valem para esta
+       * candidatura (M3, M7).
+       *
+       * Existe porque reaproveitar em silêncio seria decidir pela pessoa. O
+       * aceite que ela deu autoriza o reuso, mas o ato de usar aqui é dela, e
+       * fica registrado: um `CandidateFitResponse` com `answers` vazio, que é
+       * exatamente o que aconteceu — nenhuma frase nova foi respondida, e
+       * ainda assim esta candidatura tem resposta e tem aceite.
+       */
+      type: 'reuse-fit-answers';
+      applicationId: string;
       consentVersion: string;
       at: string;
     }
@@ -179,6 +209,55 @@ export type DemoAction =
       applicationId: string;
       decision: 'quero-entrevistar' | 'nao-avancar';
       note: string;
+      at: string;
+    }
+  | {
+      /**
+       * Devolutiva de um clique: a empresa diz se contratou (C3).
+       *
+       * Primeiro momento. Chega do relatório que a empresa abre por link, sem
+       * login — a empresa não tem área logada (Won't), e mais uma etapa para
+       * ela é risco de não adesão (00:23:28).
+       *
+       * `reason` e `note` são opcionais e podem chegar depois, num segundo
+       * despacho com o mesmo `hiring`: o clique que conta é o primeiro, o
+       * motivo é cortesia. Reenviar substitui, nunca acumula — a empresa que
+       * errou o botão corrige no mesmo lugar.
+       */
+      type: 'company-outcome';
+      referralId: string;
+      applicationId: string;
+      hiring: 'contratou' | 'nao-contratou';
+      reason: MotivoNaoContratacao | null;
+      note: string;
+      at: string;
+    }
+  | {
+      /**
+       * Segundo momento: a pessoa contratada continua, ou saiu antes de 90
+       * dias. Só existe depois de "contratou" — sem contratação não há
+       * permanência a registrar, e aceitar o registro assim mesmo criaria um
+       * desfecho que não corresponde a nada.
+       */
+      type: 'company-retention';
+      referralId: string;
+      applicationId: string;
+      retention: 'continua' | 'saiu-antes-de-90-dias';
+      reason: MotivoSaida | null;
+      note: string;
+      at: string;
+    }
+  | {
+      /**
+       * A empresa desfaz a resposta que acabou de dar.
+       *
+       * Existe porque o clique é um só e não tem confirmação: sem caminho de
+       * volta, o botão errado viraria um indicador errado, e o IEL cobraria
+       * uma devolutiva que já foi dada.
+       */
+      type: 'clear-company-outcome';
+      referralId: string;
+      applicationId: string;
       at: string;
     }
   | {
@@ -277,6 +356,25 @@ function updateApplication(
     application.id === applicationId
       ? { ...application, ...patch }
       : application
+  );
+}
+
+/** Troca o desfecho de uma pessoa dentro de um encaminhamento (C3). */
+function aplicarDevolutiva(
+  state: DemoState,
+  referralId: string,
+  applicationId: string,
+  outcome: ReferralOutcome
+): Referral[] {
+  return state.referrals.map((entry) =>
+    entry.id === referralId
+      ? {
+          ...entry,
+          items: entry.items.map((item) =>
+            item.applicationId === applicationId ? { ...item, outcome } : item
+          )
+        }
+      : entry
   );
 }
 
@@ -411,6 +509,9 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
 
       const response: CandidateFitResponse = {
         applicationId: action.applicationId,
+        // A resposta é da pessoa: o dono sai da candidatura uma vez, aqui, e
+        // não é reconstruído por quem lê depois.
+        talentId: application.talentId,
         answers,
         answeredAt: action.at,
         consent: { acceptedAt: action.at, version: action.consentVersion }
@@ -437,6 +538,53 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           description: previous
             ? `A candidatura ${action.applicationId} teve a resposta substituída. Aceite registrado na versão ${action.consentVersion}; a aderência é recalculada sobre a resposta nova.`
             : `A candidatura ${action.applicationId} respondeu ${Object.keys(answers).length} frases do instrumento. Aceite de uso de dados registrado na versão ${action.consentVersion}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'reuse-fit-answers': {
+      const application = state.applications.find(
+        (entry) => entry.id === action.applicationId
+      );
+      if (!application) return state;
+
+      const responses = state.fitResponses ?? [];
+      // Só confirma quem de fato tem o que reaproveitar e nada a responder.
+      // Sem isto, um clique fora de hora gravaria uma candidatura como
+      // respondida sem nenhuma resposta por trás.
+      const resolvidas = respostasResolvidas(state, action.applicationId);
+      if (
+        !resolvidas ||
+        resolvidas.faltantes.length > 0 ||
+        resolvidas.reaproveitadas.length === 0
+      )
+        return state;
+      if (
+        responses.some((entry) => entry.applicationId === action.applicationId)
+      )
+        return state;
+
+      const response: CandidateFitResponse = {
+        applicationId: action.applicationId,
+        talentId: application.talentId,
+        // Vazio de propósito: nenhuma frase nova foi respondida aqui. O que
+        // vale para esta candidatura sai de `respostasResolvidas`.
+        answers: {},
+        answeredAt: action.at,
+        consent: { acceptedAt: action.at, version: action.consentVersion }
+      };
+
+      const desde = resolvidas.reaproveitadasDesde?.slice(0, 10) ?? '';
+
+      return {
+        ...state,
+        fitResponses: [...responses, response],
+        history: appendHistory(state, {
+          at: action.at,
+          actor: 'Candidato',
+          action: 'Respostas anteriores reaproveitadas',
+          description: `A candidatura ${action.applicationId} usou ${plural(resolvidas.reaproveitadas.length, 'resposta', 'respostas')} que a pessoa já havia dado (desde ${desde}), dentro da validade de ${VALIDADE_DA_RESPOSTA_MESES} meses. Nenhuma frase foi perguntada de novo.`,
           entityRef: action.applicationId
         })
       };
@@ -789,7 +937,8 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         suggestedQuestions: item.suggestedQuestions,
         managerDecision: 'pendente',
         managerNote: null,
-        decidedAt: null
+        decidedAt: null,
+        outcome: DEVOLUTIVA_PENDENTE
       }));
 
       if (items.length === 0) return state;
@@ -940,6 +1089,130 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
             action.decision === 'quero-entrevistar'
               ? `A empresa quer entrevistar a candidatura ${action.applicationId}. Nenhuma reunião foi agendada nesta demonstração.`
               : `A empresa não vai avançar com a candidatura ${action.applicationId}. Justificativa: ${action.note || 'não informada'}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'company-outcome': {
+      const referral = state.referrals.find(
+        (entry) => entry.id === action.referralId
+      );
+      if (!referral) return state;
+      const alvo = referral.items.find(
+        (item) => item.applicationId === action.applicationId
+      );
+      if (!alvo) return state;
+
+      const anterior = lerDevolutiva(alvo.outcome);
+      const outcome: ReferralOutcome = {
+        ...anterior,
+        hiring: action.hiring,
+        // Carimbo do primeiro clique: responder o motivo depois não reabre a
+        // contagem de quanto tempo a empresa levou para dar o retorno.
+        hiringAt:
+          anterior.hiring === action.hiring && anterior.hiringAt
+            ? anterior.hiringAt
+            : action.at,
+        hiringReason: action.reason,
+        hiringNote: action.note.trim() || null,
+        // Trocar "contratou" por "não contratou" apaga a permanência: ela era
+        // sobre uma contratação que a empresa acabou de dizer que não houve.
+        ...(action.hiring === 'contratou'
+          ? {}
+          : {
+              retention: 'pendente' as const,
+              retentionAt: null,
+              retentionReason: null,
+              retentionNote: null
+            })
+      };
+
+      return {
+        ...state,
+        referrals: aplicarDevolutiva(
+          state,
+          action.referralId,
+          action.applicationId,
+          outcome
+        ),
+        history: appendHistory(state, {
+          at: action.at,
+          actor: `Empresa ${referral.companyId}`,
+          action:
+            action.hiring === 'contratou'
+              ? 'Contratação informada pela empresa'
+              : 'Não contratação informada pela empresa',
+          // Sem nome: o histórico já referencia a candidatura por id, e o
+          // desfecho é agregado por empresa, não por pessoa (PRODUTO.md §5.6).
+          description: `Devolutiva registrada para a candidatura ${action.applicationId} na vaga ${referral.jobId}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'company-retention': {
+      const referral = state.referrals.find(
+        (entry) => entry.id === action.referralId
+      );
+      if (!referral) return state;
+      const alvo = referral.items.find(
+        (item) => item.applicationId === action.applicationId
+      );
+      if (!alvo) return state;
+
+      const anterior = lerDevolutiva(alvo.outcome);
+      // Permanência sem contratação não é desfecho: é registro solto.
+      if (anterior.hiring !== 'contratou') return state;
+
+      const outcome: ReferralOutcome = {
+        ...anterior,
+        retention: action.retention,
+        retentionAt: action.at,
+        retentionReason: action.reason,
+        retentionNote: action.note.trim() || null
+      };
+
+      return {
+        ...state,
+        referrals: aplicarDevolutiva(
+          state,
+          action.referralId,
+          action.applicationId,
+          outcome
+        ),
+        history: appendHistory(state, {
+          at: action.at,
+          actor: `Empresa ${referral.companyId}`,
+          action:
+            action.retention === 'continua'
+              ? 'Permanência aos 90 dias confirmada'
+              : 'Saída antes de 90 dias informada',
+          description: `Permanência registrada para a candidatura ${action.applicationId} na vaga ${referral.jobId}.`,
+          entityRef: action.applicationId
+        })
+      };
+    }
+
+    case 'clear-company-outcome': {
+      const referral = state.referrals.find(
+        (entry) => entry.id === action.referralId
+      );
+      if (!referral) return state;
+
+      return {
+        ...state,
+        referrals: aplicarDevolutiva(
+          state,
+          action.referralId,
+          action.applicationId,
+          DEVOLUTIVA_PENDENTE
+        ),
+        history: appendHistory(state, {
+          at: action.at,
+          actor: `Empresa ${referral.companyId}`,
+          action: 'Devolutiva desfeita',
+          description: `A empresa desfez a devolutiva da candidatura ${action.applicationId}. A vaga volta a aguardar resposta.`,
           entityRef: action.applicationId
         })
       };

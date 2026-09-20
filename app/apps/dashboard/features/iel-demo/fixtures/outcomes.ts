@@ -22,6 +22,12 @@
  *   inicial, e `concluido` é verdadeiro se, e somente se, a candidatura tem
  *   resposta de fit. A leitura em `analysis/analytics.ts` ainda sobrepõe o
  *   estado vivo, para quem responder durante a demonstração.
+ * - **O mesmo vale agora para o desfecho.** A devolutiva de um clique (C3)
+ *   captura contratou / não contratou / saiu antes de 90 dias na página que
+ *   a empresa abre por link, e `analysis/analytics.ts` soma essa captura às
+ *   remessas deste arquivo dentro da mesma janela. O que a empresa responde
+ *   ao vivo entra na conta; o histórico continua preenchendo o resto.
+ *   `getComposicaoDosIndicadores` diz quanto do indicador veio de cada lado.
  * - Nenhum candidato histórico tem nome, e-mail ou id de talento: só aderência
  *   e desfecho. O histórico existe para medir, não para rever pessoas.
  *

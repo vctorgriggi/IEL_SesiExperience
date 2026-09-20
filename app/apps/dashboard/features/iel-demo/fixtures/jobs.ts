@@ -343,5 +343,121 @@ export const DEMO_JOBS: Job[] = [
       id: 'EMPG-DEMO-2055'
     },
     updatedAt: '2026-09-08'
+  },
+  /*
+   * As vagas 4 e 5 são da Cerrado Distribuição, a mesma empresa da vaga 1, e
+   * existem para que o reaproveitamento de resposta tenha onde acontecer.
+   *
+   * As 10 frases que um candidato responde são escolhidas a partir do perfil
+   * da **empresa**, não da vaga: duas vagas da mesma empresa perguntam as
+   * mesmas frases. Sem uma segunda vaga na Cerrado, a base não teria como
+   * mostrar a pessoa que se candidata de novo e não precisa responder nada —
+   * que é a cena que o cliente descreveu (00:08:01: o candidato trava na
+   * plataforma) e a razão de a resposta ter virado da pessoa.
+   *
+   * A vaga 5 está encerrada e é de 2025: é o processo do ano passado, de onde
+   * vem a resposta que já venceu os 12 meses.
+   */
+  {
+    id: 'VAG-04',
+    title: 'Auxiliar de Expedição',
+    companyId: 'EMP-01',
+    teamId: 'EQ-01',
+    location: 'Cuiabá, MT',
+    workShift: 'Turno da manhã (6h às 14h)',
+    stage: 'aberta',
+    summary:
+      'Apoio à expedição no turno da manhã: separação de pedidos, conferência de volumes e organização da área de carga.',
+    essentialRequirements: [
+      'Disponibilidade para o turno da manhã',
+      'Experiência com separação ou conferência de pedidos'
+    ],
+    organizationalContext:
+      'Mesma equipe de expedição da vaga de Assistente de Logística, no turno anterior. As condições de trabalho já confirmadas pela empresa valem para as duas vagas.',
+    criteria: [
+      {
+        id: 'CRI-401',
+        label: 'Separação e conferência de pedidos',
+        question:
+          'Há registro de experiência separando ou conferindo pedidos e volumes?',
+        dimension: 'tecnica',
+        required: true,
+        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+      },
+      {
+        id: 'CRI-402',
+        label: 'Disponibilidade no turno da manhã',
+        question: 'A disponibilidade declarada cobre o turno da manhã?',
+        dimension: 'profissional',
+        required: true,
+        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+      },
+      {
+        id: 'CRI-403',
+        label: 'Rotina da expedição',
+        question:
+          'As expectativas registradas dialogam com uma rotina de expedição?',
+        dimension: 'organizacional',
+        required: false,
+        confirmedBy: 'Registro IEL — demonstração'
+      }
+    ],
+    axisWeights: {
+      // Mesma equipe da vaga 1, mesmo desenho de peso: é o apoio inicial que
+      // decide a rotina de quem entra na expedição.
+      'lideranca-autonomia': 'alto',
+      'regras-decisao': 'medio',
+      'execucao-ritmo': 'medio'
+    },
+    axisWeightSuggestions: [],
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-3402'
+    },
+    updatedAt: '2026-09-11'
+  },
+  {
+    id: 'VAG-05',
+    title: 'Auxiliar de Depósito',
+    companyId: 'EMP-01',
+    teamId: 'EQ-01',
+    location: 'Cuiabá, MT',
+    workShift: 'Turno da tarde (14h às 22h)',
+    stage: 'encerrada',
+    summary:
+      'Apoio ao depósito: recebimento de mercadorias, organização de prateleiras e apoio ao inventário. Processo encerrado em 2025.',
+    essentialRequirements: ['Disponibilidade para o turno da tarde'],
+    organizationalContext:
+      'Processo de 2025, já encerrado. Fica na base porque é dele que vêm as respostas antigas de quem se candidatou naquele ano.',
+    criteria: [
+      {
+        id: 'CRI-501',
+        label: 'Organização de estoque',
+        question: 'Há registro de experiência organizando estoque ou depósito?',
+        dimension: 'tecnica',
+        required: true,
+        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+      },
+      {
+        id: 'CRI-502',
+        label: 'Disponibilidade no turno da tarde',
+        question: 'A disponibilidade declarada cobria o turno da tarde?',
+        dimension: 'profissional',
+        required: true,
+        confirmedBy: 'Descrição da vaga (Empregare — demonstração)'
+      }
+    ],
+    axisWeights: {
+      'execucao-ritmo': 'medio',
+      'regras-decisao': 'medio'
+    },
+    axisWeightSuggestions: [],
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-3288'
+    },
+    updatedAt: '2025-08-20'
   }
 ];

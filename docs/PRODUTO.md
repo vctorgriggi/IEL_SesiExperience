@@ -16,17 +16,18 @@ Data: 19/09/2026. Apresentação: 20/09/2026.
 8. [Onde o protótipo hoje contraria o cliente](#8-onde-o-protótipo-hoje-contraria-o-cliente)
 9. [Plano de alinhamento](#9-plano-de-alinhamento)
 10. [O que fica fora, e por quê](#10-o-que-fica-fora-e-por-quê)
+11. [Limites do que medimos](#11-limites-do-que-medimos)
 
 ## 1. Fontes e precedência
 
-| Ordem | Fonte | O que decide |
-| --- | --- | --- |
-| 1 | `docs/cliente/03-transcricao-reuniao-2026-09-19.md` | O que o IEL disse, com timestamp. Regras de negócio. |
-| 2 | `docs/cliente/01-prioridade-funcionalidades-moscow.md` | O que entra no MVP, em que ordem, e o critério de sucesso. |
-| 3 | `docs/cliente/02-entendimento-do-desafio-fit-cultural.md` | Síntese da equipe sobre dor, públicos e fluxo. |
-| 4 | `docs/enunciado/` | O edital: restrições, exigências normativas, critérios de resolução. |
-| 5 | Este documento | Decisões de produto derivadas das fontes acima. |
-| 6 | `docs/BRIEFING_CLAUDE_PROTOTIPO_IEL.md` | Direção anterior à reunião. Válido onde não contrariado. |
+| Ordem | Fonte                                                     | O que decide                                                         |
+| ----- | --------------------------------------------------------- | -------------------------------------------------------------------- |
+| 1     | `docs/cliente/03-transcricao-reuniao-2026-09-19.md`       | O que o IEL disse, com timestamp. Regras de negócio.                 |
+| 2     | `docs/cliente/01-prioridade-funcionalidades-moscow.md`    | O que entra no MVP, em que ordem, e o critério de sucesso.           |
+| 3     | `docs/cliente/02-entendimento-do-desafio-fit-cultural.md` | Síntese da equipe sobre dor, públicos e fluxo.                       |
+| 4     | `docs/enunciado/`                                         | O edital: restrições, exigências normativas, critérios de resolução. |
+| 5     | Este documento                                            | Decisões de produto derivadas das fontes acima.                      |
+| 6     | `docs/BRIEFING_CLAUDE_PROTOTIPO_IEL.md`                   | Direção anterior à reunião. Válido onde não contrariado.             |
 
 Regra prática: **uma decisão de produto precisa citar uma fonte de 1 a 4.** Se não cita, é hipótese, e vai marcada como tal.
 
@@ -40,7 +41,7 @@ Uma camada de inteligência do IEL ao lado do Empregare, que continua sendo a ba
 
 A cena do pitch é uma só: o analista abre uma vaga e enxerga o ranking com fit. Tudo o que não ajuda essa cena espera (MoSCoW, regra de corte).
 
-O problema real, na conclusão da equipe: *decidir quais 5 currículos enviar sem nenhum dado sobre a cultura da empresa e sobre o comportamento do candidato, num volume de 2.500 vagas por mês em que toda solução de mercado cobra por candidato.*
+O problema real, na conclusão da equipe: _decidir quais 5 currículos enviar sem nenhum dado sobre a cultura da empresa e sobre o comportamento do candidato, num volume de 2.500 vagas por mês em que toda solução de mercado cobra por candidato._
 
 ## 3. Princípios que não se negociam
 
@@ -62,18 +63,18 @@ Cada um tem fonte. Juntos, eles são o teste de qualquer funcionalidade nova.
 
 Extraídas da transcrição. Cada uma vincula o MVP.
 
-| # | Regra | Fonte |
-| --- | --- | --- |
-| R1 | O fit cultural é sobre a cultura da empresa, não sobre a vaga. A vaga se conecta ao técnico e ao comportamental. | 00:31:38, 00:39:02 |
-| R2 | O perfil da empresa é a **média** das respostas de uma amostra de colaboradores de níveis e áreas diferentes, com peso para a área da vaga e áreas conexas (cerca de 20%). | 00:41:19–00:43:44 |
-| R3 | **Aderência mínima de 35%** para o candidato ser considerado compatível. Soma com técnico e comportamental; sozinho não garante encaminhamento. | 00:20:19, 00:32:14 |
-| R4 | O candidato responde o fit **ao se candidatar à vaga** daquela empresa. | 00:39:02 |
-| R5 | **O nome da empresa não aparece** para o candidato antes da entrevista. Ele vê atividade, localidade e segmento. | 00:22:21, 00:38:43 |
-| R6 | **Máximo de 5 currículos** por vaga. Sem banco de vagas. | 00:33:30 |
-| R7 | Prazo de **3 dias** para a amostra responder; **1 a 2 dias** para o candidato; quem não responde sai do processo. | 00:44:15, 00:45:28 |
-| R8 | A empresa envia **só nome e e-mail corporativo** dos colaboradores; o consentimento é dado no aceite do questionário. | 00:42:48 |
-| R9 | Vaga tem 30 dias; primeira triagem em até 15. Sem devolutiva, o analista cobra e envia nova remessa de 5. | 00:36:39 |
-| R10 | O filtro técnico do Empregare configurado errado expurga candidato aderente; é ponto de melhoria. | 00:33:04 |
+| #   | Regra                                                                                                                                                                      | Fonte              |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| R1  | O fit cultural é sobre a cultura da empresa, não sobre a vaga. A vaga se conecta ao técnico e ao comportamental.                                                           | 00:31:38, 00:39:02 |
+| R2  | O perfil da empresa é a **média** das respostas de uma amostra de colaboradores de níveis e áreas diferentes, com peso para a área da vaga e áreas conexas (cerca de 20%). | 00:41:19–00:43:44  |
+| R3  | **Aderência mínima de 35%** para o candidato ser considerado compatível. Soma com técnico e comportamental; sozinho não garante encaminhamento.                            | 00:20:19, 00:32:14 |
+| R4  | O candidato responde o fit **ao se candidatar à vaga** daquela empresa.                                                                                                    | 00:39:02           |
+| R5  | **O nome da empresa não aparece** para o candidato antes da entrevista. Ele vê atividade, localidade e segmento.                                                           | 00:22:21, 00:38:43 |
+| R6  | **Máximo de 5 currículos** por vaga. Sem banco de vagas.                                                                                                                   | 00:33:30           |
+| R7  | Prazo de **3 dias** para a amostra responder; **1 a 2 dias** para o candidato; quem não responde sai do processo.                                                          | 00:44:15, 00:45:28 |
+| R8  | A empresa envia **só nome e e-mail corporativo** dos colaboradores; o consentimento é dado no aceite do questionário.                                                      | 00:42:48           |
+| R9  | Vaga tem 30 dias; primeira triagem em até 15. Sem devolutiva, o analista cobra e envia nova remessa de 5.                                                                  | 00:36:39           |
+| R10 | O filtro técnico do Empregare configurado errado expurga candidato aderente; é ponto de melhoria.                                                                          | 00:33:04           |
 
 ## 5. Privacidade por padrão
 
@@ -81,29 +82,30 @@ Não é uma seção de conformidade; é desenho. A regra: **todo dado nasce no m
 
 ### 5.1 O que cada um vê — matriz de acesso
 
-| Dado | Analista IEL | Empresa / gestor | Colaborador respondente | Candidato |
-| --- | --- | --- | --- | --- |
-| Nome da empresa | sim | a própria | a própria | **nunca antes da entrevista** (R5) |
-| Perfil cultural da empresa (média por eixo) | sim | a própria | não | não |
-| Respostas individuais dos colaboradores | **não** — só agregado por eixo | não | só a própria | não |
-| Dispersão gestão × equipe | sim | a própria | não | não |
-| Currículo e match técnico | sim | só dos até 5 enviados | não | o próprio |
-| Respostas do candidato ao fit | sim | **não** — só a aderência por eixo dos enviados | não | as próprias |
-| Aderência (% por eixo e total) | sim | dos até 5 enviados | não | a própria, por eixo, sem nome da empresa |
-| Outros candidatos | sim | não | não | não |
-| Anotações internas do analista | sim | **nunca** | não | só a contagem de que existem |
-| Devolutiva da empresa (contratei / não / saiu) | sim | a própria | não | não |
+| Dado                                           | Analista IEL                   | Empresa / gestor                               | Colaborador respondente | Candidato                                |
+| ---------------------------------------------- | ------------------------------ | ---------------------------------------------- | ----------------------- | ---------------------------------------- |
+| Nome da empresa                                | sim                            | a própria                                      | a própria               | **nunca antes da entrevista** (R5)       |
+| Perfil cultural da empresa (média por eixo)    | sim                            | a própria                                      | não                     | não                                      |
+| Respostas individuais dos colaboradores        | **não** — só agregado por eixo | não                                            | só a própria            | não                                      |
+| Dispersão gestão × equipe                      | sim                            | a própria                                      | não                     | não                                      |
+| Currículo e match técnico                      | sim                            | só dos até 5 enviados                          | não                     | o próprio                                |
+| Respostas do candidato ao fit                  | sim                            | **não** — só a aderência por eixo dos enviados | não                     | as próprias                              |
+| Aderência (% por eixo e total)                 | sim                            | dos até 5 enviados                             | não                     | a própria, por eixo, sem nome da empresa |
+| Outros candidatos                              | sim                            | não                                            | não                     | não                                      |
+| Anotações internas do analista                 | sim                            | **nunca**                                      | não                     | só a contagem de que existem             |
+| Devolutiva da empresa (contratei / não / saiu) | sim                            | a própria                                      | não                     | não                                      |
 
 ### 5.2 Minimização
 
-- **Colaborador**: nome e e-mail corporativo, nada mais (R8). Sem telefone, sem cargo além da área, sem nível hierárquico identificável. As respostas são gravadas **agregadas por eixo e por papel** (gestão / equipe); a resposta individual não fica associada à pessoa após o envio.
+- **Colaborador**: nome e e-mail corporativo, nada mais (R8). Sem telefone, sem cargo além da área, sem nível hierárquico identificável. As respostas são gravadas **agregadas por eixo e por papel** (gestão / equipe); a resposta individual não fica associada à pessoa após o envio. E um grupo que respondeu por link nunca aparece sozinho abaixo de 2 respostas (equipe: 3): "gestão da área: concordo (1)" seria a resposta de uma pessoa com outro nome. Abaixo do piso ela entra na média e na leitura de liderança (gestão e RH juntos), não na do grupo. A declaração da empresa, feita pela tela dela, não é anônima e aparece com uma resposta só.
 - **Candidato**: o questionário só pergunta preferências de trabalho em situações do cotidiano. Nenhuma pergunta de personalidade, saúde, família, religião, opinião política ou qualquer categoria sensível. O edital veda dado de saúde na seleção e manda tratar bem-estar pela perspectiva do ambiente e das relações de trabalho.
 - **Vaga e empresa**: o que o IEL já recebe pelo formulário do Empregare. Nada novo é pedido à empresa.
 
 ### 5.3 Consentimento (M7)
 
-- Aceite no início de cada questionário, com texto curto dizendo **o que** é coletado, **para quê**, **quem vê** e **por quanto tempo**. Sem aceite, o questionário não abre.
-- Registro do aceite com data e hora, vinculado ao link, não à pessoa (o link já é a chave).
+- Aceite no início de cada questionário, com texto curto dizendo **o que** é coletado, **para quê**, **quem vê**, **por quanto tempo** e **em que mais** a resposta será usada (§5.6). Sem aceite, o questionário não abre.
+- Registro do aceite com data e hora **e com a versão do texto**, junto da resposta. Sem versão não há como demonstrar a que a pessoa consentiu, e é a versão que decide se aquela resposta pode ser reaproveitada em outra candidatura.
+- O aceite diz, em palavra comum, como a pessoa desfaz: responder de novo (vale a última) ou pedir para sair.
 - O candidato pode ver o que está registrado sobre ele e para quem foi enviado — sem nome de empresa, só atividade/localidade/segmento — e pedir correção pelo mesmo canal.
 
 ### 5.4 Links sem login
@@ -123,7 +125,12 @@ Um link sem login é uma credencial portadora. Por isso:
 ### 5.6 Retenção e validade
 
 - Perfil cultural da empresa tem validade (C4 — prazo a confirmar com o Coringa). Vencido, a tela avisa e o fit deixa de ser calculado sobre ele.
-- Respostas de candidatos ficam vinculadas à candidatura; encerrada a vaga (30 dias, R9), deixam de ser reaproveitadas sem novo aceite.
+- **A resposta do candidato é dele e vale 12 meses** (`VALIDADE_DA_RESPOSTA_MESES`, em `analysis/candidate-questionnaire.ts`). O que a pessoa responde é como ela prefere trabalhar, e isso é dela, não da vaga: "o que eu gosto ou não é o candidato" (00:19:47). O que muda de empresa para empresa é o outro lado — o perfil dela e quais frases ela escolheu.
+  - **Dentro dos 12 meses**, a resposta vale para as outras candidaturas da mesma pessoa dentro do IEL. O questionário de uma candidatura nova pergunta só a diferença: as frases que aquela empresa escolheu menos as que a pessoa já respondeu. Não sobrando nenhuma, não há formulário — a tela diz que as respostas dela ainda valem e ela confirma o uso, que fica registrado.
+  - **Passados os 12 meses**, a resposta é como se não existisse: a frase volta a ser perguntada, e a aderência fica sem base naquele tema em vez de ser calculada sobre dado velho. Vale inclusive para a candidatura em que a resposta foi dada.
+  - **Vale a última.** Duas respostas da mesma pessoa à mesma frase, a mais recente ganha — é assim que ela desfaz: responde de novo. Pedindo para sair, as respostas deixam de ser usadas em qualquer vaga.
+  - **Reuso só com aceite que o preveja.** Guardar por 12 meses e reaproveitar amplia finalidade e retenção sobre dado já coletado, e por isso está escrito no aceite **antes** (versão `2026-09-22`). Quem aceitou uma versão anterior aceitou o oposto — aquele texto dizia que as respostas ficavam ligadas àquela candidatura: a resposta dada sob texto antigo continua valendo só para a candidatura em que foi dada e **nunca** é levada para outra. A frase volta a ser perguntada, sob o texto novo. Nada retroage (LGPD, art. 8º, § 4º).
+  - A versão do aceite fica gravada junto da resposta (`consent.version`): é ela que permite demonstrar depois a que a pessoa consentiu (art. 6º, X).
 - Dados de devolutiva (C3) são agregados por empresa para indicador; não identificam o candidato fora do IEL.
 
 ### 5.7 Redução de viés — como desenho de dado
@@ -146,73 +153,95 @@ Um link sem login é uma credencial portadora. Por isso:
 
 Decisões que o protótipo tomou seguindo o briefing e que o cliente contrariou. Registradas porque foram escolhas deliberadas, não descuido — e porque a razão de revertê-las precisa ficar explícita.
 
-| Briefing dizia | O cliente disse | Decisão |
-| --- | --- | --- |
-| "Evite uma nota global de fit no MVP." | "O fit tem que ter no mínimo 35% de aderência para ser compatível." (00:20:19) | **Revogado.** Existe percentual por eixo e total, com corte de 35%. O rótulo é sempre "aderência", nunca "chance de sucesso"; o denominador fica visível. |
-| "Não apresentar um ranking universal de melhores pessoas." | M5: "Ranking dos candidatos com match técnico e fit lado a lado." | **Revogado no escopo da vaga.** O ranking é por vaga, sobre candidatos daquela empresa, ordenado por aderência à cultura daquela empresa. Não existe ranking entre vagas nem "melhores pessoas" em abstrato — isso continua fora. |
-| "Não obrigar todos os candidatos a repetir entrevista e cadastro." / "Não construir testes psicológicos próprios." | M3: questionário de 5 minutos, pares de situação, no celular, na candidatura. | **Reinterpretado.** O que o briefing vedava era instrumento psicométrico e entrevista. Um questionário curto de preferências de trabalho, aplicado uma vez por candidatura, é o que o IEL já fazia e pediu. Não é teste de personalidade. |
-| Perfil da empresa por respondentes múltiplos **sem média** ("média entre quem manda e quem executa apaga o viés"). | "O fit cultural é a média do que a empresa entende." (00:41:44) | **Ajustado.** A média é o perfil, como o cliente opera. A dispersão continua calculada e mostrada ao lado — ela não some, deixa de ser o único resultado. |
-| Persona "gestor da empresa" com painel próprio. | Won't: "Login e área logada para a empresa. Mais uma etapa para ela foi apontada como risco de não adesão." | **Reduzido.** A empresa não tem painel. O que ela recebe: o link do questionário para os colaboradores, os até 5 currículos com aderência, e uma devolutiva de um clique (C3, fase 2). |
-| Candidato vê "para quem seu perfil foi enviado", com nome da empresa. | R5: nome da empresa oculto até a entrevista. | **Corrigir.** A devolutiva ao candidato mostra atividade, localidade e segmento; nunca o nome. |
+| Briefing dizia                                                                                                     | O cliente disse                                                                                             | Decisão                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Evite uma nota global de fit no MVP."                                                                             | "O fit tem que ter no mínimo 35% de aderência para ser compatível." (00:20:19)                              | **Revogado.** Existe percentual por eixo e total, com corte de 35%. O rótulo é sempre "aderência", nunca "chance de sucesso"; o denominador fica visível.                                                                                 |
+| "Não apresentar um ranking universal de melhores pessoas."                                                         | M5: "Ranking dos candidatos com match técnico e fit lado a lado."                                           | **Revogado no escopo da vaga.** O ranking é por vaga, sobre candidatos daquela empresa, ordenado por aderência à cultura daquela empresa. Não existe ranking entre vagas nem "melhores pessoas" em abstrato — isso continua fora.         |
+| "Não obrigar todos os candidatos a repetir entrevista e cadastro." / "Não construir testes psicológicos próprios." | M3: questionário de 5 minutos, pares de situação, no celular, na candidatura.                               | **Reinterpretado.** O que o briefing vedava era instrumento psicométrico e entrevista. Um questionário curto de preferências de trabalho, aplicado uma vez por candidatura, é o que o IEL já fazia e pediu. Não é teste de personalidade. |
+| Perfil da empresa por respondentes múltiplos **sem média** ("média entre quem manda e quem executa apaga o viés"). | "O fit cultural é a média do que a empresa entende." (00:41:44)                                             | **Ajustado.** A média é o perfil, como o cliente opera. A dispersão continua calculada e mostrada ao lado — ela não some, deixa de ser o único resultado.                                                                                 |
+| Persona "gestor da empresa" com painel próprio.                                                                    | Won't: "Login e área logada para a empresa. Mais uma etapa para ela foi apontada como risco de não adesão." | **Reduzido.** A empresa não tem painel. O que ela recebe: o link do questionário para os colaboradores, os até 5 currículos com aderência, e uma devolutiva de um clique (C3, fase 2).                                                    |
+| Candidato vê "para quem seu perfil foi enviado", com nome da empresa.                                              | R5: nome da empresa oculto até a entrevista.                                                                | **Corrigir.** A devolutiva ao candidato mostra atividade, localidade e segmento; nunca o nome.                                                                                                                                            |
 
 O que o briefing dizia e **continua valendo**: transparência das fontes de cada conclusão; estados de critério nunca só por cor; proposta da análise assistida com confirmação humana; ambiente de demonstração explícito; dados fictícios com identificadores estáveis; nada de acompanhamento pós-contratação no MVP.
 
 ## 7. Estado do protótipo frente aos Must
 
-Avaliação honesta em 19/09, após os commits em `feat/prototipo-central-selecao-iel`.
+Reavaliado em 19/09, com o instrumento de 52 frases no lugar e o ciclo inteiro navegável. A coluna "falta" agora é curta de propósito: o que sobrou nela é o que depende de banco, de envio real ou de vaga rodando.
 
-| Must | O que pede | O que existe | Falta |
-| --- | --- | --- | --- |
-| **M1** Perfil cultural da empresa | Questionário de pares de situação, amostra de colaboradores, perfil = média | Questionário parametrizável por eixo; respostas por papel (gestão/RH/equipe) com contagem; detecção de divergência; proposta assistida com confirmação | **Média por eixo como perfil**; modelo de amostra (quem foi convidado, quantos, de que áreas); piso de respostas como bloqueio do perfil, não só aviso |
-| **M2** Link por colaborador + contador | Analista cadastra nome + e-mail, sistema gera links, mostra N de M, prazo 3 dias | Nada | **Tudo**: roster de convidados, geração de link, contador, prazo, estado por link (pendente / respondido / expirado) |
-| **M3** Questionário do candidato | Mesmas dimensões, celular, sem login, na candidatura, sem nome da empresa | Canal de esclarecimento (uma pergunta, resposta livre); devolutiva ao candidato | **O questionário em si** (pares de situação nos 5 eixos), vinculado à candidatura; tela mobile-first; ocultar nome da empresa |
-| **M4** Motor de aderência | % por dimensão e total, corte 35% | Leitura por eixo em estados (alinhamento / a esclarecer / divergência / sem informação); pesos por eixo | **O cálculo percentual** sobre as respostas dos dois lados; o corte; a marcação "compatível / abaixo do corte" |
-| **M5** Painel por vaga | Ranking técnico + fit lado a lado, leitura por dimensão, marcar até 5 | Matriz por candidatura com estados por dimensão; triagem por lacuna; comparação 2–3; lista de encaminhamento; procedência | **Coluna de match técnico** (da planilha); **coluna de aderência %** e ordenação por ela; **limite de 5** na lista; leitura "combina / destoa" por eixo na própria matriz |
-| **M6** Importação de planilha | Upload da vaga e dos candidatos com match técnico | "Fontes de dados" com sincronização simulada e idempotência | **Upload de CSV/XLSX** com o layout que o IEL exporta; mapeamento de colunas; match técnico entrando como dado |
-| **M7** Consentimento | Aceite no início de cada questionário; dados mínimos | Eixos restritos a condições de trabalho; equipe anônima e agregada; notas internas nunca saem | **Tela de aceite** com registro; texto de finalidade; expiração de link |
+| Must                                   | O que pede                                                                       | O que existe hoje                                                                                                                                                                                                                    | Falta                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| **M1** Perfil cultural da empresa      | Questionário curto, amostra de colaboradores, perfil = média                     | Instrumento de 52 frases em 10 temas; empresa responde por tema; perfil é a média da amostra; piso de 3 respostas de equipe bloqueia o tema; dispersão gestão × equipe visível; cultura percebida pelo analista ao lado da declarada | Validade do perfil no tempo (C4, prazo a confirmar com o Coringa)             |
+| **M2** Link por colaborador + contador | Analista cadastra nome + e-mail, sistema gera links, mostra N de M, prazo 3 dias | Convites por empresa com link próprio, progresso N de M, prazo, estado por convite e reenvio; bloco de 16 frases por convite, sorteado em matriz                                                                                     | Envio real por e-mail/WhatsApp e token de uso único com expiração no servidor |
+| **M3** Questionário do candidato       | Mesmas dimensões, celular, sem login, na candidatura, sem nome da empresa        | Questionário por candidatura, uma frase por tela, no celular, sem login, com aceite; versão em conversa guiada; vaga sem nome de empresa (R5)                                                                                        | Entrega do link por SMS/e-mail                                                |
+| **M4** Motor de aderência              | % por dimensão e total, corte 35%                                                | Aderência por tema e total, corte de 35% que marca sem eliminar, ausência que não vira zero, plano B por pares quando a frase da empresa não fechou                                                                                  | Calibração contra desfecho real (ver §11.3)                                   |
+| **M5** Painel por vaga                 | Ranking técnico + fit lado a lado, leitura por dimensão, marcar até 5            | Mesa de seleção com técnico e aderência lado a lado, ordenação, corte visível, resgate de quem o filtro expurgou, comparação, limite de 5 na remessa                                                                                 | —                                                                             |
+| **M6** Importação de planilha          | Upload da vaga e dos candidatos com match técnico                                | Importação da planilha exportada do Empregare, com mapeamento e idempotência; tela de fontes de dados declarando o que é simulado                                                                                                    | API do Empregare (C1), quando eles disserem o que expõem                      |
+| **M7** Consentimento                   | Aceite no início de cada questionário; dados mínimos                             | Aceite que nasce desmarcado nos dois questionários, com versão gravada junto da resposta; frases restritas a condição de trabalho; equipe anônima e agregada; nota interna nunca sai                                                 | Fluxo de direitos do titular (acesso, correção, oposição) com registro        |
 
-O que o protótipo tem **além** dos Must e que agrada ao cliente: cultura declarada × percebida (S1, "bem recebida"), procedência de cada registro, trajetória entre processos, camada de IA opcional com custo zero por padrão.
+Além dos Must, e bem recebido pelo cliente: cultura declarada × percebida (S1), procedência de cada registro, resgate de quem o filtro automático descartaria (S2), relatório de aderência para a empresa (S3), assistente conversacional para o público operacional (C2) e a camada de IA opcional, que fica desligada por padrão e nunca decide.
 
 ## 8. Onde o protótipo hoje contraria o cliente
 
-Lista curta, sem atenuante. São correções, não melhorias.
+Lista curta, sem atenuante. Os sete itens de 19/09 pela manhã foram resolvidos, menos um — e ele continua aqui porque decisão pendente não vira decisão tomada por silêncio.
 
-1. **O candidato vê o nome da empresa** na devolutiva ("Para quem seu perfil foi enviado: Horizonte Alimentos"). Viola R5.
-2. **Não existe aderência em percentual nem corte de 35%.** Contraria R3 e M4; foi escolha deliberada contra o briefing, revogada na seção 6.
-3. **Não existe ranking na mesa de seleção.** Contraria M5.
-4. **A lista de encaminhamento não limita a 5.** Contraria R6.
-5. **O perfil da empresa não é calculado como média.** Contraria R2; a dispersão existe, a média não.
-6. **A empresa tem um painel** (persona gestor com visão geral, vagas, encaminhamentos). É um Won't. Deve encolher para a experiência de destinatário: responder link, receber currículos, devolutiva de um clique.
-7. **Não existe questionário do candidato** — só o canal de esclarecimento. Contraria M3 e R4.
+1. **A empresa ainda tem painel.** Existe uma persona de gestor com visão própria dentro do app do analista. É um Won't: a empresa não acessa nem o Empregare, e mais uma etapa foi apontada como risco de não adesão (00:23:28). O que ela deve ter é só o que chega por link — o questionário dos colaboradores, os até 5 currículos com aderência e a devolutiva de um clique.
+
+Resolvidos desde então, para registro: nome da empresa oculto em toda superfície do candidato (R5); aderência em percentual com corte de 35% (R3); ranking por vaga na mesa de seleção (M5); limite de 5 na remessa (R6); perfil da empresa como média da amostra (R2); questionário do candidato na candidatura (M3, R4).
 
 ## 9. Plano de alinhamento
 
-Na ordem do MoSCoW e da regra de corte: **M5, M4 e M3 inteiros; M1 e M2 com empresa exemplo já respondida; M6 com planilha de exemplo; M7 como tela simples de aceite.**
+Os nove passos de 19/09 pela manhã fecharam, menos o oitavo (encolher a persona da empresa). O que está em curso agora atende à segunda metade da crítica: o produto decidia bem quais 5 currículos enviar, e não devolvia nada nem ao cliente nem ao candidato.
 
-| Passo | Entrega | Fecha |
-| --- | --- | --- |
-| 1 | Ocultar nome da empresa em toda superfície do candidato | R5, item 8.1 |
-| 2 | Motor de aderência: % por eixo e total a partir das respostas dos dois lados; corte 35% configurável; rótulo "aderência" | M4, R3 |
-| 3 | Mesa de seleção: colunas match técnico e aderência, ordenação por aderência, marca de corte, limite de 5 na lista | M5, R6 |
-| 4 | Questionário do candidato: 5 eixos em pares de situação, mobile-first, vinculado à candidatura, com aceite | M3, M7, R4 |
-| 5 | Perfil da empresa como média por eixo; dispersão ao lado; piso de respondentes bloqueia o perfil | M1, R2 |
-| 6 | Roster de colaboradores + links + contador N de M + prazo 3 dias, com uma empresa já respondida na demo | M2, R7, R8 |
-| 7 | Importação de planilha de exemplo (vaga + candidatos + match técnico) | M6 |
-| 8 | Encolher a persona da empresa para destinatário: sem painel | Won't |
-| 9 | Should na ordem S1 → S5, se sobrar tempo | — |
+| Frente                  | Entrega                                                                                                                                                                                                                        | Fecha                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Devolutiva de um clique | A empresa diz, no próprio relatório que abre por link, o que aconteceu com cada pessoa: contratei, não contratei, saiu antes de 90 dias. O dado capturado alimenta o indicador e o analista vê o que está pendente para cobrar | C3; o dado que o IEL nunca teve (00:05:33)      |
+| Minha candidatura       | O candidato passa a ter onde ver em que pé está, o que acontece agora e o que está registrado sobre ele — sem nome de empresa, sem posição, sem login                                                                          | A assimetria de quem responde e não recebe nada |
+| Custo da rotatividade   | O número que a analista fala ao telefone: quanto aquela empresa gasta reabrindo a mesma vaga, com as parcelas à vista e editáveis                                                                                              | S5; o argumento de adesão que o IEL pediu       |
+| BI honesto              | Separar, na tela, o indicador que vem de devolutiva capturada do que vem de histórico simulado                                                                                                                                 | Não prometer dado que não existe                |
 
-Critério de pronto de cada passo: typecheck, lint, testes e as 5 jornadas Playwright verdes; nenhum texto ou nome acessível que o e2e use é alterado sem atualizar o e2e no mesmo commit.
+Critério de pronto de cada frente: `bun run typecheck` e `bun run lint` verdes, a tela percorrida no navegador sem erro de console, e a doc da tela atualizada no mesmo passo. Testes automatizados estão suspensos por decisão do time durante o hackathon.
 
 ## 10. O que fica fora, e por quê
 
-| Fora | Motivo | Fonte |
-| --- | --- | --- |
-| Substituir o Empregare | O IEL quer integrar; migração esbarra na LGPD | Won't; 00:25:59 |
-| Entrevista por vídeo ou IA | Não atrai o público operacional | Won't; 00:08:34 |
-| Testes psicológicos / perfil comportamental completo | Exige instrumento próprio e validação; o Empregare já tem um básico | Won't |
-| Login e área logada para a empresa | Etapa a mais = risco de não adesão | Won't; 00:23:28 |
-| Gestão do processo seletivo | A seleção é da empresa; o IEL faz atração e triagem | Won't; 00:04:30 |
-| Acompanhamento pós-contratação | Fora do MVP no briefing; devolutiva de um clique é C3 (fase 2) | Briefing; MoSCoW |
-| IA no caminho crítico | Custo marginal zero | Princípio 1 |
-| Chatbot aberto para o candidato | C2, fase 4; ideia aprovada, mas pede IA no caminho do candidato e teste com público real | MoSCoW |
-| Nomes de fornecedores no produto | O briefing proíbe inventar; o cliente citou a Mindsight como referência do que funcionou e do custo, não como parte da solução | Briefing; 00:25:12 |
+| Fora                                                 | Motivo                                                                                                                                             | Fonte              |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Substituir o Empregare                               | O IEL quer integrar; migração esbarra na LGPD                                                                                                      | Won't; 00:25:59    |
+| Entrevista por vídeo ou IA                           | Não atrai o público operacional                                                                                                                    | Won't; 00:08:34    |
+| Testes psicológicos / perfil comportamental completo | Exige instrumento próprio e validação; o Empregare já tem um básico                                                                                | Won't              |
+| Login e área logada para a empresa                   | Etapa a mais = risco de não adesão                                                                                                                 | Won't; 00:23:28    |
+| Gestão do processo seletivo                          | A seleção é da empresa; o IEL faz atração e triagem                                                                                                | Won't; 00:04:30    |
+| Acompanhar a pessoa dentro da empresa                | A gestão do time é da indústria. O que o IEL passa a saber é o desfecho, pela devolutiva de um clique — que deixou de ser fase 2 e está no produto | Briefing; MoSCoW   |
+| IA no caminho crítico                                | Custo marginal zero                                                                                                                                | Princípio 1        |
+| Chatbot aberto para o candidato                      | C2, fase 4; ideia aprovada, mas pede IA no caminho do candidato e teste com público real                                                           | MoSCoW             |
+| Nomes de fornecedores no produto                     | O briefing proíbe inventar; o cliente citou a Mindsight como referência do que funcionou e do custo, não como parte da solução                     | Briefing; 00:25:12 |
+
+## 11. Limites do que medimos
+
+Esta seção existe para ser lida em voz alta quando alguém perguntar se isto é ciência. A resposta honesta é: **é um instrumento de triagem declarativo, não um teste psicológico**, e a diferença importa para o IEL, para a indústria e para o candidato.
+
+### 11.1 O que o instrumento é
+
+52 frases da planilha do cliente, em 10 temas, respondidas numa escala de concordância de 5 pontos pelos dois lados. A empresa responde por tema, com uma amostra de colaboradores (mínimo de 3 respostas de equipe para o tema fechar, até 10 convidados); o candidato lê, na versão curta, as frases que a empresa escolheu. A aderência é a proximidade entre as duas respostas, tema a tema, e o resultado é explicável até a frase.
+
+### 11.2 O que ele não é, e o que nenhuma tela pode sugerir que seja
+
+- **Não é psicometria.** Não há construto validado, não há norma populacional, não há confiabilidade medida. É preferência declarada sobre condição de trabalho.
+- **Não mede desempenho** e não prevê quem será bom funcionário. O rótulo em tela é "combina com a empresa", nunca "chance de sucesso" (§6).
+- **Não descreve a pessoa.** Os temas falam de ambiente de trabalho. "Autonomia" é uma frase sobre como o trabalho acontece, nunca sobre quem alguém é.
+- **Não decide.** O corte de 35% marca para o olho humano; não elimina ninguém do processo, e a ausência de resposta nunca vira zero.
+
+### 11.3 Os três limites que conhecemos, e o que fizemos com cada um
+
+**Autorrelato e desejabilidade social.** Quem quer a vaga responde o que imagina que se espera dele. Mitigamos onde dá: 6 frases em que quase todo mundo concorda foram marcadas como não discriminantes e ficam **fora da conta de aderência**; 5 pares invertidos e 5 equivalentes permitem ler a mesma disposição por dois caminhos. O que continua verdadeiro: um questionário respondido por quem precisa do emprego não é uma medida limpa, e nenhuma engenharia resolve isso. Por isso a aderência soma com o técnico e com o comportamental, e sozinha não encaminha ninguém (R3).
+
+**Semelhança não é qualidade.** Medir encaixe é medir parecença com a equipe atual, e parecença, levada ao limite, homogeneíza: uma empresa com cultura adoecida ficaria excelente em receber gente que tolera cultura adoecida. Os freios de desenho são três: a **cultura declarada frente à vivida** (o que a empresa diz de si, o que a amostra responde e o que o analista percebe na ligação) transforma o resultado em diagnóstico da empresa, não só em filtro de pessoa; a **dispersão entre gestão e equipe** fica visível ao lado da média, em vez de ser apagada por ela; e a aba de **resgate** existe justamente para devolver ao olho humano quem o filtro automático tirou da frente.
+
+**A conta ainda não foi calibrada contra a realidade.** Os pesos por tema e o corte de 35% vieram do cliente, não de dado observado — o próprio IEL não sabe quem foi contratado nem quem ficou. É exatamente o que a devolutiva de um clique passa a coletar: com desfecho real acumulado, dá para verificar se quem ficou tinha, de fato, aderência maior, e corrigir a conta. Até lá, é hipótese declarada como hipótese.
+
+### 11.4 O que fica fora por decisão, não por falta de tempo
+
+Nenhuma pergunta de personalidade, saúde, família, religião, opinião política ou qualquer categoria sensível. Nenhum dado de idade, gênero ou origem entra na aderência. O edital veda dado de saúde na seleção e manda tratar bem-estar pela perspectiva do ambiente e das relações de trabalho; o instrumento inteiro foi escrito dentro dessa fronteira.
+
+### 11.5 O que faria disto um instrumento validado
+
+Volume de respostas, análise de itens (quais frases de fato separam pessoas), consistência interna por tema e correlação com permanência real. Nada disso cabe em 48 horas, e nenhuma dessas etapas é dispensável para chamar isto de medida. O que o produto já faz é **nascer coletando o dado que permitiria fazê-las** — e dizer, em cada tela, o tamanho da evidência que tem na mão.

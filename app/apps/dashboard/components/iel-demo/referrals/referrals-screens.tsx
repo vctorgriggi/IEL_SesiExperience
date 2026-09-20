@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import {
+  MOTIVO_NAO_CONTRATOU_LABEL,
+  MOTIVO_SAIDA_LABEL,
+  PERMANENCIA_DIAS
+} from '@/features/iel-demo/analysis/devolutiva';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import {
@@ -10,10 +15,12 @@ import {
   getEvidencesByIds,
   getJob,
   getReferral,
+  getReferralOutcomeSummary,
   getReferralsByCompany,
   getRegisteredReferrals,
   getTalent,
-  REFERRAL_STAGE_LABEL
+  REFERRAL_STAGE_LABEL,
+  type ReferralOutcomeRow
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 import type { ReferralItem } from '@/features/iel-demo/types';
@@ -21,6 +28,7 @@ import {
   CircleAlertIcon,
   CircleCheckIcon,
   CircleDashedIcon,
+  CircleMinusIcon,
   SearchIcon
 } from 'lucide-react';
 
@@ -48,8 +56,91 @@ import {
 } from '@workspace/ui/shadcn/table';
 
 import { usePageHeader } from '../layout/page-header-context';
+import { BADGE_DE_ESTADO, type EstadoDeCor } from '../metricas/cores';
 import { formatarDataHora } from '../shared/datas';
 import { ReferralReportLink } from './report-link';
+
+/**
+ * "2 sem resposta há 4 dias" — o que a analista precisa para cobrar.
+ *
+ * Os dias só entram quando já passou pelo menos um: "há 0 dias" é ruído no
+ * dia do envio, e é justamente o dia em que ninguém cobra nada.
+ */
+function esperaEmAberto(resumo: {
+  pendentes: number;
+  maiorEsperaDias: number | null;
+}): string {
+  const base = `${resumo.pendentes} sem resposta`;
+  const dias = resumo.maiorEsperaDias;
+  if (dias === null || dias <= 0) return base;
+  return `${base} há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+}
+
+/**
+ * O desfecho de uma pessoa, do lado de quem cobra (C3).
+ *
+ * O ciclo parava em "quero entrevistar", que é intenção. O que decide se a
+ * vaga fechou — e se a pessoa ficou — só chega quando a empresa responde o
+ * relatório, e é esta etiqueta que mostra o que já chegou e o que falta.
+ * Cor nunca sozinha: a palavra é que carrega o estado.
+ */
+function DesfechoDaEmpresa({ linha }: { linha: ReferralOutcomeRow }) {
+  const { outcome, retentionState, waitingDays } = linha;
+
+  const [texto, tom, Icone]: [string, EstadoDeCor, typeof CircleCheckIcon] =
+    retentionState === 'saiu-antes-de-90-dias'
+      ? [`Saiu antes de ${PERMANENCIA_DIAS} dias`, 'atencao', CircleMinusIcon]
+      : retentionState === 'continua'
+        ? [`Ficou ${PERMANENCIA_DIAS} dias`, 'combina', CircleCheckIcon]
+        : retentionState === 'a-perguntar'
+          ? [
+              waitingDays && waitingDays > 0
+                ? `Contratou · permanência em aberto há ${waitingDays} ${waitingDays === 1 ? 'dia' : 'dias'}`
+                : 'Contratou · permanência a confirmar',
+              'atencao',
+              CircleAlertIcon
+            ]
+          : outcome.hiring === 'contratou'
+            ? ['Contratou', 'combina', CircleCheckIcon]
+            : outcome.hiring === 'nao-contratou'
+              ? ['Não contratou', 'neutro', CircleDashedIcon]
+              : [
+                  waitingDays === null || waitingDays <= 0
+                    ? 'Sem devolutiva'
+                    : `Sem devolutiva há ${waitingDays} ${waitingDays === 1 ? 'dia' : 'dias'}`,
+                  'atencao',
+                  CircleAlertIcon
+                ];
+
+  const motivo =
+    retentionState === 'saiu-antes-de-90-dias' && outcome.retentionReason
+      ? MOTIVO_SAIDA_LABEL[outcome.retentionReason]
+      : outcome.hiring === 'nao-contratou' && outcome.hiringReason
+        ? MOTIVO_NAO_CONTRATOU_LABEL[outcome.hiringReason]
+        : null;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Badge
+        variant="outline"
+        className={BADGE_DE_ESTADO[tom]}
+      >
+        <Icone aria-hidden="true" />
+        {texto}
+      </Badge>
+      {motivo ? (
+        <p className="text-xs text-muted-foreground">
+          Motivo informado: {motivo.toLowerCase()}
+        </p>
+      ) : null}
+      {outcome.hiringNote || outcome.retentionNote ? (
+        <p className="text-xs text-muted-foreground">
+          “{outcome.retentionNote ?? outcome.hiringNote}”
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * O retorno da empresa, escrito ao lado do ícone.
@@ -168,6 +259,7 @@ export function ReferralsScreen() {
                   <TableHead scope="col">Vaga</TableHead>
                   <TableHead scope="col">Quem foi</TableHead>
                   <TableHead scope="col">Retorno da empresa</TableHead>
+                  <TableHead scope="col">O que aconteceu</TableHead>
                   <TableHead scope="col">Enviado em</TableHead>
                   <TableHead
                     scope="col"
@@ -184,6 +276,11 @@ export function ReferralsScreen() {
                   const pending = referral.items.filter(
                     (item) => item.managerDecision === 'pendente'
                   ).length;
+                  const desfechos = getReferralOutcomeSummary(
+                    state,
+                    referral.id,
+                    nowIso()
+                  );
                   const nomes = referral.items
                     .map((item) => {
                       const application = getApplication(
@@ -232,6 +329,28 @@ export function ReferralsScreen() {
                             : 'Retornos registrados'}
                         </Badge>
                       </TableCell>
+                      <TableCell className="max-w-[28ch] whitespace-normal align-top">
+                        {desfechos ? (
+                          <>
+                            <span className="text-foreground">
+                              {desfechos.respondidos} de {desfechos.total}{' '}
+                              {desfechos.respondidos === 1
+                                ? 'respondido'
+                                : 'respondidos'}
+                            </span>
+                            <p className="text-xs text-muted-foreground">
+                              {desfechos.contratados > 0
+                                ? `${desfechos.contratados} ${desfechos.contratados === 1 ? 'contratado' : 'contratados'}`
+                                : 'nenhuma contratação informada'}
+                              {desfechos.pendentes > 0
+                                ? ` · ${esperaEmAberto(desfechos)}`
+                                : ''}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="align-top tabular-nums text-muted-foreground">
                         {referral.createdAt
                           ? formatarDataHora(referral.createdAt)
@@ -275,6 +394,9 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
   const job = referral ? getJob(referral.jobId) : null;
   const company = referral ? getCompany(referral.companyId) : null;
   const isManager = persona.kind === 'gestor';
+  // O que a empresa já devolveu e o que falta: é com isto que a analista
+  // cobra — "a gente tem que ficar em cima" (00:44:09).
+  const desfechos = getReferralOutcomeSummary(state, referralId, nowIso());
 
   /*
     O caminho é publicado antes das saídas antecipadas: `usePageHeader` é um
@@ -339,6 +461,27 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
         </p>
       </div>
 
+      {!isManager && desfechos ? (
+        <div className="flex flex-col gap-1 rounded-lg border p-3">
+          <p className="text-sm font-medium">
+            {desfechos.respondidos} de {desfechos.total} com desfecho informado
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {desfechos.contratados > 0
+              ? `${desfechos.contratados} ${desfechos.contratados === 1 ? 'contratação informada' : 'contratações informadas'}`
+              : 'Nenhuma contratação informada'}
+            {desfechos.naoContratados > 0
+              ? ` · ${desfechos.naoContratados} sem contratação`
+              : ''}
+            {desfechos.saidasAntes90 > 0
+              ? ` · ${desfechos.saidasAntes90} ${desfechos.saidasAntes90 === 1 ? 'saiu' : 'saíram'} antes de ${PERMANENCIA_DIAS} dias`
+              : ''}
+            {desfechos.pendentes > 0 ? ` · ${esperaEmAberto(desfechos)}` : ''}.
+            A empresa responde na própria página do relatório, em um clique.
+          </p>
+        </div>
+      ) : null}
+
       {!isManager ? <ReferralReportLink jobId={referral.jobId} /> : null}
 
       <ul className="flex flex-col gap-4">
@@ -347,6 +490,9 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
           const talent = application ? getTalent(application.talentId) : null;
           const evidences = getEvidencesByIds(state, item.sharedEvidenceIds);
           const note = notes[item.applicationId] ?? '';
+          const linha = desfechos?.linhas.find(
+            (entrada) => entrada.applicationId === item.applicationId
+          );
 
           return (
             <li key={item.applicationId}>
@@ -356,6 +502,7 @@ export function ReferralDetailScreen({ referralId }: { referralId: string }) {
                   <CardDescription>{item.summary}</CardDescription>
                   <CardAction>
                     <div className="flex flex-wrap justify-end gap-2">
+                      {linha ? <DesfechoDaEmpresa linha={linha} /> : null}
                       <DecisaoDaEmpresa item={item} />
                       {application ? (
                         <Badge

@@ -1,4 +1,7 @@
-import { CANDIDATE_CONSENT_VERSION } from '../analysis/candidate-questionnaire';
+import {
+  CANDIDATE_CONSENT_VERSION,
+  CANDIDATE_CONSENT_VERSION_ANTERIOR
+} from '../analysis/candidate-questionnaire';
 import {
   calcularPerfilCultural,
   escolherPerguntasDoCandidato
@@ -167,6 +170,86 @@ export const DEMO_APPLICATIONS: Application[] = [
       account: 'Oficina Pantanal',
       id: 'EMPG-DEMO-APP-7703'
     }
+  },
+  /*
+   * As quatro candidaturas abaixo existem para a resposta reaproveitada
+   * aparecer na demonstração. Sem elas, a regra dos 12 meses seria só código:
+   * ninguém na base chegaria a uma candidatura nova com resposta válida, e a
+   * cena que o cliente descreveu — a mesma pessoa se candidatando a várias
+   * vagas — não teria onde acontecer.
+   *
+   * A vaga 4 é da Cerrado Distribuição (EMP-01), a mesma da vaga 1: as frases
+   * que uma empresa escolhe saem do perfil dela, então duas vagas da mesma
+   * empresa perguntam as mesmas 10 frases. É o que torna o reaproveitamento
+   * total possível de mostrar.
+   */
+  {
+    // Ana já respondeu as 10 frases da Cerrado em 05/09 (CAND-01). Aqui ela
+    // não tem nada a responder: é a tela "suas respostas ainda valem".
+    id: 'CAND-11',
+    talentId: 'ANA',
+    jobId: 'VAG-04',
+    appliedAt: '2026-09-13',
+    externalStage: 'inscrito',
+    analysisStage: 'nao-iniciada',
+    referralStage: 'nao-encaminhada',
+    technicalMatch: 74,
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-APP-5511'
+    }
+  },
+  {
+    // Fábio respondeu na Horizonte (CAND-07), outra empresa: das 10 frases da
+    // Cerrado, 3 coincidem. Reaproveitamento parcial — o caso comum.
+    id: 'CAND-12',
+    talentId: 'FABIO',
+    jobId: 'VAG-04',
+    appliedAt: '2026-09-12',
+    externalStage: 'inscrito',
+    analysisStage: 'nao-iniciada',
+    referralStage: 'nao-encaminhada',
+    technicalMatch: 51,
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-APP-5512'
+    }
+  },
+  {
+    // Hugo numa vaga da mesma empresa no ano passado, já encerrada. É a
+    // resposta que vence: julho de 2025 passou dos 12 meses.
+    id: 'CAND-13',
+    talentId: 'HUGO',
+    jobId: 'VAG-05',
+    appliedAt: '2025-07-08',
+    externalStage: 'inscrito',
+    analysisStage: 'nao-iniciada',
+    referralStage: 'nao-avancou',
+    technicalMatch: 49,
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-APP-5405'
+    }
+  },
+  {
+    // O outro caminho: Hugo volta à mesma empresa um ano depois e responde
+    // tudo de novo, porque o que ele respondeu em 2025 deixou de ser usado.
+    id: 'CAND-14',
+    talentId: 'HUGO',
+    jobId: 'VAG-04',
+    appliedAt: '2026-09-13',
+    externalStage: 'inscrito',
+    analysisStage: 'nao-iniciada',
+    referralStage: 'nao-encaminhada',
+    technicalMatch: 55,
+    externalRef: {
+      system: 'Empregare — demonstração',
+      account: 'Cerrado Distribuição',
+      id: 'EMPG-DEMO-APP-5513'
+    }
   }
 ];
 
@@ -212,6 +295,8 @@ const RESPOSTAS_CURADAS: {
   jeito: JeitoDeTrabalhar;
   answeredAt: string;
   acceptedAt: string;
+  /** Versão do aceite, quando não for a vigente (respostas antigas). */
+  consentVersion?: string;
 }[] = [
   {
     // Ana: espera acompanhamento no início e uma tarefa de cada vez.
@@ -362,10 +447,38 @@ const RESPOSTAS_CURADAS: {
     },
     answeredAt: '2026-09-07T11:00:00.000Z',
     acceptedAt: '2026-09-07T10:58:00.000Z'
+  },
+  {
+    // Hugo na vaga encerrada de 2025: resposta vencida. Mais de 12 meses
+    // depois, ela deixa de ser usada — nem na candidatura em que foi dada.
+    // O aceite dela é o texto anterior, que nem previa reaproveitamento: é
+    // por isso que `consentVersion` é declarado aqui, e não herdado.
+    applicationId: 'CAND-13',
+    jobId: 'VAG-05',
+    jeito: {
+      'orientacao-resultados': 3,
+      inovacao: 2,
+      'aprendizado-desenvolvimento': 3,
+      'foco-cliente': 3,
+      'etica-seguranca': 4,
+      'execucao-ritmo': 3,
+      'regras-decisao': 4,
+      'interacao-convivencia': 3,
+      'lideranca-autonomia': 2,
+      'adaptacao-carreira': 3
+    },
+    answeredAt: '2025-07-08T15:20:00.000Z',
+    acceptedAt: '2025-07-08T15:18:00.000Z',
+    consentVersion: CANDIDATE_CONSENT_VERSION_ANTERIOR
   }
   // CAND-10 (Hugo) fica sem resposta de propósito: a mesa de seleção precisa
   // mostrar como é uma candidatura sem fit medido — R7, quem não responde
   // sai do processo, mas sai por decisão do analista, não por sumiço.
+  //
+  // CAND-11, CAND-12 e CAND-14 também ficam sem resposta, por outro motivo:
+  // são as candidaturas que chegam à tela do questionário para mostrar o
+  // reaproveitamento (total, parcial e vencido). Se já tivessem resposta, não
+  // haveria o que demonstrar.
 ];
 
 /** As frases que cada vaga curada pergunta, a partir do perfil curado. */
@@ -381,9 +494,15 @@ function frasesDaVaga(jobId: string): string[] {
 
 const random = createRandom(20260920);
 
+/** Quem respondeu cada candidatura curada: a resposta é da pessoa. */
+const TALENTO_DA_CANDIDATURA = new Map(
+  DEMO_APPLICATIONS.map((application) => [application.id, application.talentId])
+);
+
 export const DEMO_FIT_RESPONSES: CandidateFitResponse[] = RESPOSTAS_CURADAS.map(
   (resposta) => ({
     applicationId: resposta.applicationId,
+    talentId: TALENTO_DA_CANDIDATURA.get(resposta.applicationId) ?? '',
     answers: responderQuestionario(
       frasesDaVaga(resposta.jobId),
       { temas: resposta.jeito },
@@ -393,7 +512,7 @@ export const DEMO_FIT_RESPONSES: CandidateFitResponse[] = RESPOSTAS_CURADAS.map(
     answeredAt: resposta.answeredAt,
     consent: {
       acceptedAt: resposta.acceptedAt,
-      version: CANDIDATE_CONSENT_VERSION
+      version: resposta.consentVersion ?? CANDIDATE_CONSENT_VERSION
     }
   })
 );

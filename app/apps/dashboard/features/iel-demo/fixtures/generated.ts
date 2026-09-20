@@ -1194,6 +1194,10 @@ function buildFitResponses(
       : responderQuestionario(itemIds, jeito(pendente.talentId), random, 0.8);
     return {
       applicationId: pendente.applicationId,
+      // A resposta é da pessoa; a candidatura é só onde ela foi dada. No
+      // volume isso aparece sozinho: quem se candidatou duas vezes dentro de
+      // 12 meses tem parte das frases já respondidas na segunda.
+      talentId: pendente.talentId,
       answers,
       answeredAt: pendente.answeredAt,
       // O aceite existe também no pano de fundo: uma resposta sem aceite

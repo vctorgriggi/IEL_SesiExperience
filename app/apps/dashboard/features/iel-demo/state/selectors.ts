@@ -9,6 +9,11 @@ import {
   type CompanyItemMeans
 } from '../analysis/adherence';
 import {
+  CANDIDATE_CONSENT_VERSION,
+  validaAte,
+  VALIDADE_DA_RESPOSTA_MESES
+} from '../analysis/candidate-questionnaire';
+import {
   CRITERION_STATE_META,
   getCoverage,
   getCriterionAnalysis,
@@ -17,6 +22,7 @@ import {
 import {
   calcularPerfilCultural,
   escolherPerguntasDoCandidato,
+  MIN_RESPOSTAS_ANONIMAS,
   MIN_TEAM_RESPONSES,
   type CultureDispersion,
   type CultureRespondent,
@@ -28,6 +34,14 @@ import {
   getSuggestedSampleSize,
   type CultureInviteRole
 } from '../analysis/culture-invites';
+import {
+  diasEsperando,
+  estadoDaPermanencia,
+  lerDevolutiva,
+  temDevolutiva,
+  type EstadoDaPermanencia,
+  type ReferralOutcome
+} from '../analysis/devolutiva';
 import { FIT_AXES, type FitAxis, type FitAxisId } from '../analysis/fit-axes';
 import {
   blocoDoConvite,
@@ -54,6 +68,13 @@ import {
   readAxisMatch,
   type ReportAxisMatch
 } from '../analysis/referral-report';
+import {
+  indexarRespostasPorPessoa,
+  resolverRespostas,
+  type IndiceDeRespostas,
+  type RespostasDaPessoa,
+  type RespostasResolvidas
+} from '../analysis/respostas-da-pessoa';
 import {
   ALL_COMPANIES,
   ALL_JOBS,
@@ -1260,8 +1281,12 @@ export function getCultureReading(
 
 function readCultureAxisState(tema: PerfilDoTema): CultureAxisState {
   const temEquipe = tema.porPapel.equipe !== undefined;
+  // Gestão e RH somados contam como liderança mesmo quando nenhum dos dois
+  // pode aparecer sozinho (piso do grupo anônimo).
   const temLideranca =
-    tema.porPapel.gestao !== undefined || tema.porPapel.rh !== undefined;
+    tema.lideranca !== null ||
+    tema.porPapel.gestao !== undefined ||
+    tema.porPapel.rh !== undefined;
 
   if (!temEquipe) return temLideranca ? 'apenas-gestao' : 'sem-resposta';
   if (!tema.fecha) return 'consulta-insuficiente';
@@ -1482,7 +1507,7 @@ export const CULTURE_DISPLAY_RESPONDENT_LABEL: Record<
 };
 
 /** Menos que isso num papel e o papel é uma pessoa: não aparece sozinho. */
-export const MIN_ROLE_RESPONSES_TO_SHOW = 2;
+export const MIN_ROLE_RESPONSES_TO_SHOW = MIN_RESPOSTAS_ANONIMAS;
 
 export type CultureDisplayVoice = {
   respondent: CultureDisplayRespondent;
@@ -1893,7 +1918,7 @@ export function getCandidateJobView(
   };
 }
 
-/** A resposta de fit desta candidatura, se houver. */
+/** O registro de questionário desta candidatura, se houver. */
 export function getFitResponse(
   state: DemoState,
   applicationId: string
@@ -1903,6 +1928,234 @@ export function getFitResponse(
       (response) => response.applicationId === applicationId
     ) ?? null
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * A resposta é da pessoa e vale 12 meses
+ * ------------------------------------------------------------------ */
+
+/**
+ * Memória do índice pessoa → frase, válida enquanto a lista de respostas for
+ * a mesma. Mesmo contrato de `PERFIL_CACHE`: o reducer nunca muta a lista.
+ *
+ * Sem isto, resolver as respostas de uma candidatura varreria as milhares de
+ * respostas da base, e a mesa de seleção faria isso uma vez por linha — O(n²)
+ * por render, na tela em que a escala precisa aparecer.
+ */
+const RESPOSTAS_CACHE = new WeakMap<
+  CandidateFitResponse[],
+  IndiceDeRespostas
+>();
+
+const INDICE_VAZIO: IndiceDeRespostas = new Map();
+
+/** Índice pessoa → frase → resposta mais recente, memorizado. */
+export function indiceDeRespostas(state: DemoState): IndiceDeRespostas {
+  const responses = state.fitResponses;
+  if (!responses) return INDICE_VAZIO;
+
+  let indice = RESPOSTAS_CACHE.get(responses);
+  if (!indice) {
+    indice = indexarRespostasPorPessoa(responses);
+    RESPOSTAS_CACHE.set(responses, indice);
+  }
+  return indice;
+}
+
+/** Tudo o que esta pessoa já respondeu, em qualquer candidatura. */
+export function getRespostasDaPessoa(
+  state: DemoState,
+  talentId: string
+): RespostasDaPessoa | undefined {
+  return indiceDeRespostas(state).get(talentId);
+}
+
+/**
+ * O conjunto resolvido desta candidatura: o que vale, o que veio de antes e o
+ * que ainda falta perguntar.
+ *
+ * É o contrato que as telas do candidato e a aderência consomem. `null` só
+ * quando a candidatura ou a vaga não existem — sem resposta nenhuma, o
+ * retorno vem com as 10 frases em `faltantes`, que é informação, não erro.
+ */
+export function respostasResolvidas(
+  state: DemoState,
+  applicationId: string
+): RespostasResolvidas | null {
+  const application = getApplication(state, applicationId);
+  if (!application) return null;
+
+  const job = getJob(application.jobId);
+  if (!job) return null;
+
+  return resolverRespostas({
+    itemIds: perguntasDoCandidato(state, application.jobId).map(
+      (pergunta) => pergunta.itemId
+    ),
+    applicationId,
+    propria: getFitResponse(state, applicationId),
+    daPessoa: getRespostasDaPessoa(state, application.talentId),
+    agoraIso: DEMO_REFERENCE_DATE
+  });
+}
+
+/**
+ * As frases que ainda faltam perguntar nesta candidatura.
+ *
+ * É o que o questionário mostra: as frases que **aquela empresa** escolheu
+ * menos as que a pessoa **já respondeu dentro da validade**. Vazio é estado
+ * legítimo e tem nome próprio — ver `reaproveitamentoDaCandidatura` —, não um
+ * formulário em branco.
+ */
+export function perguntasQueFaltam(
+  state: DemoState,
+  applicationId: string
+): (PerguntaDoCandidato & { item: ItemDoInstrumento })[] {
+  const application = getApplication(state, applicationId);
+  if (!application) return [];
+
+  const resolvidas = respostasResolvidas(state, applicationId);
+  if (!resolvidas) return [];
+
+  const faltantes = new Set(resolvidas.faltantes);
+  return perguntasDoCandidato(state, application.jobId).filter((pergunta) =>
+    faltantes.has(pergunta.itemId)
+  );
+}
+
+/**
+ * Esta pessoa precisa responder alguma coisa para esta vaga?
+ *
+ * Falso quando as respostas que ela já deu cobrem tudo o que esta empresa
+ * pergunta e continuam dentro da validade.
+ */
+export function precisaResponderQuestionario(
+  state: DemoState,
+  applicationId: string
+): boolean {
+  const resolvidas = respostasResolvidas(state, applicationId);
+  return resolvidas === null ? false : resolvidas.faltantes.length > 0;
+}
+
+/** O reaproveitamento desta candidatura, no formato que a tela mostra. */
+export type ReaproveitamentoDaCandidatura = {
+  /** Quantas frases esta empresa pergunta. */
+  perguntadas: number;
+  /** Quantas vêm de resposta anterior da própria pessoa. */
+  reaproveitadas: number;
+  /** Quantas foram respondidas nesta candidatura mesmo. */
+  novas: number;
+  /** Quantas ainda faltam. */
+  faltantes: number;
+  /** Data da resposta reaproveitada mais antiga (ISO), ou `null`. */
+  desde: string | null;
+  /** Até quando essas respostas valem (YYYY-MM-DD), ou `null`. */
+  valemAte: string | null;
+  /** Quantas respostas existiam e venceram — o caminho do "responda de novo". */
+  vencidas: number;
+  /**
+   * Nada a perguntar: as respostas que a pessoa já deu cobrem esta vaga.
+   * É o estado "suas respostas de <desde> ainda valem para esta vaga".
+   */
+  nadaAPerguntar: boolean;
+};
+
+/**
+ * Quantas frases desta candidatura vêm de resposta reaproveitada, e de quando.
+ *
+ * Existe para a tela poder dizer à pessoa o que está acontecendo com o dado
+ * dela — "usamos 6 respostas suas de 6 de setembro" — em vez de simplesmente
+ * mostrar menos perguntas do que ela esperava. Transparência é o que torna o
+ * reuso legítimo: LGPD, art. 6º, VI.
+ */
+export function reaproveitamentoDaCandidatura(
+  state: DemoState,
+  applicationId: string
+): ReaproveitamentoDaCandidatura | null {
+  const resolvidas = respostasResolvidas(state, applicationId);
+  if (!resolvidas) return null;
+
+  return {
+    perguntadas: resolvidas.perguntadas.length,
+    reaproveitadas: resolvidas.reaproveitadas.length,
+    novas: resolvidas.novas.length,
+    faltantes: resolvidas.faltantes.length,
+    desde: resolvidas.reaproveitadasDesde,
+    valemAte: resolvidas.reaproveitadasValemAte,
+    vencidas: resolvidas.descartadas.filter(
+      (descartada) => descartada.motivo === 'vencida'
+    ).length,
+    nadaAPerguntar:
+      resolvidas.faltantes.length === 0 && resolvidas.respondidas.length > 0
+  };
+}
+
+/** Até quando as respostas desta pessoa valem. */
+export type ValidadeDasRespostas = {
+  talentId: string;
+  /** Frases com resposta dentro da validade. */
+  validas: number;
+  /** Frases cuja resposta já venceu. */
+  vencidas: number;
+  /** A resposta válida mais recente (ISO), ou `null`. */
+  respondidoEm: string | null;
+  /**
+   * Último dia em que a resposta mais recente vale (YYYY-MM-DD).
+   *
+   * É a data que a pessoa lê: "suas respostas valem até 5 de setembro de
+   * 2027". Sai da resposta mais nova porque é ela que a pessoa acabou de dar.
+   */
+  validaAte: string | null;
+  meses: typeof VALIDADE_DA_RESPOSTA_MESES;
+};
+
+/**
+ * Até quando a resposta desta pessoa vale (M7, §5.6).
+ *
+ * Fora de qualquer candidatura, de propósito: o prazo é da pessoa, e é isso
+ * que a tela dela precisa dizer. Devolve `null` para quem nunca respondeu.
+ */
+export function validadeDasRespostas(
+  state: DemoState,
+  talentId: string
+): ValidadeDasRespostas | null {
+  const daPessoa = getRespostasDaPessoa(state, talentId);
+  if (!daPessoa || daPessoa.porFrase.size === 0) return null;
+
+  const hoje = DEMO_REFERENCE_DATE.slice(0, 10);
+  let validas = 0;
+  let vencidas = 0;
+  let respondidoEm: string | null = null;
+
+  for (const resposta of daPessoa.porFrase.values()) {
+    if (hoje <= resposta.validaAte) {
+      validas += 1;
+      if (respondidoEm === null || resposta.answeredAt > respondidoEm) {
+        respondidoEm = resposta.answeredAt;
+      }
+    } else {
+      vencidas += 1;
+    }
+  }
+
+  return {
+    talentId,
+    validas,
+    vencidas,
+    respondidoEm,
+    validaAte: respondidoEm === null ? null : validaAte(respondidoEm),
+    meses: VALIDADE_DA_RESPOSTA_MESES
+  };
+}
+
+/**
+ * A versão de aceite que esta candidatura precisa registrar.
+ *
+ * Uma só, e sempre a vigente: quem responde agora responde sob o texto atual.
+ * Existe como seletor para que nenhuma tela decida isso por conta própria.
+ */
+export function versaoDoAceiteVigente(): string {
+  return CANDIDATE_CONSENT_VERSION;
 }
 
 /**
@@ -1929,12 +2182,25 @@ function daysBetween(fromIso: string, toIso: string): number {
  * Quem não respondeu dentro do prazo aparece como `expirado` em vez de sumir:
  * R7 diz que essa pessoa sai do processo, e sair do processo é uma decisão
  * do analista, não um desaparecimento silencioso da lista.
+ *
+ * Desde que a resposta passou a ser da pessoa, `respondido` não quer dizer
+ * "preencheu um formulário nesta candidatura": quer dizer que esta vaga tem
+ * as 10 respostas de que precisa. Quem já havia respondido tudo dentro da
+ * validade está respondido sem ter feito nada — é justamente o atrito que a
+ * mudança tirou do caminho. A tela distingue os dois casos por
+ * `reaproveitamentoDaCandidatura`; a mesa de seleção não precisa.
  */
 export function getFitStatus(
   state: DemoState,
   application: Application
 ): FitStatus {
-  if (getFitResponse(state, application.id)) return 'respondido';
+  const resolvidas = respostasResolvidas(state, application.id);
+  if (
+    resolvidas &&
+    resolvidas.faltantes.length === 0 &&
+    resolvidas.respondidas.length > 0
+  )
+    return 'respondido';
   return daysBetween(application.appliedAt, DEMO_REFERENCE_DATE) >
     CANDIDATE_FIT_DEADLINE_DAYS
     ? 'expirado'
@@ -2004,11 +2270,18 @@ export function getAdherence(
   const job = getJob(application.jobId);
   if (!job) return null;
 
-  const response = getFitResponse(state, applicationId);
+  // O lado da pessoa é o conjunto **resolvido**: o que ela respondeu nesta
+  // candidatura mais o que ela já havia respondido dentro da validade. Ler o
+  // registro desta candidatura sozinho faria a pessoa que não precisou
+  // responder aparecer sem aderência — ausência tratada como falta de dado
+  // quando o dado existe.
+  const resolvidas = respostasResolvidas(state, applicationId);
 
   return computeAdherence(
     toItemMeans(perfilDaEmpresa(state, job.companyId)),
-    response?.answers ?? null,
+    resolvidas && Object.keys(resolvidas.valores).length > 0
+      ? resolvidas.valores
+      : null,
     getAxisWeights(state, job)
   );
 }
@@ -2341,6 +2614,12 @@ export function getImportHistory(
 export type ReferralReportPerson = {
   /** Posição na remessa, a partir de 1. Ordena por quanto combina. */
   position: number;
+  /** Chave da devolutiva: é por ela que a empresa responde o desfecho (C3). */
+  applicationId: string;
+  /** O que a empresa já respondeu sobre esta pessoa. */
+  outcome: ReferralOutcome;
+  /** Onde está o segundo momento hoje (permanência aos 90 dias). */
+  retentionState: EstadoDaPermanencia;
   name: string;
   initials: string;
   headline: string;
@@ -2358,6 +2637,8 @@ export type ReferralReportPerson = {
 };
 
 export type ReferralReport = {
+  /** Id do encaminhamento: a empresa responde a devolutiva contra ele. */
+  referralId: string;
   company: Company;
   job: Job;
   sentAt: string | null;
@@ -2392,7 +2673,9 @@ export function getReportTokenForJob(jobId: string): string {
  */
 export function getReferralReport(
   state: DemoState,
-  token: string
+  token: string,
+  /** "Hoje" para derivar o estado do segundo momento (C3). */
+  hoje: string = DEMO_REFERENCE_DATE
 ): ReferralReport | null {
   const job = ALL_JOBS.find((entry) => buildReportToken(entry.id) === token);
   if (!job) return null;
@@ -2414,8 +2697,12 @@ export function getReferralReport(
       if (!application || !talent) return null;
 
       const adherence = getAdherence(state, application.id);
+      const outcome = lerDevolutiva(item.outcome);
 
       return {
+        applicationId: item.applicationId,
+        outcome,
+        retentionState: estadoDaPermanencia(outcome, hoje),
         name: talent.name,
         initials: initialsOf(talent.name),
         headline: talent.headline,
@@ -2454,6 +2741,7 @@ export function getReferralReport(
   ).length;
 
   return {
+    referralId: referral.id,
     company,
     job,
     sentAt: referral.createdAt,
@@ -2463,6 +2751,111 @@ export function getReferralReport(
     evaluatedCount,
     mostDivergentAxis: findMostDivergentAxis(people)
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Devolutiva da empresa, do lado da analista (C3)
+ * ------------------------------------------------------------------ */
+
+/** Uma pessoa encaminhada e o que a empresa respondeu sobre ela. */
+export type ReferralOutcomeRow = {
+  referralId: string;
+  jobId: string;
+  companyId: string;
+  applicationId: string;
+  /** Nome só do lado do IEL: a agregação por empresa não usa nome. */
+  talentName: string;
+  outcome: ReferralOutcome;
+  retentionState: EstadoDaPermanencia;
+  /** Há quantos dias esta pessoa espera resposta; `null` se não espera. */
+  waitingDays: number | null;
+};
+
+/** O que uma remessa devolveu, para a analista saber o que cobrar. */
+export type ReferralOutcomeSummary = {
+  total: number;
+  respondidos: number;
+  contratados: number;
+  naoContratados: number;
+  pendentes: number;
+  /** Quantos contratados saíram antes de 90 dias. */
+  saidasAntes90: number;
+  /** Maior espera em aberto, em dias. `null` quando nada está pendente. */
+  maiorEsperaDias: number | null;
+  linhas: ReferralOutcomeRow[];
+};
+
+/**
+ * O retrato da devolutiva de uma remessa (C3).
+ *
+ * É o que permite cobrar, que é o trabalho real da analista — "a gente tem
+ * que ficar em cima" (00:44:09). Sem isto, a tela mostrava a intenção de
+ * entrevistar e parava ali; quem precisa saber se a vaga fechou não tinha
+ * onde olhar.
+ */
+export function getReferralOutcomeSummary(
+  state: DemoState,
+  referralId: string,
+  hoje: string = DEMO_REFERENCE_DATE
+): ReferralOutcomeSummary | null {
+  const referral = getReferral(state, referralId);
+  if (!referral) return null;
+
+  const linhas: ReferralOutcomeRow[] = referral.items.map((item) => {
+    const application = getApplication(state, item.applicationId);
+    const talent = application ? getTalent(application.talentId, state) : null;
+    const outcome = lerDevolutiva(item.outcome);
+    return {
+      referralId: referral.id,
+      jobId: referral.jobId,
+      companyId: referral.companyId,
+      applicationId: item.applicationId,
+      talentName: talent?.name ?? item.applicationId,
+      outcome,
+      retentionState: estadoDaPermanencia(outcome, hoje),
+      waitingDays: diasEsperando(outcome, referral.createdAt, hoje)
+    };
+  });
+
+  const esperas = linhas
+    .map((linha) => linha.waitingDays)
+    .filter((dias): dias is number => dias !== null);
+
+  return {
+    total: linhas.length,
+    respondidos: linhas.filter((linha) => temDevolutiva(linha.outcome)).length,
+    contratados: linhas.filter((linha) => linha.outcome.hiring === 'contratou')
+      .length,
+    naoContratados: linhas.filter(
+      (linha) => linha.outcome.hiring === 'nao-contratou'
+    ).length,
+    pendentes: linhas.filter((linha) => !temDevolutiva(linha.outcome)).length,
+    saidasAntes90: linhas.filter(
+      (linha) => linha.retentionState === 'saiu-antes-de-90-dias'
+    ).length,
+    maiorEsperaDias: esperas.length > 0 ? Math.max(...esperas) : null,
+    linhas
+  };
+}
+
+/**
+ * Tudo o que está esperando resposta da empresa, da espera mais longa para a
+ * mais curta (C3).
+ *
+ * Percorre só os encaminhamentos registrados — algumas dezenas, não as 2.500
+ * empresas da carteira — porque devolutiva só existe onde houve remessa.
+ */
+export function getPendingOutcomes(
+  state: DemoState,
+  hoje: string = DEMO_REFERENCE_DATE
+): ReferralOutcomeRow[] {
+  return getRegisteredReferrals(state)
+    .flatMap(
+      (referral) =>
+        getReferralOutcomeSummary(state, referral.id, hoje)?.linhas ?? []
+    )
+    .filter((linha) => linha.waitingDays !== null)
+    .sort((a, b) => (b.waitingDays ?? 0) - (a.waitingDays ?? 0));
 }
 
 /*
