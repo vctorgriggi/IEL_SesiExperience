@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { getFitAxis } from '@/features/iel-demo/analysis/fit-axes';
+import {
+  nomesDeEmpresa,
+  semNomeDeEmpresa
+} from '@/features/iel-demo/analysis/sem-nome-de-empresa';
 import { plural } from '@/features/iel-demo/format';
 import { useIelDemo } from '@/features/iel-demo/state/demo-provider';
 import { getTalentTransparency } from '@/features/iel-demo/state/selectors';
@@ -57,6 +61,14 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
   const [open, setOpen] = useState(false);
   const transparency = getTalentTransparency(state, talentId);
 
+  /*
+   * Procedência é texto livre escrito por gente, e gente escreve o nome da
+   * empresa nele ("Candidatura EMPG-… (Cerrado Distribuição)"). Esta tela é
+   * superfície do candidato: o nome sai aqui, antes de chegar à página (R5).
+   */
+  const nomes = useMemo(() => nomesDeEmpresa(state), [state]);
+  const semNome = (texto: string) => semNomeDeEmpresa(texto, nomes);
+
   const total = transparency.records.length + transparency.preferences.length;
 
   return (
@@ -83,13 +95,45 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
           </CardAction>
         </CardHeader>
 
-        <CardContent className="pt-4 text-sm leading-relaxed text-muted-foreground">
-          {plural(total, 'registro', 'registros')} ·{' '}
-          {transparency.sharedWith.length === 0
-            ? 'nenhuma empresa recebeu seu perfil até agora'
-            : `${plural(transparency.sharedWith.length, 'empresa recebeu', 'empresas receberam')} seu perfil`}
-          . Se algum registro estiver errado, é possível corrigi-lo antes que
-          ele pese numa decisão.
+        <CardContent className="flex flex-col gap-4 pt-4 text-sm leading-relaxed text-muted-foreground">
+          <p>
+            {plural(total, 'registro', 'registros')} ·{' '}
+            {transparency.sharedWith.length === 0
+              ? 'nenhuma empresa recebeu seu perfil até agora'
+              : `${plural(transparency.sharedWith.length, 'empresa recebeu', 'empresas receberam')} seu perfil`}
+            . Se algum registro estiver errado, é possível corrigi-lo antes que
+            ele pese numa decisão.
+          </p>
+
+          {/*
+           * Os direitos ficam fora do recolhido, e antes dele.
+           *
+           * Até aqui eles só apareciam quando a analista abria um
+           * esclarecimento — isto é, quando o IEL precisava de alguma coisa.
+           * Direito que só existe quando a outra parte lembra não é direito
+           * exercível. LGPD, art. 18: "O titular dos dados pessoais tem
+           * direito a obter do controlador (…) III - correção de dados
+           * incompletos, inexatos ou desatualizados" e "IX - revogação do
+           * consentimento". O texto diz o caminho de cada um, em uma frase.
+           */}
+          <div className="flex flex-col gap-2 border-t pt-4">
+            <h3 className="text-xs font-medium text-muted-foreground">
+              Seus direitos
+            </h3>
+            <p>
+              <span className="font-medium text-foreground">Corrigir.</span> Se
+              alguma resposta não é mais o que você pensa, responda o
+              questionário de novo: fica valendo a última.
+            </p>
+            <p>
+              <span className="font-medium text-foreground">
+                Pedir para sair.
+              </span>{' '}
+              Você pode pedir ao IEL para parar de usar as suas respostas e
+              tirar você deste processo. Avise a pessoa do IEL que falou com
+              você — é o mesmo contato que mandou este link.
+            </p>
+          </div>
         </CardContent>
 
         <CollapsibleContent>
@@ -111,10 +155,10 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
                   {transparency.records.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell className="max-w-[28ch] whitespace-normal text-foreground">
-                        {record.information}
+                        {semNome(record.information)}
                       </TableCell>
                       <TableCell className="whitespace-normal text-muted-foreground">
-                        {record.originLabel}
+                        {semNome(record.originLabel)}
                       </TableCell>
                       <TableCell className="text-muted-foreground tabular-nums">
                         {formatarData(record.updatedAt)}
@@ -145,10 +189,10 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
                           {getFitAxis(preference.axisId).label}
                         </TableCell>
                         <TableCell className="max-w-[24ch] whitespace-normal text-foreground">
-                          {preference.value}
+                          {semNome(preference.value)}
                         </TableCell>
                         <TableCell className="whitespace-normal text-muted-foreground">
-                          {preference.origin} ·{' '}
+                          {semNome(preference.origin)} ·{' '}
                           {formatarData(preference.updatedAt)}
                         </TableCell>
                       </TableRow>
@@ -183,7 +227,7 @@ export function TalentTransparency({ talentId }: { talentId: string }) {
                         {/* Atividade, segmento e localidade — nunca o nome da
                             empresa. R5: ele só aparece na entrevista. */}
                         <TableCell className="whitespace-normal font-medium text-foreground">
-                          {entry.jobView?.activity ?? entry.jobTitle}
+                          {entry.jobView?.activity ?? semNome(entry.jobTitle)}
                           {entry.jobView ? (
                             <span className="block text-xs font-normal text-muted-foreground">
                               {entry.jobView.sector} · {entry.jobView.shift}

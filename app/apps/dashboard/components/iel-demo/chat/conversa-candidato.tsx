@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { CANDIDATE_CONSENT_VERSION } from '@/features/iel-demo/analysis/candidate-questionnaire';
 import {
   montarRoteiroCandidato,
   respostasDaEscala,
@@ -14,7 +13,10 @@ import {
   getCandidateJobView,
   getFitResponse,
   getFitStatus,
-  perguntasDoCandidato
+  perguntasDoCandidato,
+  perguntasQueFaltam,
+  reaproveitamentoDaCandidatura,
+  versaoDoAceiteVigente
 } from '@/features/iel-demo/state/selectors';
 import { nowIso } from '@/features/iel-demo/state/storage';
 
@@ -47,25 +49,48 @@ export function ConversaCandidato({
   const { state, dispatch } = useIelDemo();
   const [travada, setTravada] = useState<VarianteCandidato | null>(null);
   const [sessao, setSessao] = useState(0);
+  /*
+   * "Responder de novo" recusa o reaproveitamento e refaz as frases todas —
+   * metade reaproveitada e metade nova não seria "de novo". É o desfazer que
+   * o aceite promete.
+   */
+  const [responderTudo, setResponderTudo] = useState(false);
 
   const application = getApplication(state, applicationId);
   const vaga = getCandidateJobView(state, applicationId);
   const existente = getFitResponse(state, applicationId);
 
+  const reuso = reaproveitamentoDaCandidatura(state, applicationId);
+
+  /*
+   * Registro não basta: com validade de 12 meses, um registro vencido é uma
+   * vaga que volta a precisar das frases. "Já respondeu" é ter registro e
+   * não faltar nenhuma.
+   */
+  const respondido = existente !== null && (reuso?.faltantes ?? 0) === 0;
+
   const varianteAtual: VarianteCandidato =
     !application || !vaga
       ? 'invalido'
-      : existente
+      : respondido
         ? 'ja-respondeu'
-        : getFitStatus(state, application) === 'expirado'
-          ? 'expirado'
-          : 'novo';
+        : reuso?.nadaAPerguntar && !responderTudo
+          ? 'reaproveita'
+          : getFitStatus(state, application) === 'expirado'
+            ? 'expirado'
+            : 'novo';
   const variante = travada ?? varianteAtual;
 
-  // As 10 frases que a empresa da vaga escolheu, no texto simples.
-  const perguntas = application
-    ? perguntasDoCandidato(state, application.jobId)
-    : [];
+  /*
+   * Só o que falta perguntar: as frases da vaga menos as que a pessoa já
+   * respondeu dentro dos 12 meses. Quem pediu para responder de novo vê a
+   * lista inteira.
+   */
+  const perguntas = !application
+    ? []
+    : responderTudo
+      ? perguntasDoCandidato(state, application.jobId)
+      : perguntasQueFaltam(state, applicationId);
   const itemIds = perguntas.map((pergunta) => pergunta.itemId);
 
   if (!montado) return <ConversaCarregando />;
@@ -77,10 +102,12 @@ export function ConversaCandidato({
     frases: perguntas.map((pergunta) => ({
       itemId: pergunta.itemId,
       texto: pergunta.item.textoSimples
-    }))
+    })),
+    reuso: responderTudo ? null : reuso
   });
 
   const recomecar = () => {
+    setResponderTudo(true);
     setTravada('novo');
     setSessao((atual) => atual + 1);
   };
@@ -90,6 +117,8 @@ export function ConversaCandidato({
       key={`${variante}:${sessao}`}
       roteiro={roteiro}
       focarAoAbrir={sessao > 0}
+      // Uma chave por candidatura: quem fecha o celular na frase 7 volta na 7.
+      rascunhoChave={`iel-rascunho:conversa-fit:${applicationId}`}
       contexto={
         vaga ? (
           <Badge
@@ -102,13 +131,24 @@ export function ConversaCandidato({
       }
       onPrimeiraResposta={() => setTravada(variante)}
       onConcluir={(respostas) => {
+        // Na conversa de reaproveitamento não há frase nenhuma: o que a
+        // pessoa deu foi o aceite, e o que se grava é a confirmação.
+        if (variante === 'reaproveita') {
+          dispatch({
+            type: 'reuse-fit-answers',
+            applicationId,
+            consentVersion: versaoDoAceiteVigente(),
+            at: nowIso()
+          });
+          return;
+        }
         const answers = respostasDaEscala(respostas, itemIds);
         if (!answers) return;
         dispatch({
           type: 'answer-fit-questionnaire',
           applicationId,
           answers,
-          consentVersion: CANDIDATE_CONSENT_VERSION,
+          consentVersion: versaoDoAceiteVigente(),
           at: nowIso()
         });
       }}
@@ -118,7 +158,7 @@ export function ConversaCandidato({
           {acoes.map((acao, index) => {
             const variant = index === 0 ? 'default' : 'ghost';
             const classe = 'h-12 w-full text-[15px]';
-            if (acao === 'ver-registro') {
+            if (acao === 'ver-candidatura') {
               return (
                 <Button
                   key={acao}
@@ -126,12 +166,19 @@ export function ConversaCandidato({
                   variant={variant}
                   className={classe}
                 >
+                  {/*
+                   * Levava para `/fit`, o próprio questionário, com o rótulo
+                   * "Ver o que está registrado sobre você" — a pessoa tocava
+                   * esperando o seu registro e caía de volta na primeira
+                   * pergunta. O registro mora em "Minha candidatura".
+                   */}
                   <Link
                     href={
-                      routes.dashboard.iel.applications.byId(applicationId).fit
+                      routes.dashboard.iel.applications.byId(applicationId)
+                        .index
                     }
                   >
-                    Ver o que está registrado sobre você
+                    Ver minha candidatura
                   </Link>
                 </Button>
               );

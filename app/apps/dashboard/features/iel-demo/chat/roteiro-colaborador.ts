@@ -41,15 +41,16 @@ export function montarRoteiroColaborador(
     return soFim('colaborador-respondido', [
       'Oi! Aqui é o Centro de Empregos do IEL.',
       'A resposta deste link já foi registrada. Você não precisa fazer mais nada, obrigado.',
-      'Ela entra só na média da empresa: ninguém vê o que você respondeu, nem a sua gestão.'
+      'Ela entra numa média com a de todo mundo que responder: ninguém vê o que você respondeu sozinho — nem a empresa, nem a sua chefia, nem o IEL.',
+      'Este link é de uso único e não abre de novo. Pode fechar a página.'
     ]);
   }
 
   if (convite.status === 'expirado') {
     return soFim('colaborador-expirado', [
       'Oi! Aqui é o Centro de Empregos do IEL.',
-      'Este link venceu: o prazo para responder era de 3 dias e já passou.',
-      'Peça um link novo a quem enviou o convite.'
+      `Este link venceu: o prazo para responder era de 3 dias e terminou em ${diaMes(convite.expiresAt)}.`,
+      'Se ainda quiser responder, peça um link novo a quem mandou o convite — é a pessoa do IEL que fala com a sua empresa.'
     ]);
   }
 
@@ -64,8 +65,14 @@ export function montarRoteiroColaborador(
       {
         tipo: 'mensagem',
         id: 'convite',
-        texto: `A empresa ${convite.companyName} quer saber como é trabalhar aí, contado por quem vive o dia a dia.`,
+        texto: `A empresa ${convite.companyName} quer saber como é trabalhar aí, contado por quem vive o dia a dia. Por isso você recebeu este link.`,
         apoio: `São ${convite.bloco.length} frases, uns 5 minutos. O link vale até ${diaMes(convite.expiresAt)}.`
+      },
+      {
+        tipo: 'mensagem',
+        id: 'sem-resposta-certa',
+        texto:
+          'Não existe resposta certa nem errada. Responda pelo que acontece de verdade no seu dia a dia, não pelo que deveria acontecer.'
       },
       {
         tipo: 'mensagem',
@@ -74,10 +81,17 @@ export function montarRoteiroColaborador(
           'Suas respostas entram na média que descreve como se trabalha na empresa. Essa média é comparada com o que cada candidato procura.'
       },
       {
+        /*
+         * A promessa de anonimato é o que decide se a resposta é honesta: a
+         * pessoa está falando da empresa dela, e a chefia pode estar do lado.
+         * Vem antes do aceite, dita com todas as letras.
+         */
         tipo: 'mensagem',
         id: 'aceite-quem-ve',
         texto:
-          'A empresa vê só a média de todo mundo. Ninguém vê a sua resposta, nem a sua gestão.'
+          'Sua resposta não fica com o seu nome: ela entra numa média com a de todo mundo que responder.',
+        apoio:
+          'Nem a empresa, nem a sua chefia, nem o IEL veem a sua resposta sozinha.'
       },
       {
         tipo: 'aceite',
@@ -107,7 +121,8 @@ export function montarRoteiroColaborador(
         id: 'fim',
         textos: [
           'Pronto, obrigado! Sua resposta foi registrada.',
-          'Ela entra só na média da empresa. Ninguém vê o que você respondeu, nem a sua gestão.',
+          'Ela entra numa média com a de todo mundo que responder. Ninguém vê o que você respondeu sozinho — nem a empresa, nem a sua chefia, nem o IEL.',
+          'Quando gente suficiente responder, essa média passa a descrever como é trabalhar aí, e o IEL usa isso para procurar candidatos que combinem com o jeito da casa.',
           'Você não precisa fazer mais nada. Este link já foi usado e não abre de novo.'
         ],
         acoes: []

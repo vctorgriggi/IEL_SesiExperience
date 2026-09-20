@@ -46,6 +46,9 @@ export function ConversaColaborador({ token }: { token: string }) {
     <ConversaGuiada
       key={`${roteiro.id}:${convite?.inviteId ?? 'nenhum'}`}
       roteiro={roteiro}
+      // Uma chave por convite: são 16 frases no intervalo do turno, e
+      // interrupção aqui custava a resposta inteira.
+      rascunhoChave={`iel-rascunho:conversa-consulta:${token}`}
       contexto={
         convite ? (
           <Badge

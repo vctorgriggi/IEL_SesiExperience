@@ -8,14 +8,24 @@
 
 ## O que a tela faz
 
-Responde uma pergunta — "como é trabalhar aqui?" — em cinco telas, uma pergunta por vez. É o que
-forma o perfil cultural da empresa por **amostra de colaboradores**, e não pela opinião de uma pessoa
-só.
+Responde uma pergunta — "como é trabalhar aqui?" — pelas 16 frases do bloco daquele convite
+(amostragem em matriz sobre as 52 do instrumento), uma frase por tela. É o que forma o perfil
+cultural da empresa por **amostra de colaboradores**, e não pela opinião de uma pessoa só.
 
 Quem abre isto é um colaborador operacional, no celular, no intervalo do turno: uma alternativa por
-vez, alvos de 60px, um botão só, nada para configurar. A tela cabe em 390px sem rolagem.
+vez, alvos de 60px, um botão só, nada para configurar. A tela cabe em 390px sem rolagem horizontal.
 
-Atende **M2** (link por colaborador) e **M7** (consentimento).
+Atende **M2** (link por colaborador) e **M7** (consentimento). Existe em duas formas, com a mesma
+regra e a mesma gravação: esta, em passos, e a [conversa guiada](#a-porta-para-a-conversa) em
+`/conversa`.
+
+## Por que esta tela importa mais do que parece
+
+Conseguir estas respostas é o gargalo declarado do cliente: _"dos 10, só 5 responderam. A gente
+cobra a empresa… é um gargalo também, a gente tem que ficar em cima"_ (00:44:15). Cada pessoa que
+abre o link e desiste é um tema do perfil que não fecha, e um perfil que não fecha é uma vaga sem
+fit. O desenho da tela ataca as três causas de abandono: não entender quem está pedindo, não saber
+quanto tempo vai levar e achar que a resposta volta para a chefia.
 
 ## Base legal
 
@@ -32,9 +42,47 @@ questionário não abre. A versão do texto vai gravada junto da resposta.
 
 ## O que aparece
 
-- **Passo 0 — aceite**, com a finalidade e a caixa desmarcada.
-- **Cinco perguntas**, uma por tela.
-- **Confirmação** ao fim.
+- **Passo 0 — abertura e aceite.** Primeiro, em duas frases: quem pergunta (o IEL, junto com a
+  empresa), por que essa pessoa recebeu o link (é ela que vive o dia a dia) e que não existe
+  resposta certa — "responda pelo que acontece de verdade, não pelo que deveria acontecer". Depois
+  três etiquetas com o tamanho da tarefa ("16 frases · uns 5 minutos · sem cadastro"), o **cartão
+  do anonimato** (ver abaixo), o cartão do aceite, a porta para a conversa, a caixa desmarcada e o
+  botão que só habilita quando ela é marcada.
+- **As 16 frases do bloco**, uma por tela. O cabeçalho diz onde a pessoa está e **quantas ainda
+  faltam** ("Frase 8 de 16 · Faltam 8"); na oitava, a tela diz "Metade do caminho". Ali ficava
+  "uns 5 min", repetido em todas as 16 telas.
+- **Voltar** é um botão de 48px como o de seguir — era um `<button>` sublinhado de 13px, pequeno
+  demais para o polegar. A resposta anterior continua marcada.
+- **Confirmação** ao fim: "Resposta registrada" e **"O que acontece agora"** em três passos — a
+  resposta entra numa média, a média descreve a empresa quando gente suficiente responder, e este
+  link não abre de novo.
+
+## O cartão do anonimato
+
+A promessa de anonimato é o que decide se a resposta é honesta: a pessoa está dizendo como é
+trabalhar na empresa dela, e a chefia pode estar do lado. Por isso ela saiu do terceiro parágrafo
+do texto legal e virou um cartão próprio, antes do aceite: _"Ninguém vai saber o que você
+respondeu. Sua resposta não fica com o seu nome. Ela entra numa média com a de todo mundo que
+responder. Nem a empresa, nem a sua chefia, nem o IEL veem a sua resposta sozinha."_
+
+O "nem o IEL" é verdade e está na matriz de acesso: o analista vê o agregado por tema, nunca a
+resposta individual (PRODUTO.md §5.1).
+
+## A porta para a conversa
+
+A [conversa guiada](../../app/apps/dashboard/components/iel-demo/chat/conversa-colaborador.tsx)
+existe para quem tem dificuldade com formulário — e, até 19/09, só chegava lá quem soubesse digitar
+`/conversa` no endereço. Agora a tela de abertura oferece "Responder conversando", antes do aceite.
+
+## Fechar e voltar
+
+São 16 frases no intervalo do turno: interrupção é o caso comum, não a exceção. O que já foi
+respondido fica no **navegador da própria pessoa** (`shared/use-rascunho.ts`), preso à versão do
+aceite e ao bloco daquele convite; ela fecha na frase 7, volta depois e continua na 7, com um aviso
+em `role="status"`. O rascunho some no envio.
+
+**Rascunho não é resposta.** Nada pela metade chega ao estado da demonstração, e é por isso que o
+rascunho fica no aparelho, não no servidor.
 
 ## De onde vêm os dados hoje
 
@@ -59,6 +107,11 @@ questionário não abre. A versão do texto vai gravada junto da resposta.
   tela da empresa diz isso, em vez de tratar duas pessoas como "a equipe".
 - **Sem login**, para não criar barreira de adesão.
 - **O link não expõe dado pessoal** de quem o recebeu.
+- **Nenhum caminho sem saída.** Link inexistente, vencido e já respondido dizem o que houve e o que
+  fazer — o vencido com a data e com quem procurar. Um envio barrado por frase faltando vira um
+  `role="alert"` que diz qual é e leva até ela.
+- **Celular primeiro**: 390×844 sem rolagem horizontal, alvos de 48px (60px nas alternativas),
+  corpo de 15px; `h1` por passo, com o foco levado até ele a cada troca de tela.
 
 ## Ligações
 
@@ -68,3 +121,8 @@ cultural usado em [Mesa de seleção](04-mesa-de-selecao.md) e [Mapa de Cultura]
 ## Histórico
 
 - 2026-09-19 — criada, documentando a tela que chegou com a interface Mind RH.
+- 2026-09-19 — rodada de capricho no fluxo por link: abertura que diz quem pergunta e por que essa
+  pessoa foi escolhida, "não existe resposta certa nem errada", etiquetas com o tamanho da tarefa,
+  o anonimato promovido a cartão próprio antes do aceite, "faltam N" e "metade do caminho" na fila
+  de 16, "Voltar" com 48px, porta para a conversa guiada, rascunho no navegador para fechar e
+  voltar, encerramento com "o que acontece agora" e aviso de frase faltando em `role="alert"`.
